@@ -1,101 +1,102 @@
-import Image from "next/image";
+import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/logo"
+import Link from "next/link"
+import { ArrowRight, Shield, Lock, TrendingUp } from "lucide-react"
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="flex min-h-screen flex-col">
+      <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between">
+          <Logo />
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard">
+              <Button variant="ghost" className="text-white">
+                Login
+              </Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button className="bg-bitcoin-orange hover:bg-bitcoin-dark text-white">Get Started</Button>
+            </Link>
+          </div>
         </div>
+      </header>
+      <main className="flex-1">
+        <section className="py-20 md:py-32">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-white">
+                Track Your <span className="text-bitcoin-orange">Bitcoin</span> Cost Basis
+              </h1>
+              <p className="max-w-[700px] text-muted-foreground md:text-xl">
+                Simplify your Bitcoin accounting with our privacy-focused cost basis tracker. No exchange integrations,
+                no data selling.
+              </p>
+              <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                <Link href="/dashboard">
+                  <Button className="bg-bitcoin-orange hover:bg-bitcoin-dark text-white">
+                    Get Started
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/dashboard">
+                  <Button
+                    variant="outline"
+                    className="border-bitcoin-orange text-bitcoin-orange hover:bg-bitcoin-orange/10"
+                  >
+                    View Demo
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className="py-12 md:py-24 bg-secondary/50">
+          <div className="container px-4 md:px-6">
+            <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3">
+              <div className="flex flex-col items-center gap-2 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-bitcoin-orange/10">
+                  <Shield className="h-8 w-8 text-bitcoin-orange" />
+                </div>
+                <h3 className="text-xl font-bold text-white">Privacy First</h3>
+                <p className="text-muted-foreground">No exchange integrations. Your data stays with you.</p>
+              </div>
+              <div className="flex flex-col items-center gap-2 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-bitcoin-orange/10">
+                  <Lock className="h-8 w-8 text-bitcoin-orange" />
+                </div>
+                <h3 className="text-xl font-bold text-white">Secure Storage</h3>
+                <p className="text-muted-foreground">End-to-end encryption for all your transaction data.</p>
+              </div>
+              <div className="flex flex-col items-center gap-2 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-bitcoin-orange/10">
+                  <TrendingUp className="h-8 w-8 text-bitcoin-orange" />
+                </div>
+                <h3 className="text-xl font-bold text-white">Accurate Calculations</h3>
+                <p className="text-muted-foreground">FIFO, LIFO, and average cost methods for tax optimization.</p>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      <footer className="border-t border-border/40 bg-background py-6">
+        <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
+          <Logo />
+          <p className="text-sm text-muted-foreground">© 2024 BitBasis. All rights reserved.</p>
+          <div className="flex gap-4">
+            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-white">
+              Privacy
+            </Link>
+            <Link href="/terms" className="text-sm text-muted-foreground hover:text-white">
+              Terms
+            </Link>
+            <Link href="/contact" className="text-sm text-muted-foreground hover:text-white">
+              Contact
+            </Link>
+          </div>
+        </div>
       </footer>
     </div>
-  );
+  )
 }
+
