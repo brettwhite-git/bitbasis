@@ -1,0 +1,17 @@
+---
+description: File Structure
+globs: 
+alwaysApply: false
+---
+
+### File Structure
+- Utilize Next.js `app/` router (e.g., `app/dashboard/page.tsx`).
+- Place reusable components in `components/` (e.g., `components/PortfolioOverview.tsx`).
+- Centralize Supabase utilities in `lib/supabase.ts`.
+- Define API routes in `app/api/` (e.g., `app/api/stripe/cancel/route.ts`).
+
+### Code Style
+- Use TypeScript with strict typing (e.g., interfaces for Supabase tables, Chart.js props).
+- Apply Tailwind CSS for all styling (e.g., `className="bg-bitcoin-orange text-white"`).
+- Keep functions concise; leverage Cursor to refactor or suggest enhancements..
+

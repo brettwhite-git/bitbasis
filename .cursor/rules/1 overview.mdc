@@ -1,0 +1,15 @@
+---
+description: Project Summary
+globs: 
+alwaysApply: false
+---
+
+## Overview
+- **Project:** Transaction Tracker MVP (Bit Basis)
+- **Stack:** Next.js, TypeScript, Tailwind, Supabase (Auth, Database, Storage), Chart.js, Stripe, CoinGecko API, additional dependencies as needed (e.g., `papaparse`, `pgcrypto`)
+- **Goal:** Enable users to upload, store, and parse CSVs; record buy/sell transaction data; calculate Bitcoin cost basis and summarize fees; display KPIs and charts over time.
+
+## Summary
+- A Bitcoin cost basis tracker prioritizing user privacy with no exchange integrations.
+- Offers peace of mind: No data selling by Bit Basis developers; includes a transparent privacy policy.
+- Automates cost basis calculations and fee tracking, eliminating manual reporting.

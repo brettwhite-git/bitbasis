@@ -1,0 +1,65 @@
+---
+description: Design Approach
+globs: 
+alwaysApply: false
+---
+## Design
+- **Theme:**
+  - Dark mode with Bitcoin orange (`#F7931A`), black, and gray tones.
+  - Use Tailwind’s `dark:` prefix (e.g., `dark:bg-gray-900`).
+- **Charts:**
+  - Implement Chart.js with responsive layouts and theme-matching colors.
+- **CSV Handling:**
+  - Support large/multiple CSVs (e.g., up to 100MB total across uploads).
+  - Provide clear parsing progress and error feedback.
+  - Max CSV size determined by performance testing (e.g., 10MB per file).
+- **Removal Logic:**
+  - Enable easy CSV deletion with cascading updates to transactions and KPIs.
+  - Prompt Cursor: "Add logic to remove a CSV and update calculations."
+
+## Data Handling
+**Supabase Tables**
+
+**Login Table for User**
+- `users`: `id`, `email` (minimal info, unchanged).
+
+**Table for CSV import should look something like this**
+- `transactions`: `id`, `user_id`, `transaction_type`, `asset`, `quantity`, `price_usd`, `total_usd`, `fee_usd`, `transaction_date`
+  - `id`: Primary key for each transaction.
+  - `user_id`: Foreign key linking to the `users` table.
+  - `transaction_type`: Type of transaction (e.g., "Buy", "Sell", "Send", "Receive").
+  - `asset`: The cryptocurrency involved (e.g., "BTC").
+  - `quantity`: Amount of the asset transacted (positive for buys/receives, negative for sells/sends).
+  - `price_usd`: Price per unit of the asset in USD at the time of the transaction.
+  - `total_usd`: Total value of the transaction in USD (excluding fees).
+  - `fee_usd`: Transaction fee in USD.
+  - `transaction_date`: Date and time of the transaction (format: `YYYY-MM-DD HH:MM:SS`).
+  
+  
+**Bitcoing Price Table**
+- `bitcoin_prices`: `date`, `price_usd` (for caching CoinGecko data, unchanged).
+
+- **CSV Parsing:**
+  - Process CSVs server-side; validate data before insertion.
+  - Store raw CSVs in Supabase Storage for user reference.
+
+## Calculations 
+  - Portfolio Value: Sum of current value of all BTC (requires current BTC price).
+  - Total Cost Basis: Sum of Total USD + Fee USD for all "Buy" transactions.
+  - Unrealized Gains: (Current BTC Price × Total BTC Held) - Total Cost Basis.
+  - Average Buy Price: Total Cost Basis / Total BTC Bought.
+  - Total ROI 
+  - 30 Day Change 
+  - YTD Change 
+  - All Time High 
+
+## Workflow
+- **Development:**
+  - Run locally with `npm run dev`.
+  - Commit frequently (e.g., `git commit -m "feat: add cost basis comparison"`).
+  - Deploy to Vercel; monitor performance metrics.
+- **Testing:**
+  - Test CSV imports with small (1KB) and large (10MB) files.
+  - Validate RLS across multiple user accounts.
+  - Check SEO with Lighthouse or similar tools.
+
