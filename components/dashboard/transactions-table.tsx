@@ -10,21 +10,43 @@ import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Sear
 const transactions = [
   {
     id: "1",
-    date: "2023-07-15",
-    type: "buy",
-    amount: "0.05",
-    price: "29,850.00",
-    total: "1,492.50",
-    fee: "14.93",
+    date: "2023-07-15T00:00:00Z",
+    type: "Buy",
+    asset: "BTC",
+    sent_amount: null,
+    sent_currency: null,
+    buy_amount: 1492.50,
+    buy_currency: "USD",
+    sell_amount: null,
+    sell_currency: null,
+    price: 29850.00,
+    received_amount: 0.05,
+    received_currency: "BTC",
+    exchange: "Coinbase",
+    network_fee: 4.93,
+    network_currency: "USD",
+    service_fee: 10.00,
+    service_fee_currency: "USD"
   },
   {
     id: "2",
-    date: "2023-06-22",
-    type: "buy",
-    amount: "0.08",
-    price: "30,120.00",
-    total: "2,409.60",
-    fee: "24.10",
+    date: "2023-06-22T00:00:00Z",
+    type: "Buy",
+    asset: "BTC",
+    sent_amount: null,
+    sent_currency: null,
+    buy_amount: 2409.60,
+    buy_currency: "USD",
+    sell_amount: null,
+    sell_currency: null,
+    price: 30120.00,
+    received_amount: 0.08,
+    received_currency: "BTC",
+    exchange: "Coinbase",
+    network_fee: 14.10,
+    network_currency: "USD",
+    service_fee: 10.00,
+    service_fee_currency: "USD"
   },
   {
     id: "3",
@@ -101,41 +123,80 @@ const transactions = [
 ]
 
 export function TransactionsTable() {
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const itemsPerPage = 10
 
-  const filteredTransactions = transactions.filter(
-    (transaction) =>
-      transaction.date.includes(searchTerm) ||
-      transaction.type.includes(searchTerm.toLowerCase()) ||
-      transaction.amount.includes(searchTerm),
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount)
+  }
+
+  const formatBTC = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 8,
+      maximumFractionDigits: 8
+    }).format(amount)
+  }
+
+  const getTotalFees = (transaction: typeof transactions[0]) => {
+    return (transaction.network_fee || 0) + (transaction.service_fee || 0)
+  }
+
+  const getAmount = (transaction: typeof transactions[0]) => {
+    if (transaction.type === 'Buy' || transaction.type === 'Receive') {
+      return transaction.received_amount
+    } else {
+      return transaction.sent_amount
+    }
+  }
+
+  const getTotal = (transaction: typeof transactions[0]) => {
+    if (transaction.type === 'Buy') {
+      return transaction.buy_amount
+    } else if (transaction.type === 'Sell') {
+      return transaction.sell_amount
+    }
+    return 0
+  }
+
+  // Filter transactions based on search query
+  const filteredTransactions = transactions.filter((transaction) =>
+    Object.values(transaction).some((value) =>
+      value?.toString().toLowerCase().includes(searchQuery.toLowerCase())
+    )
   )
 
+  // Calculate pagination
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage)
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentItems = filteredTransactions.slice(indexOfFirstItem, indexOfLastItem)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedTransactions = filteredTransactions.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  )
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center justify-between">
+        <div className="flex w-full max-w-sm items-center space-x-2">
           <Input
             placeholder="Search transactions..."
-            className="pl-8"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-xs"
           />
+          <Button variant="outline" size="icon">
+            <Search className="h-4 w-4" />
+          </Button>
         </div>
-        <Button variant="outline" className="sm:w-auto">
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
+        <Button variant="outline" size="icon">
+          <Download className="h-4 w-4" />
         </Button>
       </div>
-
-      <div className="rounded-md border border-border">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -144,19 +205,22 @@ export function TransactionsTable() {
               <TableHead>Amount (BTC)</TableHead>
               <TableHead className="hidden md:table-cell">Price (USD)</TableHead>
               <TableHead>Total (USD)</TableHead>
-              <TableHead className="hidden md:table-cell">Fee (USD)</TableHead>
+              <TableHead className="hidden md:table-cell">Fees (USD)</TableHead>
+              <TableHead className="hidden lg:table-cell">Exchange</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentItems.map((transaction) => (
+            {paginatedTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
-                <TableCell className="font-medium">{transaction.date}</TableCell>
+                <TableCell className="font-medium">
+                  {new Date(transaction.date).toLocaleDateString()}
+                </TableCell>
                 <TableCell>
                   <Badge
-                    variant={transaction.type === "buy" ? "default" : "destructive"}
-                    className={transaction.type === "buy" ? "bg-bitcoin-orange" : ""}
+                    variant={transaction.type === "Buy" ? "default" : "destructive"}
+                    className={transaction.type === "Buy" ? "bg-bitcoin-orange" : ""}
                   >
-                    {transaction.type === "buy" ? (
+                    {transaction.type === "Buy" ? (
                       <ArrowDownRight className="mr-1 h-3 w-3" />
                     ) : (
                       <ArrowUpRight className="mr-1 h-3 w-3" />
@@ -164,41 +228,40 @@ export function TransactionsTable() {
                     {transaction.type.toUpperCase()}
                   </Badge>
                 </TableCell>
-                <TableCell>{transaction.amount}</TableCell>
-                <TableCell className="hidden md:table-cell">${transaction.price}</TableCell>
-                <TableCell>${transaction.total}</TableCell>
-                <TableCell className="hidden md:table-cell">${transaction.fee}</TableCell>
+                <TableCell>{formatBTC(getAmount(transaction) || 0)}</TableCell>
+                <TableCell className="hidden md:table-cell">
+                  ${formatCurrency(transaction.price)}
+                </TableCell>
+                <TableCell>${formatCurrency(getTotal(transaction) || 0)}</TableCell>
+                <TableCell className="hidden md:table-cell">
+                  ${formatCurrency(getTotalFees(transaction))}
+                </TableCell>
+                <TableCell className="hidden lg:table-cell">{transaction.exchange}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
-
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredTransactions.length)} of{" "}
-          {filteredTransactions.length} transactions
+      <div className="flex items-center justify-end space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div className="text-sm">
+          Page {currentPage} of {totalPages}
         </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span className="sr-only">Previous page</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-          >
-            <ChevronRight className="h-4 w-4" />
-            <span className="sr-only">Next page</span>
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   )

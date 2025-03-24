@@ -1,7 +1,7 @@
 ---
-description: File Structure
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 
 ### File Structure

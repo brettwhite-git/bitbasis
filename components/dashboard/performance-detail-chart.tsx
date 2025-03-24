@@ -62,10 +62,10 @@ export function PerformanceDetailChart({ period }: PerformanceDetailChartProps) 
           color: "#0ea5e9",
         },
       }}
-      className="h-[400px]"
+      className="h-[300px]"
     >
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data[period]}>
+        <LineChart data={data[period]} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis dataKey="date" stroke="#9ca3af" />
           <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${value.toLocaleString()}`} />

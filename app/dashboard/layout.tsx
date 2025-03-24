@@ -26,11 +26,11 @@ export default function DashboardLayout({
         </header>
         <div className="flex flex-1 pt-16">
           <DashboardSidebar />
-          <div className="flex-1 overflow-x-hidden">
-            <div className="mx-auto w-full max-w-7xl px-8">
-              <main className="py-6">{children}</main>
+          <main className="flex-1 overflow-hidden">
+            <div className="h-full w-full px-6 py-6">
+              {children}
             </div>
-          </div>
+          </main>
         </div>
       </div>
     </SidebarProvider>

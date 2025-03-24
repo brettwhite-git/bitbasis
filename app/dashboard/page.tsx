@@ -6,8 +6,8 @@ import { PerformanceChart } from "@/components/dashboard/performance-chart"
 
 export default function DashboardPage() {
   return (
-    <div className="flex flex-col gap-6 mx-auto w-full">
-      <div className="flex items-center justify-between mb-2">
+    <div className="w-full space-y-6">
+      <div className="flex items-center justify-between w-full">
         <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
         <Tabs defaultValue="all" className="w-[300px]">
           <TabsList className="grid w-full grid-cols-3">
@@ -17,7 +17,7 @@ export default function DashboardPage() {
           </TabsList>
         </Tabs>
       </div>
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
@@ -55,16 +55,16 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
+      <div className="grid w-full gap-4 grid-cols-1 lg:grid-cols-12">
+        <Card className="lg:col-span-8">
           <CardHeader>
             <CardTitle>Performance</CardTitle>
           </CardHeader>
-          <CardContent className="pl-2">
+          <CardContent>
             <PerformanceChart />
           </CardContent>
         </Card>
-        <Card className="lg:col-span-3">
+        <Card className="lg:col-span-4">
           <CardHeader>
             <CardTitle>Portfolio Overview</CardTitle>
             <CardDescription>Bitcoin acquired by year</CardDescription>
@@ -74,15 +74,17 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Transactions</CardTitle>
-          <CardDescription>Your most recent Bitcoin transactions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RecentTransactions />
-        </CardContent>
-      </Card>
+      <div className="w-full">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Transactions</CardTitle>
+            <CardDescription>Your most recent Bitcoin transactions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RecentTransactions />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

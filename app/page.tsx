@@ -10,70 +10,71 @@ export default function LandingPage() {
         <div className="container flex h-16 items-center justify-between">
           <Logo />
           <div className="flex items-center gap-4">
-            <Link href="/dashboard">
+            <Link href="/auth/sign-in">
               <Button variant="ghost" className="text-white">
                 Login
               </Button>
             </Link>
-            <Link href="/dashboard">
+            <Link href="/auth/sign-up">
               <Button className="bg-bitcoin-orange hover:bg-bitcoin-dark text-white">Get Started</Button>
             </Link>
           </div>
         </div>
       </header>
+
       <main className="flex-1">
-        <section className="py-20 md:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center gap-4 text-center">
-              <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-white">
-                Track Your <span className="text-bitcoin-orange">Bitcoin</span> Cost Basis
-              </h1>
-              <p className="max-w-[700px] text-muted-foreground md:text-xl">
-                Simplify your Bitcoin accounting with our privacy-focused cost basis tracker. No exchange integrations,
-                no data selling.
-              </p>
-              <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                <Link href="/dashboard">
-                  <Button className="bg-bitcoin-orange hover:bg-bitcoin-dark text-white">
-                    Get Started
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="/dashboard">
-                  <Button
-                    variant="outline"
-                    className="border-bitcoin-orange text-bitcoin-orange hover:bg-bitcoin-orange/10"
-                  >
-                    View Demo
-                  </Button>
-                </Link>
-              </div>
+        <section className="space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-32">
+          <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center">
+            <h1 className="text-4xl font-bold tracking-tighter text-white sm:text-5xl md:text-6xl lg:text-7xl">
+              Track Your Bitcoin Portfolio with Privacy & Precision
+            </h1>
+            <p className="max-w-[42rem] leading-normal text-muted-foreground sm:text-xl sm:leading-8">
+              Calculate your Bitcoin cost basis, track your portfolio performance, and manage your transactions
+              with complete privacy. No exchange integrations required.
+            </p>
+            <div className="space-x-4">
+              <Link href="/auth/sign-up">
+                <Button className="bg-bitcoin-orange hover:bg-bitcoin-dark text-white">
+                  Get Started <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
             </div>
           </div>
         </section>
-        <section className="py-12 md:py-24 bg-secondary/50">
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3">
-              <div className="flex flex-col items-center gap-2 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-bitcoin-orange/10">
-                  <Shield className="h-8 w-8 text-bitcoin-orange" />
+
+        <section className="container space-y-6 py-8 md:py-12 lg:py-24">
+          <div className="mx-auto grid justify-center gap-4 sm:grid-cols-2 md:max-w-[64rem] md:grid-cols-3">
+            <div className="relative overflow-hidden rounded-lg border bg-background p-2">
+              <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
+                <Shield className="h-12 w-12 text-bitcoin-orange" />
+                <div className="space-y-2">
+                  <h3 className="font-bold text-white">Privacy First</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your data stays private. No exchange integrations or API keys required.
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold text-white">Privacy First</h3>
-                <p className="text-muted-foreground">No exchange integrations. Your data stays with you.</p>
               </div>
-              <div className="flex flex-col items-center gap-2 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-bitcoin-orange/10">
-                  <Lock className="h-8 w-8 text-bitcoin-orange" />
+            </div>
+            <div className="relative overflow-hidden rounded-lg border bg-background p-2">
+              <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
+                <TrendingUp className="h-12 w-12 text-bitcoin-orange" />
+                <div className="space-y-2">
+                  <h3 className="font-bold text-white">Accurate Tracking</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Calculate your cost basis and track your portfolio performance over time.
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold text-white">Secure Storage</h3>
-                <p className="text-muted-foreground">End-to-end encryption for all your transaction data.</p>
               </div>
-              <div className="flex flex-col items-center gap-2 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-bitcoin-orange/10">
-                  <TrendingUp className="h-8 w-8 text-bitcoin-orange" />
+            </div>
+            <div className="relative overflow-hidden rounded-lg border bg-background p-2">
+              <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
+                <Lock className="h-12 w-12 text-bitcoin-orange" />
+                <div className="space-y-2">
+                  <h3 className="font-bold text-white">Secure & Simple</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Easy to use interface with enterprise-grade security.
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold text-white">Accurate Calculations</h3>
-                <p className="text-muted-foreground">FIFO, LIFO, and average cost methods for tax optimization.</p>
               </div>
             </div>
           </div>

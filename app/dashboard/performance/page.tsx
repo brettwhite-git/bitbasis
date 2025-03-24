@@ -1,12 +1,22 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { PerformanceDetailChart } from "@/components/dashboard/performance-detail-chart"
 
 export default function PerformancePage() {
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold tracking-tight text-white">Performance</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="w-full space-y-6">
+      <div className="flex items-center justify-between w-full">
+        <h1 className="text-2xl font-bold tracking-tight text-white">Performance</h1>
+        <Tabs defaultValue="1y" className="w-[400px]">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="1m">1M</TabsTrigger>
+            <TabsTrigger value="3m">3M</TabsTrigger>
+            <TabsTrigger value="1y">1Y</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+      <div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total ROI</CardTitle>
@@ -44,34 +54,19 @@ export default function PerformancePage() {
           </CardContent>
         </Card>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Performance Over Time</CardTitle>
-          <CardDescription>Track your Bitcoin portfolio performance</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="1y" className="w-full">
-            <TabsList className="grid w-full max-w-[400px] grid-cols-4">
-              <TabsTrigger value="1m">1M</TabsTrigger>
-              <TabsTrigger value="3m">3M</TabsTrigger>
-              <TabsTrigger value="1y">1Y</TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
-            </TabsList>
-            <TabsContent value="1m" className="mt-4">
+      <div className="grid w-full gap-4 grid-cols-1 lg:grid-cols-12">
+        <Card className="lg:col-span-12">
+          <CardHeader>
+            <CardTitle>Performance Over Time</CardTitle>
+            <CardDescription>Track your Bitcoin portfolio performance</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="w-full">
               <PerformanceDetailChart period="1m" />
-            </TabsContent>
-            <TabsContent value="3m" className="mt-4">
-              <PerformanceDetailChart period="3m" />
-            </TabsContent>
-            <TabsContent value="1y" className="mt-4">
-              <PerformanceDetailChart period="1y" />
-            </TabsContent>
-            <TabsContent value="all" className="mt-4">
-              <PerformanceDetailChart period="all" />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

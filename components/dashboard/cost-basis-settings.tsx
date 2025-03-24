@@ -11,16 +11,16 @@ export function CostBasisSettings() {
   const [method, setMethod] = useState("fifo")
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
+    <div className="w-full space-y-6">
+      <div className="w-full space-y-2">
         <h3 className="text-lg font-medium text-white">Default Cost Basis Method</h3>
         <p className="text-sm text-muted-foreground">Select your preferred method for calculating cost basis</p>
       </div>
 
-      <RadioGroup value={method} onValueChange={setMethod} className="space-y-4">
-        <div className="flex items-start space-x-2">
+      <RadioGroup value={method} onValueChange={setMethod} className="w-full space-y-4">
+        <div className="flex items-start space-x-2 w-full">
           <RadioGroupItem value="fifo" id="fifo" className="mt-1" />
-          <div className="grid gap-1.5">
+          <div className="grid gap-1.5 flex-1">
             <Label htmlFor="fifo" className="font-medium text-white">
               First In, First Out (FIFO)
             </Label>
@@ -30,9 +30,9 @@ export function CostBasisSettings() {
             </p>
           </div>
         </div>
-        <div className="flex items-start space-x-2">
+        <div className="flex items-start space-x-2 w-full">
           <RadioGroupItem value="lifo" id="lifo" className="mt-1" />
-          <div className="grid gap-1.5">
+          <div className="grid gap-1.5 flex-1">
             <Label htmlFor="lifo" className="font-medium text-white">
               Last In, First Out (LIFO)
             </Label>
@@ -42,9 +42,9 @@ export function CostBasisSettings() {
             </p>
           </div>
         </div>
-        <div className="flex items-start space-x-2">
+        <div className="flex items-start space-x-2 w-full">
           <RadioGroupItem value="average" id="average" className="mt-1" />
-          <div className="grid gap-1.5">
+          <div className="grid gap-1.5 flex-1">
             <Label htmlFor="average" className="font-medium text-white">
               Average Cost
             </Label>
@@ -56,7 +56,7 @@ export function CostBasisSettings() {
         </div>
       </RadioGroup>
 
-      <Alert className="bg-secondary border-bitcoin-orange">
+      <Alert className="w-full bg-secondary border-bitcoin-orange">
         <InfoIcon className="h-4 w-4 text-bitcoin-orange" />
         <AlertTitle className="text-white">Tax Implications</AlertTitle>
         <AlertDescription className="text-muted-foreground">
@@ -65,7 +65,7 @@ export function CostBasisSettings() {
         </AlertDescription>
       </Alert>
 
-      <Button className="bg-bitcoin-orange hover:bg-bitcoin-dark text-white">Save Settings</Button>
+      <Button className="w-full bg-bitcoin-orange hover:bg-bitcoin-dark text-white">Save Settings</Button>
     </div>
   )
 }

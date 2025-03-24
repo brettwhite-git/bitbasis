@@ -8,14 +8,14 @@ import { ShieldCheck } from "lucide-react"
 
 export function PrivacySettings() {
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
+    <div className="w-full space-y-6">
+      <div className="w-full space-y-2">
         <h3 className="text-lg font-medium text-white">Data Privacy</h3>
         <p className="text-sm text-muted-foreground">Control how your data is stored and used</p>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="w-full space-y-4">
+        <div className="flex items-center justify-between w-full">
           <div className="space-y-0.5">
             <Label htmlFor="encrypt-notes" className="text-white">
               Encrypt Transaction Notes
@@ -25,7 +25,7 @@ export function PrivacySettings() {
           <Switch id="encrypt-notes" defaultChecked />
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between w-full">
           <div className="space-y-0.5">
             <Label htmlFor="store-csv" className="text-white">
               Store Original CSV Files
@@ -35,7 +35,7 @@ export function PrivacySettings() {
           <Switch id="store-csv" defaultChecked />
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between w-full">
           <div className="space-y-0.5">
             <Label htmlFor="analytics" className="text-white">
               Usage Analytics
@@ -46,7 +46,7 @@ export function PrivacySettings() {
         </div>
       </div>
 
-      <Alert className="bg-secondary border-bitcoin-orange">
+      <Alert className="w-full bg-secondary border-bitcoin-orange">
         <ShieldCheck className="h-4 w-4 text-bitcoin-orange" />
         <AlertTitle className="text-white">Privacy Commitment</AlertTitle>
         <AlertDescription className="text-muted-foreground">
@@ -59,15 +59,15 @@ export function PrivacySettings() {
         </AlertDescription>
       </Alert>
 
-      <div className="space-y-2">
+      <div className="w-full space-y-2">
         <h3 className="text-lg font-medium text-white">Export Your Data</h3>
         <p className="text-sm text-muted-foreground">Download all your data in a portable format</p>
-        <Button variant="outline" className="border-bitcoin-orange text-bitcoin-orange hover:bg-bitcoin-orange/10">
+        <Button variant="outline" className="w-full border-bitcoin-orange text-bitcoin-orange hover:bg-bitcoin-orange/10">
           Export All Data
         </Button>
       </div>
 
-      <Button className="bg-bitcoin-orange hover:bg-bitcoin-dark text-white">Save Settings</Button>
+      <Button className="w-full bg-bitcoin-orange hover:bg-bitcoin-dark text-white">Save Settings</Button>
     </div>
   )
 }

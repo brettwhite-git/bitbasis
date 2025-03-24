@@ -1,7 +1,7 @@
 ---
-description: User Flow
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 ## User Flow
 1. **Landing Page:**

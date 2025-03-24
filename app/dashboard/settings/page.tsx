@@ -5,9 +5,11 @@ import { PrivacySettings } from "@/components/dashboard/privacy-settings"
 
 export default function SettingsPage() {
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold tracking-tight text-white">Settings</h1>
-      <div className="grid gap-4">
+    <div className="w-full space-y-6">
+      <div className="w-full">
+        <h1 className="text-2xl font-bold tracking-tight text-white">Settings</h1>
+      </div>
+      <div className="w-full grid gap-4">
         <Card>
           <CardHeader>
             <CardTitle>Account Settings</CardTitle>
