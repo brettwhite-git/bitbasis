@@ -1,7 +1,7 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PortfolioYearlyChart } from "@/components/dashboard/portfolio-yearly-chart"
-import { CostBasisComparison } from "@/components/dashboard/cost-basis-comparison"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui"
+import { PortfolioYearlyChart } from "@/components/portfolio/portfolio-yearly-chart"
+import { CostBasisComparison } from "@/components/portfolio/cost-basis-comparison"
 
 export default function PortfolioPage() {
   return (

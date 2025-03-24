@@ -1,6 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { PerformanceDetailChart } from "@/components/dashboard/performance-detail-chart"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui"
+import { PerformanceDetailChart } from "@/components/performance/performance-detail-chart"
 
 export default function PerformancePage() {
   return (

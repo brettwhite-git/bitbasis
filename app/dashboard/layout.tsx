@@ -1,9 +1,9 @@
 import type React from "react"
 import { Logo } from "@/components/logo"
-import { DashboardSidebar } from "@/components/dashboard/sidebar"
-import { UserNav } from "@/components/dashboard/user-nav"
-import { MobileNav } from "@/components/dashboard/mobile-nav"
-import { SidebarProvider } from "@/components/ui/sidebar"
+import { DashboardSidebar } from "@/components/shared/sidebar"
+import { UserNav } from "@/components/shared/user-nav"
+import { MobileNav } from "@/components/shared/mobile-nav"
+import { SidebarProvider } from "@/components/shared/sidebar-provider"
 
 export default function DashboardLayout({
   children,

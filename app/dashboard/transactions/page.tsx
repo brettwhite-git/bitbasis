@@ -1,5 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { TransactionsTable } from "@/components/dashboard/transactions-table"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui"
+import { TransactionsTable } from "@/components/transactions/transactions-table"
 
 export default function TransactionsPage() {
   return (

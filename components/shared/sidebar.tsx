@@ -3,20 +3,11 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LayoutDashboard, LineChart, PieChart, Upload, Settings, History } from "lucide-react"
-import { SheetTitle } from "@/components/ui/sheet"
-
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar"
+import { useSidebar } from "./sidebar-provider"
 
 export function DashboardSidebar() {
   const pathname = usePathname()
+  const { isOpen } = useSidebar()
 
   const routes = [
     {
@@ -58,28 +49,31 @@ export function DashboardSidebar() {
   ]
 
   return (
-    <Sidebar className="hidden border-r border-border/40 md:flex md:h-[calc(100vh-4rem)] top-16">
-      <SidebarContent>
-        <nav aria-label="Sidebar Navigation">
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {routes.map((route) => (
-                  <SidebarMenuItem key={route.href}>
-                    <SidebarMenuButton asChild isActive={route.isActive}>
-                      <Link href={route.href} className="flex items-center gap-2">
-                        <route.icon className="h-5 w-5" />
-                        <span>{route.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </nav>
-      </SidebarContent>
-    </Sidebar>
+    <div
+      className={`hidden border-r border-border/40 md:block ${
+        isOpen ? "w-64" : "w-16"
+      } transition-all duration-300`}
+    >
+      <nav className="flex h-full flex-col py-4">
+        <ul className="grid gap-1 px-2">
+          {routes.map((route) => (
+            <li key={route.href}>
+              <Link
+                href={route.href}
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
+                  route.isActive
+                    ? "bg-bitcoin-orange text-white"
+                    : "text-muted-foreground hover:bg-secondary hover:text-white"
+                }`}
+              >
+                <route.icon className="h-5 w-5" />
+                {isOpen && route.title}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
   )
 }
 

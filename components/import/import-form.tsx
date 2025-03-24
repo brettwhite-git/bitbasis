@@ -1,41 +1,21 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useState } from "react"
+import type { ChangeEvent, DragEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
+import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle } from "lucide-react"
 import Papa from 'papaparse'
-import { ImportPreview } from "./import-preview"
+import { ImportPreview } from "@/components/import/import-preview"
 import { insertTransactions } from '@/lib/supabase'
-import { PostgrestError } from '@supabase/supabase-js'
+import type { PostgrestError } from '@supabase/supabase-js'
+import type { Database } from '@/types/supabase'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-
-interface ParsedTransaction {
-  date: string
-  asset: string
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive'
-  sent_amount: number | null
-  sent_currency: string | null
-  buy_amount: number | null
-  buy_currency: string | null
-  sell_amount: number | null
-  sell_currency: string | null
-  price: number
-  received_amount: number | null
-  received_currency: string | null
-  exchange: string | null
-  network_fee: number | null
-  network_currency: string | null
-  service_fee: number | null
-  service_fee_currency: string | null
-}
+type DbTransaction = Database['public']['Tables']['transactions']['Insert']
 
 interface ValidationIssue {
   row: number
@@ -45,7 +25,86 @@ interface ValidationIssue {
   severity: 'error' | 'warning'
 }
 
-const transformCSVToTransaction = (row: any): ParsedTransaction => {
+interface CSVRow {
+  date: string
+  type: string
+  buy_amount?: string
+  sell_amount?: string
+  sent_amount?: string
+  received_amount?: string
+  exchange?: string
+  network_fee?: string
+  network_currency?: string
+  service_fee?: string
+  service_fee_currency?: string
+  [key: string]: string | undefined
+}
+
+interface ParsedTransaction {
+  date: string
+  type: 'Buy' | 'Sell' | 'Send' | 'Receive'
+  asset: string
+  quantity: number
+  price: number
+  total: number
+  fee: number
+  sent_amount: number | null
+  sent_currency: string | null
+  received_amount: number | null
+  received_currency: string | null
+  buy_amount: number | null
+  buy_currency: string | null
+  sell_amount: number | null
+  sell_currency: string | null
+  network_fee: number | null
+  network_currency: string | null
+  service_fee: number | null
+  service_fee_currency: string | null
+  exchange: string | null
+  notes: string | null
+}
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+
+const parseDate = (dateStr: string): Date => {
+  const date = new Date(dateStr)
+  if (!isNaN(date.getTime())) {
+    return date
+  }
+
+  // Try MM/DD/YY format
+  const parts = dateStr.split(' ')
+  const datePart = parts[0]
+  const timePart = parts[1] || '00:00'
+
+  if (!datePart) {
+    throw new Error(`Invalid date format: ${dateStr}`)
+  }
+
+  const [month, day, yearShort] = datePart.split('/')
+  const [hours, minutes] = timePart.split(':')
+
+  if (!month || !day || !yearShort || !hours || !minutes) {
+    throw new Error(`Invalid date format: ${dateStr}`)
+  }
+
+  const year = yearShort.length === 2 ? `20${yearShort}` : yearShort
+  
+  const parsedDate = new Date()
+  parsedDate.setFullYear(parseInt(year))
+  parsedDate.setMonth(parseInt(month) - 1)
+  parsedDate.setDate(parseInt(day))
+  parsedDate.setHours(parseInt(hours))
+  parsedDate.setMinutes(parseInt(minutes))
+
+  if (isNaN(parsedDate.getTime())) {
+    throw new Error(`Invalid date format: ${dateStr}`)
+  }
+
+  return parsedDate
+}
+
+const transformCSVToTransaction = (row: CSVRow): ParsedTransaction => {
   try {
     // 1. Normalize and validate type
     if (!row.type) {
@@ -55,38 +114,8 @@ const transformCSVToTransaction = (row: any): ParsedTransaction => {
     const rawType = row.type.toString().trim()
     let type: 'Buy' | 'Sell' | 'Send' | 'Receive'
 
-    // Debug the raw values with more detail
-    console.log('Raw transaction data:', {
-      rawType,
-      rawTypeToString: row.type?.toString(),
-      rawTypeClass: row.type?.constructor.name,
-      rawValues: {
-        type: row.type,
-        buy_amount: row.buy_amount,
-        sell_amount: row.sell_amount,
-        sent_amount: row.sent_amount,
-        received_amount: row.received_amount
-      },
-      allFields: Object.entries(row).map(([key, value]) => ({
-        key,
-        value,
-        type: typeof value,
-        class: value?.constructor.name
-      }))
-    })
-
-    // Normalize type with case-insensitive matching and debug
+    // Normalize type with case-insensitive matching
     const normalizedType = rawType.toLowerCase()
-    console.log('Type normalization:', {
-      original: row.type,
-      rawType,
-      normalizedType,
-      matchesBuy: normalizedType === 'buy',
-      matchesSell: normalizedType === 'sell',
-      matchesSend: normalizedType === 'send',
-      matchesReceive: normalizedType === 'receive'
-    })
-
     switch (normalizedType) {
       case 'buy':
         type = 'Buy'
@@ -109,160 +138,121 @@ const transformCSVToTransaction = (row: any): ParsedTransaction => {
       throw new Error('Missing transaction date')
     }
 
-    let date: Date
-    try {
-      const rawDate = row.date.toString().trim()
-      date = new Date(rawDate)
-      
-      if (isNaN(date.getTime())) {
-        // Try MM/DD/YY format
-        const [datePart, timePart] = rawDate.split(' ')
-        const [month, day, yearShort] = datePart.split('/')
-        const [hours, minutes] = timePart ? timePart.split(':') : ['00', '00']
-        const year = yearShort.length === 2 ? `20${yearShort}` : yearShort
-        
-        date = new Date(
-          parseInt(year),
-          parseInt(month) - 1,
-          parseInt(day),
-          parseInt(hours),
-          parseInt(minutes)
-        )
-      }
+    const date = parseDate(row.date).toISOString()
 
-      if (isNaN(date.getTime())) {
-        throw new Error(`Invalid date format: ${rawDate}`)
-      }
-    } catch (err) {
-      throw new Error(`Invalid date format: ${row.date}`)
+    // Helper function to parse currency
+    const parseCurrency = (value: string | undefined): string | null => {
+      if (!value || typeof value !== 'string') return null
+      const strValue = value.trim()
+      const parts = strValue.split(' ')
+      const currency = parts.length > 1 ? parts[1] : null
+      return currency || null
     }
 
     // Helper function to parse amount
-    const parseAmount = (value: any, field: string): number | null => {
-      if (!value) return null
+    const parseAmount = (value: string | undefined): number => {
+      if (!value) return 0
       const strValue = value.toString().trim()
       const numValue = Number(strValue.split(' ')[0])
       if (isNaN(numValue)) {
-        throw new Error(`Invalid ${field}: ${value}`)
+        throw new Error(`Invalid amount: ${value}`)
       }
       return numValue
     }
 
-    // 3. Build base transaction
-    const baseTransaction = {
-      date: date.toISOString(),
-      asset: row.asset || 'BTC',
+    // Parse all amounts and currencies
+    const sent_amount = parseAmount(row.sent_amount)
+    const received_amount = parseAmount(row.received_amount)
+    const buy_amount = parseAmount(row.buy_amount)
+    const sell_amount = parseAmount(row.sell_amount)
+    const network_fee = parseAmount(row.network_fee)
+    const service_fee = parseAmount(row.service_fee)
+
+    // Calculate total fees
+    const fee = (network_fee || 0) + (service_fee || 0)
+
+    // Build base transaction
+    const baseTransaction: ParsedTransaction = {
+      date,
       type,
-      exchange: row.exchange || null,
-      network_fee: parseAmount(row.network_fee, 'network_fee'),
+      asset: 'BTC',
+      quantity: 0,
+      price: 0,
+      total: 0,
+      fee,
+      sent_amount,
+      sent_currency: parseCurrency(row.sent_amount),
+      received_amount,
+      received_currency: parseCurrency(row.received_amount),
+      buy_amount,
+      buy_currency: parseCurrency(row.buy_amount),
+      sell_amount,
+      sell_currency: parseCurrency(row.sell_amount),
+      network_fee,
       network_currency: row.network_currency || null,
-      service_fee: parseAmount(row.service_fee, 'service_fee'),
-      service_fee_currency: row.service_fee_currency || null
+      service_fee,
+      service_fee_currency: row.service_fee_currency || null,
+      exchange: row.exchange || null,
+      notes: null
     }
 
-    // 4. Add type-specific fields
+    // Update transaction-specific fields
     switch (type) {
       case 'Buy': {
-        const buy_amount = parseAmount(row.buy_amount, 'buy_amount')
-        const received_amount = parseAmount(row.received_amount, 'received_amount')
-
-        if (!buy_amount) {
-          throw new Error('Buy transaction requires USD amount')
+        if (!buy_amount || !received_amount) {
+          throw new Error('Buy transaction requires both USD and BTC amounts')
         }
-        if (!received_amount) {
-          throw new Error('Buy transaction requires BTC amount')
-        }
-
         return {
           ...baseTransaction,
-          buy_amount,
-          buy_currency: 'USD',
-          received_amount,
-          received_currency: 'BTC',
-          sent_amount: null,
-          sent_currency: null,
-          sell_amount: null,
-          sell_currency: null,
-          price: buy_amount / received_amount
+          quantity: received_amount,
+          price: buy_amount / received_amount,
+          total: buy_amount
         }
       }
       
       case 'Sell': {
-        const sell_amount = parseAmount(row.sell_amount, 'sell_amount')
-        const received_amount = parseAmount(row.received_amount, 'received_amount')
-
-        if (!sell_amount) {
-          throw new Error('Sell transaction requires BTC amount')
+        if (!sell_amount || !received_amount) {
+          throw new Error('Sell transaction requires both BTC and USD amounts')
         }
-        if (!received_amount) {
-          throw new Error('Sell transaction requires USD amount')
-        }
-
         return {
           ...baseTransaction,
-          sell_amount,
-          sell_currency: 'BTC',
-          received_amount,
-          received_currency: 'USD',
-          sent_amount: null,
-          sent_currency: null,
-          buy_amount: null,
-          buy_currency: null,
-          price: received_amount / sell_amount
+          quantity: -sell_amount,
+          price: received_amount / sell_amount,
+          total: received_amount
         }
       }
       
       case 'Send': {
-        const sent_amount = parseAmount(row.sent_amount, 'sent_amount')
         if (!sent_amount) {
           throw new Error('Send transaction requires BTC amount')
         }
-
         return {
           ...baseTransaction,
-          sent_amount,
-          sent_currency: 'BTC',
-          received_amount: null,
-          received_currency: null,
-          buy_amount: null,
-          buy_currency: null,
-          sell_amount: null,
-          sell_currency: null,
-          price: 0
+          quantity: -Math.abs(sent_amount),
+          price: 0,
+          total: 0
         }
       }
       
       case 'Receive': {
-        const received_amount = parseAmount(row.received_amount, 'received_amount')
         if (!received_amount) {
           throw new Error('Receive transaction requires BTC amount')
         }
-
         return {
           ...baseTransaction,
-          received_amount,
-          received_currency: 'BTC',
-          sent_amount: null,
-          sent_currency: null,
-          buy_amount: null,
-          buy_currency: null,
-          sell_amount: null,
-          sell_currency: null,
-          price: 0
+          quantity: Math.abs(received_amount),
+          price: 0,
+          total: 0
         }
       }
     }
   } catch (err) {
-    // Enhance error with row data
-    const enhancedError = new Error(
-      `Failed to transform transaction: ${err instanceof Error ? err.message : 'Unknown error'}\nRow data: ${JSON.stringify(row, null, 2)}`
-    )
     console.error('Transform error:', {
       error: err,
       message: err instanceof Error ? err.message : String(err),
       rowData: row
     })
-    throw enhancedError
+    throw err
   }
 }
 
@@ -275,6 +265,7 @@ export function ImportForm() {
   const [parsedData, setParsedData] = useState<ParsedTransaction[] | null>(null)
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([])
   const [originalRows, setOriginalRows] = useState<any[]>([])
+  const [activeTab, setActiveTab] = useState<string>('upload')
 
   const validateTransaction = (row: any, index: number): ValidationIssue[] => {
     const issues: ValidationIssue[] = []
@@ -486,7 +477,7 @@ export function ImportForm() {
                 }))
               })
 
-              const transformed = transformCSVToTransaction(row)
+              const transformed = transformCSVToTransaction(row as CSVRow)
               
               // Log successful transformation
               console.log(`Successfully transformed row ${index + 1}:`, {
@@ -657,68 +648,74 @@ export function ImportForm() {
           // Log raw values for debugging
           console.log(`Transaction ${index + 1} raw values:`, {
             type: transaction.type,
-            sent: transaction.sent_amount,
-            received: transaction.received_amount,
-            buy: transaction.buy_amount,
-            sell: transaction.sell_amount
+            sent: transaction.quantity,
+            received: transaction.quantity,
+            buy: transaction.quantity,
+            sell: transaction.quantity
           })
 
           switch (transaction.type) {
             case 'Buy':
-              buy_amount = Number(transaction.buy_amount)
-              received_amount = Number(transaction.received_amount)
+              buy_amount = Number(transaction.quantity)
+              received_amount = Number(transaction.quantity)
               if (isNaN(buy_amount) || buy_amount <= 0) {
-                throw new Error(`Invalid buy amount for Buy transaction on ${transaction.date}. Value: ${transaction.buy_amount}`)
+                throw new Error(`Invalid buy amount for Buy transaction on ${transaction.date}. Value: ${transaction.quantity}`)
               }
               if (isNaN(received_amount) || received_amount <= 0) {
-                throw new Error(`Invalid received amount for Buy transaction on ${transaction.date}. Value: ${transaction.received_amount}`)
+                throw new Error(`Invalid received amount for Buy transaction on ${transaction.date}. Value: ${transaction.quantity}`)
               }
               break
 
             case 'Sell':
-              sell_amount = Number(transaction.received_amount) // USD amount received
-              sent_amount = Number(transaction.sell_amount)     // BTC amount sold
-              if (isNaN(sent_amount) || sent_amount <= 0) {
-                throw new Error(`Invalid BTC amount for Sell transaction on ${transaction.date}. Value: ${transaction.sell_amount}`)
-              }
+              sell_amount = Number(transaction.quantity)
+              received_amount = Number(transaction.quantity)
+              
+              // Validate amounts
               if (isNaN(sell_amount) || sell_amount <= 0) {
-                throw new Error(`Invalid USD amount for Sell transaction on ${transaction.date}. Value: ${transaction.received_amount}`)
+                throw new Error(`Invalid BTC amount for Sell transaction on ${transaction.date}. Value: ${transaction.quantity}`)
+              }
+              if (isNaN(received_amount) || received_amount <= 0) {
+                throw new Error(`Invalid USD amount for Sell transaction on ${transaction.date}. Value: ${transaction.quantity}`)
               }
               break
 
             case 'Send':
-              sent_amount = Number(transaction.sent_amount)
-              if (isNaN(sent_amount) || sent_amount <= 0) {
-                throw new Error(`Invalid sent amount for Send transaction on ${transaction.date}. Value: ${transaction.sent_amount}`)
+              const sentAmount = Number(transaction.quantity)
+              if (isNaN(sentAmount) || sentAmount <= 0) {
+                throw new Error(`Invalid sent amount for Send transaction on ${transaction.date}. Value: ${transaction.quantity}`)
               }
               break
 
             case 'Receive':
-              received_amount = Number(transaction.received_amount)
-              if (isNaN(received_amount) || received_amount <= 0) {
-                throw new Error(`Invalid received amount for Receive transaction on ${transaction.date}. Value: ${transaction.received_amount}`)
+              const receivedAmount = Number(transaction.quantity)
+              if (isNaN(receivedAmount) || receivedAmount <= 0) {
+                throw new Error(`Invalid received amount for Receive transaction on ${transaction.date}. Value: ${transaction.quantity}`)
               }
               break
           }
 
-          const transformedTransaction = {
+          const transformedTransaction: ParsedTransaction = {
             date: transaction.date,
             type: transaction.type,
-            asset: transaction.asset,
-            sent_amount,
-            sent_currency: sent_amount ? 'BTC' : null,
-            buy_amount,
-            buy_currency: buy_amount ? 'USD' : null,
-            sell_amount,
-            sell_currency: sell_amount ? 'USD' : null,
-            price,
-            received_amount,
-            received_currency: received_amount ? (transaction.type === 'Buy' || transaction.type === 'Receive' ? 'BTC' : 'USD') : null,
-            exchange: transaction.exchange || null,
+            asset: 'BTC',
+            quantity: Number(transaction.quantity || 0),
+            price: price,
+            total: (Number(transaction.quantity || 0)) * price,
+            fee: transaction.fee || 0,
+            sent_amount: transaction.sent_amount ? Number(transaction.sent_amount) : null,
+            sent_currency: transaction.sent_currency || null,
+            received_amount: transaction.received_amount ? Number(transaction.received_amount) : null,
+            received_currency: transaction.received_currency || null,
+            buy_amount: transaction.buy_amount ? Number(transaction.buy_amount) : null,
+            buy_currency: transaction.buy_currency || null,
+            sell_amount: transaction.sell_amount ? Number(transaction.sell_amount) : null,
+            sell_currency: transaction.sell_currency || null,
             network_fee: transaction.network_fee ? Number(transaction.network_fee) : null,
             network_currency: transaction.network_currency || null,
             service_fee: transaction.service_fee ? Number(transaction.service_fee) : null,
-            service_fee_currency: transaction.service_fee_currency || null
+            service_fee_currency: transaction.service_fee_currency || null,
+            exchange: transaction.exchange || null,
+            notes: transaction.notes || null
           }
 
           // Log transformed transaction for debugging
@@ -845,182 +842,76 @@ export function ImportForm() {
             {file ? file.name : "Drag and drop your CSV file"}
           </h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            {file ? `${(file.size / 1024).toFixed(2)} KB` : "Or click to browse files"}
+            {file ? `${(file.size / 1024).toFixed(2)} KB` : "or click to browse"}
           </p>
-          <Input 
-            id="file-upload" 
-            type="file" 
-            accept=".csv" 
-            className="hidden" 
+          <Input
+            type="file"
+            accept=".csv"
             onChange={handleFileChange}
-            disabled={isLoading}
+            className="hidden"
           />
-          <Label
-            htmlFor="file-upload"
-            className={`mt-4 cursor-pointer rounded-md bg-bitcoin-orange px-4 py-2 text-sm font-medium text-white hover:bg-bitcoin-dark ${
-              isLoading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            Browse Files
-          </Label>
-        </div>
-
-        {error && (
-          <Alert variant="destructive" className="mt-4">
-            <XCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {validationIssues.length > 0 && (
-          <Alert 
-            variant="default"
-            className="mt-4 border-yellow-500/50 bg-yellow-500/10"
-          >
-            <AlertCircle className="h-4 w-4 text-yellow-500" />
-            <AlertTitle className="text-yellow-500">
-              Validation Issues Found
-            </AlertTitle>
-            <AlertDescription>
-              <div className="mt-2 space-y-2">
-                {/* Show errors first */}
-                {validationIssues
-                  .filter(issue => issue.severity === 'error')
-                  .map((issue, i) => (
-                    <div key={`error-${i}`} className="text-sm text-yellow-500">
-                      Row {issue.row}: {issue.issue}
-                      {issue.suggestion && (
-                        <span className="block text-xs text-yellow-500/75">Suggestion: {issue.suggestion}</span>
-                      )}
-                    </div>
-                  ))}
-                
-                {/* Show warnings after errors */}
-                {validationIssues
-                  .filter(issue => issue.severity === 'warning')
-                  .map((issue, i) => (
-                    <div key={`warning-${i}`} className="text-sm text-yellow-500/75">
-                      Row {issue.row}: {issue.issue}
-                      {issue.suggestion && (
-                        <span className="block text-xs text-yellow-500/60">Suggestion: {issue.suggestion}</span>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {parsedData && parsedData.length > 0 && (
-          <div className="mt-4">
-            <ImportPreview
-              transactions={parsedData}
-              validationIssues={validationIssues}
-              originalRows={originalRows}
-            />
-          </div>
-        )}
-
-        {isLoading && (
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span>Uploading transactions...</span>
-              <span>{uploadProgress}%</span>
+          {error && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          {isLoading && (
+            <div className="mt-4 w-full">
+              <Progress value={uploadProgress} className="w-full" />
             </div>
-            <Progress value={uploadProgress} className="h-2" />
-          </div>
-        )}
-
-        {file && !isLoading && parsedData && (
-          <div className="mt-4 flex justify-end">
-            <Button 
-              className="bg-bitcoin-orange hover:bg-bitcoin-dark text-white"
-              onClick={handleUpload}
-              disabled={validationIssues.some(i => i.severity === 'error')}
-            >
+          )}
+          {parsedData && !isLoading && (
+            <Button onClick={handleUpload} className="mt-4">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Uploading...
                 </>
               ) : (
-                'Upload and Process'
+                'Upload Transactions'
               )}
             </Button>
+          )}
+        </div>
+        {parsedData && validationIssues.length === 0 && (
+          <ImportPreview 
+            transactions={parsedData} 
+            validationIssues={validationIssues}
+            originalRows={originalRows}
+          />
+        )}
+        {validationIssues.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-lg font-semibold">Validation Issues</h4>
+            {validationIssues.map((issue, index) => (
+              <Alert
+                key={index}
+                variant={issue.severity === 'error' ? 'destructive' : 'default'}
+                className="mt-2"
+              >
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Row {issue.row}: {issue.field}</AlertTitle>
+                <AlertDescription>
+                  {issue.issue}
+                  {issue.suggestion && (
+                    <p className="mt-1 text-sm">Suggestion: {issue.suggestion}</p>
+                  )}
+                </AlertDescription>
+              </Alert>
+            ))}
           </div>
         )}
-
-        <Alert className="mt-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Supported Formats</AlertTitle>
-          <AlertDescription>
-            <p className="mt-2 text-sm text-muted-foreground">
-              We support CSV files from most major exchanges and wallets. The file should include:
-            </p>
-            <ul className="mt-2 list-disc pl-5 text-sm text-muted-foreground">
-              <li>Transaction date</li>
-              <li>Transaction type (buy/sell)</li>
-              <li>Amount of Bitcoin</li>
-              <li>Price per Bitcoin</li>
-              <li>Total cost/proceeds</li>
-              <li>Fees (if applicable)</li>
-            </ul>
-          </AlertDescription>
-        </Alert>
       </TabsContent>
       <TabsContent value="manual" className="mt-4">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="transaction-date">Transaction Date</Label>
-              <Input id="transaction-date" type="date" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="transaction-type">Transaction Type</Label>
-              <select
-                id="transaction-type"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="buy">Buy</option>
-                <option value="sell">Sell</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="btc-amount">BTC Amount</Label>
-              <Input id="btc-amount" type="number" step="0.00000001" placeholder="0.00000000" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="price-per-btc">Price per BTC (USD)</Label>
-              <Input id="price-per-btc" type="number" step="0.01" placeholder="0.00" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="total-cost">Total Cost/Proceeds (USD)</Label>
-              <Input id="total-cost" type="number" step="0.01" placeholder="0.00" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="fee">Fee (USD)</Label>
-              <Input id="fee" type="number" step="0.01" placeholder="0.00" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (Optional)</Label>
-            <textarea
-              id="notes"
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder="Add any notes about this transaction"
-            />
-          </div>
-          <div className="flex justify-end">
-            <Button className="bg-bitcoin-orange hover:bg-bitcoin-dark text-white">Add Transaction</Button>
-          </div>
+        <div className="text-center">
+          <h3 className="text-lg font-semibold">Manual Entry Coming Soon</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This feature is currently under development.
+          </p>
         </div>
       </TabsContent>
     </Tabs>
   )
 }
-

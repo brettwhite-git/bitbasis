@@ -1,8 +1,17 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PortfolioOverview } from "@/components/dashboard/portfolio-overview"
-import { RecentTransactions } from "@/components/dashboard/recent-transactions"
-import { PerformanceChart } from "@/components/dashboard/performance-chart"
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle, 
+  Tabs, 
+  TabsList, 
+  TabsTrigger,
+  TabsContent
+} from "@/components/ui"
+import { PerformanceChart } from "@/components/overview/performance-chart"
+import { PortfolioOverview } from "@/components/overview/portfolio-overview"
+import { RecentTransactions } from "@/components/overview/recent-transactions"
 
 export default function DashboardPage() {
   return (

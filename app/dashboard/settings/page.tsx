@@ -1,7 +1,13 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AccountSettings } from "@/components/dashboard/account-settings"
-import { CostBasisSettings } from "@/components/dashboard/cost-basis-settings"
-import { PrivacySettings } from "@/components/dashboard/privacy-settings"
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui"
+import { AccountSettings } from "@/components/settings/account-settings"
+import { CostBasisSettings } from "@/components/settings/cost-basis-settings"
+import { PrivacySettings } from "@/components/settings/privacy-settings"
 
 export default function SettingsPage() {
   return (

@@ -1,7 +1,13 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ImportForm } from "@/components/dashboard/import-form"
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card"
+import { ImportForm } from "@/components/import/import-form"
 
 export default function ImportPage() {
   return (

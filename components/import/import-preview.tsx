@@ -1,15 +1,31 @@
 "use client"
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow,
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui"
 import { CheckCircle2, AlertCircle, ArrowDownRight, ArrowUpRight, SendHorizontal, Download } from "lucide-react"
+import type { Database } from '@/types/supabase'
+
+type DbTransaction = Database['public']['Tables']['transactions']['Insert']
 
 interface ParsedTransaction {
   date: string
-  asset: string
   type: 'Buy' | 'Sell' | 'Send' | 'Receive'
+  asset: string
   sent_amount: number | null
   sent_currency: string | null
   buy_amount: number | null
