@@ -11,43 +11,96 @@ export interface Database {
     Tables: {
       transactions: {
         Row: {
-          id: string
-          user_id: string
-          transaction_date: string
-          transaction_type: 'Buy' | 'Sell' | 'Send' | 'Receive'
-          asset: string
-          quantity: number
-          price_usd: number
-          total_usd: number
-          fee_usd: number
+          id: number
           created_at: string
           updated_at: string
+          user_id: string
+          date: string
+          type: 'Buy' | 'Sell' | 'Send' | 'Receive'
+          asset: string
+          sent_amount: number | null
+          sent_currency: string | null
+          buy_amount: number | null
+          buy_currency: string | null
+          sell_amount: number | null
+          sell_currency: string | null
+          price: number
+          received_amount: number | null
+          received_currency: string | null
+          exchange: string | null
+          network_fee: number | null
+          network_currency: string | null
+          service_fee: number | null
+          service_fee_currency: string | null
         }
         Insert: {
-          id?: string
-          user_id: string
-          transaction_date: string
-          transaction_type: 'Buy' | 'Sell' | 'Send' | 'Receive'
-          asset?: string
-          quantity: number
-          price_usd: number
-          total_usd: number
-          fee_usd: number
+          id?: number
           created_at?: string
           updated_at?: string
+          user_id: string
+          date: string
+          type: 'Buy' | 'Sell' | 'Send' | 'Receive'
+          asset: string
+          sent_amount?: number | null
+          sent_currency?: string | null
+          buy_amount?: number | null
+          buy_currency?: string | null
+          sell_amount?: number | null
+          sell_currency?: string | null
+          price: number
+          received_amount?: number | null
+          received_currency?: string | null
+          exchange?: string | null
+          network_fee?: number | null
+          network_currency?: string | null
+          service_fee?: number | null
+          service_fee_currency?: string | null
         }
         Update: {
-          id?: string
-          user_id?: string
-          transaction_date?: string
-          transaction_type?: 'Buy' | 'Sell' | 'Send' | 'Receive'
-          asset?: string
-          quantity?: number
-          price_usd?: number
-          total_usd?: number
-          fee_usd?: number
+          id?: number
           created_at?: string
           updated_at?: string
+          user_id?: string
+          date?: string
+          type?: 'Buy' | 'Sell' | 'Send' | 'Receive'
+          asset?: string
+          sent_amount?: number | null
+          sent_currency?: string | null
+          buy_amount?: number | null
+          buy_currency?: string | null
+          sell_amount?: number | null
+          sell_currency?: string | null
+          price?: number
+          received_amount?: number | null
+          received_currency?: string | null
+          exchange?: string | null
+          network_fee?: number | null
+          network_currency?: string | null
+          service_fee?: number | null
+          service_fee_currency?: string | null
+        }
+      }
+      fear_greed_index: {
+        Row: {
+          id: number
+          created_at: string
+          value: number
+          classification: string
+          last_updated: string
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          value: number
+          classification: string
+          last_updated?: string
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          value?: number
+          classification?: string
+          last_updated?: string
         }
       }
     }

@@ -33,14 +33,20 @@ export const supabase = createSupabaseClient<Database>(
 )
 
 // Create a Supabase client for client-side operations with auth
+let browserClient: ReturnType<typeof createClientComponentClient<Database>> | null = null
+
 export const createBrowserClient = () => {
-  return createClientComponentClient<Database>({
+  if (browserClient) return browserClient
+  
+  browserClient = createClientComponentClient<Database>({
     options: {
       db: {
         schema: 'public'
       }
     }
   })
+  
+  return browserClient
 }
 
 // Check if an email already exists using Supabase auth API
@@ -205,25 +211,67 @@ export async function getTransactions() {
   const supabaseClient = createBrowserClient()
   
   try {
+    console.log('Fetching transactions: Starting...')
+    
     // Get the current user using the client-side client
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-    if (userError || !user) {
+    
+    if (userError) {
+      console.error('Authentication error:', userError)
+      throw new Error(`Authentication error: ${userError.message}`)
+    }
+    
+    if (!user) {
+      console.error('No user found')
       throw new Error('Authentication required')
     }
 
+    console.log('User authenticated, fetching transactions for user:', user.id)
+
+    // First, test if we can access the table at all
+    const testQuery = await supabaseClient
+      .from('transactions')
+      .select('count')
+      .limit(1)
+
+    if (testQuery.error) {
+      console.error('Test query failed:', testQuery.error)
+      throw new Error(`Database access error: ${testQuery.error.message}`)
+    }
+
+    // Now perform the actual query
     const { data, error } = await supabaseClient
       .from('transactions')
       .select('*')
       .eq('user_id', user.id)
-      .order('transaction_date', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (error) {
+      console.error('Database error:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      })
       throw error
     }
 
+    console.log(`Successfully fetched ${data?.length || 0} transactions`)
     return { data, error: null }
   } catch (error) {
-    console.error('Error fetching transactions:', error)
-    return { data: null, error }
+    // Enhanced error logging
+    const errorDetails = {
+      error,
+      type: typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    }
+    console.error('Error in getTransactions:', errorDetails)
+    
+    return { 
+      data: null, 
+      error: error instanceof Error ? error : new Error('Failed to fetch transactions') 
+    }
   }
 } 

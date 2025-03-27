@@ -1,92 +1,270 @@
 "use client"
 
-interface CostBasisComparisonProps {
-  method: "FIFO" | "LIFO" | "Average Cost"
+import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useSupabase } from "@/components/providers/supabase-provider"
+import { calculateCostBasis } from "@/lib/portfolio"
+import { formatCurrency, formatPercent, cn } from "@/lib/utils"
+import { Database } from "@/types/supabase"
+import { ArrowUpDown, ArrowDown, ArrowUp } from "lucide-react"
+
+type Transaction = Database['public']['Tables']['transactions']['Row']
+type CostBasisResult = {
+  totalCostBasis: number
+  averageCost: number
+  unrealizedGain: number
+  unrealizedGainPercent: number
+  potentialTaxLiability: number
+  realizedGains: number
+  remainingBtc: number
 }
 
-export function CostBasisComparison({ method }: CostBasisComparisonProps) {
-  // This would be calculated based on the method in a real app
-  const costBasisData = {
-    FIFO: {
-      totalCostBasis: "$18,420.69",
-      averageCost: "$43,858.79",
-      unrealizedGain: "$6,143.13",
-      unrealizedGainPercent: "33.3%",
-      potentialTaxLiability: "$921.47",
-    },
-    LIFO: {
-      totalCostBasis: "$19,850.25",
-      averageCost: "$47,262.50",
-      unrealizedGain: "$4,713.57",
-      unrealizedGainPercent: "23.7%",
-      potentialTaxLiability: "$707.04",
-    },
-    "Average Cost": {
-      totalCostBasis: "$19,135.47",
-      averageCost: "$45,560.64",
-      unrealizedGain: "$5,428.35",
-      unrealizedGainPercent: "28.4%",
-      potentialTaxLiability: "$814.25",
-    },
+type SortField = 'method' | 'totalBtc' | 'costBasis' | 'averageCost' | 'realizedGains' | 'unrealizedGain' | 'unrealizedGainPercent' | 'taxLiability'
+type SortConfig = {
+  field: SortField | null
+  direction: 'asc' | 'desc'
+}
+
+export function CostBasisComparison() {
+  const { supabase } = useSupabase()
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [fifoResults, setFifoResults] = useState<CostBasisResult | null>(null)
+  const [lifoResults, setLifoResults] = useState<CostBasisResult | null>(null)
+  const [averageResults, setAverageResults] = useState<CostBasisResult | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'method', direction: 'asc' })
+
+  // Function to handle sorting
+  const handleSort = (field: SortField) => {
+    setSortConfig(currentConfig => ({
+      field,
+      direction: currentConfig.field === field && currentConfig.direction === 'desc' ? 'asc' : 'desc'
+    }))
   }
 
-  const data = costBasisData[method]
+  // Function to get sort icon
+  const getSortIcon = (field: SortField) => {
+    if (sortConfig.field !== field) {
+      return <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+    }
+    return sortConfig.direction === 'asc' ? (
+      <ArrowUp className="h-4 w-4 text-bitcoin-orange" />
+    ) : (
+      <ArrowDown className="h-4 w-4 text-bitcoin-orange" />
+    )
+  }
+
+  // Function to sort the results
+  const getSortedResults = () => {
+    const results = [
+      { name: 'Average Cost', results: averageResults },
+      { name: 'FIFO', results: fifoResults },
+      { name: 'LIFO', results: lifoResults }
+    ].filter((item): item is { name: string; results: CostBasisResult } => item.results !== null)
+
+    return results.sort((a, b) => {
+      if (!sortConfig.field) return 0
+
+      let comparison = 0
+      switch (sortConfig.field) {
+        case 'method':
+          comparison = a.name.localeCompare(b.name)
+          break
+        case 'totalBtc':
+          comparison = a.results.remainingBtc - b.results.remainingBtc
+          break
+        case 'costBasis':
+          comparison = a.results.totalCostBasis - b.results.totalCostBasis
+          break
+        case 'averageCost':
+          comparison = a.results.averageCost - b.results.averageCost
+          break
+        case 'realizedGains':
+          comparison = a.results.realizedGains - b.results.realizedGains
+          break
+        case 'unrealizedGain':
+          comparison = a.results.unrealizedGain - b.results.unrealizedGain
+          break
+        case 'unrealizedGainPercent':
+          comparison = a.results.unrealizedGainPercent - b.results.unrealizedGainPercent
+          break
+        case 'taxLiability':
+          comparison = a.results.potentialTaxLiability - b.results.potentialTaxLiability
+          break
+      }
+      return sortConfig.direction === 'asc' ? comparison : -comparison
+    })
+  }
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true)
+        setError(null)
+
+        // Get the current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        
+        if (userError) {
+          console.error('Auth error:', userError)
+          throw new Error('Authentication failed')
+        }
+
+        if (!user) {
+          console.error('No user found')
+          throw new Error('User not authenticated')
+        }
+
+        // Fetch transactions
+        const { data: txData, error: txError } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date', { ascending: true })
+
+        if (txError) throw txError
+        if (!txData || txData.length === 0) {
+          console.log('No transactions found')
+          setError('No transactions found')
+          return
+        }
+
+        // Log transaction summary
+        console.log('\nTransaction Summary:', {
+          totalTransactions: txData.length,
+          buyTransactions: txData.filter((t: Transaction) => t.type === 'Buy').length,
+          sellTransactions: txData.filter((t: Transaction) => t.type === 'Sell').length,
+          dateRange: {
+            first: txData[0].date,
+            last: txData[txData.length - 1].date
+          }
+        })
+
+        // Log first few transactions for verification
+        console.log('\nSample Transactions:', 
+          txData.slice(0, 3).map((tx: Transaction) => ({
+            date: tx.date,
+            type: tx.type,
+            received: tx.received_amount ? `${tx.received_amount} ${tx.received_currency}` : null,
+            sent: tx.sell_amount ? `${tx.sell_amount} ${tx.sell_currency}` : null,
+            price: tx.price
+          }))
+        )
+
+        setTransactions(txData)
+
+        // Calculate results for each method
+        const fifo = await calculateCostBasis(txData, 'FIFO', supabase)
+        const lifo = await calculateCostBasis(txData, 'LIFO', supabase)
+        const average = await calculateCostBasis(txData, 'Average Cost', supabase)
+
+        // Log results for comparison
+        console.log('\nResults Comparison:', {
+          FIFO: {
+            remainingBtc: fifo.remainingBtc,
+            totalCostBasis: fifo.totalCostBasis,
+            realizedGains: fifo.realizedGains
+          },
+          LIFO: {
+            remainingBtc: lifo.remainingBtc,
+            totalCostBasis: lifo.totalCostBasis,
+            realizedGains: lifo.realizedGains
+          },
+          AverageCost: {
+            remainingBtc: average.remainingBtc,
+            totalCostBasis: average.totalCostBasis,
+            realizedGains: average.realizedGains
+          }
+        })
+
+        setFifoResults(fifo)
+        setLifoResults(lifo)
+        setAverageResults(average)
+      } catch (err) {
+        console.error('Error loading cost basis data:', err)
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [supabase])
+
+  if (loading) return <div>Loading cost basis calculations...</div>
+  if (error) return <div>Error: {error}</div>
+  if (!fifoResults || !lifoResults || !averageResults) return null
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-lg border border-border p-4">
-          <div className="text-sm text-muted-foreground">Total Cost Basis</div>
-          <div className="text-2xl font-bold text-white">{data.totalCostBasis}</div>
-        </div>
-        <div className="rounded-lg border border-border p-4">
-          <div className="text-sm text-muted-foreground">Average Cost per BTC</div>
-          <div className="text-2xl font-bold text-white">{data.averageCost}</div>
-        </div>
-        <div className="rounded-lg border border-border p-4">
-          <div className="text-sm text-muted-foreground">Unrealized Gain</div>
-          <div className="text-2xl font-bold text-bitcoin-orange">
-            {data.unrealizedGain} ({data.unrealizedGainPercent})
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-border p-4">
-        <h3 className="mb-4 text-lg font-medium text-white">Method Explanation</h3>
-        {method === "FIFO" && (
-          <p className="text-muted-foreground">
-            First In, First Out (FIFO) assumes that the first Bitcoin you purchased is the first one you sell. This
-            method typically results in lower capital gains for assets that appreciate over time, as earlier purchases
-            often have a lower cost basis.
-          </p>
-        )}
-        {method === "LIFO" && (
-          <p className="text-muted-foreground">
-            Last In, First Out (LIFO) assumes that the most recently purchased Bitcoin is the first one you sell. This
-            method can be beneficial in a rising market as it may result in higher cost basis and lower capital gains.
-          </p>
-        )}
-        {method === "Average Cost" && (
-          <p className="text-muted-foreground">
-            Average Cost method calculates the cost basis by taking the total amount spent on all Bitcoin purchases and
-            dividing by the total number of Bitcoin acquired. This method simplifies calculations but may not optimize
-            for tax purposes.
-          </p>
-        )}
-      </div>
-
-      <div className="rounded-lg border border-border p-4">
-        <h3 className="mb-4 text-lg font-medium text-white">Potential Tax Implications</h3>
-        <p className="mb-2 text-muted-foreground">
-          Estimated tax liability on unrealized gains:{" "}
-          <span className="font-medium text-white">{data.potentialTaxLiability}</span>
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Note: This is an estimate based on a 15% long-term capital gains tax rate. Your actual tax situation may vary.
-          Consult with a tax professional for personalized advice.
-        </p>
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Cost Basis Comparison</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead onClick={() => handleSort('method')} className="cursor-pointer">
+                <div className="flex items-center justify-center gap-2">
+                  Method {getSortIcon('method')}
+                </div>
+              </TableHead>
+              <TableHead onClick={() => handleSort('totalBtc')} className="cursor-pointer">
+                <div className="flex items-center justify-center gap-2">
+                  Total BTC {getSortIcon('totalBtc')}
+                </div>
+              </TableHead>
+              <TableHead onClick={() => handleSort('costBasis')} className="cursor-pointer">
+                <div className="flex items-center justify-center gap-2">
+                  Cost Basis {getSortIcon('costBasis')}
+                </div>
+              </TableHead>
+              <TableHead onClick={() => handleSort('averageCost')} className="cursor-pointer">
+                <div className="flex items-center justify-center gap-2">
+                  Average Cost {getSortIcon('averageCost')}
+                </div>
+              </TableHead>
+              <TableHead onClick={() => handleSort('realizedGains')} className="cursor-pointer">
+                <div className="flex items-center justify-center gap-2">
+                  Realized Gains {getSortIcon('realizedGains')}
+                </div>
+              </TableHead>
+              <TableHead onClick={() => handleSort('unrealizedGain')} className="cursor-pointer">
+                <div className="flex items-center justify-center gap-2">
+                  Unrealized Gains {getSortIcon('unrealizedGain')}
+                </div>
+              </TableHead>
+              <TableHead onClick={() => handleSort('unrealizedGainPercent')} className="cursor-pointer">
+                <div className="flex items-center justify-center gap-2">
+                  Unrealized % {getSortIcon('unrealizedGainPercent')}
+                </div>
+              </TableHead>
+              <TableHead onClick={() => handleSort('taxLiability')} className="cursor-pointer">
+                <div className="flex items-center justify-center gap-2">
+                  Tax Liability {getSortIcon('taxLiability')}
+                </div>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {getSortedResults().map(({ name, results }) => (
+              <TableRow key={name} className="hover:bg-muted/50">
+                <TableCell className="font-medium text-center">{name}</TableCell>
+                <TableCell className="text-center">{results.remainingBtc.toFixed(8)}</TableCell>
+                <TableCell className="text-center">{formatCurrency(results.totalCostBasis)}</TableCell>
+                <TableCell className="text-center">{formatCurrency(results.averageCost)}</TableCell>
+                <TableCell className="text-center">{formatCurrency(results.realizedGains)}</TableCell>
+                <TableCell className="text-center">{formatCurrency(results.unrealizedGain)}</TableCell>
+                <TableCell className="text-center">{formatPercent(results.unrealizedGainPercent)}</TableCell>
+                <TableCell className="text-center">{formatCurrency(results.potentialTaxLiability)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   )
 }
 

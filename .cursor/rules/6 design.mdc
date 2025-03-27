@@ -19,23 +19,63 @@ alwaysApply: true
 
 ## Data Handling
 **Supabase Tables**
-
 **Login Table for User**
 - `users`: `id`, `email` (minimal info, unchanged).
 
-**Table for CSV import should look something like this**
-- `transactions`: `id`, `user_id`, `transaction_type`, `asset`, `quantity`, `price_usd`, `total_usd`, `fee_usd`, `transaction_date`
-  - `id`: Primary key for each transaction.
-  - `user_id`: Foreign key linking to the `users` table.
-  - `transaction_type`: Type of transaction (e.g., "Buy", "Sell", "Send", "Receive").
-  - `asset`: The cryptocurrency involved (e.g., "BTC").
-  - `quantity`: Amount of the asset transacted (positive for buys/receives, negative for sells/sends).
-  - `price_usd`: Price per unit of the asset in USD at the time of the transaction.
-  - `total_usd`: Total value of the transaction in USD (excluding fees).
-  - `fee_usd`: Transaction fee in USD.
-  - `transaction_date`: Date and time of the transaction (format: `YYYY-MM-DD HH:MM:SS`).
-  
-  
+
+#### Core Fields
+- `id`: Auto-incrementing primary key
+- `created_at`: Timestamp of record creation
+- `updated_at`: Timestamp of last update
+- `user_id`: Foreign key to auth.users table
+- `date`: Transaction date and time
+- `type`: Transaction type (Buy/Sell/Send/Receive)
+- `asset`: Cryptocurrency asset (e.g., "BTC")
+
+#### Amount Fields
+- `sent_amount`: Amount sent in a transaction
+- `sent_currency`: Currency of sent amount
+- `buy_amount`: Amount bought in a purchase
+- `buy_currency`: Currency of purchase
+- `sell_amount`: Amount sold in a sale
+- `sell_currency`: Currency of sale
+- `price`: Price per unit at time of transaction
+- `received_amount`: Amount received in transaction
+- `received_currency`: Currency of received amount
+
+#### Additional Details
+- `exchange`: Exchange where transaction occurred
+
+#### Fee Information
+- `network_fee`: Network/blockchain fee
+- `network_currency`: Currency of network fee
+- `service_fee`: Exchange/service fee
+- `service_fee_currency`: Currency of service fee
+
+
+### Usage Guidelines
+**Transaction Types**:
+   - `Buy`: Use `buy_amount`, `buy_currency`, `received_amount`
+   - `Sell`: Use `sell_amount`, `sell_currency`, 
+   - `Send`: Use `sent_amount`, `sent_currency`
+   - `Receive`: Use `received_amount`, `received_currency`
+
+**Amount Handling**:
+   - For buys: Primary amount is `received_amount` (in BTC)
+   - For sells: Primary amount is `sell_amount` (in BTC)
+   - For sends: Use `sent_amount`
+   - For receives: Use `received_amount`
+
+**Fee Calculation**:
+   - Total fees = `network_fee` + `service_fee`
+   - Always store fees in the transaction's currency
+
+**Data Validation**:
+   - All amounts must be positive
+   - Required fields: `date`, `type`, `asset`, `price`
+   - Currency fields must be present if corresponding amount is present 
+
+
 **Bitcoing Price Table**
 - `bitcoin_prices`: `date`, `price_usd` (for caching CoinGecko data, unchanged).
 

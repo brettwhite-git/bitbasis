@@ -76,6 +76,26 @@ export interface Database {
           service_fee?: number | null
           service_fee_currency?: string | null
         }
+      },
+      bitcoin_prices: {
+        Row: {
+          id: string
+          date: string
+          price_usd: number
+          last_updated: string
+        }
+        Insert: {
+          id?: string
+          date: string
+          price_usd: number
+          last_updated?: string
+        }
+        Update: {
+          id?: string
+          date?: string
+          price_usd?: number
+          last_updated?: string
+        }
       }
     }
     Views: {
