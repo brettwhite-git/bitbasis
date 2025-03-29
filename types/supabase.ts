@@ -9,97 +9,146 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      transactions: {
+      orders: {
         Row: {
           id: number
           created_at: string
-          updated_at: string
+          updated_at: string | null
           user_id: string
           date: string
-          type: 'Buy' | 'Sell' | 'Send' | 'Receive'
           asset: string
-          sent_amount: number | null
-          sent_currency: string | null
-          buy_amount: number | null
-          buy_currency: string | null
-          sell_amount: number | null
-          sell_currency: string | null
           price: number
-          received_amount: number | null
-          received_currency: string | null
           exchange: string | null
-          network_fee: number | null
-          network_currency: string | null
+          buy_fiat_amount: number | null
+          buy_currency: string | null
+          buy_btc_amount: number | null
+          received_btc_amount: number | null
+          received_currency: string | null
           service_fee: number | null
           service_fee_currency: string | null
         }
         Insert: {
           id?: number
           created_at?: string
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
           date: string
-          type: 'Buy' | 'Sell' | 'Send' | 'Receive'
           asset: string
-          sent_amount?: number | null
-          sent_currency?: string | null
-          buy_amount?: number | null
-          buy_currency?: string | null
-          sell_amount?: number | null
-          sell_currency?: string | null
           price: number
-          received_amount?: number | null
-          received_currency?: string | null
           exchange?: string | null
-          network_fee?: number | null
-          network_currency?: string | null
+          buy_fiat_amount?: number | null
+          buy_currency?: string | null
+          buy_btc_amount?: number | null
+          received_btc_amount?: number | null
+          received_currency?: string | null
           service_fee?: number | null
           service_fee_currency?: string | null
         }
         Update: {
           id?: number
           created_at?: string
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
           date?: string
-          type?: 'Buy' | 'Sell' | 'Send' | 'Receive'
           asset?: string
-          sent_amount?: number | null
-          sent_currency?: string | null
-          buy_amount?: number | null
-          buy_currency?: string | null
-          sell_amount?: number | null
-          sell_currency?: string | null
           price?: number
-          received_amount?: number | null
-          received_currency?: string | null
           exchange?: string | null
-          network_fee?: number | null
-          network_currency?: string | null
+          buy_fiat_amount?: number | null
+          buy_currency?: string | null
+          buy_btc_amount?: number | null
+          received_btc_amount?: number | null
+          received_currency?: string | null
           service_fee?: number | null
           service_fee_currency?: string | null
         }
       }
-      fear_greed_index: {
+      sends: {
+        Row: {
+          id: number
+          created_at: string
+          updated_at: string | null
+          user_id: string
+          date: string
+          asset: string
+          sent_amount: number
+          sent_currency: string
+          network_fee: number | null
+          network_fee_currency: string | null
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          updated_at?: string | null
+          user_id: string
+          date: string
+          asset: string
+          sent_amount: number
+          sent_currency: string
+          network_fee?: number | null
+          network_fee_currency?: string | null
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          updated_at?: string | null
+          user_id?: string
+          date?: string
+          asset?: string
+          sent_amount?: number
+          sent_currency?: string
+          network_fee?: number | null
+          network_fee_currency?: string | null
+        }
+      }
+      receives: {
+        Row: {
+          id: number
+          created_at: string
+          updated_at: string | null
+          user_id: string
+          date: string
+          asset: string
+          received_amount: number
+          received_currency: string
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          updated_at?: string | null
+          user_id: string
+          date: string
+          asset: string
+          received_amount: number
+          received_currency: string
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          updated_at?: string | null
+          user_id?: string
+          date?: string
+          asset?: string
+          received_amount?: number
+          received_currency?: string
+        }
+      }
+      bitcoin_prices: {
         Row: {
           id: number
           created_at: string
           value: number
-          classification: string
           last_updated: string
         }
         Insert: {
           id?: number
           created_at?: string
           value: number
-          classification: string
           last_updated?: string
         }
         Update: {
           id?: number
           created_at?: string
           value?: number
-          classification?: string
           last_updated?: string
         }
       }

@@ -1,6 +1,7 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import type { Database } from '@/types/supabase'
+import type { PostgrestError } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -36,17 +37,31 @@ export const supabase = createSupabaseClient<Database>(
 let browserClient: ReturnType<typeof createClientComponentClient<Database>> | null = null
 
 export const createBrowserClient = () => {
-  if (browserClient) return browserClient
-  
-  browserClient = createClientComponentClient<Database>({
-    options: {
-      db: {
-        schema: 'public'
-      }
+  try {
+    if (browserClient) {
+      // Verify the client is still valid
+      console.log('Reusing existing browser client')
+      return browserClient
     }
-  })
-  
-  return browserClient
+    
+    console.log('Creating new browser client')
+    browserClient = createClientComponentClient<Database>({
+      options: {
+        db: {
+          schema: 'public'
+        }
+      }
+    })
+    
+    return browserClient
+  } catch (err) {
+    console.error('Error creating browser client:', {
+      error: err,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined
+    })
+    throw err
+  }
 }
 
 // Check if an email already exists using Supabase auth API
@@ -159,51 +174,55 @@ export async function insertTransactions(transactions: Array<{
   service_fee: number | null
   service_fee_currency: string | null
 }>) {
+  const supabase = createClientComponentClient<Database>()
+
   try {
-    const { data: { user }, error: authError } = await createBrowserClient().auth.getUser()
+    // First check if we're authenticated
+    const { data: authData, error: authError } = await supabase.auth.getUser()
     if (authError) {
       console.error('Auth error:', authError)
-      throw new Error('Authentication failed: ' + authError.message)
+      return { data: null, error: { message: 'Authentication failed' } }
     }
-    if (!user) {
-      throw new Error('User not authenticated')
+    if (!authData.user) {
+      console.error('No user found')
+      return { data: null, error: { message: 'Please sign in to continue' } }
     }
 
-    console.log('Inserting transactions:', {
-      count: transactions.length,
-      sample: transactions[0],
-      userId: user.id
-    })
+    // Add user_id to transactions
+    const preparedTransactions = transactions.map(t => ({
+      ...t,
+      user_id: authData.user.id
+    }))
 
-    const { data, error } = await createBrowserClient()
+    // Try to insert the transactions
+    const { data, error: insertError } = await supabase
       .from('transactions')
-      .insert(
-        transactions.map(transaction => ({
-          user_id: user.id,
-          ...transaction
-        }))
-      )
+      .insert(preparedTransactions)
       .select()
 
-    if (error) {
-      console.error('Supabase insert error:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      })
-      throw error
+    if (insertError) {
+      console.error('Insert error:', insertError)
+      return { 
+        data: null, 
+        error: { 
+          message: insertError.message || 'Failed to insert transactions',
+          details: insertError.details,
+          hint: insertError.hint,
+          code: insertError.code
+        } 
+      }
     }
 
     return { data, error: null }
-  } catch (error) {
-    console.error('Insert transaction error:', {
-      error,
-      type: typeof error,
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    })
-    return { data: null, error }
+  } catch (err) {
+    console.error('Unexpected error:', err)
+    return { 
+      data: null, 
+      error: { 
+        message: err instanceof Error ? err.message : 'An unexpected error occurred',
+        code: 'UNKNOWN'
+      } 
+    }
   }
 }
 

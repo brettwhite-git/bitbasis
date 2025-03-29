@@ -17,16 +17,16 @@ export function DashboardSidebar() {
       isActive: pathname === "/dashboard",
     },
     {
-      title: "Performance",
-      icon: LineChart,
-      href: "/dashboard/performance",
-      isActive: pathname === "/dashboard/performance",
-    },
-    {
       title: "Portfolio",
       icon: PieChart,
       href: "/dashboard/portfolio",
       isActive: pathname === "/dashboard/portfolio",
+    },
+    {
+      title: "Performance",
+      icon: LineChart,
+      href: "/dashboard/performance",
+      isActive: pathname === "/dashboard/performance",
     },
     {
       title: "Transactions",

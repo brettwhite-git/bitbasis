@@ -6,18 +6,30 @@ import {
   TableCell, 
   TableHead, 
   TableHeader, 
-  TableRow,
+  TableRow 
+} from "@/components/ui/table"
+import {
   Alert,
   AlertDescription,
-  AlertTitle,
-  Badge,
+  AlertTitle
+} from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle
-} from "@/components/ui"
-import { CheckCircle2, AlertCircle, ArrowDownRight, ArrowUpRight, SendHorizontal, Download } from "lucide-react"
+} from "@/components/ui/card"
+import { 
+  CheckCircle2, 
+  AlertCircle, 
+  ArrowDownRight, 
+  ArrowUpRight, 
+  SendHorizontal, 
+  Download,
+  X
+} from "lucide-react"
 import type { Database } from '@/types/supabase'
 
 type DbTransaction = Database['public']['Tables']['transactions']['Insert']
@@ -54,9 +66,10 @@ interface ImportPreviewProps {
   transactions: ParsedTransaction[]
   validationIssues: ValidationIssue[]
   originalRows: any[]
+  closeAction: () => void
 }
 
-export function ImportPreview({ transactions, validationIssues, originalRows }: ImportPreviewProps) {
+export function ImportPreview({ transactions, validationIssues, originalRows, closeAction }: ImportPreviewProps) {
   // Calculate summary statistics
   const dateRange = transactions.length > 0 ? {
     start: new Date(Math.min(...transactions.map(t => new Date(t.date).getTime()))),
@@ -67,12 +80,20 @@ export function ImportPreview({ transactions, validationIssues, originalRows }: 
     total: transactions.length,
     validRows: transactions.length,
     totalBtc: transactions.reduce((sum, t) => {
-      if (t.type === 'Buy' || t.type === 'Receive') {
-        return sum + (t.received_amount ?? 0)
-      } else if (t.type === 'Sell' || t.type === 'Send') {
-        return sum - (t.sent_amount ?? 0)
+      switch (t.type) {
+        case 'Buy':
+        case 'Receive':
+          // Add received amounts
+          return sum + (t.received_amount ?? 0);
+        case 'Sell':
+          // Subtract sell amounts only if in BTC
+          if (t.sell_currency === 'BTC') {
+            return sum - (t.sell_amount ?? 0);
+          }
+          return sum;
+        default:
+          return sum;
       }
-      return sum
     }, 0),
     types: {
       buy: transactions.filter(t => t.type === 'Buy').length,
@@ -100,9 +121,7 @@ export function ImportPreview({ transactions, validationIssues, originalRows }: 
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: 'numeric'
     })
   }
 
@@ -152,7 +171,7 @@ export function ImportPreview({ transactions, validationIssues, originalRows }: 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Summary Statistics */}
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -166,20 +185,6 @@ export function ImportPreview({ transactions, validationIssues, originalRows }: 
                 ? `${transactions.length} valid, ${validationIssues.filter(i => i.severity === 'error').length} with issues`
                 : 'All transactions valid'}
             </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Date Range</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {dateRange ? (
-              <div className="text-sm">
-                {formatDate(dateRange.start.toISOString())} to {formatDate(dateRange.end.toISOString())}
-              </div>
-            ) : (
-              <div className="text-sm">No transactions</div>
-            )}
           </CardContent>
         </Card>
         <Card>
@@ -203,6 +208,20 @@ export function ImportPreview({ transactions, validationIssues, originalRows }: 
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Date Range</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dateRange ? (
+              <div className="text-sm">
+                From {formatDate(dateRange.start.toISOString())} to {formatDate(dateRange.end.toISOString())}
+              </div>
+            ) : (
+              <div className="text-sm">No transactions</div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Preview Table */}
@@ -219,54 +238,85 @@ export function ImportPreview({ transactions, validationIssues, originalRows }: 
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Asset</TableHead>
-                <TableHead>Sent</TableHead>
-                <TableHead>Received</TableHead>
-                <TableHead>Price</TableHead>
+                <TableHead>Term</TableHead>
+                <TableHead>Amount (BTC)</TableHead>
+                <TableHead>Price (USD)</TableHead>
+                <TableHead>Total (USD)</TableHead>
+                <TableHead>Fees (USD)</TableHead>
                 <TableHead>Exchange</TableHead>
-                <TableHead>Fees</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.slice(0, 5).map((transaction, index) => (
-                <TableRow key={index}>
-                  <TableCell>{formatDate(transaction.date)}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={transaction.type === 'Buy' ? 'default' : 'secondary'}
-                      className={transaction.type === 'Buy' ? 'bg-bitcoin-orange' : ''}
-                    >
-                      {getTransactionIcon(transaction.type)}
-                      {transaction.type.toUpperCase()}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{transaction.asset}</TableCell>
-                  <TableCell>
-                    {transaction.type === 'Buy' || transaction.type === 'Receive' ? (
-                      formatAmount(transaction.received_amount ?? 0)
-                    ) : (
-                      formatAmount(transaction.sent_amount ?? 0)
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {transaction.type === 'Buy' ? (
-                      formatCurrency(transaction.buy_amount ?? 0)
-                    ) : transaction.type === 'Sell' ? (
-                      formatCurrency(transaction.sell_amount ?? 0)
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell>${formatNumber(transaction.price, 2)}</TableCell>
-                  <TableCell>{transaction.exchange || '-'}</TableCell>
-                  <TableCell>
-                    {formatCurrency(transaction.network_fee ?? 0)}
-                  </TableCell>
-                  <TableCell>
-                    {formatCurrency(transaction.service_fee ?? 0)}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {transactions.slice(0, 5).map((transaction, index) => {
+                const isShortTerm = new Date(transaction.date).getFullYear() === new Date().getFullYear();
+                const amount = transaction.type === 'Buy' || transaction.type === 'Receive'
+                  ? transaction.received_amount ?? 0
+                  : transaction.sent_amount ?? 0;
+                const total = transaction.type === 'Buy'
+                  ? transaction.buy_amount ?? 0
+                  : transaction.type === 'Sell'
+                  ? transaction.sell_amount ?? 0
+                  : 0;
+                const fees = (transaction.network_fee ?? 0) + (transaction.service_fee ?? 0);
+
+                return (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">
+                      {formatDate(transaction.date)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          transaction.type === "Buy" 
+                            ? "default" 
+                            : transaction.type === "Sell"
+                            ? "destructive"
+                            : "secondary"
+                        }
+                        className={`w-[100px] flex items-center justify-center ${
+                          transaction.type === "Buy" 
+                            ? "bg-bitcoin-orange" 
+                            : transaction.type === "Sell"
+                            ? "bg-red-500"
+                            : "bg-blue-500"
+                        }`}
+                      >
+                        {transaction.type === "Buy" ? (
+                          <ArrowDownRight className="mr-2 h-4 w-4" />
+                        ) : transaction.type === "Sell" ? (
+                          <ArrowUpRight className="mr-2 h-4 w-4" />
+                        ) : transaction.type === "Send" ? (
+                          <SendHorizontal className="mr-2 h-4 w-4" />
+                        ) : (
+                          <SendHorizontal className="mr-2 h-4 w-4 rotate-180" />
+                        )}
+                        {transaction.type.toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`w-[80px] flex items-center justify-center ${
+                          isShortTerm
+                            ? "border-green-500 text-green-500"
+                            : "border-purple-500 text-purple-500"
+                        }`}
+                      >
+                        {isShortTerm ? "SHORT" : "LONG"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{formatNumber(amount, 8)}</TableCell>
+                    <TableCell>${formatNumber(transaction.price, 2)}</TableCell>
+                    <TableCell>${formatNumber(total, 2)}</TableCell>
+                    <TableCell>${formatNumber(fees, 2)}</TableCell>
+                    <TableCell>
+                      {transaction.exchange 
+                        ? transaction.exchange.charAt(0).toUpperCase() + transaction.exchange.slice(1).toLowerCase()
+                        : "-"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>

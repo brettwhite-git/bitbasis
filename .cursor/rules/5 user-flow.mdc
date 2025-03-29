@@ -6,13 +6,16 @@ alwaysApply: true
 ## User Flow
 1. **Landing Page:**
    - SEO-optimized, dark-themed with Bitcoin colors, and a clear call-to-action.
+
 2. **Sign Up/In:**
    - Use Supabase Auth with minimal fields (email, password).
+
 3. **Dashboard:**
    - Central hub post-authentication, featuring sidebar and interactive overview.
    - User should see aggregate and specfic KPIs relative to their data uploads
-   - Active Portfolio value which should include BTC current price, near sync of 1-2 minutes 
+   - Active Portfolio value which should include BTC current price, near sync of 1-2 minutes or cached
    - View Performance charts, and engage with data filters 
+
 4. **Settings:**
    - User should be able to add and delete their data 
    - User should be able to manage subscription and deletion of their account 

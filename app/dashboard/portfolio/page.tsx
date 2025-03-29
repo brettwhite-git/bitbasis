@@ -2,11 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CostBasisComparison } from "@/components/portfolio/cost-basis-comparison"
 import { PerformanceReturns } from "@/components/portfolio/performance-returns"
 import { getPortfolioMetrics, getPerformanceMetrics } from "@/lib/portfolio"
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
 import { formatCurrency, formatBTC } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Database } from "@/types/supabase"
+import { requireAuth } from "@/lib/server-auth"
 import SupabaseProvider from "@/components/providers/supabase-provider"
 
 // Add loading state component
@@ -27,145 +26,127 @@ function LoadingCard() {
 }
 
 export default async function PortfolioPage() {
-  try {
-    const supabase = createServerComponentClient<Database>({ cookies })
-    
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    
-    if (userError) {
-      console.error('Auth error:', userError)
-      throw new Error('Authentication failed')
-    }
+  const { supabase, user } = await requireAuth()
 
-    if (!user) {
-      console.error('No user found')
-      throw new Error('User not authenticated')
-    }
+  // Debug: Check if we can query transactions directly
+  const { data: transactions, error: txError } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('date', { ascending: true })
 
-    // Debug: Check if we can query transactions directly
-    const { data: transactions, error: txError } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: true })
+  if (txError) {
+    console.error('Transaction query error:', txError)
+    throw new Error('Failed to fetch transactions')
+  }
 
-    if (txError) {
-      console.error('Transaction query error:', txError)
-      throw new Error('Failed to fetch transactions')
-    }
+  // Debug log for transaction fees
+  console.log('Transaction fee data:', transactions?.slice(0, 5).map(tx => ({
+    service_fee: tx.service_fee,
+    service_fee_currency: tx.service_fee_currency
+  })))
 
-    // Debug log for transaction fees
-    console.log('Transaction fee data:', transactions?.slice(0, 5).map(tx => ({
-      service_fee: tx.service_fee,
-      service_fee_currency: tx.service_fee_currency
-    })))
+  // Fetch portfolio metrics and performance metrics
+  const [metrics, performance] = await Promise.all([
+    getPortfolioMetrics(user.id, supabase),
+    getPerformanceMetrics(user.id, supabase)
+  ])
 
-    // Fetch portfolio metrics and performance metrics
-    const [metrics, performance] = await Promise.all([
-      getPortfolioMetrics(user.id, supabase),
-      getPerformanceMetrics(user.id, supabase)
-    ])
+  console.log('Portfolio metrics:', metrics)
+  console.log('Performance metrics:', performance)
 
-    console.log('Portfolio metrics:', metrics)
-    console.log('Performance metrics:', performance)
+  // Ensure positive values and proper formatting
+  const totalBtc = Math.max(0, metrics.totalBtc)
+  const formattedTotalBtc = totalBtc.toFixed(8)
+  const currentValue = Math.max(0, metrics.currentValue)
+  const formattedCurrentValue = formatCurrency(currentValue)
 
-    // Ensure positive values and proper formatting
-    const totalBtc = Math.max(0, metrics.totalBtc)
-    const formattedTotalBtc = totalBtc.toFixed(8)
-    const currentValue = Math.max(0, metrics.currentValue)
-    const formattedCurrentValue = formatCurrency(currentValue)
-
-    return (
-      <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Portfolio Details</h1>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bitcoin-orange">{formattedCurrentValue}</div>
-              <p className="text-xs text-muted-foreground">
-                BTC Price: {formatCurrency(metrics.currentValue / metrics.totalBtc)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cost Basis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(metrics.totalCostBasis)}</div>
-              <p className="text-xs text-muted-foreground">
-                Avg Cost: {formatCurrency(metrics.totalCostBasis / metrics.totalBtc)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Bitcoin</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bitcoin-orange">{formattedTotalBtc}</div>
-              <p className="text-xs text-muted-foreground">
-                {metrics.totalTransactions} total transactions
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Short-Term Holdings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bitcoin-orange">{metrics.shortTermHoldings.toFixed(8)}</div>
-              <p className="text-xs text-muted-foreground">
-                Value: {formatCurrency(metrics.shortTermHoldings * (metrics.currentValue / metrics.totalBtc))}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Long-Term Holdings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bitcoin-orange">{metrics.longTermHoldings.toFixed(8)}</div>
-              <p className="text-xs text-muted-foreground">
-                Value: {formatCurrency(metrics.longTermHoldings * (metrics.currentValue / metrics.totalBtc))}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Fees Paid</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(metrics.totalFees)}</div>
-              <p className="text-xs text-muted-foreground">
-                {metrics.totalCostBasis > 0 
-                  ? `${((metrics.totalFees / metrics.totalCostBasis) * 100).toFixed(2)}% of total cost basis`
-                  : 'No purchases yet'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-        <PerformanceReturns data={performance} />
+  return (
+    <div className="flex flex-col gap-4">
+      <h1 className="text-2xl font-bold tracking-tight text-white">Portfolio Details</h1>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Cost Basis Method Comparison</CardTitle>
-            <CardDescription>Compare different cost basis calculation methods</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
           </CardHeader>
           <CardContent>
-            <SupabaseProvider>
-              <CostBasisComparison />
-            </SupabaseProvider>
+            <div className="text-2xl font-bold text-bitcoin-orange">{formattedCurrentValue}</div>
+            <p className="text-xs text-muted-foreground pt-2">
+              BTC Price: {formatCurrency(metrics.currentValue / metrics.totalBtc)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Cost Basis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(metrics.totalCostBasis)}</div>
+            <p className="text-xs text-muted-foreground pt-2">
+              Avg Cost: {formatCurrency(metrics.totalCostBasis / metrics.totalBtc)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Bitcoin</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-bitcoin-orange">{formattedTotalBtc}</div>
+            <p className="text-xs text-muted-foreground pt-2">
+              {metrics.totalTransactions} total transactions
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Short-Term Holdings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-bitcoin-orange">{metrics.shortTermHoldings.toFixed(8)}</div>
+            <p className="text-xs text-muted-foreground pt-2">
+              Value: {formatCurrency(metrics.shortTermHoldings * (metrics.currentValue / metrics.totalBtc))}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Long-Term Holdings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-bitcoin-orange">{metrics.longTermHoldings.toFixed(8)}</div>
+            <p className="text-xs text-muted-foreground pt-2">
+              Value: {formatCurrency(metrics.longTermHoldings * (metrics.currentValue / metrics.totalBtc))}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Fees Paid</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(metrics.totalFees)}</div>
+            <p className="text-xs text-muted-foreground pt-2">
+              {metrics.totalCostBasis > 0 
+                ? `${((metrics.totalFees / metrics.totalCostBasis) * 100).toFixed(2)}% of total cost basis`
+                : 'No purchases yet'}
+            </p>
           </CardContent>
         </Card>
       </div>
-    )
-  } catch (error) {
-    console.error('Error in PortfolioPage:', error)
-    throw error
-  }
+      <PerformanceReturns data={performance} />
+      <Card>
+        <CardHeader>
+          <CardTitle>Cost Basis Method Comparison</CardTitle>
+          <CardDescription>Compare different cost basis calculation methods</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SupabaseProvider>
+            <CostBasisComparison />
+          </SupabaseProvider>
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
 

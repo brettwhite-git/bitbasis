@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClientComponentClient, User } from "@supabase/auth-helpers-nextjs"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { User, Session, AuthChangeEvent } from "@supabase/supabase-js"
 import { Database } from "@/types/supabase"
 
 type SupabaseAuthProviderProps = {
@@ -30,59 +31,70 @@ export const useAuth = () => {
 }
 
 export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
+  const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const supabase = createClientComponentClient<Database>()
 
-  // Initialize the auth state
   useEffect(() => {
-    const initializeAuth = async () => {
+    // Initialize auth state
+    const initAuth = async () => {
       try {
-        console.log('Initializing auth state...')
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (session?.user) {
-          console.log('Session found, setting user...')
-          setUser(session.user)
-          
-          // If we're on an auth page and have a session, redirect to dashboard
-          if (window.location.pathname.startsWith('/auth/')) {
-            console.log('Redirecting authenticated user from auth page to dashboard...')
-            router.push('/dashboard')
+        // Get initial session
+        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession()
+        if (sessionError) {
+          console.error('Failed to get initial session:', sessionError)
+          return
+        }
+
+        if (initialSession) {
+          setSession(initialSession)
+          setUser(initialSession.user)
+        }
+
+        // Set up auth state change listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event: AuthChangeEvent, currentSession: Session | null) => {
+            console.log('Auth state changed:', { event, userId: currentSession?.user?.id })
+            
+            if (currentSession) {
+              setSession(currentSession)
+              setUser(currentSession.user)
+              
+              // Only refresh and redirect on new sign in
+              if (event === 'SIGNED_IN') {
+                await router.refresh()
+                router.push('/dashboard')
+              }
+            } else {
+              setSession(null)
+              setUser(null)
+              
+              if (event === 'SIGNED_OUT') {
+                await router.refresh()
+                router.push('/auth/signin')
+              }
+            }
           }
-        } else {
-          console.log('No session found')
-          setUser(null)
+        )
+
+        setLoading(false)
+
+        return () => {
+          subscription.unsubscribe()
         }
       } catch (error) {
-        console.error('Error initializing auth:', error)
-        setUser(null)
-      } finally {
+        console.error('Auth initialization failed:', error)
         setLoading(false)
       }
     }
 
-    initializeAuth()
-
-    // Subscribe to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event)
-      if (session?.user) {
-        setUser(session.user)
-      } else {
-        setUser(null)
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [supabase, router])
+    initAuth()
+  }, [router, supabase])
 
   const signUp = async (email: string, password: string) => {
     try {
-      console.log('Attempting sign up...')
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -99,19 +111,17 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('Attempting sign in...')
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (!error) {
-        console.log('Sign in successful, redirecting...')
-        router.push('/dashboard')
-        router.refresh()
+      if (error) {
+        console.error('Sign in error:', error)
+        return { error }
       }
 
-      return { error }
+      return { error: null }
     } catch (error) {
       console.error('Sign in error:', error)
       return { error }
@@ -120,10 +130,9 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
 
   const signOut = async () => {
     try {
-      console.log('Signing out...')
       await supabase.auth.signOut()
+      await router.refresh()
       router.push('/')
-      router.refresh()
     } catch (error) {
       console.error('Sign out error:', error)
     }
@@ -131,7 +140,6 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
 
   const resetPassword = async (email: string) => {
     try {
-      console.log('Requesting password reset...')
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
       })

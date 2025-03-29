@@ -7,15 +7,18 @@ alwaysApply: true
 - **Theme:**
   - Dark mode with Bitcoin orange (`#F7931A`), black, and gray tones.
   - Use Tailwind’s `dark:` prefix (e.g., `dark:bg-gray-900`).
+
 - **Charts:**
   - Implement Chart.js with responsive layouts and theme-matching colors.
+
 - **CSV Handling:**
   - Support large/multiple CSVs (e.g., up to 100MB total across uploads).
   - Provide clear parsing progress and error feedback.
   - Max CSV size determined by performance testing (e.g., 10MB per file).
+
 - **Removal Logic:**
-  - Enable easy CSV deletion with cascading updates to transactions and KPIs.
-  - Prompt Cursor: "Add logic to remove a CSV and update calculations."
+  - Enable easy CSV deletion with a cancel button before uploading option 
+
 
 ## Data Handling
 **Supabase Tables**
@@ -23,61 +26,97 @@ alwaysApply: true
 - `users`: `id`, `email` (minimal info, unchanged).
 
 
+### Orders Table
 #### Core Fields
 - `id`: Auto-incrementing primary key
 - `created_at`: Timestamp of record creation
 - `updated_at`: Timestamp of last update
 - `user_id`: Foreign key to auth.users table
 - `date`: Transaction date and time
-- `type`: Transaction type (Buy/Sell/Send/Receive)
+- `type`: Transaction type (either "buy" or "sell")
 - `asset`: Cryptocurrency asset (e.g., "BTC")
+- `price`: Price per unit at time of transaction (e.g, usually a fiat currency however not define in table)
+- `exchange`: Exchange where transaction occurred
 
-#### Amount Fields
-- `sent_amount`: Amount sent in a transaction
-- `sent_currency`: Currency of sent amount
-- `buy_amount`: Amount bought in a purchase
-- `buy_currency`: Currency of purchase
-- `sell_amount`: Amount sold in a sale
-- `sell_currency`: Currency of sale
-- `price`: Price per unit at time of transaction
-- `received_amount`: Amount received in transaction
-- `received_currency`: Currency of received amount
+#### Buy/Sell Fields
+- `buy_fiat_amount`: Amount of fiat used for purchase
+- `buy_currency`: Currency of purchase (e.g., "USD")
+- `buy_btc_amount`: Amount of BTC received
+- `received_btc_amount`: Amount of BTC actually received
+- `received_currency`: Currency received (always "BTC")
+- `sell_btc_amount`: Amount of BTC sold
+- `sell_btc_currency` : Currecny of sell (e.g, "BTC")
+- `received_fiat_amount`: Amount of fiat currency received from sale
+- `received__fiat_currency`: Currency received (e.g., "USD")
 
 #### Additional Details
 - `exchange`: Exchange where transaction occurred
 
 #### Fee Information
-- `network_fee`: Network/blockchain fee
-- `network_currency`: Currency of network fee
 - `service_fee`: Exchange/service fee
 - `service_fee_currency`: Currency of service fee
+
+### Send Table
+#### Core Fields
+- `id`: Auto-incrementing primary key
+- `created_at`: Timestamp of record creation
+- `updated_at`: Timestamp of last update
+- `user_id`: Foreign key to auth.users table
+- `date`: Transaction date and time
+- `asset`: Cryptocurrency asset (e.g., "BTC")
+- `type`: Transaction type (always "send")
+#### Send Fields
+- `sent_amount`: Amount of BTC sent
+- `sent_currency`: Currency sent ("BTC")
+#### Fee Information
+- `network_fee`: Network/mining fee for the transaction
+- `network_fee_currency`: Currency of network fee ("BTC")
+
+### Receive Table
+#### Core Fields
+- `id`: Auto-incrementing primary key
+- `created_at`: Timestamp of record creation
+- `updated_at`: Timestamp of last update
+- `user_id`: Foreign key to auth.users table
+- `date`: Transaction date and time
+- `asset`: Cryptocurrency asset (e.g., "BTC")
+- `type`: Transaction type (always "receive")
+- `price`: Price of BTC at time of receipt
+- `exchange`: Exchange or source of the received BTC (optional)
+#### Receive Fields
+- `received_transfer_amount`: Amount of BTC received
+- `received_currency`: Currency received (always "BTC")
+
+### Bitcoin Price Table
+**Bitcoing Price Table**
+  - `bitcoin_prices`: `date`, `price_usd` 
+  - Using Coinmarketcap api
+  - Need to be cautious of rate limits
+  - We should cache the price in the most cost effective and easily sourced place
+  - If possible, find api for storing all time BTC price and date occured
+### Fear & Greed Index Table
+**Fear & Greed Index Table**
+  - Using Coinmaarketcap api 
+  - Capture daily index number
+  - Be able to GET `yesterday`, `7d ago`, `1m ago` values fromt table from query. 
 
 
 ### Usage Guidelines
 **Transaction Types**:
-   - `Buy`: Use `buy_amount`, `buy_currency`, `received_amount`
-   - `Sell`: Use `sell_amount`, `sell_currency`, 
-   - `Send`: Use `sent_amount`, `sent_currency`
-   - `Receive`: Use `received_amount`, `received_currency`
-
-**Amount Handling**:
-   - For buys: Primary amount is `received_amount` (in BTC)
-   - For sells: Primary amount is `sell_amount` (in BTC)
-   - For sends: Use `sent_amount`
-   - For receives: Use `received_amount`
+   - `Buy`: Use `buy_fiat_amount`, `buy_currency`, `received_btc_amount`, `price`
+   - `Sell`: Use `sell_btc_amount`, `sell_btc_currency`, `received_fiat_amount`, `recieved_fiat_currency`
+   - `Receive`: Use - `received_transfer_amount`, `received_currency`
+   - `Send`: Use - `sent_amount`, `sent_currency`, `network_fee`, `network_currency`
 
 **Fee Calculation**:
-   - Total fees = `network_fee` + `service_fee`
-   - Always store fees in the transaction's currency
+   - Total fees = `service_fee`
+   - Total network fee = `network_fee`
+   - Always check for currency field 
 
 **Data Validation**:
    - All amounts must be positive
-   - Required fields: `date`, `type`, `asset`, `price`
-   - Currency fields must be present if corresponding amount is present 
-
-
-**Bitcoing Price Table**
-- `bitcoin_prices`: `date`, `price_usd` (for caching CoinGecko data, unchanged).
+   - Required fields: `date`, `type`, `asset`, `price`, `buy_fiat_amount`, `buy_currency`, `received_btc_amount`, (always check for `price`, however sometimes this may be a null value which is acceptable)
+   - Always check if there is a corresponding currency present, or can be sourced 
 
 - **CSV Parsing:**
   - Process CSVs server-side; validate data before insertion.
@@ -98,6 +137,7 @@ alwaysApply: true
   - Run locally with `npm run dev`.
   - Commit frequently (e.g., `git commit -m "feat: add cost basis comparison"`).
   - Deploy to Vercel; monitor performance metrics.
+
 - **Testing:**
   - Test CSV imports with small (1KB) and large (10MB) files.
   - Validate RLS across multiple user accounts.

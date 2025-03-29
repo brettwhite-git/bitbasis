@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "postgres": {
+      "host": "localhost",
+      "port": 5433
+    }
+  }
+}

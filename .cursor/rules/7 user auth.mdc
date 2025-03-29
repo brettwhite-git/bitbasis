@@ -1,0 +1,63 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## Next.js and Supabase
+- Stack for project
+
+## Project Setup
+- Create a Next.js project with TypeScript
+- Install Supabase dependencies: `@supabase/supabase-js` and `@supabase/auth-helpers-nextjs`
+- Configure `.env.local` with Supabase URL and anon key
+
+## Supabase Client Configuration
+- Create utility functions for client-side and server-side Supabase clients
+- Use `createClient` for client components
+- Use `createServerClient` with Next.js cookies API for server components
+
+## Authentication Flow
+- Implement middleware for automatic session refresh
+- Create an Auth Context Provider for client-side state management
+- Set up authentication callback route for email confirmations
+
+## User Session Management
+- Store authentication tokens in HTTP-only cookies (handled by auth helpers)
+- Implement session refresh using middleware
+- Create sign-out functionality that clears cookies
+
+## Protected Routes
+- Create server-side route guards using server components
+- Implement client-side protection with React hooks and context
+- Redirect unauthenticated users to login page
+
+## Authentication Components
+- Create login form with email/password authentication
+- Implement registration form with email confirmation
+- Add profile management for authenticated users
+
+## Database Security
+- Set up Row Level Security (RLS) policies in Supabase
+- Create profile table linked to auth.users
+- Implement secure data access patterns
+
+## TypeScript Integration
+- Generate or create TypeScript types for Supabase schema
+- Use types for all database operations
+- Add proper type definitions for auth context
+
+## Best Practices
+- Never store tokens in localStorage (use HTTP-only cookies)
+- Refresh sessions on each page request
+- Implement proper error handling
+- Use typed database queries
+- Separate authentication logic from UI components
+
+## Implementation Checklist
+1. Set up project and environment
+2. Configure Supabase clients
+3. Implement auth provider and middleware
+4. Create login and registration forms
+5. Add protected routes
+6. Set up database schema and security
+7. Test authentication flow

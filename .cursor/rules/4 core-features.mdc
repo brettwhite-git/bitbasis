@@ -53,8 +53,7 @@ alwaysApply: true
   - CSV File Upload
   - Manual Entry Form
   - Bulk Import Support
-  - Exchange Format Templates
-
+ 
 - **Data Validation:**
   - Real-time Error Checking
   - Format Verification
@@ -97,7 +96,6 @@ alwaysApply: true
   - Export All Data
   - Transaction History
   - Portfolio Snapshots
-  - Recovery Points
 
 - **Data Cleanup:**
   - Delete Transactions
@@ -114,15 +112,13 @@ alwaysApply: true
 
 - **Data Protection:**
   - Row Level Security
-  - Data Encryption
   - Secure API Calls
   - Rate Limiting
 
 ### External Integrations
 - **Price Data:**
-  - CoinGecko API Integration
+  - Coinmarketcap API Integration
   - Price History Cache
-  - Real-time Updates
   - Fallback Sources
 
 - **Payment Processing:**
@@ -166,7 +162,6 @@ alwaysApply: true
   - First Purchase 
 
 - **BitCoin Accumulation by Year**
-  - Summary by year Bar Graph
   - Summary by pie graph 
 
 - **Cost Basis Method Comparison** 
@@ -186,23 +181,25 @@ alwaysApply: true
 ### Import Data
 - **Import options** 
   - Support multiple CSV formats:
-    - Direct exchange exports
     - Custom formatted CSVs
     - Manual transaction entry
+  
   - CSV Requirements:
-    - Headers: date, amount, Sent Currency, purchase price, Received Amount, Received Currency, fee, Fee Currency, type
     - Transaction Types: Buy, Sell, Send, Receive
     - Currencies: USD and BTC only
+
   - Import Process:
     - File validation (size, format)
     - Header validation
     - Data transformation
     - Preview before import
     - Batch processing
+
   - Error Handling:
     - Clear validation messages
     - Row-level error reporting
     - Ability to fix and retry
+
   - Success Feedback:
     - Transaction count
     - Summary of imported data
@@ -222,11 +219,5 @@ alwaysApply: true
   - Embed clickable elements in Overview linking to detailed sections.
 
 
-### APIs
-- **Stripe:** Manage subscriptions and cancellations (e.g., `app/api/stripe/cancel/route.ts`).
-- **CoinGecko:**
-  - Fetch real-time Bitcoin prices: `/simple/price?ids=bitcoin&vs_currencies=usd`.
-  - Fetch historical prices: `/coins/bitcoin/history?date=DD-MM-YYYY`.
-  - Cache prices in Supabase to respect rate limits (50 calls/min).
 
   

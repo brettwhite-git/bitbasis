@@ -1,15 +1,9 @@
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
 import { getPortfolioMetrics, getPerformanceMetrics } from "@/lib/portfolio"
 import { DashboardContent } from "@/components/overview/dashboard-content"
+import { requireAuth } from "@/lib/server-auth"
 
 export default async function DashboardPage() {
-  const supabase = createServerComponentClient({ cookies })
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    throw new Error('User not authenticated')
-  }
+  const { supabase, user } = await requireAuth()
 
   // Fetch portfolio and performance metrics
   const [metrics, performance] = await Promise.all([

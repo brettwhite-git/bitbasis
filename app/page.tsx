@@ -23,7 +23,7 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-        <section className="space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-32">
+        <section className="space-y-6 pb-4 pt-6 md:pb-8 md:pt-10 lg:py-24">
           <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center">
             <h1 className="text-4xl font-bold tracking-tighter text-white sm:text-5xl md:text-6xl lg:text-7xl">
               Track Your Bitcoin Portfolio with Privacy & Precision
@@ -42,36 +42,36 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="container space-y-6 py-8 md:py-12 lg:py-24">
-          <div className="mx-auto grid justify-center gap-4 sm:grid-cols-2 md:max-w-[64rem] md:grid-cols-3">
-            <div className="relative overflow-hidden rounded-lg border bg-background p-2">
-              <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
-                <Shield className="h-12 w-12 text-bitcoin-orange" />
-                <div className="space-y-2">
-                  <h3 className="font-bold text-white">Privacy First</h3>
-                  <p className="text-sm text-muted-foreground">
+        <section className="container space-y-6 py-4 md:py-8 lg:py-16">
+          <div className="mx-auto grid justify-center gap-6 sm:grid-cols-2 md:max-w-[64rem] md:grid-cols-3">
+            <div className="relative overflow-hidden rounded-lg border bg-background p-3">
+              <div className="flex h-[280px] flex-col justify-between rounded-md p-8">
+                <Shield className="h-16 w-16 text-bitcoin-orange" />
+                <div className="space-y-3">
+                  <h3 className="font-bold text-xl text-white">Privacy First</h3>
+                  <p className="text-muted-foreground">
                     Your data stays private. No exchange integrations or API keys required.
                   </p>
                 </div>
               </div>
             </div>
-            <div className="relative overflow-hidden rounded-lg border bg-background p-2">
-              <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
-                <TrendingUp className="h-12 w-12 text-bitcoin-orange" />
-                <div className="space-y-2">
-                  <h3 className="font-bold text-white">Accurate Tracking</h3>
-                  <p className="text-sm text-muted-foreground">
+            <div className="relative overflow-hidden rounded-lg border bg-background p-3">
+              <div className="flex h-[280px] flex-col justify-between rounded-md p-8">
+                <TrendingUp className="h-16 w-16 text-bitcoin-orange" />
+                <div className="space-y-3">
+                  <h3 className="font-bold text-xl text-white">Accurate Tracking</h3>
+                  <p className="text-muted-foreground">
                     Calculate your cost basis and track your portfolio performance over time.
                   </p>
                 </div>
               </div>
             </div>
-            <div className="relative overflow-hidden rounded-lg border bg-background p-2">
-              <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
-                <Lock className="h-12 w-12 text-bitcoin-orange" />
-                <div className="space-y-2">
-                  <h3 className="font-bold text-white">Secure & Simple</h3>
-                  <p className="text-sm text-muted-foreground">
+            <div className="relative overflow-hidden rounded-lg border bg-background p-3">
+              <div className="flex h-[280px] flex-col justify-between rounded-md p-8">
+                <Lock className="h-16 w-16 text-bitcoin-orange" />
+                <div className="space-y-3">
+                  <h3 className="font-bold text-xl text-white">Secure & Simple</h3>
+                  <p className="text-muted-foreground">
                     Easy to use interface with enterprise-grade security.
                   </p>
                 </div>
@@ -83,7 +83,7 @@ export default function LandingPage() {
       <footer className="border-t border-border/40 bg-background py-6">
         <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
           <Logo />
-          <p className="text-sm text-muted-foreground">© 2024 BitBasis. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© 2025 BitBasis. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="/privacy" className="text-sm text-muted-foreground hover:text-white">
               Privacy

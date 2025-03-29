@@ -37,11 +37,13 @@ export function SignInForm() {
       
       if (signInError) {
         console.error('Sign in form error:', signInError)
-        setError(signInError.message)
+        setError(signInError.message || 'Invalid login credentials')
         setIsLoading(false)
         return
       }
 
+      // Clear any existing errors on success
+      setError(null)
       // The redirect will be handled by the auth provider
       console.log('Sign in successful, waiting for redirect...')
     } catch (err) {

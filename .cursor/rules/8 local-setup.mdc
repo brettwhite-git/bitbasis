@@ -1,0 +1,175 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Local Development Environment Setup
+
+## Required Environment Variables
+The following environment variables must be set in `.env`:
+- `SUPABASE_PROJECT_REF`: Project reference ID
+- `POSTGRES_PASSWORD`: Database password
+- `SUPABASE_DB_PASSWORD`: Same as POSTGRES_PASSWORD (required by Supabase CLI)
+- `DATABASE_URL`: Full database connection string
+
+## Current Configuration
+
+### Project Details
+- **Project ID:** npcvbxrshuflujcnikon
+- **Project Reference:** npcvbxrshuflujcnikon
+- **Environment:** Local Docker-based Supabase setup 
+## Current Configuration
+
+### Project Details
+- **Project ID:** npcvbxrshuflujcnikon
+- **Project Reference:** npcvbxrshuflujcnikon
+- **Environment:** Local Docker-based Supabase setup
+
+### Active Services
+
+#### Database
+- **Host:** localhost
+- **Port:** 54322
+- **User:** postgres
+- **Password:** postgres
+- **Database:** postgres
+- **Connection String:** `postgresql://postgres:postgres@localhost:54322/postgres`
+
+#### Management UI
+- **Supabase Studio:** http://localhost:54323
+- **API Gateway:** http://localhost:54321
+
+#### Running Docker Containers
+All containers are prefixed with `supabase_` and suffixed with `_BitBasis_Project`:
+- Studio (Port 54323)
+- PostgreSQL Database (Port 54322)
+- Kong API Gateway (Port 54321)
+- Auth Service
+- Storage API
+- Realtime Service
+- Analytics (Port 54327)
+- Mail Service (Port 54324)
+
+### Development Workflow
+
+#### Local Development
+1. Start Supabase services:
+   ```bash
+   supabase start
+   ```
+
+2. Verify services are running:
+   ```bash
+   supabase status
+   ```
+
+3. Create migrations in `supabase/migrations/` directory:
+   ```sql
+   -- Example: 20240329_example.sql
+   CREATE TABLE public.example (...);
+   ```
+
+4. Test migrations locally:
+   ```bash
+   # Direct PostgreSQL command
+   PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres -f supabase/migrations/your_migration.sql
+   ```
+
+#### Remote Synchronization
+1. Link to remote project:
+   ```bash
+   # Set password as environment variable to handle special characters
+   export SUPABASE_DB_PASSWORD='your_password'
+   
+   # Link project
+   supabase link --project-ref npcvbxrshuflujcnikon
+   ```
+
+2. Push changes to remote:
+   ```bash
+   # Push all pending migrations
+   supabase db push --include-all
+   ```
+
+3. Pull remote changes:
+   ```bash
+   supabase db pull
+   ```
+
+### Project Structure
+```
+supabase/
+├── migrations/    # Database migration files
+├── functions/     # Edge functions
+├── seed/          # Seed data
+└── config.toml    # Supabase configuration
+```
+
+### Quick Verification Commands
+```bash
+# Check container status
+docker ps
+
+# Verify database connection
+PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres -c "\dt"
+
+# List database schemas
+PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres -c "\dn"
+```
+
+### Current Database State
+- Fresh installation
+- Default Supabase schemas present
+- Test table `cursor_test` created successfully
+- All core services operational
+
+### Available Schemas
+- _realtime
+- auth
+- extensions
+- graphql
+- graphql_public
+- net
+- pgbouncer
+- pgsodium
+- pgsodium_masks
+- public
+- realtime
+- storage
+- supabase_functions
+- vault
+
+### Important Notes
+1. Docker is required and managed by Supabase CLI
+2. Special characters in passwords need proper escaping or environment variables
+3. Local development matches production environment
+4. Changes should be made through migrations for version control
+5. Always test migrations locally before pushing to remote
+
+
+### Testing Queries
+To test SQL queries in the terminal, use the following format:
+```bash
+# Basic query structure
+PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres -c "YOUR_QUERY" | cat
+
+# Examples:
+# Select all from a table
+PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres -c "SELECT * FROM public.your_table;" | cat
+
+# View table structure
+PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres -c "\d+ public.your_table" | cat
+
+# Insert with returning
+PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres -c "INSERT INTO public.your_table (column) VALUES ('value') RETURNING *;" | cat
+```
+
+Important notes for query testing:
+1. Always add `| cat` at the end for clean output formatting
+2. Use double quotes around your SQL query
+3. For complex queries, you can write them on multiple lines in a migration file and use `-f filename.sql` instead of `-c`
+4. Use `\d+` for detailed table information
+5. Use `RETURNING *` with INSERT/UPDATE to see the affected rows
+
+
+
