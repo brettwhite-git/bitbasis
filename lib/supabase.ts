@@ -93,7 +93,7 @@ async function testSupabaseConnection() {
     // Test basic connection
     console.log('\n2. Testing basic connection...')
     const { data: testData, error: testError } = await supabase
-      .from('transactions')
+      .from('orders')
       .select('count')
       .limit(1)
 
@@ -110,7 +110,7 @@ async function testSupabaseConnection() {
     // Test table structure
     console.log('\n3. Testing table structure...')
     const { data: tableInfo, error: tableError } = await supabase
-      .from('transactions')
+      .from('orders')
       .select('*')
       .limit(0)
 
@@ -131,14 +131,17 @@ async function testSupabaseConnection() {
     console.error('Connection test failed with error:', {
       error: err,
       name: err instanceof Error ? err.name : 'Unknown',
-      message: err instanceof Error ? err.message : 'Unknown error'
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined
     })
     return false
   }
 }
 
-// Run the test immediately
-void testSupabaseConnection()
+// Run the test immediately if not in production
+if (process.env.NODE_ENV !== 'production') {
+  void testSupabaseConnection()
+}
 
 export interface Transaction {
   id?: string
@@ -157,20 +160,19 @@ export interface Transaction {
 // Use client-side client for authenticated operations
 export async function insertTransactions(transactions: Array<{
   date: string
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive'
+  type: 'buy' | 'sell'
   asset: string
-  sent_amount: number | null
-  sent_currency: string | null
-  buy_amount: number | null
-  buy_currency: string | null
-  sell_amount: number | null
-  sell_currency: string | null
   price: number
-  received_amount: number | null
-  received_currency: string | null
   exchange: string | null
-  network_fee: number | null
-  network_currency: string | null
+  buy_fiat_amount: number | null
+  buy_currency: string | null
+  buy_btc_amount: number | null
+  received_btc_amount: number | null
+  received_currency: string | null
+  sell_btc_amount: number | null
+  sell_btc_currency: string | null
+  received_fiat_amount: number | null
+  received_fiat_currency: string | null
   service_fee: number | null
   service_fee_currency: string | null
 }>) {
@@ -188,20 +190,68 @@ export async function insertTransactions(transactions: Array<{
       return { data: null, error: { message: 'Please sign in to continue' } }
     }
 
-    // Add user_id to transactions
-    const preparedTransactions = transactions.map(t => ({
-      ...t,
-      user_id: authData.user.id
-    }))
+    // Add user_id to transactions and ensure they match the orders table schema
+    const preparedTransactions = transactions.map(t => {
+      // Log the transaction being processed
+      console.log('Processing transaction:', {
+        type: t.type,
+        amounts: {
+          buy_fiat_amount: t.buy_fiat_amount,
+          received_btc_amount: t.received_btc_amount,
+          sell_btc_amount: t.sell_btc_amount,
+          received_fiat_amount: t.received_fiat_amount
+        }
+      })
+
+      // Validate required fields
+      if (!t.date || !t.type || !t.asset || typeof t.price !== 'number') {
+        throw new Error(`Missing required fields: date, type, asset, or price`)
+      }
+
+      // Validate type-specific required fields
+      if (t.type === 'buy' && (!t.buy_fiat_amount || !t.received_btc_amount)) {
+        throw new Error(`Buy transaction requires buy_fiat_amount and received_btc_amount`)
+      }
+      if (t.type === 'sell' && (!t.sell_btc_amount || !t.received_fiat_amount)) {
+        throw new Error(`Sell transaction requires sell_btc_amount and received_fiat_amount`)
+      }
+
+      return {
+        user_id: authData.user.id,
+        date: t.date,
+        type: t.type,
+        asset: t.asset,
+        price: t.price,
+        exchange: t.exchange,
+        buy_fiat_amount: t.type === 'buy' ? t.buy_fiat_amount : null,
+        buy_currency: t.type === 'buy' ? t.buy_currency : null,
+        received_btc_amount: t.type === 'buy' ? t.received_btc_amount : null,
+        received_currency: t.type === 'buy' ? t.received_currency : null,
+        sell_btc_amount: t.type === 'sell' ? t.sell_btc_amount : null,
+        sell_btc_currency: t.type === 'sell' ? t.sell_btc_currency : null,
+        received_fiat_amount: t.type === 'sell' ? t.received_fiat_amount : null,
+        received_fiat_currency: t.type === 'sell' ? t.received_fiat_currency : null,
+        service_fee: t.service_fee,
+        service_fee_currency: t.service_fee_currency
+      }
+    })
+
+    // Log the prepared transactions
+    console.log('Prepared transactions:', preparedTransactions)
 
     // Try to insert the transactions
     const { data, error: insertError } = await supabase
-      .from('transactions')
+      .from('orders')
       .insert(preparedTransactions)
       .select()
 
     if (insertError) {
-      console.error('Insert error:', insertError)
+      console.error('Insert error:', {
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        code: insertError.code
+      })
       return { 
         data: null, 
         error: { 
@@ -215,7 +265,11 @@ export async function insertTransactions(transactions: Array<{
 
     return { data, error: null }
   } catch (err) {
-    console.error('Unexpected error:', err)
+    console.error('Unexpected error:', {
+      error: err,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined
+    })
     return { 
       data: null, 
       error: { 
@@ -249,7 +303,7 @@ export async function getTransactions() {
 
     // First, test if we can access the table at all
     const testQuery = await supabaseClient
-      .from('transactions')
+      .from('orders')
       .select('count')
       .limit(1)
 
@@ -260,7 +314,7 @@ export async function getTransactions() {
 
     // Now perform the actual query
     const { data, error } = await supabaseClient
-      .from('transactions')
+      .from('orders')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })

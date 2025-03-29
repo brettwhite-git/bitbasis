@@ -21,7 +21,6 @@ export interface Database {
           exchange: string | null
           buy_fiat_amount: number | null
           buy_currency: string | null
-          buy_btc_amount: number | null
           received_btc_amount: number | null
           received_currency: string | null
           service_fee: number | null
@@ -38,7 +37,6 @@ export interface Database {
           exchange?: string | null
           buy_fiat_amount?: number | null
           buy_currency?: string | null
-          buy_btc_amount?: number | null
           received_btc_amount?: number | null
           received_currency?: string | null
           service_fee?: number | null
@@ -55,7 +53,6 @@ export interface Database {
           exchange?: string | null
           buy_fiat_amount?: number | null
           buy_currency?: string | null
-          buy_btc_amount?: number | null
           received_btc_amount?: number | null
           received_currency?: string | null
           service_fee?: number | null

@@ -113,6 +113,9 @@ alwaysApply: true
    - Total network fee = `network_fee`
    - Always check for currency field 
 
+**Other Calculations**:
+   - `receive` and `send` should not be included in any main calculations
+
 **Data Validation**:
    - All amounts must be positive
    - Required fields: `date`, `type`, `asset`, `price`, `buy_fiat_amount`, `buy_currency`, `received_btc_amount`, (always check for `price`, however sometimes this may be a null value which is acceptable)
@@ -124,8 +127,9 @@ alwaysApply: true
 
 ## Calculations 
   - Portfolio Value: Sum of current value of all BTC (requires current BTC price).
+  - Total BTC: Sum of all `received_btc_amount` - `sell_btc_amount`
   - Total Cost Basis: Sum of Total USD + Fee USD for all "Buy" transactions.
-  - Unrealized Gains: (Current BTC Price × Total BTC Held) - Total Cost Basis.
+  - Unrealized Gains: (Current BTC Price × Total BTC) - Total Cost Basis.
   - Average Buy Price: Total Cost Basis / Total BTC Bought.
   - Total ROI 
   - 30 Day Change 

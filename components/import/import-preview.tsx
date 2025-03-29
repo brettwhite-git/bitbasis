@@ -36,20 +36,19 @@ type DbTransaction = Database['public']['Tables']['transactions']['Insert']
 
 interface ParsedTransaction {
   date: string
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive'
+  type: 'buy' | 'sell'
   asset: string
-  sent_amount: number | null
-  sent_currency: string | null
-  buy_amount: number | null
-  buy_currency: string | null
-  sell_amount: number | null
-  sell_currency: string | null
   price: number
-  received_amount: number | null
-  received_currency: string | null
   exchange: string | null
-  network_fee: number | null
-  network_currency: string | null
+  buy_fiat_amount: number | null
+  buy_currency: string | null
+  buy_btc_amount: number | null
+  received_btc_amount: number | null
+  received_currency: string | null
+  sell_btc_amount: number | null
+  sell_btc_currency: string | null
+  received_fiat_amount: number | null
+  received_fiat_currency: string | null
   service_fee: number | null
   service_fee_currency: string | null
 }
@@ -81,25 +80,17 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
     validRows: transactions.length,
     totalBtc: transactions.reduce((sum, t) => {
       switch (t.type) {
-        case 'Buy':
-        case 'Receive':
-          // Add received amounts
-          return sum + (t.received_amount ?? 0);
-        case 'Sell':
-          // Subtract sell amounts only if in BTC
-          if (t.sell_currency === 'BTC') {
-            return sum - (t.sell_amount ?? 0);
-          }
-          return sum;
+        case 'buy':
+          return sum + (t.received_btc_amount ?? 0);
+        case 'sell':
+          return sum - (t.sell_btc_amount ?? 0);
         default:
           return sum;
       }
     }, 0),
     types: {
-      buy: transactions.filter(t => t.type === 'Buy').length,
-      sell: transactions.filter(t => t.type === 'Sell').length,
-      send: transactions.filter(t => t.type === 'Send').length,
-      receive: transactions.filter(t => t.type === 'Receive').length
+      buy: transactions.filter(t => t.type === 'buy').length,
+      sell: transactions.filter(t => t.type === 'sell').length
     }
   }
 
@@ -133,10 +124,10 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
   }
 
   const getAmount = (t: ParsedTransaction) => {
-    if (t.type === 'Buy' || t.type === 'Receive') {
-      return t.received_amount ?? 0
+    if (t.type === 'buy') {
+      return t.received_btc_amount ?? 0
     }
-    return t.sent_amount ?? 0
+    return t.sell_btc_amount ?? 0
   }
 
   const formatAmount = (amount: number | null) => {
@@ -162,10 +153,10 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
   }
 
   const getTotal = (transaction: ParsedTransaction) => {
-    if (transaction.type === 'Buy') {
-      return transaction.buy_amount ?? 0
-    } else if (transaction.type === 'Sell') {
-      return transaction.sell_amount ?? 0
+    if (transaction.type === 'buy') {
+      return transaction.buy_fiat_amount ?? 0
+    } else if (transaction.type === 'sell') {
+      return transaction.received_fiat_amount ?? 0
     }
     return 0
   }
@@ -203,8 +194,6 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
             <div className="text-sm space-y-1">
               <div>Buy: {stats.types.buy}</div>
               <div>Sell: {stats.types.sell}</div>
-              <div>Send: {stats.types.send}</div>
-              <div>Receive: {stats.types.receive}</div>
             </div>
           </CardContent>
         </Card>
@@ -239,25 +228,23 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
                 <TableHead>Date</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Term</TableHead>
-                <TableHead>Amount (BTC)</TableHead>
-                <TableHead>Price (USD)</TableHead>
-                <TableHead>Total (USD)</TableHead>
-                <TableHead>Fees (USD)</TableHead>
+                <TableHead>BTC Amount</TableHead>
+                <TableHead>Fiat Amount</TableHead>
+                <TableHead>Price (USD/BTC)</TableHead>
+                <TableHead>Fees</TableHead>
                 <TableHead>Exchange</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {transactions.slice(0, 5).map((transaction, index) => {
                 const isShortTerm = new Date(transaction.date).getFullYear() === new Date().getFullYear();
-                const amount = transaction.type === 'Buy' || transaction.type === 'Receive'
-                  ? transaction.received_amount ?? 0
-                  : transaction.sent_amount ?? 0;
-                const total = transaction.type === 'Buy'
-                  ? transaction.buy_amount ?? 0
-                  : transaction.type === 'Sell'
-                  ? transaction.sell_amount ?? 0
-                  : 0;
-                const fees = (transaction.network_fee ?? 0) + (transaction.service_fee ?? 0);
+                const btcAmount = transaction.type === 'buy'
+                  ? transaction.received_btc_amount ?? 0
+                  : transaction.sell_btc_amount ?? 0;
+                const fiatAmount = transaction.type === 'buy'
+                  ? transaction.buy_fiat_amount ?? 0
+                  : transaction.received_fiat_amount ?? 0;
+                const fees = transaction.service_fee ?? 0;
 
                 return (
                   <TableRow key={index}>
@@ -266,29 +253,17 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={
-                          transaction.type === "Buy" 
-                            ? "default" 
-                            : transaction.type === "Sell"
-                            ? "destructive"
-                            : "secondary"
-                        }
+                        variant={transaction.type === "buy" ? "default" : "destructive"}
                         className={`w-[100px] flex items-center justify-center ${
-                          transaction.type === "Buy" 
+                          transaction.type === "buy" 
                             ? "bg-bitcoin-orange" 
-                            : transaction.type === "Sell"
-                            ? "bg-red-500"
-                            : "bg-blue-500"
+                            : "bg-red-500"
                         }`}
                       >
-                        {transaction.type === "Buy" ? (
+                        {transaction.type === "buy" ? (
                           <ArrowDownRight className="mr-2 h-4 w-4" />
-                        ) : transaction.type === "Sell" ? (
-                          <ArrowUpRight className="mr-2 h-4 w-4" />
-                        ) : transaction.type === "Send" ? (
-                          <SendHorizontal className="mr-2 h-4 w-4" />
                         ) : (
-                          <SendHorizontal className="mr-2 h-4 w-4 rotate-180" />
+                          <ArrowUpRight className="mr-2 h-4 w-4" />
                         )}
                         {transaction.type.toUpperCase()}
                       </Badge>
@@ -305,9 +280,9 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
                         {isShortTerm ? "SHORT" : "LONG"}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatNumber(amount, 8)}</TableCell>
+                    <TableCell>{formatNumber(btcAmount, 8)} BTC</TableCell>
+                    <TableCell>${formatNumber(fiatAmount, 2)}</TableCell>
                     <TableCell>${formatNumber(transaction.price, 2)}</TableCell>
-                    <TableCell>${formatNumber(total, 2)}</TableCell>
                     <TableCell>${formatNumber(fees, 2)}</TableCell>
                     <TableCell>
                       {transaction.exchange 

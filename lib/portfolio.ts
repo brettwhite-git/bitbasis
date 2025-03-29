@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { getCurrentBitcoinPrice } from './coinmarketcap'
 import { Database } from '@/types/supabase'
+import { calculatePortfolioMetrics, PortfolioMetrics } from './calculations'
 
 interface Transaction {
   id: string
@@ -18,17 +19,14 @@ interface Transaction {
   buy_currency: string
 }
 
-interface PortfolioMetrics {
-  totalBtc: number
-  totalCostBasis: number
-  totalFees: number
-  currentValue: number
-  unrealizedGain: number
-  unrealizedGainPercent: number
-  averageBuyPrice: number
-  totalTransactions: number
+interface ExtendedPortfolioMetrics extends PortfolioMetrics {
   shortTermHoldings: number
   longTermHoldings: number
+  sendReceiveMetrics: {
+    totalSent: number
+    totalReceived: number
+    netTransfers: number
+  }
 }
 
 interface CostBasisMethodResult {
@@ -87,133 +85,52 @@ interface PerformanceMetrics {
 export async function getPortfolioMetrics(
   userId: string,
   supabase: SupabaseClient<Database>
-): Promise<PortfolioMetrics> {
+): Promise<ExtendedPortfolioMetrics> {
   try {
-    // 1. Get transactions ordered by date
-    const { data: transactions, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('date', { ascending: true })
+    // Get all transactions from different tables
+    const [ordersResult, sendsResult, receivesResult, priceResult] = await Promise.all([
+      supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: true }),
+      supabase
+        .from('send')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: true }),
+      supabase
+        .from('receive')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: true }),
+      supabase
+        .from('bitcoin_prices')
+        .select('price_usd')
+        .order('last_updated', { ascending: false })
+        .limit(1)
+        .single()
+    ])
 
-    if (error) throw error
-    if (!transactions || transactions.length === 0) {
-      return {
-        totalBtc: 0,
-        totalCostBasis: 0,
-        totalFees: 0,
-        currentValue: 0,
-        unrealizedGain: 0,
-        unrealizedGainPercent: 0,
-        averageBuyPrice: 0,
-        totalTransactions: 0,
-        shortTermHoldings: 0,
-        longTermHoldings: 0
-      }
-    }
+    if (ordersResult.error) throw ordersResult.error
+    if (sendsResult.error) throw sendsResult.error
+    if (receivesResult.error) throw receivesResult.error
+    if (priceResult.error) throw priceResult.error
 
-    // 2. Process transactions in chronological order
-    let runningBalance = 0
-    let totalReceived = 0
-    let totalSold = 0
-
-    // Log transactions for debugging
-    transactions.forEach(t => {
-      // Only count received amounts in BTC
-      if (t.received_amount && t.received_currency === 'BTC') {
-        const received = Number(t.received_amount)
-        totalReceived += received
-        runningBalance += received
-        console.log('Received BTC:', { 
-          date: t.date,
-          type: t.type, 
-          amount: received, 
-          runningBalance 
-        })
-      }
-      
-      // Only count sell amounts in BTC
-      if (t.sell_amount && t.sell_currency === 'BTC') {
-        const sold = Number(t.sell_amount)
-        if (sold > runningBalance) {
-          console.warn('Invalid sell transaction detected:', {
-            date: t.date,
-            sellAmount: sold,
-            availableBalance: runningBalance,
-            currency: t.sell_currency
-          })
-          // Only count the sell up to the available balance
-          totalSold += runningBalance
-          runningBalance = 0
-        } else {
-          totalSold += sold
-          runningBalance -= sold
-        }
-        console.log('Sold BTC:', { 
-          date: t.date,
-          type: t.type, 
-          amount: sold, 
-          runningBalance 
-        })
-      }
-    })
-
-    const totalBtc = runningBalance
-
-    console.log('Final BTC totals:', {
-      totalReceived,
-      totalSold,
-      runningBalance: totalBtc
-    })
-
-    // 3. Get current Bitcoin price from cache
-    const { data: priceData } = await supabase
-      .from('bitcoin_prices')
-      .select('price_usd, last_updated')
-      .order('last_updated', { ascending: false })
-      .limit(1)
-      .single()
-
-    if (!priceData) throw new Error('No Bitcoin price available')
-
-    console.log('Bitcoin price data:', priceData)
-
-    // 4. Calculate current value
-    const currentValue = totalBtc * priceData.price_usd
-
-    // 5. Calculate other metrics
-    const totalFees = transactions.reduce((sum, t) => {
-      // Only count USD service fees
-      if (t.service_fee && t.service_fee_currency === 'USD') {
-        return sum + t.service_fee
-      }
-      return sum
-    }, 0)
-
-    console.log('Fee calculations:', {
-      totalServiceFees: totalFees
-    })
-
-    // Calculate cost basis from all buy transactions
-    const buyTransactions = transactions.filter(t => 
-      t.type === 'Buy' && 
-      t.received_currency === 'BTC' && 
-      t.buy_currency === 'USD'
-    )
+    const orders = ordersResult.data || []
+    const sends = sendsResult.data || []
+    const receives = receivesResult.data || []
     
-    const totalCostBasis = buyTransactions.reduce((sum, t) => sum + (t.buy_amount || 0), 0)
+    if (!priceResult.data) throw new Error('No Bitcoin price available')
+    const currentPrice = priceResult.data.price_usd
 
-    const unrealizedGain = currentValue - totalCostBasis
-    const unrealizedGainPercent = totalCostBasis > 0 ? (unrealizedGain / totalCostBasis) * 100 : 0
-    const averageBuyPrice = totalBtc > 0 ? totalCostBasis / totalBtc : 0
+    // Calculate core metrics using only buy/sell orders
+    const coreMetrics = calculatePortfolioMetrics(orders, currentPrice)
 
-    console.log('Final metrics:', {
-      totalBtc,
-      totalCostBasis,
-      currentValue,
-      unrealizedGain,
-      averageBuyPrice
-    })
+    // Calculate send/receive metrics separately
+    const totalSent = sends.reduce((total, send) => total + (send.sent_amount || 0), 0)
+    const totalReceived = receives.reduce((total, receive) => total + (receive.received_transfer_amount || 0), 0)
+    const netTransfers = totalReceived - totalSent
 
     // Calculate short-term and long-term holdings
     const oneYearAgo = new Date()
@@ -222,22 +139,19 @@ export async function getPortfolioMetrics(
     let shortTermHoldings = 0
     let longTermHoldings = 0
 
-    // Process transactions to determine holdings age
-    transactions.forEach(tx => {
-      const txDate = new Date(tx.date)
+    // Only consider buy orders for holdings age
+    orders.forEach(order => {
+      const txDate = new Date(order.date)
       const isShortTerm = txDate > oneYearAgo
 
-      if (tx.received_amount && tx.received_currency === 'BTC') {
-        const amount = Number(tx.received_amount)
+      if (order.type === 'buy' && order.received_btc_amount) {
         if (isShortTerm) {
-          shortTermHoldings += amount
+          shortTermHoldings += order.received_btc_amount
         } else {
-          longTermHoldings += amount
+          longTermHoldings += order.received_btc_amount
         }
-      }
-
-      if (tx.sell_amount && tx.sell_currency === 'BTC') {
-        const amount = Number(tx.sell_amount)
+      } else if (order.type === 'sell' && order.sell_btc_amount) {
+        const amount = order.sell_btc_amount
         // Deduct sells proportionally from short and long term holdings
         const totalHoldings = shortTermHoldings + longTermHoldings
         if (totalHoldings > 0) {
@@ -254,24 +168,15 @@ export async function getPortfolioMetrics(
     shortTermHoldings = Math.max(0, shortTermHoldings)
     longTermHoldings = Math.max(0, longTermHoldings)
 
-    console.log('Holdings breakdown:', {
-      shortTerm: shortTermHoldings,
-      longTerm: longTermHoldings,
-      total: shortTermHoldings + longTermHoldings,
-      calculatedTotal: totalBtc
-    })
-
     return {
-      totalBtc,
-      totalCostBasis,
-      totalFees,
-      currentValue,
-      unrealizedGain,
-      unrealizedGainPercent,
-      averageBuyPrice,
-      totalTransactions: transactions.length,
+      ...coreMetrics,
       shortTermHoldings,
-      longTermHoldings
+      longTermHoldings,
+      sendReceiveMetrics: {
+        totalSent,
+        totalReceived,
+        netTransfers
+      }
     }
   } catch (error) {
     console.error('Error calculating portfolio metrics:', error)
@@ -280,7 +185,7 @@ export async function getPortfolioMetrics(
 }
 
 export async function calculateCostBasis(
-  transactions: Transaction[],
+  userId: string,
   method: 'FIFO' | 'LIFO' | 'Average Cost',
   supabase: SupabaseClient<Database>
 ): Promise<CostBasisMethodResult> {
@@ -296,75 +201,87 @@ export async function calculateCostBasis(
     if (!priceData) throw new Error('No Bitcoin price available')
     const currentPrice = priceData.price_usd
 
-    // Calculate total BTC using the same logic as getPortfolioMetrics
+    // Get all transactions from different tables
+    const [ordersResult, sendsResult, receivesResult] = await Promise.all([
+      supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: true }),
+      supabase
+        .from('send')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: true }),
+      supabase
+        .from('receive')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: true })
+    ])
+
+    if (ordersResult.error) throw ordersResult.error
+    if (sendsResult.error) throw sendsResult.error
+    if (receivesResult.error) throw receivesResult.error
+
+    const orders = ordersResult.data || []
+    const sends = sendsResult.data || []
+    const receives = receivesResult.data || []
+
+    // Calculate total BTC
     let runningBalance = 0
     let totalReceived = 0
     let totalSold = 0
 
-    // Process all transactions chronologically
-    const sortedTransactions = [...transactions].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    )
+    // Process orders
+    orders.forEach(order => {
+      if (order.type === 'buy' && order.received_btc_amount) {
+        totalReceived += order.received_btc_amount
+        runningBalance += order.received_btc_amount
+      } else if (order.type === 'sell' && order.sell_btc_amount) {
+        totalSold += order.sell_btc_amount
+        runningBalance -= order.sell_btc_amount
+      }
+    })
 
-    // First pass: calculate total BTC
-    for (const tx of sortedTransactions) {
-      if (tx.received_amount && tx.received_currency === 'BTC') {
-        const received = Number(tx.received_amount)
-        totalReceived += received
-        runningBalance += received
+    // Process sends
+    sends.forEach(send => {
+      if (send.sent_amount) {
+        totalSold += send.sent_amount
+        runningBalance -= send.sent_amount
       }
-      
-      if (tx.sell_amount && tx.sell_currency === 'BTC') {
-        const sold = Number(tx.sell_amount)
-        totalSold += sold
-        runningBalance -= sold
+    })
+
+    // Process receives
+    receives.forEach(receive => {
+      if (receive.received_transfer_amount) {
+        totalReceived += receive.received_transfer_amount
+        runningBalance += receive.received_transfer_amount
       }
-    }
+    })
 
     const remainingBtc = runningBalance
-
-    console.log('\nTotal BTC Calculation:', {
-      totalReceived,
-      totalSold,
-      remainingBtc
-    })
-
-    // Filter transactions for cost basis calculation
-    const buyTransactions = transactions.filter(t => 
-      t.type === 'Buy' && 
-      t.received_currency === 'BTC' && 
-      t.buy_currency === 'USD'
-    ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-
-    const sellTransactions = transactions.filter(t => 
-      t.type === 'Sell' && 
-      t.sell_currency === 'BTC'
-    ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-
-    console.log('\nFiltered Transactions:', {
-      buyTransactions: buyTransactions.length,
-      sellTransactions: sellTransactions.length,
-      currentPrice
-    })
 
     // For Average Cost method
     if (method === 'Average Cost') {
       let totalUsdSpent = 0
       let totalUsdReceived = 0
 
-      // Calculate totals from buy transactions
-      for (const tx of buyTransactions) {
-        if (tx.buy_amount) {
-          totalUsdSpent += Number(tx.buy_amount)
+      // Calculate totals from buy orders
+      orders.forEach(order => {
+        if (order.type === 'buy') {
+          if (order.buy_fiat_amount) {
+            totalUsdSpent += order.buy_fiat_amount
+          }
+          if (order.service_fee && order.service_fee_currency === 'USD') {
+            totalUsdSpent += order.service_fee
+          }
+        } else if (order.type === 'sell') {
+          if (order.received_fiat_amount) {
+            totalUsdReceived += order.received_fiat_amount
+          }
         }
-      }
-
-      // Calculate totals from sell transactions
-      for (const tx of sellTransactions) {
-        if (tx.sell_amount) {
-          totalUsdReceived += Number(tx.sell_amount) * tx.price
-        }
-      }
+      })
 
       const averageCost = totalReceived > 0 ? totalUsdSpent / totalReceived : 0
       const currentValue = remainingBtc * currentPrice
@@ -372,17 +289,6 @@ export async function calculateCostBasis(
       const unrealizedGain = currentValue - (remainingBtc * averageCost)
       const unrealizedGainPercent = averageCost > 0 ? (unrealizedGain / (remainingBtc * averageCost)) * 100 : 0
       const potentialTaxLiability = unrealizedGain > 0 ? unrealizedGain * 0.15 : 0
-
-      console.log('\nAverage Cost Calculation:', {
-        totalReceived,
-        totalUsdSpent,
-        totalSold,
-        totalUsdReceived,
-        remainingBtc,
-        averageCost,
-        realizedGains,
-        unrealizedGain
-      })
 
       return {
         totalCostBasis: remainingBtc * averageCost,
@@ -399,80 +305,100 @@ export async function calculateCostBasis(
     let btcHoldings: BTCHolding[] = []
     let realizedGains = 0
 
-    // Process buy transactions
-    for (const tx of buyTransactions) {
-      if (tx.received_amount && tx.buy_amount) {
-        const amount = Number(tx.received_amount)
-        const costBasis = Number(tx.buy_amount)
-        const fees = (tx.network_fee || 0) + (tx.service_fee || 0)
-        const totalCost = costBasis + fees
-
+    // Add buy transactions to holdings
+    orders.forEach(order => {
+      if (order.type === 'buy' && order.received_btc_amount && order.buy_fiat_amount) {
         btcHoldings.push({
-          date: tx.date,
-          amount,
-          costBasis: totalCost,
-          pricePerCoin: totalCost / amount
+          date: order.date,
+          amount: order.received_btc_amount,
+          costBasis: order.buy_fiat_amount + (order.service_fee || 0),
+          pricePerCoin: order.price
         })
       }
-    }
+    })
+
+    // Add receive transactions to holdings (using market price at time of receipt)
+    receives.forEach(receive => {
+      if (receive.received_transfer_amount) {
+        btcHoldings.push({
+          date: receive.date,
+          amount: receive.received_transfer_amount,
+          costBasis: receive.received_transfer_amount * receive.price,
+          pricePerCoin: receive.price
+        })
+      }
+    })
+
+    // Sort holdings based on method
+    btcHoldings.sort((a, b) => 
+      method === 'FIFO' 
+        ? new Date(a.date).getTime() - new Date(b.date).getTime()
+        : new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
 
     // Process sell transactions
-    for (const tx of sellTransactions) {
-      if (!tx.sell_amount) continue
+    orders.forEach(order => {
+      if (order.type === 'sell' && order.sell_btc_amount && order.received_fiat_amount) {
+        let remainingSellAmount = order.sell_btc_amount
+        const sellPrice = order.received_fiat_amount / order.sell_btc_amount
 
-      const amountToSell = Number(tx.sell_amount)
-      let remainingToSell = amountToSell
+        while (remainingSellAmount > 0 && btcHoldings.length > 0) {
+          const holding = btcHoldings[0]
+          const sellAmount = Math.min(remainingSellAmount, holding.amount)
+          
+          // Calculate gain/loss for this portion
+          const costBasisForPortion = (sellAmount / holding.amount) * holding.costBasis
+          const proceedsForPortion = sellAmount * sellPrice
+          realizedGains += proceedsForPortion - costBasisForPortion
 
-      // For LIFO, reverse the holdings array
-      const holdingsToProcess = method === 'LIFO' 
-        ? [...btcHoldings].reverse() 
-        : btcHoldings
+          // Update or remove the holding
+          if (sellAmount === holding.amount) {
+            btcHoldings.shift()
+          } else {
+            holding.amount -= sellAmount
+            holding.costBasis *= (holding.amount / (holding.amount + sellAmount))
+          }
 
-      // Process the sale
-      for (let i = 0; i < holdingsToProcess.length && remainingToSell > 0; i++) {
-        const holding = holdingsToProcess[i]
-        if (!holding || holding.amount <= 0) continue
-
-        const sellFromThisLot = Math.min(remainingToSell, holding.amount)
-        const costBasisForSold = (sellFromThisLot / holding.amount) * holding.costBasis
-        const saleProceeds = sellFromThisLot * tx.price
-
-        // Calculate gain/loss
-        realizedGains += saleProceeds - costBasisForSold
-
-        // Update holding
-        holding.amount -= sellFromThisLot
-        holding.costBasis -= costBasisForSold
-        remainingToSell -= sellFromThisLot
-
-        console.log(`\n${method} Lot Sale:`, {
-          purchaseDate: holding.date,
-          saleDate: tx.date,
-          amountSold: sellFromThisLot,
-          costBasis: costBasisForSold,
-          saleProceeds,
-          gainLoss: saleProceeds - costBasisForSold
-        })
+          remainingSellAmount -= sellAmount
+        }
       }
-    }
+    })
 
-    // Calculate remaining totals
-    btcHoldings = btcHoldings.filter(h => h.amount > 0)
+    // Process send transactions (treated as disposals at market price)
+    sends.forEach(send => {
+      if (send.sent_amount) {
+        let remainingSendAmount = send.sent_amount
+        const sendPrice = send.price // Market price at time of send
+
+        while (remainingSendAmount > 0 && btcHoldings.length > 0) {
+          const holding = btcHoldings[0]
+          const sendAmount = Math.min(remainingSendAmount, holding.amount)
+          
+          // Calculate gain/loss for this portion
+          const costBasisForPortion = (sendAmount / holding.amount) * holding.costBasis
+          const proceedsForPortion = sendAmount * sendPrice
+          realizedGains += proceedsForPortion - costBasisForPortion
+
+          // Update or remove the holding
+          if (sendAmount === holding.amount) {
+            btcHoldings.shift()
+          } else {
+            holding.amount -= sendAmount
+            holding.costBasis *= (holding.amount / (holding.amount + sendAmount))
+          }
+
+          remainingSendAmount -= sendAmount
+        }
+      }
+    })
+
+    // Calculate remaining cost basis and metrics
     const totalCostBasis = btcHoldings.reduce((sum, h) => sum + h.costBasis, 0)
     const averageCost = remainingBtc > 0 ? totalCostBasis / remainingBtc : 0
     const currentValue = remainingBtc * currentPrice
     const unrealizedGain = currentValue - totalCostBasis
     const unrealizedGainPercent = totalCostBasis > 0 ? (unrealizedGain / totalCostBasis) * 100 : 0
     const potentialTaxLiability = unrealizedGain > 0 ? unrealizedGain * 0.15 : 0
-
-    console.log(`\n${method} Final Calculation:`, {
-      remainingLots: btcHoldings.length,
-      remainingBtc,
-      totalCostBasis,
-      averageCost,
-      realizedGains,
-      unrealizedGain
-    })
 
     return {
       totalCostBasis,
@@ -505,16 +431,32 @@ export async function getPerformanceMetrics(
       throw new Error('No Bitcoin price data available')
     }
 
-    // Get user's transactions
-    const { data: transactions } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('date', { ascending: true })
+    // Get all transactions from different tables
+    const [ordersResult, sendsResult, receivesResult] = await Promise.all([
+      supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: true }),
+      supabase
+        .from('send')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: true }),
+      supabase
+        .from('receive')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: true })
+    ])
 
-    if (!transactions) {
-      throw new Error('No transactions found')
-    }
+    if (ordersResult.error) throw ordersResult.error
+    if (sendsResult.error) throw sendsResult.error
+    if (receivesResult.error) throw receivesResult.error
+
+    const orders = ordersResult.data || []
+    const sends = sendsResult.data || []
+    const receives = receivesResult.data || []
 
     // Calculate portfolio value at different points in time
     const now = new Date()
@@ -534,17 +476,37 @@ export async function getPerformanceMetrics(
     const calculateValueAtDate = (date: Date): { btc: number; usd: number; investment: number } => {
       let btc = 0
       let investment = 0
-      const relevantTx = transactions.filter(tx => new Date(tx.date) <= date)
-      
-      relevantTx.forEach(tx => {
-        if (tx.type === 'Buy' && tx.buy_amount && tx.buy_currency === 'USD') {
-          investment += tx.buy_amount + (tx.service_fee || 0) + (tx.network_fee || 0)
+
+      // Process orders up to the date
+      orders.forEach(order => {
+        if (new Date(order.date) <= date) {
+          if (order.type === 'buy') {
+            if (order.received_btc_amount) {
+              btc += order.received_btc_amount
+            }
+            if (order.buy_fiat_amount) {
+              investment += order.buy_fiat_amount
+            }
+            if (order.service_fee && order.service_fee_currency === 'USD') {
+              investment += order.service_fee
+            }
+          } else if (order.type === 'sell' && order.sell_btc_amount) {
+            btc -= order.sell_btc_amount
+          }
         }
-        if (tx.received_amount && tx.received_currency === 'BTC') {
-          btc += Number(tx.received_amount)
+      })
+
+      // Process sends up to the date
+      sends.forEach(send => {
+        if (new Date(send.date) <= date && send.sent_amount) {
+          btc -= send.sent_amount
         }
-        if (tx.sell_amount && tx.sell_currency === 'BTC') {
-          btc -= Number(tx.sell_amount)
+      })
+
+      // Process receives up to the date
+      receives.forEach(receive => {
+        if (new Date(receive.date) <= date && receive.received_transfer_amount) {
+          btc += receive.received_transfer_amount
         }
       })
 

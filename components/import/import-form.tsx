@@ -14,6 +14,7 @@ import { ImportPreview } from "@/components/import/import-preview"
 import { insertTransactions } from '@/lib/supabase'
 import type { PostgrestError } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 
 type DbTransaction = Database['public']['Tables']['transactions']['Insert']
 
@@ -28,76 +29,72 @@ interface ValidationIssue {
 interface CSVRow {
   date: string
   type: string
-  buy_amount?: string
-  sell_amount?: string
-  sent_amount?: string
-  received_amount?: string
+  asset: string
+  price?: string
   exchange?: string
-  network_fee?: string
-  network_currency?: string
+  buy_fiat_amount?: string
+  received_btc_amount?: string
+  sell_btc_amount?: string
+  received_fiat_amount?: string
   service_fee?: string
-  service_fee_currency?: string
-  [key: string]: string | undefined
+  // Alternative field names for flexibility
+  fiat_amount?: string
+  btc_amount?: string
 }
 
 interface ParsedTransaction {
   date: string
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive'
+  type: 'buy' | 'sell'
   asset: string
   price: number
-  sent_amount: number | null
-  sent_currency: string | null
-  received_amount: number | null
-  received_currency: string | null
-  buy_amount: number | null
+  exchange: string | null
+  buy_fiat_amount: number | null
   buy_currency: string | null
-  sell_amount: number | null
-  sell_currency: string | null
-  network_fee: number | null
-  network_currency: string | null
+  received_btc_amount: number | null
+  received_currency: string | null
+  sell_btc_amount: number | null
+  sell_btc_currency: string | null
+  received_fiat_amount: number | null
+  received_fiat_currency: string | null
   service_fee: number | null
   service_fee_currency: string | null
-  exchange: string | null
+}
+
+interface ImportStatus {
+  totalRows: number
+  parsedRows: number
+  importedRows: number
+  failedRows: number
+  failedRowDetails: Array<{
+    rowNumber: number
+    error: string
+  }>
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
-const parseDate = (dateStr: string): Date => {
-  const date = new Date(dateStr)
-  if (!isNaN(date.getTime())) {
-    return date
+const parseDate = (dateStr: string): string => {
+  try {
+    // Parse MM/DD/YY HH:mm format
+    const [datePart, timePart] = dateStr.split(' ')
+    const [month, day, yearShort] = datePart.split('/')
+    const [hours, minutes] = timePart.split(':')
+
+    if (!month || !day || !yearShort || !hours || !minutes) {
+      throw new Error(`Invalid date format: ${dateStr}`)
+    }
+
+    // Convert 2-digit year to 4-digit year
+    const year = yearShort.length === 2 ? `20${yearShort}` : yearShort
+
+    // Create date string in ISO format but preserve local time
+    // Format: YYYY-MM-DDTHH:mm:ss
+    const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00`
+    
+    return isoDate
+  } catch (err) {
+    throw new Error(`Invalid date format: ${dateStr}. Expected MM/DD/YY HH:mm`)
   }
-
-  // Try MM/DD/YY format
-  const parts = dateStr.split(' ')
-  const datePart = parts[0]
-  const timePart = parts[1] || '00:00'
-
-  if (!datePart) {
-    throw new Error(`Invalid date format: ${dateStr}`)
-  }
-
-  const [month, day, yearShort] = datePart.split('/')
-  const [hours, minutes] = timePart.split(':')
-
-  if (!month || !day || !yearShort || !hours || !minutes) {
-    throw new Error(`Invalid date format: ${dateStr}`)
-  }
-
-  const year = yearShort.length === 2 ? `20${yearShort}` : yearShort
-  
-  const parsedDate = new Date()
-  parsedDate.setFullYear(parseInt(year))
-  parsedDate.setMonth(parseInt(month) - 1)
-  parsedDate.setDate(parseInt(day))
-  parsedDate.setHours(parseInt(hours))
-  parsedDate.setMinutes(parseInt(minutes))
-
-  if (isNaN(parsedDate.getTime())) {
-    throw new Error(`Invalid date format: ${dateStr}`)
-  }
-
-  return parsedDate
 }
 
 const transformCSVToTransaction = (row: CSVRow): ParsedTransaction => {
@@ -107,132 +104,80 @@ const transformCSVToTransaction = (row: CSVRow): ParsedTransaction => {
       throw new Error('Missing transaction type')
     }
 
-    const rawType = row.type.toString().trim()
-    let type: 'Buy' | 'Sell' | 'Send' | 'Receive'
-
-    // Normalize type with case-insensitive matching
-    const normalizedType = rawType.toLowerCase()
-    switch (normalizedType) {
-      case 'buy':
-        type = 'Buy'
-        break
-      case 'sell':
-        type = 'Sell'
-        break
-      case 'send':
-        type = 'Send'
-        break
-      case 'receive':
-        type = 'Receive'
-        break
-      default:
-        throw new Error(`Invalid transaction type: ${rawType}`)
+    const type = row.type.toString().toLowerCase().trim()
+    if (type !== 'buy' && type !== 'sell') {
+      throw new Error(`Invalid transaction type: ${row.type}. Must be 'buy' or 'sell'`)
     }
 
     // 2. Parse and validate date
     if (!row.date) {
       throw new Error('Missing transaction date')
     }
+    const date = parseDate(row.date)
 
-    const date = parseDate(row.date).toISOString()
-
-    // Helper function to parse amount
+    // 3. Parse amounts
     const parseAmount = (value: string | undefined): number | null => {
       if (!value || value.trim() === '') return null
-      const strValue = value.toString().trim()
-      const numValue = Number(strValue.split(' ')[0])
+      const cleanValue = value.toString().replace(/[$,]/g, '').trim()
+      const numValue = Number(cleanValue)
       return isNaN(numValue) ? null : numValue
     }
 
-    // Parse all amounts
-    const sent_amount = parseAmount(row.sent_amount)
-    const received_amount = parseAmount(row.received_amount)
-    const buy_amount = parseAmount(row.buy_amount)
-    const sell_amount = parseAmount(row.sell_amount)
-    const network_fee = parseAmount(row.network_fee)
+    // Parse all possible amounts
+    const buy_fiat_amount = parseAmount(row.buy_fiat_amount || row.fiat_amount)
+    const received_btc_amount = parseAmount(row.received_btc_amount || row.btc_amount)
+    const sell_btc_amount = parseAmount(row.sell_btc_amount || row.btc_amount)
+    const received_fiat_amount = parseAmount(row.received_fiat_amount || row.fiat_amount)
     const service_fee = parseAmount(row.service_fee)
+    const price = parseAmount(row.price)
 
-    // Build transaction object matching database schema
+    // 4. Build base transaction
     const baseTransaction: ParsedTransaction = {
       date,
-      type,
+      type: type as 'buy' | 'sell',
       asset: 'BTC',
-      sent_amount: null,
-      sent_currency: null,
-      received_amount: null,
-      received_currency: null,
-      buy_amount: null,
+      price: 0, // Will be set below
+      exchange: row.exchange || null,
+      buy_fiat_amount: null,
       buy_currency: null,
-      sell_amount: null,
-      sell_currency: null,
-      price: 0,
-      network_fee: network_fee || null,
-      network_currency: network_fee ? (type === 'Buy' ? 'USD' : 'BTC') : null,
-      service_fee: service_fee || null,
-      service_fee_currency: service_fee ? (type === 'Buy' ? 'USD' : 'BTC') : null,
-      exchange: row.exchange || null
+      received_btc_amount: null,
+      received_currency: null,
+      sell_btc_amount: null,
+      sell_btc_currency: null,
+      received_fiat_amount: null,
+      received_fiat_currency: null,
+      service_fee,
+      service_fee_currency: service_fee ? (type === 'buy' ? 'USD' : 'BTC') : null
     }
 
-    // Calculate price and set amounts based on transaction type
-    switch (type) {
-      case 'Buy': {
-        if (!buy_amount || !received_amount) {
-          throw new Error('Buy transaction requires both USD and BTC amounts')
-        }
-        return {
-          ...baseTransaction,
-          buy_amount,
-          buy_currency: 'USD',
-          received_amount,
-          received_currency: 'BTC',
-          price: buy_amount / received_amount
-        }
+    // 5. Set type-specific fields and calculate price
+    if (type === 'buy') {
+      if (!buy_fiat_amount || !received_btc_amount) {
+        throw new Error('Buy transaction requires buy_fiat_amount and received_btc_amount')
       }
-      case 'Sell': {
-        // For sell transactions, we need both the BTC amount being sold and the USD amount received
-        const btcAmount = sell_amount
-        const usdAmount = received_amount
-
-        if (!btcAmount || btcAmount <= 0) {
-          throw new Error('Sell transaction requires a positive BTC amount')
-        }
-        if (!usdAmount || usdAmount <= 0) {
-          throw new Error('Sell transaction requires a positive USD amount')
-        }
-
-        return {
-          ...baseTransaction,
-          sell_amount: btcAmount,
-          sell_currency: 'BTC',
-          received_amount: usdAmount,
-          received_currency: 'USD',
-          price: usdAmount / btcAmount
-        }
+      baseTransaction.buy_fiat_amount = buy_fiat_amount
+      baseTransaction.buy_currency = 'USD'
+      baseTransaction.received_btc_amount = received_btc_amount
+      baseTransaction.received_currency = 'BTC'
+      baseTransaction.price = price || (buy_fiat_amount / received_btc_amount)
+    } else { // sell
+      if (!sell_btc_amount || !received_fiat_amount) {
+        throw new Error('Sell transaction requires sell_btc_amount and received_fiat_amount')
       }
-      case 'Send': {
-        if (!sent_amount) {
-          throw new Error('Send transaction requires BTC amount')
-        }
-        return {
-          ...baseTransaction,
-          sent_amount,
-          sent_currency: 'BTC',
-          price: 0
-        }
-      }
-      case 'Receive': {
-        if (!received_amount) {
-          throw new Error('Receive transaction requires BTC amount')
-        }
-        return {
-          ...baseTransaction,
-          received_amount,
-          received_currency: 'BTC',
-          price: 0
-        }
-      }
+      baseTransaction.sell_btc_amount = sell_btc_amount
+      baseTransaction.sell_btc_currency = 'BTC'
+      baseTransaction.received_fiat_amount = received_fiat_amount
+      baseTransaction.received_fiat_currency = 'USD'
+      baseTransaction.price = price || (received_fiat_amount / sell_btc_amount)
     }
+
+    return baseTransaction
   } catch (err) {
+    console.error('Error transforming CSV row:', {
+      error: err,
+      message: err instanceof Error ? err.message : String(err),
+      row
+    })
     throw err
   }
 }
@@ -247,139 +192,127 @@ export function ImportForm() {
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([])
   const [originalRows, setOriginalRows] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<string>('upload')
+  const [importStatus, setImportStatus] = useState<ImportStatus>({
+    totalRows: 0,
+    parsedRows: 0,
+    importedRows: 0,
+    failedRows: 0,
+    failedRowDetails: []
+  })
 
   const validateTransaction = (row: any, index: number): ValidationIssue[] => {
     const issues: ValidationIssue[] = []
 
-    // Debug validation
-    console.log(`Validating row ${index + 1}:`, {
-      rowData: row,
-      type: row.type,
-      amounts: {
-        sent: row.sent_amount,
-        received: row.received_amount,
-        buy: row.buy_amount,
-        sell: row.sell_amount
-      }
-    })
+    // Helper to validate numeric amount
+    const isValidAmount = (value: any): boolean => {
+      if (!value) return false
+      const cleanValue = value.toString().replace(/[$,]/g, '').trim()
+      const num = Number(cleanValue)
+      return !isNaN(num) && num > 0
+    }
 
-    // 1. Required fields for all transactions
-    if (!row.date || !row.type) {
-      if (!row.date) {
+    // Validate date format and future dates
+    if (!row.date) {
+      issues.push({
+        row: index + 1,
+        field: 'date',
+        issue: 'Missing date',
+        suggestion: 'Add a date in MM/DD/YY HH:mm format',
+        severity: 'error'
+      })
+    } else {
+      try {
+        const parsedDate = parseDate(row.date)
+        const now = new Date()
+        if (parsedDate > now) {
+          issues.push({
+            row: index + 1,
+            field: 'date',
+            issue: 'Future date detected',
+            suggestion: 'Verify if this future transaction date is intentional',
+            severity: 'warning'
+          })
+        }
+      } catch (err) {
         issues.push({
           row: index + 1,
           field: 'date',
-          issue: 'Missing date',
-          suggestion: 'Add a date in YYYY-MM-DD HH:mm:ss format',
+          issue: 'Invalid date format',
+          suggestion: 'Use MM/DD/YY HH:mm format',
           severity: 'error'
         })
       }
-      if (!row.type) {
-        issues.push({
-          row: index + 1,
-          field: 'type',
-          issue: 'Missing transaction type',
-          suggestion: 'Add a transaction type (Buy, Sell, Send, or Receive)',
-          severity: 'error'
-        })
-      }
-      return issues
     }
 
-    // 2. Validate type
-    const type = row.type.toString().toLowerCase().trim()
-    if (!['buy', 'sell', 'send', 'receive'].includes(type)) {
+    // Required fields for all transactions
+    if (!row.type) {
       issues.push({
         row: index + 1,
         field: 'type',
-        issue: `Invalid transaction type: ${row.type}`,
-        suggestion: 'Use one of: Buy, Sell, Send, Receive',
+        issue: 'Missing transaction type',
+        suggestion: "Add a transaction type ('buy' or 'sell')",
         severity: 'error'
       })
       return issues
     }
 
-    // Helper to validate numeric amount
-    const isValidAmount = (value: any): boolean => {
-      if (!value) return false
-      const num = Number(value.toString().split(' ')[0])
-      return !isNaN(num) && num > 0
+    // Validate type
+    const type = row.type.toString().toLowerCase().trim()
+    if (type !== 'buy' && type !== 'sell') {
+      issues.push({
+        row: index + 1,
+        field: 'type',
+        issue: `Invalid transaction type: ${row.type}`,
+        suggestion: "Use either 'buy' or 'sell'",
+        severity: 'error'
+      })
+      return issues
     }
 
-    // 3. Type-specific validations
-    switch (type) {
-      case 'buy': {
-        // Buy transactions require USD amount in buy_amount and received_amount
-        if (!isValidAmount(row.buy_amount)) {
-          issues.push({
-            row: index + 1,
-            field: 'buy_amount',
-            issue: 'Missing or invalid USD amount',
-            suggestion: 'Add the USD amount spent',
-            severity: 'error'
-          })
-        }
-        if (!isValidAmount(row.received_amount)) {
-          issues.push({
-            row: index + 1,
-            field: 'received_amount',
-            issue: 'Missing or invalid BTC amount received',
-            suggestion: 'Add the BTC amount received',
-            severity: 'error'
-          })
-        }
-        break
-      }
+    // Type-specific validations
+    if (type === 'buy') {
+      const hasBuyAmount = isValidAmount(row.buy_fiat_amount)
+      const hasReceivedBtc = isValidAmount(row.received_btc_amount)
 
-      case 'sell': {
-        // Sell transactions require BTC amount in sell_amount and received_amount
-        if (!isValidAmount(row.sell_amount)) {
-          issues.push({
-            row: index + 1,
-            field: 'sell_amount',
-            issue: 'Missing or invalid BTC amount to sell',
-            suggestion: 'Add the BTC amount to sell',
-            severity: 'error'
-          })
-        }
-        if (!isValidAmount(row.received_amount)) {
-          issues.push({
-            row: index + 1,
-            field: 'received_amount',
-            issue: 'Missing or invalid USD amount received',
-            suggestion: 'Add the USD amount received',
-            severity: 'error'
-          })
-        }
-        break
+      if (!hasBuyAmount) {
+        issues.push({
+          row: index + 1,
+          field: 'buy_fiat_amount',
+          issue: 'Missing or invalid fiat amount',
+          suggestion: 'Add the USD amount spent',
+          severity: 'error'
+        })
       }
-
-      case 'send': {
-        // Send transactions require BTC amount in sent_amount
-        if (!isValidAmount(row.sent_amount)) {
-          issues.push({
-            row: index + 1,
-            field: 'sent_amount',
-            issue: 'Missing or invalid BTC amount sent',
-            suggestion: 'Add the BTC amount sent',
-            severity: 'error'
-          })
-        }
-        break
+      if (!hasReceivedBtc) {
+        issues.push({
+          row: index + 1,
+          field: 'received_btc_amount',
+          issue: 'Missing or invalid BTC amount received',
+          suggestion: 'Add the BTC amount received',
+          severity: 'error'
+        })
       }
+    } else { // sell
+      const hasSellBtc = isValidAmount(row.sell_btc_amount) || isValidAmount(row.btc_amount)
+      const hasReceivedFiat = isValidAmount(row.received_fiat_amount) || isValidAmount(row.fiat_amount)
 
-      case 'receive': {
-        // Receive transactions require BTC amount in received_amount
-        if (!isValidAmount(row.received_amount)) {
-          issues.push({
-            row: index + 1,
-            field: 'received_amount',
-            issue: 'Missing or invalid BTC amount received',
-            suggestion: 'Add the BTC amount received',
-            severity: 'error'
-          })
-        }
-        break
+      if (!hasSellBtc) {
+        issues.push({
+          row: index + 1,
+          field: 'sell_btc_amount',
+          issue: 'Missing or invalid BTC amount to sell',
+          suggestion: 'Add the BTC amount sold',
+          severity: 'error'
+        })
+      }
+      if (!hasReceivedFiat) {
+        issues.push({
+          row: index + 1,
+          field: 'received_fiat_amount',
+          issue: 'Missing or invalid USD amount received',
+          suggestion: 'Add the USD amount received',
+          severity: 'error'
+        })
       }
     }
 
@@ -390,30 +323,29 @@ export function ImportForm() {
     Papa.parse(file, {
       complete: (results) => {
         const data = results.data as any[]
-        if (!data || data.length < 2) {
+        if (!data || data.length === 0) {
           setError('CSV file is empty or invalid')
           return
         }
 
-        // Debug raw CSV data
-        console.log('CSV parsing results:', {
-          totalRows: data.length,
-          headers: Object.keys(data[0]),
-          firstRow: data[0],
-          sampleRows: data.slice(0, 5).map(row => ({
-            date: row.date,
-            type: row.type,
-            amounts: {
-              buy_amount: row.buy_amount,
-              sell_amount: row.sell_amount,
-              sent_amount: row.sent_amount,
-              received_amount: row.received_amount
-            }
-          }))
+        // Filter out empty rows and rows with no data
+        const validRows = data.filter(row => {
+          // Check if row has any non-empty values
+          return row && 
+                 Object.values(row).some(value => 
+                   value !== null && 
+                   value !== undefined && 
+                   value.toString().trim() !== ''
+                 )
         })
 
+        if (validRows.length === 0) {
+          setError('No valid data rows found in CSV')
+          return
+        }
+
         // Normalize headers to ensure consistent casing
-        const normalizedData = data.map(row => {
+        const normalizedData = validRows.map(row => {
           const normalizedRow: any = {}
           Object.entries(row).forEach(([key, value]) => {
             // Convert header to lowercase for consistent matching
@@ -428,116 +360,64 @@ export function ImportForm() {
           return normalizedRow
         })
 
-        // If first row contains headers, start from second row
-        const startIndex = normalizedData[0].date && normalizedData[0].type ? 1 : 0
-        const rowsToProcess = normalizedData.slice(startIndex)
+        setImportStatus(prev => ({
+          ...prev,
+          totalRows: normalizedData.length,
+          parsedRows: 0,
+          failedRows: 0,
+          failedRowDetails: []
+        }))
 
-        console.log('Processing rows:', {
-          startIndex,
-          totalRowsToProcess: rowsToProcess.length,
-          firstRowToProcess: rowsToProcess[0]
-        })
-
-        setOriginalRows(rowsToProcess)
+        setOriginalRows(normalizedData)
         const issues: ValidationIssue[] = []
         const transactions: ParsedTransaction[] = []
+        let successfullyParsed = 0
+        let failed = 0
+        const failedDetails: Array<{ rowNumber: number, error: string }> = []
 
-        // Process each row
-        rowsToProcess.forEach((row, index) => {
-          // Skip empty rows
-          if (!row || Object.keys(row).length === 0) {
-            console.log(`Skipping empty row ${index + 1}`)
-            return
-          }
-
-          // Debug row processing
-          console.log(`Processing row ${index + 1}:`, {
-            originalRowNumber: index + startIndex + 1,
-            rowData: row,
-            type: row.type,
-            amounts: {
-              buy_amount: row.buy_amount,
-              sell_amount: row.sell_amount,
-              sent_amount: row.sent_amount,
-              received_amount: row.received_amount
-            }
-          })
-
-          const rowIssues = validateTransaction(row, index)
-          if (rowIssues.length > 0) {
-            console.log(`Validation issues for row ${index + 1}:`, rowIssues)
-            issues.push(...rowIssues)
-          } else {
-            try {
+        // Process each valid row
+        normalizedData.forEach((row, index) => {
+          try {
+            const rowIssues = validateTransaction(row, index)
+            if (rowIssues.length > 0) {
+              failed++
+              failedDetails.push({
+                rowNumber: index + 1,
+                error: rowIssues.map(i => i.issue).join(', ')
+              })
+              issues.push(...rowIssues)
+            } else {
               const transformed = transformCSVToTransaction(row)
-              console.log(`Successfully transformed row ${index + 1}:`, {
-                input: row,
-                output: transformed
-              })
               transactions.push(transformed)
-            } catch (err) {
-              console.error(`Error transforming row ${index + 1}:`, {
-                error: err,
-                errorMessage: err instanceof Error ? err.message : String(err),
-                rowData: row
-              })
-              issues.push({
-                row: index + 1,
-                field: 'general',
-                issue: err instanceof Error ? err.message : 'Unknown error',
-                severity: 'error'
-              })
+              successfullyParsed++
             }
+          } catch (err) {
+            failed++
+            failedDetails.push({
+              rowNumber: index + 1,
+              error: err instanceof Error ? err.message : 'Unknown error'
+            })
           }
         })
+
+        setImportStatus(prev => ({
+          ...prev,
+          parsedRows: successfullyParsed,
+          failedRows: failed,
+          failedRowDetails: failedDetails
+        }))
 
         setValidationIssues(issues)
         setParsedData(transactions)
         setError(null)
       },
-      error: (error) => {
-        console.error('CSV parsing error:', error)
-        setError(`Error parsing CSV: ${error.message}`)
-      },
       header: true,
-      skipEmptyLines: true,
+      skipEmptyLines: 'greedy', // Skip empty lines and lines with only whitespace
       // Disable dynamic typing to prevent automatic conversions
       dynamicTyping: false,
-      transform: (value, field: string) => {
+      transform: (value) => {
         if (!value) return value
-        
-        // Debug the transformation
-        console.log(`Transforming field "${field}":`, {
-          originalValue: value,
-          type: typeof value,
-          field
-        })
-        
-        const strValue = value.toString().trim()
-        
-        // Special handling for type field
-        if (field.toLowerCase() === 'type') {
-          return strValue.toLowerCase()
-        }
-        
-        // Handle amounts with currency suffixes
-        if (field.toLowerCase().includes('amount')) {
-          const parts = strValue.split(' ')
-          const numericPart = parts[0]
-          const currencyPart = parts[1]
-          
-          console.log(`Processing amount field "${field}":`, {
-            original: strValue,
-            numericPart,
-            currencyPart,
-            hasUSD: currencyPart === 'USD',
-            hasBTC: currencyPart === 'BTC'
-          })
-          
-          return numericPart
-        }
-        
-        return strValue
+        return value.toString().trim()
       }
     })
   }
@@ -594,170 +474,31 @@ export function ImportForm() {
     setUploadProgress(10)
 
     try {
-      // Transform the parsed data
-      const transactions = parsedData.map((transaction, index) => {
-        // Debug log for each transaction being processed
-        console.log(`Processing transaction ${index + 1}:`, {
-          type: transaction.type,
-          amounts: {
-            sent: transaction.sent_amount,
-            received: transaction.received_amount,
-            buy: transaction.buy_amount,
-            sell: transaction.sell_amount
-          }
-        })
-
-        // Validate required fields
-        if (!transaction.date) throw new Error(`Row ${index + 1}: Missing date`)
-        if (!transaction.type) throw new Error(`Row ${index + 1}: Missing type`)
-        if (typeof transaction.price !== 'number') throw new Error(`Row ${index + 1}: Invalid price`)
-
-        // Helper to validate amount
-        const validateAmount = (amount: number | null | undefined): number | null => {
-          if (amount === null || amount === undefined) return null
-          const num = Number(amount)
-          if (isNaN(num)) {
-            console.error(`Invalid amount value:`, { amount, index: index + 1 })
-            return null
-          }
-          return num
-        }
-
-        // Parse all amounts first
-        const sent_amount = validateAmount(transaction.sent_amount)
-        const received_amount = validateAmount(transaction.received_amount)
-        const buy_amount = validateAmount(transaction.buy_amount)
-        const sell_amount = validateAmount(transaction.sell_amount)
-        const network_fee = validateAmount(transaction.network_fee)
-        const service_fee = validateAmount(transaction.service_fee)
-
-        // Debug log for amounts after validation
-        if (transaction.type === 'Sell') {
-          console.log(`Validating Sell amounts for row ${index + 1}:`, {
-            sell_amount,
-            received_amount
-          })
-        }
-
-        // Initialize transaction with required fields
-        const transformedTransaction: {
-          date: string
-          type: 'Buy' | 'Sell' | 'Send' | 'Receive'
-          asset: string
-          sent_amount: number | null
-          sent_currency: string | null
-          buy_amount: number | null
-          buy_currency: string | null
-          sell_amount: number | null
-          sell_currency: string | null
-          price: number
-          received_amount: number | null
-          received_currency: string | null
-          exchange: string | null
-          network_fee: number | null
-          network_currency: string | null
-          service_fee: number | null
-          service_fee_currency: string | null
-        } = {
-          date: transaction.date,
-          type: transaction.type,
-          asset: 'BTC',
-          price: transaction.price,
-          sent_amount: null,
-          sent_currency: null,
-          received_amount: null,
-          received_currency: null,
-          buy_amount: null,
-          buy_currency: null,
-          sell_amount: null,
-          sell_currency: null,
-          network_fee: network_fee || null,
-          network_currency: network_fee ? (transaction.type === 'Buy' ? 'USD' : 'BTC') : null,
-          service_fee: service_fee || null,
-          service_fee_currency: service_fee ? (transaction.type === 'Buy' ? 'USD' : 'BTC') : null,
-          exchange: transaction.exchange || null
-        }
-
-        switch (transaction.type) {
-          case 'Buy': {
-            if (!buy_amount || buy_amount <= 0) {
-              throw new Error(`Row ${index + 1}: Buy transaction requires a positive buy_amount`)
-            }
-            if (!received_amount || received_amount <= 0) {
-              throw new Error(`Row ${index + 1}: Buy transaction requires a positive received_amount`)
-            }
-            transformedTransaction.buy_amount = buy_amount
-            transformedTransaction.buy_currency = 'USD'
-            transformedTransaction.received_amount = received_amount
-            transformedTransaction.received_currency = 'BTC'
-            transformedTransaction.price = buy_amount / received_amount
-            break
-          }
-          case 'Sell': {
-            // Debug log before validation
-            console.log(`Validating Sell amounts for row ${index + 1}:`, {
-              sell_amount,
-              received_amount
-            })
-
-            if (!sell_amount || sell_amount <= 0) {
-              throw new Error(`Row ${index + 1}: Sell transaction requires a positive sell_amount`)
-            }
-            if (!received_amount || received_amount <= 0) {
-              console.error(`Invalid received_amount for Sell transaction:`, {
-                row: index + 1,
-                received_amount,
-                original: transaction.received_amount
-              })
-              throw new Error(`Row ${index + 1}: Sell transaction requires a positive received_amount`)
-            }
-            transformedTransaction.sell_amount = sell_amount
-            transformedTransaction.sell_currency = 'BTC'
-            transformedTransaction.received_amount = received_amount
-            transformedTransaction.received_currency = 'USD'
-            transformedTransaction.price = received_amount / sell_amount
-            break
-          }
-          case 'Send': {
-            if (!sent_amount) {
-              throw new Error(`Row ${index + 1}: Send transaction requires a positive sent_amount`)
-            }
-            transformedTransaction.sent_amount = sent_amount
-            transformedTransaction.sent_currency = 'BTC'
-            transformedTransaction.price = 0
-            break
-          }
-          case 'Receive': {
-            if (!received_amount) {
-              throw new Error(`Row ${index + 1}: Receive transaction requires a positive received_amount`)
-            }
-            transformedTransaction.received_amount = received_amount
-            transformedTransaction.received_currency = 'BTC'
-            transformedTransaction.price = 0
-            break
-          }
-        }
-
-        return transformedTransaction
-      })
-
       setUploadProgress(30)
 
       // Insert transactions
-      const result = await insertTransactions(transactions)
+      const result = await insertTransactions(parsedData)
       
       if (result.error) {
-        console.error('Upload failed:', result.error)
         throw new Error(result.error.message || 'Failed to upload transactions')
       }
 
+      // Update import status with final counts
+      setImportStatus(prev => ({
+        ...prev,
+        importedRows: result.data?.length || 0,
+        failedRows: prev.totalRows - (result.data?.length || 0)
+      }))
+
       setUploadProgress(100)
 
-      // Reset form
-      setFile(null)
-      setParsedData(null)
-      setValidationIssues([])
-      setUploadProgress(0)
+      // Reset form if all rows were imported successfully
+      if (result.data?.length === importStatus.totalRows) {
+        setFile(null)
+        setParsedData(null)
+        setValidationIssues([])
+        setUploadProgress(0)
+      }
     } catch (err) {
       console.error('Upload error:', err)
       setError(err instanceof Error ? err.message : 'Failed to upload transactions')
@@ -780,6 +521,57 @@ export function ImportForm() {
     setParsedData(null)
     setValidationIssues([])
     setUploadProgress(0)
+  }
+
+  // Add ImportStatus component to render
+  const ImportStatusSummary = () => {
+    if (!importStatus.totalRows) return null
+
+    return (
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Import Status</CardTitle>
+          <CardDescription>
+            {importStatus.importedRows === importStatus.totalRows 
+              ? 'All rows successfully imported!'
+              : 'Some rows failed to import. Please review the details below.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span>Total Rows:</span>
+              <span>{importStatus.totalRows}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Successfully Parsed:</span>
+              <span className="text-green-500">{importStatus.parsedRows}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Successfully Imported:</span>
+              <span className="text-green-500">{importStatus.importedRows}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Failed:</span>
+              <span className="text-red-500">{importStatus.failedRows}</span>
+            </div>
+            {importStatus.failedRowDetails.length > 0 && (
+              <div className="mt-4">
+                <h4 className="font-semibold mb-2">Failed Rows:</h4>
+                <div className="space-y-2">
+                  {importStatus.failedRowDetails.map((detail, index) => (
+                    <Alert key={index} variant="destructive">
+                      <AlertTitle>Row {detail.rowNumber}</AlertTitle>
+                      <AlertDescription>{detail.error}</AlertDescription>
+                    </Alert>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -871,6 +663,7 @@ export function ImportForm() {
             ))}
           </div>
         )}
+        {parsedData && <ImportStatusSummary />}
       </TabsContent>
       <TabsContent value="manual" className="mt-4">
         <div className="text-center">
