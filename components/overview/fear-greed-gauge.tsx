@@ -54,7 +54,7 @@ const MainGauge = memo(({ value, classification }: { value: number; classificati
           textColor="transparent"
           needleColor="#6B7280"
           needleBaseColor="#6B7280"
-          animate={false}
+          animate={true}
         />
       </div>
       <div className="absolute top-[55%] text-center">
@@ -77,7 +77,7 @@ const SmallGauge = memo(({ value, label, classification }: { value: number; labe
     <div className="flex flex-col items-center">
       <div className="text-base text-white mb-1">{label}</div>
       <div className="text-sm text-gray-400 mb-2">{classification}</div>
-      <div className="relative w-[120px]">
+      <div className="relative w-[100px]">
         <GaugeChart 
           id={`historical-gauge-${label}`}
           nrOfLevels={4}
@@ -89,7 +89,7 @@ const SmallGauge = memo(({ value, label, classification }: { value: number; labe
           needleColor="#6B7280"
           needleBaseColor="#6B7280"
           hideText
-          animate={false}
+          animate={true}
         />
         <div className="absolute top-[60%] left-1/2 transform -translate-x-1/2 text-center">
           <span className="text-2xl font-semibold text-white">{value}</span>
@@ -110,13 +110,16 @@ const FearGreedGauge = () => {
       try {
         const response = await fetch('/api/fear-greed');
         const result = await response.json();
+        console.log('[FearGreedGauge] Data received from API:', result);
         if (result.error) {
-          console.error('Error fetching Fear & Greed data:', result.error);
+          console.error('[FearGreedGauge] Error fetching Fear & Greed data:', result.error);
+          setData(null);
           return;
         }
         setData(result);
       } catch (error) {
-        console.error('Failed to fetch Fear & Greed data:', error);
+        console.error('[FearGreedGauge] Failed to fetch Fear & Greed data:', error);
+        setData(null);
       } finally {
         setLoading(false);
       }
@@ -138,27 +141,27 @@ const FearGreedGauge = () => {
           />
           
           {loading ? (
-            <div className="flex justify-center items-center h-[100px]">
+            <div className="flex justify-center items-center h-[150px]">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           ) : (
             <div className="rounded-md border">
               <div className="p-6">
-                <div className="grid grid-cols-3 gap-8">
+                <div className="flex justify-between items-start">
                   <SmallGauge 
-                    value={47}
+                    value={data?.historical?.yesterday?.value ?? 0}
                     label="Yesterday"
-                    classification="Fear"
+                    classification={data?.historical?.yesterday?.classification ?? 'N/A'}
                   />
                   <SmallGauge 
-                    value={49}
+                    value={data?.historical?.week_ago?.value ?? 0} 
                     label="7d ago"
-                    classification="Fear"
+                    classification={data?.historical?.week_ago?.classification ?? 'N/A'}
                   />
                   <SmallGauge 
-                    value={16}
+                    value={data?.historical?.month_ago?.value ?? 0} 
                     label="1m ago"
-                    classification="Extreme Fear"
+                    classification={data?.historical?.month_ago?.classification ?? 'N/A'}
                   />
                 </div>
               </div>

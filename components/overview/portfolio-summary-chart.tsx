@@ -14,7 +14,7 @@ import {
 } from "chart.js"
 import { Line } from "react-chartjs-2"
 import { Button } from "@/components/ui/button"
-import { createBrowserClient } from "@/lib/supabase"
+import { useSupabase } from "@/components/providers/supabase-provider"
 
 // Register ChartJS components
 ChartJS.register(
@@ -27,13 +27,15 @@ ChartJS.register(
   Legend
 )
 
-interface Transaction {
+// Updated interface to match 'orders' table structure and needed fields
+interface Order {
   date: string
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive'
-  received_amount: number | null
-  buy_amount: number | null
-  service_fee: number | null
-  price: number
+  type: 'buy' | 'sell' // Updated type to lowercase as per DB constraint
+  received_btc_amount: number | null // For buys
+  sell_btc_amount: number | null // For sells
+  buy_fiat_amount: number | null // For cost basis on buys
+  service_fee: number | null // For cost basis on buys
+  price: number // Needed for calculating value
 }
 
 interface MonthlyData {
@@ -44,10 +46,10 @@ interface MonthlyData {
   averagePrice: number
 }
 
-// Calculate monthly data from transactions
-function calculateMonthlyData(transactions: Transaction[]): MonthlyData[] {
-  // Sort transactions by date
-  const sortedTransactions = [...transactions].sort((a, b) => 
+// Calculate monthly data from transactions (now orders)
+function calculateMonthlyData(orders: Order[]): MonthlyData[] { // Renamed parameter
+  // Sort orders by date
+  const sortedOrders = [...orders].sort((a, b) => // Renamed variable
     new Date(a.date).getTime() - new Date(b.date).getTime()
   )
 
@@ -57,14 +59,14 @@ function calculateMonthlyData(transactions: Transaction[]): MonthlyData[] {
   let lastPrice = 0
 
   // Get min and max dates to fill in all months
-  if (sortedTransactions.length === 0) return []
+  if (sortedOrders.length === 0) return [] // Renamed variable
   
-  const firstTransaction = sortedTransactions[0]
-  const lastTransaction = sortedTransactions[sortedTransactions.length - 1]
+  const firstOrder = sortedOrders[0] // Renamed variable
+  const lastOrder = sortedOrders[sortedOrders.length - 1] // Renamed variable
   
-  if (!firstTransaction?.date || !lastTransaction?.date) return []
+  if (!firstOrder?.date || !lastOrder?.date) return [] // Renamed variable
   
-  const startDate = new Date(firstTransaction.date)
+  const startDate = new Date(firstOrder.date) // Renamed variable
   const currentDate = new Date()
   
   // Fill in all months between start date and current date
@@ -84,19 +86,20 @@ function calculateMonthlyData(transactions: Transaction[]): MonthlyData[] {
     currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
   }
 
-  // Process each transaction
-  sortedTransactions.forEach(tx => {
-    const date = new Date(tx.date)
+  // Process each order
+  sortedOrders.forEach(order => { // Renamed variable and parameter
+    const date = new Date(order.date)
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-    lastPrice = tx.price
+    lastPrice = order.price
     
-    if (tx.type === 'Buy' || tx.type === 'Receive') {
-      cumulativeBTC += tx.received_amount || 0
-      if (tx.type === 'Buy') {
-        cumulativeCostBasis += (tx.buy_amount || 0) + (tx.service_fee || 0)
-      }
-    } else if (tx.type === 'Sell' || tx.type === 'Send') {
-      cumulativeBTC -= tx.received_amount || 0
+    // Adjust cumulative BTC and cost basis based on order type
+    if (order.type === 'buy') {
+      cumulativeBTC += order.received_btc_amount || 0
+      // Cost basis includes fiat amount + service fee for buys
+      cumulativeCostBasis += (order.buy_fiat_amount || 0) + (order.service_fee || 0)
+    } else if (order.type === 'sell') {
+      cumulativeBTC -= order.sell_btc_amount || 0
+      // Sells don't add to cost basis in this calculation method (FIFO/LIFO logic would be elsewhere)
     }
 
     let monthData = monthlyData.get(monthKey)
@@ -106,16 +109,17 @@ function calculateMonthlyData(transactions: Transaction[]): MonthlyData[] {
         portfolioValue: 0,
         costBasis: cumulativeCostBasis,
         cumulativeBTC: cumulativeBTC,
-        averagePrice: tx.price
+        averagePrice: order.price
       }
       monthlyData.set(monthKey, monthData)
     } else {
       monthData.costBasis = cumulativeCostBasis
       monthData.cumulativeBTC = cumulativeBTC
-      monthData.averagePrice = tx.price
+      monthData.averagePrice = order.price
     }
     
-    monthData.portfolioValue = monthData.cumulativeBTC * monthData.averagePrice
+    // Use the most recent price for the portfolio value calculation for the month
+    monthData.portfolioValue = monthData.cumulativeBTC * monthData.averagePrice 
   })
 
   // Convert map to array and sort by month
@@ -199,26 +203,33 @@ interface PortfolioSummaryChartProps {
 
 export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: PortfolioSummaryChartProps) {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
+  const { supabase } = useSupabase()
 
   useEffect(() => {
-    async function fetchTransactions() {
-      const supabase = createBrowserClient()
-      const { data: transactions, error } = await supabase
-        .from('transactions')
-        .select('*')
+    async function fetchOrders() {
+      // Fetch from 'orders' table and select necessary columns
+      const { data: orders, error } = await supabase
+        .from('orders') // Changed table name
+        .select('date, type, received_btc_amount, sell_btc_amount, buy_fiat_amount, service_fee, price') // Updated select columns
         .order('date', { ascending: true })
 
       if (error) {
-        console.error('Error fetching transactions:', error)
+        console.error('Error fetching orders:', error) // Updated error message
         return
       }
 
-      const calculatedData = calculateMonthlyData(transactions)
-      setMonthlyData(calculatedData)
+      // Ensure orders is not null before calculating
+      if (orders) {
+          const calculatedData = calculateMonthlyData(orders) // Pass fetched orders
+          setMonthlyData(calculatedData)
+      } else {
+          console.log("No orders found.")
+          setMonthlyData([]) // Set empty data if no orders
+      }
     }
 
-    fetchTransactions()
-  }, [])
+    fetchOrders() // Renamed function call
+  }, [supabase])
 
   // Filter data based on selected period
   const filteredData = (() => {
@@ -239,14 +250,14 @@ export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: Po
       {
         label: "Portfolio Value",
         data: filteredData.map(d => d.portfolioValue),
-        borderColor: "#F7931A",
+        borderColor: "#F7931A", // Bitcoin Orange
         backgroundColor: "#F7931A",
         tension: 0.4,
       },
       {
         label: "Cost Basis",
         data: filteredData.map(d => d.costBasis),
-        borderColor: "#64748b",
+        borderColor: "#64748b", // Slate-500
         backgroundColor: "#64748b",
         tension: 0.4,
       },

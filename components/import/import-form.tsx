@@ -422,48 +422,68 @@ export function ImportForm() {
     })
   }
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
+    e.stopPropagation()
     setIsDragging(true)
   }
 
-  const handleDragLeave = () => {
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
     setIsDragging(false)
   }
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(false)
+    setError(null) // Clear any previous errors
 
     const files = e.dataTransfer.files
-    if (files && files.length > 0) {
-      const droppedFile = files[0]
-      if (!droppedFile) return
-
-      const validationError = validateFile(droppedFile)
-      if (validationError) {
-        setError(validationError)
-        return
-      }
-      setFile(droppedFile)
-      parseCSV(droppedFile)
+    if (!files || files.length === 0) {
+      setError('No file dropped')
+      return
     }
+
+    // Only process the first file if multiple files are dropped
+    if (files.length > 1) {
+      setError('Please drop only one file')
+      return
+    }
+
+    const droppedFile = files[0]
+    const validationError = validateFile(droppedFile)
+
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    setFile(droppedFile)
+    parseCSV(droppedFile)
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null) // Clear any previous errors
     const files = e.target.files
-    if (files && files.length > 0) {
-      const selectedFile = files[0]
-      if (!selectedFile) return
 
-      const validationError = validateFile(selectedFile)
-      if (validationError) {
-        setError(validationError)
-        return
-      }
-      setFile(selectedFile)
-      parseCSV(selectedFile)
+    if (!files || files.length === 0) {
+      setError('No file selected')
+      return
     }
+
+    const selectedFile = files[0]
+    const validationError = validateFile(selectedFile)
+
+    if (validationError) {
+      setError(validationError)
+      // Reset the input
+      e.target.value = ''
+      return
+    }
+
+    setFile(selectedFile)
+    parseCSV(selectedFile)
   }
 
   const handleUpload = async () => {
@@ -508,19 +528,41 @@ export function ImportForm() {
   }
 
   const validateFile = (file: File): string | null => {
+    // Check if a file was provided
+    if (!file) {
+      return 'No file selected'
+    }
+
+    // Check file size (10MB limit)
     if (file.size > MAX_FILE_SIZE) {
       return `File size exceeds ${MAX_FILE_SIZE / (1024 * 1024)}MB limit`
     }
-    if (!file.type.includes('csv') && !file.name.endsWith('.csv')) {
-      return 'File must be a CSV'
+
+    // Check file type
+    const validTypes = [
+      'text/csv',
+      'application/csv',
+      'application/vnd.ms-excel'
+    ]
+    
+    if (!validTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.csv')) {
+      return 'Please upload a valid CSV file'
     }
+
     return null
   }
 
   const handleClose = () => {
+    setFile(null)
     setParsedData(null)
     setValidationIssues([])
     setUploadProgress(0)
+    setError(null)
+    // Reset the file input
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement
+    if (fileInput) {
+      fileInput.value = ''
+    }
   }
 
   // Add ImportStatus component to render
@@ -584,10 +626,11 @@ export function ImportForm() {
         <div
           className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center mb-4 ${
             isDragging ? "border-bitcoin-orange bg-bitcoin-orange/10" : "border-border"
-          }`}
+          } cursor-pointer`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onClick={() => document.getElementById('file-upload')?.click()}
         >
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <Upload className="h-6 w-6 text-bitcoin-orange" />
@@ -596,9 +639,10 @@ export function ImportForm() {
             {file ? file.name : "Drag and drop your CSV file"}
           </h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            {file ? `${(file.size / 1024).toFixed(2)} KB` : "or click to browse"}
+            {file ? `${(file.size / 1024).toFixed(2)} KB` : "or click here to browse"}
           </p>
           <Input
+            id="file-upload"
             type="file"
             accept=".csv"
             onChange={handleFileChange}
@@ -634,6 +678,9 @@ export function ImportForm() {
             </div>
           )}
         </div>
+
+        {parsedData && <ImportStatusSummary />}
+
         {parsedData && validationIssues.length === 0 && (
           <ImportPreview 
             transactions={parsedData} 
@@ -663,7 +710,6 @@ export function ImportForm() {
             ))}
           </div>
         )}
-        {parsedData && <ImportStatusSummary />}
       </TabsContent>
       <TabsContent value="manual" className="mt-4">
         <div className="text-center">

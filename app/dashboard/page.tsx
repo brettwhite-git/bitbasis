@@ -3,14 +3,36 @@ import { DashboardContent } from "@/components/overview/dashboard-content"
 import { requireAuth } from "@/lib/server-auth"
 
 export default async function DashboardPage() {
-  const { supabase, user } = await requireAuth()
+  // Remove test logs
+  // console.log("[DashboardPage] Starting server component render.")
 
+  // Use requireAuth 
+  let user, supabase
+  try {
+    // console.log("[DashboardPage] Calling requireAuth()...")
+    const authResult = await requireAuth()
+    user = authResult.user
+    supabase = authResult.supabase
+    // console.log(`[DashboardPage] requireAuth() successful. User ID: ${user.id}`)
+  } catch (error) {
+    console.error("[DashboardPage] Error during requireAuth():", error)
+    // Rely on requireAuth's redirect
+  }
+  
   // Fetch portfolio and performance metrics
-  const [metrics, performance] = await Promise.all([
-    getPortfolioMetrics(user.id, supabase),
-    getPerformanceMetrics(user.id, supabase)
-  ])
-
-  return <DashboardContent metrics={metrics} performance={performance} />
+  try {
+    // console.log("[DashboardPage] Calling Promise.all for metrics...")
+    const [metrics, performance] = await Promise.all([
+      getPortfolioMetrics(user.id, supabase),
+      getPerformanceMetrics(user.id, supabase)
+    ])
+    // console.log("[DashboardPage] Promise.all for metrics successful.")
+    
+    // console.log("[DashboardPage] Rendering DashboardContent.")
+    return <DashboardContent metrics={metrics} performance={performance} />
+  } catch (error) {
+    console.error("[DashboardPage] Error fetching metrics:", error)
+    return <div>Error loading dashboard data. Please try again later.</div>
+  }
 }
 

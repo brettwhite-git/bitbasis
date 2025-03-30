@@ -9,17 +9,18 @@ import {
   ChartOptions,
 } from "chart.js"
 import { Doughnut } from "react-chartjs-2"
-import { createBrowserClient } from "@/lib/supabase"
+import { useSupabase } from "@/components/providers/supabase-provider"
 
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend)
 
-interface Transaction {
+// Updated interface to match 'orders' table structure and needed fields
+interface Order {
   date: string
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive'
-  received_amount: number | null
-  buy_amount: number | null
-  price: number
+  type: 'buy' | 'sell'
+  received_btc_amount: number | null // For buys
+  sell_btc_amount: number | null // For sells
+  price: number // Needed for calculations
 }
 
 interface YearlyAllocation {
@@ -28,29 +29,29 @@ interface YearlyAllocation {
   percentage: number
 }
 
-function calculateYearlyAllocation(transactions: Transaction[]): YearlyAllocation[] {
+function calculateYearlyAllocation(orders: Order[]): YearlyAllocation[] {
   const yearlyData = new Map<string, number>()
   let currentBTCByYear = new Map<string, number>()
 
-  // Sort transactions by date
-  const sortedTransactions = [...transactions].sort((a, b) => 
+  // Sort orders by date
+  const sortedOrders = [...orders].sort((a, b) => 
     new Date(a.date).getTime() - new Date(b.date).getTime()
   )
 
-  // Calculate BTC holdings by year
-  sortedTransactions.forEach(tx => {
-    const year = new Date(tx.date).getFullYear().toString()
+  // Calculate BTC holdings by year using 'type' and correct amount fields
+  sortedOrders.forEach(order => {
+    const year = new Date(order.date).getFullYear().toString()
     const currentBTC = currentBTCByYear.get(year) || 0
 
-    if (tx.type === 'Buy' || tx.type === 'Receive') {
-      currentBTCByYear.set(year, currentBTC + (tx.received_amount || 0))
-    } else if (tx.type === 'Sell' || tx.type === 'Send') {
-      currentBTCByYear.set(year, currentBTC - (tx.received_amount || 0))
+    if (order.type === 'buy') {
+      currentBTCByYear.set(year, currentBTC + (order.received_btc_amount || 0))
+    } else if (order.type === 'sell') {
+      currentBTCByYear.set(year, currentBTC - (order.sell_btc_amount || 0))
     }
   })
 
-  // Calculate USD value using the latest price
-  const latestPrice = sortedTransactions[sortedTransactions.length - 1]?.price || 0
+  // Calculate USD value using the latest price from the *last* order
+  const latestPrice = sortedOrders.length > 0 ? sortedOrders[sortedOrders.length - 1]?.price || 0 : 0
   let totalValue = 0
 
   currentBTCByYear.forEach((btcAmount, year) => {
@@ -183,26 +184,33 @@ const options: ChartOptions<"doughnut"> = {
 
 export function BitcoinAllocationChart() {
   const [yearlyData, setYearlyData] = useState<YearlyAllocation[]>([])
+  const { supabase } = useSupabase()
 
   useEffect(() => {
-    async function fetchTransactions() {
-      const supabase = createBrowserClient()
-      const { data: transactions, error } = await supabase
-        .from('transactions')
-        .select('*')
+    async function fetchOrders() {
+      // Fetch from 'orders' table and select necessary columns
+      const { data: orders, error } = await supabase
+        .from('orders') // Changed table name
+        .select('date, type, received_btc_amount, sell_btc_amount, price') // Updated select columns
         .order('date', { ascending: true })
 
       if (error) {
-        console.error('Error fetching transactions:', error)
+        console.error('Error fetching orders:', error) // Updated error message
         return
       }
 
-      const calculatedData = calculateYearlyAllocation(transactions)
-      setYearlyData(calculatedData)
+      // Ensure orders is not null before calculating
+      if (orders) {
+        const calculatedData = calculateYearlyAllocation(orders) // Pass fetched orders
+        setYearlyData(calculatedData)
+      } else {
+        console.log("No orders found.")
+        setYearlyData([]) // Set empty data if no orders
+      }
     }
 
-    fetchTransactions()
-  }, [])
+    fetchOrders() // Renamed function call
+  }, [supabase])
 
   const data = {
     labels: yearlyData.map(d => d.year),

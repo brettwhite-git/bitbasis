@@ -18,21 +18,6 @@ if (!supabaseAnonKey || supabaseAnonKey.length < 20) {
   throw new Error('Invalid or missing NEXT_PUBLIC_SUPABASE_ANON_KEY')
 }
 
-// Create a Supabase client for server-side operations
-export const supabase = createSupabaseClient<Database>(
-  supabaseUrl,
-  supabaseAnonKey,
-  {
-    auth: {
-      persistSession: false, // Don't persist session for server-side client
-      autoRefreshToken: false,
-    },
-    db: {
-      schema: 'public'
-    }
-  }
-)
-
 // Create a Supabase client for client-side operations with auth
 let browserClient: ReturnType<typeof createClientComponentClient<Database>> | null = null
 
@@ -66,9 +51,16 @@ export const createBrowserClient = () => {
 
 // Check if an email already exists using Supabase auth API
 export async function checkEmailExists(email: string): Promise<boolean> {
+  // This function now needs to create its own client if it's intended for server-side use
+  // outside the normal request flow. If used in API routes/Server Actions, 
+  // it should use the client provided by the appropriate helper.
+  // For now, let's assume it needs its own temporary client:
+  const tempServerClient = createSupabaseClient<Database>(supabaseUrl!, supabaseAnonKey!, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
   try {
-    // Use the server-side client for this operation
-    const { error } = await supabase.auth.signInWithOtp({
+    // Use the temporary server-side client for this operation
+    const { error } = await tempServerClient.auth.signInWithOtp({ // Use tempServerClient
       email,
       options: {
         shouldCreateUser: false,
@@ -139,9 +131,9 @@ async function testSupabaseConnection() {
 }
 
 // Run the test immediately if not in production
-if (process.env.NODE_ENV !== 'production') {
-  void testSupabaseConnection()
-}
+// if (process.env.NODE_ENV !== 'production') {
+//   void testSupabaseConnection() // Temporarily disable to check if it causes the cookies error
+// }
 
 export interface Transaction {
   id?: string

@@ -27,29 +27,54 @@ export async function getServerSession() {
 }
 
 export async function getServerUser() {
+  // This function might return a slightly stale user from the session.
+  // Prefer using requireUser or requireAuth which fetch fresh data.
   const session = await getServerSession()
   return session?.user ?? null
 }
 
 export async function requireUser() {
-  const user = await getServerUser()
-  if (!user) {
+  // Get the server client first
+  const supabase = await getServerClient()
+  // Directly fetch the user for this request
+  const { data: { user }, error } = await supabase.auth.getUser()
+  
+  if (error || !user) {
+    console.error("Error fetching user in requireUser or user not found:", error)
     redirect('/auth/signin')
   }
-  return user
+  
+  return user // Return the freshly fetched, non-null user
 }
 
 export async function requireAuth() {
+  // Revert back to original secure implementation
   const supabase = await getServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  // Fetch session and user securely
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
   
+  if (sessionError) {
+    // Keep generic error log
+    console.error('[requireAuth] Error fetching session:', sessionError)
+    redirect('/auth/signin')
+  }
+
   if (!session) {
+    redirect('/auth/signin')
+  }
+
+  // Fetch user directly for security
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    // Keep generic error log
+    console.error('[requireAuth] Error fetching user or user not found:', userError)
     redirect('/auth/signin')
   }
   
   return {
     supabase,
-    user: session.user,
-    session
+    user, // Return the securely fetched user
+    session // Still return session if needed elsewhere, but user is preferred
   }
 } 

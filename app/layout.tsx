@@ -1,6 +1,7 @@
 import type React from "react"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SupabaseAuthProvider } from "@/providers/supabase-auth-provider"
+import SupabaseProvider from "@/components/providers/supabase-provider"
 import "./globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
@@ -21,9 +22,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
-          <SupabaseAuthProvider>
-            {children}
-          </SupabaseAuthProvider>
+          <SupabaseProvider>
+            <SupabaseAuthProvider>
+              {children}
+            </SupabaseAuthProvider>
+          </SupabaseProvider>
         </ThemeProvider>
       </body>
     </html>
