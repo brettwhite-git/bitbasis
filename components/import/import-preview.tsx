@@ -79,18 +79,17 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
     total: transactions.length,
     validRows: transactions.length,
     totalBtc: transactions.reduce((sum, t) => {
-      switch (t.type) {
-        case 'buy':
-          return sum + (t.received_btc_amount ?? 0);
-        case 'sell':
-          return sum - (t.sell_btc_amount ?? 0);
-        default:
-          return sum;
+      const type = t.type.toLowerCase();
+      if (type === 'buy') {
+        // Only add received BTC from buy transactions
+        return sum + (t.received_btc_amount || 0);
       }
+      // Ignore sell transactions for this specific sum
+      return sum;
     }, 0),
     types: {
-      buy: transactions.filter(t => t.type === 'buy').length,
-      sell: transactions.filter(t => t.type === 'sell').length
+      buy: transactions.filter(t => t.type.toLowerCase() === 'buy').length,
+      sell: transactions.filter(t => t.type.toLowerCase() === 'sell').length
     }
   }
 
@@ -237,7 +236,13 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
             </TableHeader>
             <TableBody>
               {transactions.slice(0, 5).map((transaction, index) => {
-                const isShortTerm = new Date(transaction.date).getFullYear() === new Date().getFullYear();
+                // Correctly calculate short/long term based on one year holding period
+                const now = new Date();
+                const oneYearAgo = new Date();
+                oneYearAgo.setFullYear(now.getFullYear() - 1);
+                const transactionDate = new Date(transaction.date);
+                const isShortTerm = transactionDate > oneYearAgo;
+
                 const btcAmount = transaction.type === 'buy'
                   ? transaction.received_btc_amount ?? 0
                   : transaction.sell_btc_amount ?? 0;

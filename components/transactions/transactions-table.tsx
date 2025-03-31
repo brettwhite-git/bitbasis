@@ -26,15 +26,22 @@ interface UnifiedTransaction {
   exchange: string | null;
 }
 
-// Old Transaction type - keep for reference during refactoring if needed, then remove
-// type Transaction = Database['public']['Tables']['transactions']['Row'] 
+// Define props for the component
+interface TransactionsTableProps {
+  currentDateISO: string; // Add prop for server-provided date
+}
 
 type SortConfig = {
   column: keyof UnifiedTransaction | null
   direction: 'asc' | 'desc'
 }
 
-export function TransactionsTable() {
+export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
+  // Log the received prop when the component mounts or the prop changes
+  /* useEffect(() => {
+    console.log("[Client: TransactionsTable] Received currentDateISO prop:", currentDateISO);
+  }, [currentDateISO]); */
+
   const [transactions, setTransactions] = useState<UnifiedTransaction[]>([]) // <-- Use UnifiedTransaction
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -103,9 +110,15 @@ export function TransactionsTable() {
   }
 
   const isShortTerm = (date: string) => {
-    const transactionDate = new Date(date)
-    const currentYear = new Date().getFullYear()
-    return transactionDate.getFullYear() === currentYear
+    const transactionDate = new Date(date);
+    // Convert the ISO string prop back to a Date object
+    const now = new Date(currentDateISO); 
+    // Log the date being used for comparison
+    // console.log(`[Client: isShortTerm] Comparing ${transactionDate.toISOString()} against one year before ${now.toISOString()}`);
+    const oneYearAgo = new Date(now);
+    oneYearAgo.setFullYear(now.getFullYear() - 1);
+    // Return true if the transaction date is AFTER one year ago (less than 1 year hold)
+    return transactionDate > oneYearAgo;
   }
 
   const getAmount = (transaction: UnifiedTransaction) => {

@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/bitcoin/price",
+      "schedule": "*/15 * * * *" 
+    }
+  ]
+}

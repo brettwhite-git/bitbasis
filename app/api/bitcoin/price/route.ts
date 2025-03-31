@@ -110,23 +110,34 @@ export async function GET() {
     // If cache miss or expired, fetch new price
     const price = await fetchFromCoinMarketCap()
 
-    // Only store the price if it meets our storage criteria
-    if (await shouldStorePrice(price, latestPrice)) {
+    // Always store the newly fetched price
+    try {
       await supabase
         .from('bitcoin_prices')
         .insert({
-          date: new Date().toISOString().split('T')[0],
+          // Keep the date as just the date part for potential daily analysis
+          date: new Date().toISOString().split('T')[0], 
           price_usd: price,
-          last_updated: new Date().toISOString()
+          // Store the exact timestamp when this price was fetched and stored
+          last_updated: new Date().toISOString() 
         })
         .throwOnError()
+      console.log(`[API /bitcoin/price] Stored new price: ${price}`);
+    } catch (dbError) {
+       console.error('[API /bitcoin/price] Failed to store fetched price:', dbError);
+       // Decide if you want to throw or just log here. 
+       // If storing fails, the API might still return the fetched price, 
+       // but subsequent DB reads won't see it until the next successful store.
+       // For simplicity, we'll just log and continue for now.
     }
 
     // Return the new price regardless of whether we stored it
+    // (or maybe return the stored price if insert succeeded?)
+    // Let's return the fetched price for immediate use by the cron caller if needed.
     return NextResponse.json({ 
       price,
-      cached: false,
-      nextUpdate: config.cache.duration
+      cached: false, // Indicate it was freshly fetched by this call
+      // nextUpdate is less relevant now with unconditional storage
     })
   } catch (error) {
     console.error('Error fetching Bitcoin price:', error)
