@@ -15,12 +15,13 @@ type CostBasisResult = {
   averageCost: number
   unrealizedGain: number
   unrealizedGainPercent: number
-  potentialTaxLiability: number
+  potentialTaxLiabilityST: number
+  potentialTaxLiabilityLT: number
   realizedGains: number
   remainingBtc: number
 }
 
-type SortField = 'method' | 'totalBtc' | 'costBasis' | 'averageCost' | 'realizedGains' | 'unrealizedGain' | 'unrealizedGainPercent' | 'taxLiability'
+type SortField = 'method' | 'totalBtc' | 'costBasis' | 'averageCost' | 'realizedGains' | 'unrealizedGain' | 'unrealizedGainPercent' | 'taxLiabilityST' | 'taxLiabilityLT'
 type SortConfig = {
   field: SortField | null
   direction: 'asc' | 'desc'
@@ -90,8 +91,11 @@ export function CostBasisComparison() {
         case 'unrealizedGainPercent':
           comparison = a.results.unrealizedGainPercent - b.results.unrealizedGainPercent
           break
-        case 'taxLiability':
-          comparison = a.results.potentialTaxLiability - b.results.potentialTaxLiability
+        case 'taxLiabilityST':
+          comparison = a.results.potentialTaxLiabilityST - b.results.potentialTaxLiabilityST
+          break
+        case 'taxLiabilityLT':
+          comparison = a.results.potentialTaxLiabilityLT - b.results.potentialTaxLiabilityLT
           break
       }
       return sortConfig.direction === 'asc' ? comparison : -comparison
@@ -117,48 +121,11 @@ export function CostBasisComparison() {
           throw new Error('User not authenticated')
         }
 
-        // Fetch transactions
-        const { data: txData, error: txError } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('date', { ascending: true })
-
-        if (txError) throw txError
-        if (!txData || txData.length === 0) {
-          console.log('No transactions found')
-          setError('No transactions found')
-          return
-        }
-
-        // Log transaction summary
-        console.log('\nTransaction Summary:', {
-          totalTransactions: txData.length,
-          buyTransactions: txData.filter((t: Transaction) => t.type === 'Buy').length,
-          sellTransactions: txData.filter((t: Transaction) => t.type === 'Sell').length,
-          dateRange: {
-            first: txData[0].date,
-            last: txData[txData.length - 1].date
-          }
-        })
-
-        // Log first few transactions for verification
-        console.log('\nSample Transactions:', 
-          txData.slice(0, 3).map((tx: Transaction) => ({
-            date: tx.date,
-            type: tx.type,
-            received: tx.received_amount ? `${tx.received_amount} ${tx.received_currency}` : null,
-            sent: tx.sell_amount ? `${tx.sell_amount} ${tx.sell_currency}` : null,
-            price: tx.price
-          }))
-        )
-
-        setTransactions(txData)
-
-        // Calculate results for each method
-        const fifo = await calculateCostBasis(txData, 'FIFO', supabase)
-        const lifo = await calculateCostBasis(txData, 'LIFO', supabase)
-        const average = await calculateCostBasis(txData, 'Average Cost', supabase)
+        // Calculate results for each method using userId
+        // The calculateCostBasis function fetches the necessary data internally
+        const fifo = await calculateCostBasis(user.id, 'FIFO', supabase)
+        const lifo = await calculateCostBasis(user.id, 'LIFO', supabase)
+        const average = await calculateCostBasis(user.id, 'Average Cost', supabase)
 
         // Log results for comparison
         console.log('\nResults Comparison:', {
@@ -241,9 +208,14 @@ export function CostBasisComparison() {
                   Unrealized % {getSortIcon('unrealizedGainPercent')}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('taxLiability')} className="cursor-pointer">
+              <TableHead onClick={() => handleSort('taxLiabilityST')} className="cursor-pointer">
                 <div className="flex items-center justify-center gap-2">
-                  Tax Liability {getSortIcon('taxLiability')}
+                  Tax Liability ST {getSortIcon('taxLiabilityST')}
+                </div>
+              </TableHead>
+              <TableHead onClick={() => handleSort('taxLiabilityLT')} className="cursor-pointer">
+                <div className="flex items-center justify-center gap-2">
+                  Tax Liability LT {getSortIcon('taxLiabilityLT')}
                 </div>
               </TableHead>
             </TableRow>
@@ -258,7 +230,8 @@ export function CostBasisComparison() {
                 <TableCell className="text-center">{formatCurrency(results.realizedGains)}</TableCell>
                 <TableCell className="text-center">{formatCurrency(results.unrealizedGain)}</TableCell>
                 <TableCell className="text-center">{formatPercent(results.unrealizedGainPercent)}</TableCell>
-                <TableCell className="text-center">{formatCurrency(results.potentialTaxLiability)}</TableCell>
+                <TableCell className="text-center">{formatCurrency(results.potentialTaxLiabilityST)}</TableCell>
+                <TableCell className="text-center">{formatCurrency(results.potentialTaxLiabilityLT)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

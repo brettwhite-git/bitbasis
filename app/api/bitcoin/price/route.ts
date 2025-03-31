@@ -59,12 +59,10 @@ async function shouldStorePrice(newPrice: number, latestPrice?: { price_usd: num
   
   // Store if:
   // 1. Price change is significant (> 0.5%)
-  // 2. It's been more than 1 hour since last storage
-  // 3. New all-time high
+  // 2. It's been more than 30 minutes since last storage
   if (
-    priceChange > config.cache.priceChangeThresholds.low ||
-    timeSinceLastStore > 60 * 60 * 1000 || // 1 hour
-    newPrice > latestPrice.price_usd
+    priceChange > 0.02 || // Store if absolute change is > 2%
+    timeSinceLastStore > 30 * 60 * 1000 // Or store if > 30 minutes since last store
   ) {
     return true
   }

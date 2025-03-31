@@ -67,7 +67,10 @@ export function RecentTransactions() {
   }
 
   const getTotalFees = (transaction: Order): number => {
-    return transaction.type === 'buy' ? (transaction.service_fee || 0) : 0
+    if (transaction.type === 'buy' && transaction.service_fee_currency === 'USD') {
+      return transaction.service_fee || 0
+    }
+    return 0
   }
 
   const getAmount = (transaction: Order): number => {
@@ -75,12 +78,20 @@ export function RecentTransactions() {
   }
 
   const getTotal = (transaction: Order): number => {
+    let totalUSD = 0;
     if (transaction.type === 'buy') {
-      return (transaction.buy_fiat_amount || 0) + (transaction.service_fee || 0)
+      if (transaction.buy_currency === 'USD') {
+        totalUSD += transaction.buy_fiat_amount || 0;
+      }
+      if (transaction.service_fee_currency === 'USD') {
+         totalUSD += transaction.service_fee || 0;
+      }
     } else if (transaction.type === 'sell') {
-      return transaction.received_fiat_amount || 0
-    } 
-    return 0
+      if (transaction.received_fiat_currency === 'USD') {
+        totalUSD += transaction.received_fiat_amount || 0;
+      }
+    }
+    return totalUSD;
   }
 
   const isShortTerm = (date: string): boolean => {
@@ -161,11 +172,13 @@ export function RecentTransactions() {
               </TableCell>
               <TableCell>{formatBTC(getAmount(transaction))}</TableCell>
               <TableCell className="hidden md:table-cell">
-                ${formatCurrency(transaction.price || 0)}
+                {formatCurrency(transaction.price || 0)}
               </TableCell>
-              <TableCell>${formatCurrency(getTotal(transaction))}</TableCell>
+              <TableCell>
+                {formatCurrency(getTotal(transaction))}
+              </TableCell>
               <TableCell className="hidden md:table-cell">
-                ${formatCurrency(getTotalFees(transaction))}
+                {formatCurrency(getTotalFees(transaction))}
               </TableCell>
               <TableCell className="hidden lg:table-cell">
                 {transaction.exchange 

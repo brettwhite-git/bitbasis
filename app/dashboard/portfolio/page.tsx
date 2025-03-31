@@ -29,22 +29,22 @@ export default async function PortfolioPage() {
   const { supabase, user } = await requireAuth()
 
   // Debug: Check if we can query transactions directly
-  const { data: transactions, error: txError } = await supabase
-    .from('transactions')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('date', { ascending: true })
-
-  if (txError) {
-    console.error('Transaction query error:', txError)
-    throw new Error('Failed to fetch transactions')
-  }
-
-  // Debug log for transaction fees
-  console.log('Transaction fee data:', transactions?.slice(0, 5).map(tx => ({
-    service_fee: tx.service_fee,
-    service_fee_currency: tx.service_fee_currency
-  })))
+  // const { data: transactions, error: txError } = await supabase
+  //   .from('transactions')
+  //   .select('*')
+  //   .eq('user_id', user.id)
+  //   .order('date', { ascending: true })
+  //
+  // if (txError) {
+  //   console.error('Transaction query error:', txError)
+  //   throw new Error('Failed to fetch transactions')
+  // }
+  //
+  // // Debug log for transaction fees
+  // console.log('Transaction fee data:', transactions?.slice(0, 5).map(tx => ({
+  //   service_fee: tx.service_fee,
+  //   service_fee_currency: tx.service_fee_currency
+  // })))
 
   // Fetch portfolio metrics and performance metrics
   const [metrics, performance] = await Promise.all([

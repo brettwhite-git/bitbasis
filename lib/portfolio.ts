@@ -34,7 +34,8 @@ interface CostBasisMethodResult {
   averageCost: number
   unrealizedGain: number
   unrealizedGainPercent: number
-  potentialTaxLiability: number
+  potentialTaxLiabilityST: number
+  potentialTaxLiabilityLT: number
   realizedGains: number
   remainingBtc: number
 }
@@ -201,73 +202,55 @@ export async function calculateCostBasis(
     if (!priceData) throw new Error('No Bitcoin price available')
     const currentPrice = priceData.price_usd
 
-    // Get all transactions from different tables
-    const [ordersResult, sendsResult, receivesResult] = await Promise.all([
-      supabase
-        .from('orders')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true }),
-      supabase
-        .from('send')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true }),
-      supabase
-        .from('receive')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true })
-    ])
+    // Get only the orders transactions
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: true })
 
-    if (ordersResult.error) throw ordersResult.error
-    if (sendsResult.error) throw sendsResult.error
-    if (receivesResult.error) throw receivesResult.error
+    if (ordersError) throw ordersError
+    if (!orders) throw new Error('Failed to fetch orders')
 
-    const orders = ordersResult.data || []
-    const sends = sendsResult.data || []
-    const receives = receivesResult.data || []
-
-    // Calculate total BTC
+    // Calculate metrics based only on buy/sell orders
     let runningBalance = 0
-    let totalReceived = 0
-    let totalSold = 0
+    let totalBtcBought = 0 // Only from buys
+    let totalSold = 0 // Only from sells
+    let totalShortTermBtcBought = 0
+    let totalLongTermBtcBought = 0
+    const oneYearAgoForProportion = new Date()
+    oneYearAgoForProportion.setFullYear(oneYearAgoForProportion.getFullYear() - 1)
 
-    // Process orders
     orders.forEach(order => {
       if (order.type === 'buy' && order.received_btc_amount) {
-        totalReceived += order.received_btc_amount
-        runningBalance += order.received_btc_amount
+        const amount = order.received_btc_amount
+        totalBtcBought += amount
+        runningBalance += amount
+        // Track for average cost tax proportion
+        const acquisitionDate = new Date(order.date)
+        if (acquisitionDate > oneYearAgoForProportion) {
+          totalShortTermBtcBought += amount
+        } else {
+          totalLongTermBtcBought += amount
+        }
       } else if (order.type === 'sell' && order.sell_btc_amount) {
         totalSold += order.sell_btc_amount
         runningBalance -= order.sell_btc_amount
       }
     })
 
-    // Process sends
-    sends.forEach(send => {
-      if (send.sent_amount) {
-        totalSold += send.sent_amount
-        runningBalance -= send.sent_amount
-      }
-    })
+    const remainingBtc = Math.max(0, runningBalance) // Ensure non-negative balance
 
-    // Process receives
-    receives.forEach(receive => {
-      if (receive.received_transfer_amount) {
-        totalReceived += receive.received_transfer_amount
-        runningBalance += receive.received_transfer_amount
-      }
-    })
+    // Shared Tax Rates
+    const shortTermTaxRate = 0.15 // User specified ST rate
+    const longTermTaxRate = 0.30  // User specified LT rate
 
-    const remainingBtc = runningBalance
-
-    // For Average Cost method
+    // --- Average Cost Method --- 
     if (method === 'Average Cost') {
       let totalUsdSpent = 0
       let totalUsdReceived = 0
 
-      // Calculate totals from buy orders
+      // Calculate totals only from orders
       orders.forEach(order => {
         if (order.type === 'buy') {
           if (order.buy_fiat_amount) {
@@ -283,29 +266,41 @@ export async function calculateCostBasis(
         }
       })
 
-      const averageCost = totalReceived > 0 ? totalUsdSpent / totalReceived : 0
+      const averageCost = totalBtcBought > 0 ? totalUsdSpent / totalBtcBought : 0 
       const currentValue = remainingBtc * currentPrice
       const realizedGains = totalUsdReceived - (totalSold * averageCost)
       const unrealizedGain = currentValue - (remainingBtc * averageCost)
-      const unrealizedGainPercent = averageCost > 0 ? (unrealizedGain / (remainingBtc * averageCost)) * 100 : 0
-      const potentialTaxLiability = unrealizedGain > 0 ? unrealizedGain * 0.15 : 0
+      const unrealizedGainPercent = averageCost > 0 && (remainingBtc * averageCost) > 0 
+        ? (unrealizedGain / (remainingBtc * averageCost)) * 100 
+        : 0
+
+      // Calculate potential tax liability using proportions (Option 1)
+      let potentialTaxLiabilityST = 0
+      let potentialTaxLiabilityLT = 0
+      if (unrealizedGain > 0 && totalBtcBought > 0) {
+        const shortTermProportion = totalShortTermBtcBought / totalBtcBought
+        const longTermProportion = totalLongTermBtcBought / totalBtcBought
+        potentialTaxLiabilityST = unrealizedGain * shortTermProportion * shortTermTaxRate
+        potentialTaxLiabilityLT = unrealizedGain * longTermProportion * longTermTaxRate
+      }
 
       return {
         totalCostBasis: remainingBtc * averageCost,
         averageCost,
         unrealizedGain,
         unrealizedGainPercent,
-        potentialTaxLiability,
+        potentialTaxLiabilityST,
+        potentialTaxLiabilityLT,
         realizedGains,
         remainingBtc
       }
     }
 
-    // For FIFO and LIFO methods
+    // --- FIFO and LIFO Methods --- 
     let btcHoldings: BTCHolding[] = []
     let realizedGains = 0
 
-    // Add buy transactions to holdings
+    // Add ONLY buy transactions to holdings
     orders.forEach(order => {
       if (order.type === 'buy' && order.received_btc_amount && order.buy_fiat_amount) {
         btcHoldings.push({
@@ -317,18 +312,6 @@ export async function calculateCostBasis(
       }
     })
 
-    // Add receive transactions to holdings (using market price at time of receipt)
-    receives.forEach(receive => {
-      if (receive.received_transfer_amount) {
-        btcHoldings.push({
-          date: receive.date,
-          amount: receive.received_transfer_amount,
-          costBasis: receive.received_transfer_amount * receive.price,
-          pricePerCoin: receive.price
-        })
-      }
-    })
-
     // Sort holdings based on method
     btcHoldings.sort((a, b) => 
       method === 'FIFO' 
@@ -336,18 +319,24 @@ export async function calculateCostBasis(
         : new Date(b.date).getTime() - new Date(a.date).getTime()
     )
 
-    // Process sell transactions
+    // Process ONLY sell transactions
     orders.forEach(order => {
       if (order.type === 'sell' && order.sell_btc_amount && order.received_fiat_amount) {
         let remainingSellAmount = order.sell_btc_amount
-        const sellPrice = order.received_fiat_amount / order.sell_btc_amount
+        // Calculate sell price safely
+        const sellPrice = order.sell_btc_amount > 0 
+            ? order.received_fiat_amount / order.sell_btc_amount
+            : 0
 
         while (remainingSellAmount > 0 && btcHoldings.length > 0) {
           const holding = btcHoldings[0]
+          if (!holding) break;
           const sellAmount = Math.min(remainingSellAmount, holding.amount)
           
-          // Calculate gain/loss for this portion
-          const costBasisForPortion = (sellAmount / holding.amount) * holding.costBasis
+          // Calculate gain/loss safely
+          const costBasisForPortion = holding.amount > 0 
+            ? (sellAmount / holding.amount) * holding.costBasis
+            : 0
           const proceedsForPortion = sellAmount * sellPrice
           realizedGains += proceedsForPortion - costBasisForPortion
 
@@ -355,8 +344,10 @@ export async function calculateCostBasis(
           if (sellAmount === holding.amount) {
             btcHoldings.shift()
           } else {
+            // Avoid division by zero if holding amount somehow becomes 0 before update
+            const remainingProportion = (holding.amount - sellAmount) > 0 ? (holding.amount - sellAmount) / holding.amount : 0;
             holding.amount -= sellAmount
-            holding.costBasis *= (holding.amount / (holding.amount + sellAmount))
+            holding.costBasis *= remainingProportion
           }
 
           remainingSellAmount -= sellAmount
@@ -364,48 +355,44 @@ export async function calculateCostBasis(
       }
     })
 
-    // Process send transactions (treated as disposals at market price)
-    sends.forEach(send => {
-      if (send.sent_amount) {
-        let remainingSendAmount = send.sent_amount
-        const sendPrice = send.price // Market price at time of send
+    // Calculate remaining cost basis and metrics for FIFO/LIFO
+    const totalCostBasis = btcHoldings.reduce((sum, h) => sum + h.costBasis, 0)
+    // Calculate average cost of *remaining* holdings safely
+    const averageCost = remainingBtc > 0 ? totalCostBasis / remainingBtc : 0 
+    const currentValue = remainingBtc * currentPrice
+    const unrealizedGain = currentValue - totalCostBasis
+    const unrealizedGainPercent = totalCostBasis > 0 
+        ? (unrealizedGain / totalCostBasis) * 100 
+        : 0
+    
+    // Calculate detailed potential tax liability for FIFO/LIFO using updated rates
+    let potentialTaxLiabilityST = 0
+    let potentialTaxLiabilityLT = 0
+    const oneYearAgoForTax = new Date()
+    oneYearAgoForTax.setFullYear(oneYearAgoForTax.getFullYear() - 1)
 
-        while (remainingSendAmount > 0 && btcHoldings.length > 0) {
-          const holding = btcHoldings[0]
-          const sendAmount = Math.min(remainingSendAmount, holding.amount)
-          
-          // Calculate gain/loss for this portion
-          const costBasisForPortion = (sendAmount / holding.amount) * holding.costBasis
-          const proceedsForPortion = sendAmount * sendPrice
-          realizedGains += proceedsForPortion - costBasisForPortion
-
-          // Update or remove the holding
-          if (sendAmount === holding.amount) {
-            btcHoldings.shift()
-          } else {
-            holding.amount -= sendAmount
-            holding.costBasis *= (holding.amount / (holding.amount + sendAmount))
-          }
-
-          remainingSendAmount -= sendAmount
+    btcHoldings.forEach(holding => {
+      const holdingValue = holding.amount * currentPrice
+      const holdingUnrealizedGain = holdingValue - holding.costBasis
+      
+      if (holdingUnrealizedGain > 0) {
+        const acquisitionDate = new Date(holding.date)
+        const isLongTerm = acquisitionDate <= oneYearAgoForTax
+        if (isLongTerm) {
+          potentialTaxLiabilityLT += holdingUnrealizedGain * longTermTaxRate
+        } else {
+          potentialTaxLiabilityST += holdingUnrealizedGain * shortTermTaxRate
         }
       }
     })
 
-    // Calculate remaining cost basis and metrics
-    const totalCostBasis = btcHoldings.reduce((sum, h) => sum + h.costBasis, 0)
-    const averageCost = remainingBtc > 0 ? totalCostBasis / remainingBtc : 0
-    const currentValue = remainingBtc * currentPrice
-    const unrealizedGain = currentValue - totalCostBasis
-    const unrealizedGainPercent = totalCostBasis > 0 ? (unrealizedGain / totalCostBasis) * 100 : 0
-    const potentialTaxLiability = unrealizedGain > 0 ? unrealizedGain * 0.15 : 0
-
     return {
       totalCostBasis,
-      averageCost,
+      averageCost, // Avg cost of remaining holdings
       unrealizedGain,
       unrealizedGainPercent,
-      potentialTaxLiability,
+      potentialTaxLiabilityST,
+      potentialTaxLiabilityLT,
       realizedGains,
       remainingBtc
     }
@@ -464,6 +451,15 @@ export async function getPerformanceMetrics(
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
     const yearStart = new Date(now.getFullYear(), 0, 1)
+    // Define additional past dates
+    const threeMonthAgo = new Date(now)
+    threeMonthAgo.setMonth(now.getMonth() - 3)
+    const yearAgo = new Date(now)
+    yearAgo.setFullYear(now.getFullYear() - 1)
+    const threeYearAgo = new Date(now)
+    threeYearAgo.setFullYear(now.getFullYear() - 3)
+    const fiveYearAgo = new Date(now)
+    fiveYearAgo.setFullYear(now.getFullYear() - 5)
 
     // Calculate total investment and current portfolio value
     let totalInvestment = 0
@@ -496,21 +492,26 @@ export async function getPerformanceMetrics(
         }
       })
 
-      // Process sends up to the date
-      sends.forEach(send => {
-        if (new Date(send.date) <= date && send.sent_amount) {
-          btc -= send.sent_amount
-        }
-      })
+      // Find the most recent price point at or before the target date
+      const priceRecordAtOrBefore = prices.find(p => new Date(p.last_updated) <= date);
 
-      // Process receives up to the date
-      receives.forEach(receive => {
-        if (new Date(receive.date) <= date && receive.received_transfer_amount) {
-          btc += receive.received_transfer_amount
-        }
-      })
+      let price = 0; // Default price
 
-      const price = prices.find(p => new Date(p.last_updated) <= date)?.price_usd || prices[0]?.price_usd || 0
+      if (priceRecordAtOrBefore) {
+        // Ideal case: Found a price at or before the date
+        price = priceRecordAtOrBefore.price_usd;
+      } else {
+        // Fallback: No price at or before. Find the *closest* price *after* the date.
+        // Since prices are sorted descending (newest first), we look for the last element
+        // whose date is still greater than the target date.
+        const priceRecordJustAfter = prices.slice().reverse().find(p => new Date(p.last_updated) > date);
+        if (priceRecordJustAfter) {
+          // Use the price from the day immediately following the target date
+          price = priceRecordJustAfter.price_usd;
+        } 
+        // Else: No price found before OR after (date is likely before any data). Price remains 0.
+      }
+      
       const value = btc * price
 
       // Update all-time high if this value is higher
@@ -528,6 +529,11 @@ export async function getPerformanceMetrics(
     const weekAgoValue = calculateValueAtDate(weekAgo)
     const monthAgoValue = calculateValueAtDate(monthAgo)
     const yearStartValue = calculateValueAtDate(yearStart)
+    // Calculate values for additional past dates
+    const threeMonthAgoValue = calculateValueAtDate(threeMonthAgo)
+    const yearAgoValue = calculateValueAtDate(yearAgo)
+    const threeYearAgoValue = calculateValueAtDate(threeYearAgo)
+    const fiveYearAgoValue = calculateValueAtDate(fiveYearAgo)
 
     // Calculate ROI
     const totalROIPercent = current.investment > 0 
@@ -561,20 +567,20 @@ export async function getPerformanceMetrics(
           dollar: current.usd - yearStartValue.usd
         },
         threeMonth: {
-          percent: null,
-          dollar: null
+          percent: calculatePeriodReturn(current.usd, threeMonthAgoValue.usd),
+          dollar: current.usd - threeMonthAgoValue.usd
         },
         year: {
-          percent: null,
-          dollar: null
+          percent: calculatePeriodReturn(current.usd, yearAgoValue.usd),
+          dollar: current.usd - yearAgoValue.usd
         },
         threeYear: {
-          percent: null,
-          dollar: null
+          percent: calculatePeriodReturn(current.usd, threeYearAgoValue.usd),
+          dollar: current.usd - threeYearAgoValue.usd
         },
         fiveYear: {
-          percent: null,
-          dollar: null
+          percent: calculatePeriodReturn(current.usd, fiveYearAgoValue.usd),
+          dollar: current.usd - fiveYearAgoValue.usd
         }
       },
       annualized: {

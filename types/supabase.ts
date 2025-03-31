@@ -52,7 +52,7 @@ export type Database = {
           sell_btc_currency: string | null
           service_fee: number | null
           service_fee_currency: string | null
-          type: string
+          type: "buy" | "sell"
           updated_at: string | null
           user_id: string
         }
@@ -73,7 +73,7 @@ export type Database = {
           sell_btc_currency?: string | null
           service_fee?: number | null
           service_fee_currency?: string | null
-          type: string
+          type: "buy" | "sell"
           updated_at?: string | null
           user_id: string
         }
@@ -94,7 +94,7 @@ export type Database = {
           sell_btc_currency?: string | null
           service_fee?: number | null
           service_fee_currency?: string | null
-          type?: string
+          type?: "buy" | "sell"
           updated_at?: string | null
           user_id?: string
         }
@@ -181,6 +181,24 @@ export type Database = {
           type?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      bitcoin_prices: {
+        Row: {
+          id: number
+          last_updated: string
+          price_usd: number
+        }
+        Insert: {
+          id?: number
+          last_updated?: string
+          price_usd: number
+        }
+        Update: {
+          id?: number
+          last_updated?: string
+          price_usd?: number
         }
         Relationships: []
       }
