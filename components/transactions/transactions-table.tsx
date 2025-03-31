@@ -13,15 +13,29 @@ import { DateRange } from "react-day-picker"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { startOfDay, endOfDay, isWithinInterval, format } from "date-fns"
 
-type Transaction = Database['public']['Tables']['transactions']['Row']
+// Define the structure returned by the updated getTransactions
+interface UnifiedTransaction {
+  id: string; 
+  date: string;
+  type: 'Buy' | 'Sell' | 'Send' | 'Receive';
+  asset: string;
+  btc_amount: number | null;
+  usd_value: number | null;
+  fee_usd: number | null;
+  price_at_tx: number | null;
+  exchange: string | null;
+}
+
+// Old Transaction type - keep for reference during refactoring if needed, then remove
+// type Transaction = Database['public']['Tables']['transactions']['Row'] 
 
 type SortConfig = {
-  column: keyof Transaction | null
+  column: keyof UnifiedTransaction | null
   direction: 'asc' | 'desc'
 }
 
 export function TransactionsTable() {
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [transactions, setTransactions] = useState<UnifiedTransaction[]>([]) // <-- Use UnifiedTransaction
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -65,23 +79,27 @@ export function TransactionsTable() {
     loadTransactions()
   }, [])
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null) => {
+    if (amount === null || amount === undefined) return '-'
     return new Intl.NumberFormat('en-US', {
-      style: 'decimal',
+      style: 'currency',
+      currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(amount)
   }
 
-  const formatBTC = (amount: number) => {
+  const formatBTC = (amount: number | null) => {
+    if (amount === null || amount === undefined) return '-'
     return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 8,
       maximumFractionDigits: 8
     }).format(amount)
   }
 
-  const getTotalFees = (transaction: Transaction) => {
-    return (transaction.network_fee || 0) + (transaction.service_fee || 0)
+  const getTotalFees = (transaction: UnifiedTransaction) => {
+    // Use the pre-calculated fee_usd
+    return transaction.fee_usd || 0
   }
 
   const isShortTerm = (date: string) => {
@@ -90,50 +108,34 @@ export function TransactionsTable() {
     return transactionDate.getFullYear() === currentYear
   }
 
-  const getAmount = (transaction: Transaction) => {
-    // For Buy/Receive transactions, we want the received amount
-    // For Sell/Send transactions, we want the sent amount
-    switch (transaction.type) {
-      case 'Buy':
-      case 'Receive':
-        return transaction.received_amount || 0
-      case 'Sell':
-      case 'Send':
-        return transaction.sent_amount || 0
-      default:
-        return 0
-    }
+  const getAmount = (transaction: UnifiedTransaction) => {
+    // Use the unified btc_amount field
+    return transaction.btc_amount || 0
   }
 
-  const getTotal = (transaction: Transaction) => {
-    // Calculate the total in USD based on transaction type
-    switch (transaction.type) {
-      case 'Buy':
-        return transaction.buy_amount || 0
-      case 'Sell':
-        return transaction.sell_amount || 0
-      case 'Send':
-      case 'Receive':
-        const amount = getAmount(transaction)
-        return amount * (transaction.price || 0)
-      default:
-        return 0
-    }
+  const getTotal = (transaction: UnifiedTransaction) => {
+    // Use the unified usd_value field
+    return transaction.usd_value || 0
   }
 
-  const handleSort = (column: keyof Transaction) => {
+  const handleSort = (column: keyof UnifiedTransaction) => {
     setSortConfig(currentConfig => ({
       column,
       direction: currentConfig.column === column && currentConfig.direction === 'desc' ? 'asc' : 'desc'
     }))
   }
 
-  const getSortedTransactions = (transactions: Transaction[]) => {
+  const getSortedTransactions = (transactions: UnifiedTransaction[]) => {
     if (!sortConfig.column) return transactions
 
     return [...transactions].sort((a, b) => {
       const aValue = a[sortConfig.column!]
       const bValue = b[sortConfig.column!]
+
+      // Handle nulls - sort them to the end or beginning based on direction
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return sortConfig.direction === 'asc' ? 1 : -1;
+      if (bValue === null) return sortConfig.direction === 'asc' ? -1 : 1;
 
       // Handle different types of values
       if (typeof aValue === 'number' && typeof bValue === 'number') {
@@ -158,7 +160,7 @@ export function TransactionsTable() {
     })
   }
 
-  const getSortIcon = (column: keyof Transaction) => {
+  const getSortIcon = (column: keyof UnifiedTransaction) => {
     if (sortConfig.column !== column) {
       return <ArrowUpDown className="h-4 w-4 text-gray-400" />
     }
@@ -207,14 +209,15 @@ export function TransactionsTable() {
     startIndex + itemsPerPage
   )
 
-  const prepareTransactionForCSV = (transaction: Transaction) => {
+  const prepareTransactionForCSV = (transaction: UnifiedTransaction) => {
     return {
       Date: new Date(transaction.date).toLocaleDateString(),
       Type: transaction.type,
-      "Amount (BTC)": formatBTC(getAmount(transaction)),
-      "Price (USD)": formatCurrency(transaction.price || 0),
-      "Total (USD)": formatCurrency(getTotal(transaction)),
-      "Fees (USD)": formatCurrency(getTotalFees(transaction)),
+      Asset: transaction.asset,
+      "Amount (BTC)": formatBTC(transaction.btc_amount), 
+      "Price at Tx (USD)": formatCurrency(transaction.price_at_tx),
+      "Value (USD)": formatCurrency(transaction.usd_value),
+      "Fees (USD)": formatCurrency(transaction.fee_usd),
       Exchange: transaction.exchange || "-"
     }
   }
@@ -357,24 +360,24 @@ export function TransactionsTable() {
                   Term
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('received_amount')} className="cursor-pointer">
+              <TableHead onClick={() => handleSort('btc_amount')} className="cursor-pointer">
                 <div className="flex items-center justify-between">
-                  Amount (BTC) {getSortIcon('received_amount')}
+                  Amount (BTC) {getSortIcon('btc_amount')}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('price')} className="cursor-pointer hidden md:table-cell">
+              <TableHead onClick={() => handleSort('price_at_tx')} className="cursor-pointer hidden md:table-cell">
                 <div className="flex items-center justify-between">
-                  Price (USD) {getSortIcon('price')}
+                  Price (BTC/USD) {getSortIcon('price_at_tx')}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('buy_amount')} className="cursor-pointer">
+              <TableHead onClick={() => handleSort('usd_value')} className="cursor-pointer">
                 <div className="flex items-center justify-between">
-                  Total (USD) {getSortIcon('buy_amount')}
+                  Amount (USD) {getSortIcon('usd_value')}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('network_fee')} className="cursor-pointer hidden md:table-cell">
+              <TableHead onClick={() => handleSort('fee_usd')} className="cursor-pointer hidden md:table-cell">
                 <div className="flex items-center justify-between">
-                  Fees (USD) {getSortIcon('network_fee')}
+                  Fees (USD) {getSortIcon('fee_usd')}
                 </div>
               </TableHead>
               <TableHead onClick={() => handleSort('exchange')} className="cursor-pointer hidden lg:table-cell">
@@ -392,26 +395,21 @@ export function TransactionsTable() {
                 </TableCell>
                 <TableCell>
                   <Badge
-                    variant={
-                      transaction.type === "Buy" 
-                        ? "default" 
-                        : transaction.type === "Sell"
-                        ? "destructive"
-                        : "secondary"
-                    }
-                    className={`w-[100px] flex items-center justify-center ${
-                      transaction.type === "Buy" 
+                    className={`w-[100px] flex items-center justify-center text-white ${
+                      transaction.type?.toLowerCase() === "buy" 
                         ? "bg-bitcoin-orange" 
-                        : transaction.type === "Sell"
+                        : transaction.type?.toLowerCase() === "sell"
                         ? "bg-red-500"
+                        : transaction.type?.toLowerCase() === "send"
+                        ? "bg-gray-500"
                         : "bg-blue-500"
                     }`}
                   >
-                    {transaction.type === "Buy" ? (
+                    {transaction.type?.toLowerCase() === "buy" ? (
                       <ArrowDownRight className="mr-2 h-4 w-4" />
-                    ) : transaction.type === "Sell" ? (
+                    ) : transaction.type?.toLowerCase() === "sell" ? (
                       <ArrowUpRight className="mr-2 h-4 w-4" />
-                    ) : transaction.type === "Send" ? (
+                    ) : transaction.type?.toLowerCase() === "send" ? (
                       <SendHorizontal className="mr-2 h-4 w-4" />
                     ) : (
                       <SendHorizontal className="mr-2 h-4 w-4 rotate-180" />
@@ -431,13 +429,13 @@ export function TransactionsTable() {
                     {isShortTerm(transaction.date) ? "SHORT" : "LONG"}
                   </Badge>
                 </TableCell>
-                <TableCell>{formatBTC(getAmount(transaction))}</TableCell>
+                <TableCell>{formatBTC(transaction.btc_amount)}</TableCell>
                 <TableCell className="hidden md:table-cell">
-                  ${formatCurrency(transaction.price)}
+                  {formatCurrency(transaction.price_at_tx)}
                 </TableCell>
-                <TableCell>${formatCurrency(getTotal(transaction))}</TableCell>
+                <TableCell>{formatCurrency(transaction.usd_value)}</TableCell>
                 <TableCell className="hidden md:table-cell">
-                  ${formatCurrency(getTotalFees(transaction))}
+                  {formatCurrency(transaction.fee_usd)}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell">
                   {transaction.exchange 
