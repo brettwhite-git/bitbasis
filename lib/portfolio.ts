@@ -190,16 +190,38 @@ export async function calculateCostBasis(
   supabase: SupabaseClient<Database>
 ): Promise<CostBasisMethodResult> {
   try {
-    // Get current Bitcoin price from cache
-    const { data: priceData } = await supabase
-      .from('bitcoin_prices')
-      .select('price_usd')
-      .order('last_updated', { ascending: false })
-      .limit(1)
-      .single()
+    // Get historical Bitcoin prices, including ATH data
+    const [latestPriceResult, athResult] = await Promise.all([
+      supabase
+        .from('bitcoin_prices')
+        .select('price_usd, last_updated')
+        .order('last_updated', { ascending: false })
+        .limit(1)
+        .single(),
+      supabase
+        .from('bitcoin_prices')
+        .select('ath_price, ath_date')
+        .not('ath_price', 'is', null)
+        .order('ath_price', { ascending: false })
+        .limit(1)
+        .single()
+    ])
 
-    if (!priceData) throw new Error('No Bitcoin price available')
-    const currentPrice = priceData.price_usd
+    if (latestPriceResult.error) throw latestPriceResult.error
+    if (!latestPriceResult.data) {
+      throw new Error('No Bitcoin price data available')
+    }
+
+    const priceData = {
+      ...latestPriceResult.data,
+      ath_price: athResult.data?.ath_price ?? 0,
+      ath_date: athResult.data?.ath_date ?? 'N/A'
+    }
+
+    const prices = [priceData]; // Adapt to calculation logic expecting an array
+    const currentPrice = priceData.price_usd;
+    const marketAthPrice = priceData.ath_price;
+    const marketAthDate = priceData.ath_date;
 
     // Get only the orders transactions
     const { data: orders, error: ordersError } = await supabase
@@ -407,21 +429,37 @@ export async function getPerformanceMetrics(
 ): Promise<PerformanceMetrics> {
   try {
     // Get historical Bitcoin prices, including ATH data
-    const { data: priceData } = await supabase
-      .from('bitcoin_prices')
-      .select('price_usd, last_updated, ath_price, ath_date')
-      .order('last_updated', { ascending: false })
-      .limit(1)
-      .single()
+    const [latestPriceResult, athResult] = await Promise.all([
+      supabase
+        .from('bitcoin_prices')
+        .select('price_usd, last_updated')
+        .order('last_updated', { ascending: false })
+        .limit(1)
+        .single(),
+      supabase
+        .from('bitcoin_prices')
+        .select('ath_price, ath_date')
+        .not('ath_price', 'is', null)
+        .order('ath_price', { ascending: false })
+        .limit(1)
+        .single()
+    ])
 
-    if (!priceData) {
+    if (latestPriceResult.error) throw latestPriceResult.error
+    if (!latestPriceResult.data) {
       throw new Error('No Bitcoin price data available')
+    }
+
+    const priceData = {
+      ...latestPriceResult.data,
+      ath_price: athResult.data?.ath_price ?? 0,
+      ath_date: athResult.data?.ath_date ?? 'N/A'
     }
 
     const prices = [priceData]; // Adapt to calculation logic expecting an array
     const currentPrice = priceData.price_usd;
-    const marketAthPrice = priceData.ath_price ?? 0; // Use fetched ATH price
-    const marketAthDate = priceData.ath_date ?? 'N/A'; // Use fetched ATH date
+    const marketAthPrice = priceData.ath_price;
+    const marketAthDate = priceData.ath_date;
 
     // Get all transactions from different tables
     const [ordersResult, sendsResult, receivesResult] = await Promise.all([
@@ -590,9 +628,38 @@ export async function getPerformanceMetrics(
       },
       allTimeHigh: {
         price: marketAthPrice,
-        date: new Date(marketAthDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        date: marketAthDate && marketAthDate !== 'N/A' 
+          ? new Date(marketAthDate).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            })
+          : 'Not Available'
       }
     }
+
+    // Calculate annualized returns
+    const calculateAnnualizedReturn = (current: number, previous: number, years: number) => {
+      if (previous <= 0 || years <= 0) return null;
+      return (Math.pow(current / previous, 1 / years) - 1) * 100;
+    };
+
+    // Update annualized returns calculations
+    performance.annualized = {
+      total: calculateAnnualizedReturn(
+        current.usd,
+        current.investment,
+        (now.getTime() - new Date(orders[0]?.date || now).getTime()) / (365 * 24 * 60 * 60 * 1000)
+      ),
+      oneYear: yearAgoValue.usd > 0 ? calculateAnnualizedReturn(current.usd, yearAgoValue.usd, 1) : null,
+      twoYear: calculateAnnualizedReturn(current.usd, calculateValueAtDate(new Date(now.setFullYear(now.getFullYear() - 2))).usd, 2),
+      threeYear: calculateAnnualizedReturn(current.usd, threeYearAgoValue.usd, 3),
+      fourYear: calculateAnnualizedReturn(current.usd, calculateValueAtDate(new Date(now.setFullYear(now.getFullYear() - 4))).usd, 4),
+      fiveYear: calculateAnnualizedReturn(current.usd, fiveYearAgoValue.usd, 5),
+      sixYear: calculateAnnualizedReturn(current.usd, calculateValueAtDate(new Date(now.setFullYear(now.getFullYear() - 6))).usd, 6),
+      sevenYear: calculateAnnualizedReturn(current.usd, calculateValueAtDate(new Date(now.setFullYear(now.getFullYear() - 7))).usd, 7),
+      eightYear: calculateAnnualizedReturn(current.usd, calculateValueAtDate(new Date(now.setFullYear(now.getFullYear() - 8))).usd, 8)
+    };
 
     return performance
   } catch (error) {

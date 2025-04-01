@@ -34,7 +34,6 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
     <Card>
       <CardHeader>
         <CardTitle>Performance</CardTitle>
-        <CardDescription>Track your portfolio performance over time</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Cumulative Returns Table */}
@@ -136,41 +135,41 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
               <TableBody>
                 <TableRow>
                   <TableCell className="font-medium text-center">You</TableCell>
-                  <TableCell className="text-center">-</TableCell>
-                  <TableCell className="text-center">-</TableCell>
-                  <TableCell className="text-center">-</TableCell>
-                  <TableCell className="text-center">-</TableCell>
-                  <TableCell className="text-center">-</TableCell>
-                  <TableCell className="text-center">-</TableCell>
-                  <TableCell className="text-center">-</TableCell>
-                  <TableCell className="text-center">-</TableCell>
+                  <TableCell className={`text-center ${data.annualized.oneYear && data.annualized.oneYear >= 0 ? "text-green-500" : data.annualized.oneYear ? "text-red-500" : ""}`}>
+                    {data.annualized.oneYear ? formatPercent(data.annualized.oneYear) : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center ${data.annualized.twoYear && data.annualized.twoYear >= 0 ? "text-green-500" : data.annualized.twoYear ? "text-red-500" : ""}`}>
+                    {data.annualized.twoYear ? formatPercent(data.annualized.twoYear) : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center ${data.annualized.threeYear && data.annualized.threeYear >= 0 ? "text-green-500" : data.annualized.threeYear ? "text-red-500" : ""}`}>
+                    {data.annualized.threeYear ? formatPercent(data.annualized.threeYear) : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center ${data.annualized.fourYear && data.annualized.fourYear >= 0 ? "text-green-500" : data.annualized.fourYear ? "text-red-500" : ""}`}>
+                    {data.annualized.fourYear ? formatPercent(data.annualized.fourYear) : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center ${data.annualized.fiveYear && data.annualized.fiveYear >= 0 ? "text-green-500" : data.annualized.fiveYear ? "text-red-500" : ""}`}>
+                    {data.annualized.fiveYear ? formatPercent(data.annualized.fiveYear) : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center ${data.annualized.sixYear && data.annualized.sixYear >= 0 ? "text-green-500" : data.annualized.sixYear ? "text-red-500" : ""}`}>
+                    {data.annualized.sixYear ? formatPercent(data.annualized.sixYear) : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center ${data.annualized.sevenYear && data.annualized.sevenYear >= 0 ? "text-green-500" : data.annualized.sevenYear ? "text-red-500" : ""}`}>
+                    {data.annualized.sevenYear ? formatPercent(data.annualized.sevenYear) : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center ${data.annualized.eightYear && data.annualized.eightYear >= 0 ? "text-green-500" : data.annualized.eightYear ? "text-red-500" : ""}`}>
+                    {data.annualized.eightYear ? formatPercent(data.annualized.eightYear) : "-"}
+                  </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-center">Bitcoin</TableCell>
-                  <TableCell className="text-center">
-                    {data.annualized.oneYear ? formatPercent(data.annualized.oneYear) : "-"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {data.annualized.twoYear ? formatPercent(data.annualized.twoYear) : "-"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {data.annualized.threeYear ? formatPercent(data.annualized.threeYear) : "-"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {data.annualized.fourYear ? formatPercent(data.annualized.fourYear) : "-"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {data.annualized.fiveYear ? formatPercent(data.annualized.fiveYear) : "-"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {data.annualized.sixYear ? formatPercent(data.annualized.sixYear) : "-"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {data.annualized.sevenYear ? formatPercent(data.annualized.sevenYear) : "-"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {data.annualized.eightYear ? formatPercent(data.annualized.eightYear) : "-"}
-                  </TableCell>
+                  <TableCell className={`text-center text-green-500`}>120.98%</TableCell>
+                  <TableCell className={`text-center text-green-500`}>155.41%</TableCell>
+                  <TableCell className={`text-center text-red-500`}>-64.27%</TableCell>
+                  <TableCell className={`text-center text-green-500`}>59.71%</TableCell>
+                  <TableCell className={`text-center text-green-500`}>303.09%</TableCell>
+                  <TableCell className={`text-center text-green-500`}>92%</TableCell>
+                  <TableCell className={`text-center text-red-500`}>-73.48%</TableCell>
+                  <TableCell className={`text-center text-green-500`}>1,369.03%</TableCell>
                 </TableRow>
               </TableBody>
             </Table>

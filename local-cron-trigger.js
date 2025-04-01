@@ -4,22 +4,24 @@
 // 2. Uncomment the next line:
 // const fetch = require('node-fetch');
 
-const API_ENDPOINT = 'http://localhost:3000/api/bitcoin/price';
+const PRICE_API_ENDPOINT = 'http://localhost:3000/api/bitcoin/price';
+const HISTORICAL_API_ENDPOINT = 'http://localhost:3000/api/cron/historical-prices';
 const INTERVAL_MINUTES = 10; // Updated to 10 minutes for Coinpaprika free tier
 const INTERVAL_MS = INTERVAL_MINUTES * 60 * 1000;
 
 async function triggerApi() {
-  console.log(`[Local Cron Trigger] Triggering ${API_ENDPOINT} at ${new Date().toLocaleTimeString()}`);
+  const currentTime = new Date().toLocaleTimeString();
+  
+  // Trigger current price API
+  console.log(`[Local Cron Trigger] Triggering current price API at ${currentTime}`);
   try {
-    // Add cache-busting parameter just in case there's browser/proxy caching involved locally
-    const response = await fetch(`${API_ENDPOINT}?t=${Date.now()}`); 
-    const data = await response.json(); // Always try to parse JSON
+    const response = await fetch(`${PRICE_API_ENDPOINT}?t=${Date.now()}`);
+    const data = await response.json();
 
     if (!response.ok) {
-      console.error(`[Local Cron Trigger] API Error (${response.status}):`, data.error || response.statusText);
+      console.error(`[Local Cron Trigger] Price API Error (${response.status}):`, data.error || response.statusText);
     } else {
-      // Enhanced logging to include ATH data
-      console.log(`[Local Cron Trigger] API call successful:
+      console.log(`[Local Cron Trigger] Current price API call successful:
         Current Price: $${data.price?.toLocaleString()}
         ATH Price: $${data.ath?.price?.toLocaleString()}
         ATH Date: ${new Date(data.ath?.date).toLocaleDateString()}
@@ -27,24 +29,37 @@ async function triggerApi() {
       `);
     }
   } catch (error) {
-    console.error('[Local Cron Trigger] Failed to fetch or parse API response:', error.message);
+    console.error('[Local Cron Trigger] Failed to fetch or parse current price API response:', error.message);
+  }
+
+  // Trigger historical prices API once per day at midnight
+  const now = new Date();
+  if (now.getHours() === 0 && now.getMinutes() < INTERVAL_MINUTES) {
+    console.log(`[Local Cron Trigger] Triggering historical prices API at ${currentTime}`);
+    try {
+      const response = await fetch(`${HISTORICAL_API_ENDPOINT}?t=${Date.now()}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error(`[Local Cron Trigger] Historical API Error (${response.status}):`, data.error || response.statusText);
+      } else {
+        console.log(`[Local Cron Trigger] Historical prices API call successful:
+          Records Updated: ${data.data?.length || 0}
+          Success: ${data.success ? 'Yes' : 'No'}
+        `);
+      }
+    } catch (error) {
+      console.error('[Local Cron Trigger] Failed to fetch or parse historical API response:', error.message);
+    }
   }
 }
 
-console.log(`[Local Cron Trigger] Starting script to call Coinpaprika API every ${INTERVAL_MINUTES} minutes.`);
-
-// Trigger immediately on start
-console.log("[Local Cron Trigger] Performing initial trigger...");
-triggerApi();
-
-// Set up the interval for subsequent triggers
-const intervalId = setInterval(triggerApi, INTERVAL_MS);
-
-console.log("[Local Cron Trigger] Script running. Press Ctrl+C to stop.");
+console.log(`[Local Cron Trigger] Starting script to call APIs every ${INTERVAL_MINUTES} minutes.`);
+triggerApi(); // Initial call
+setInterval(triggerApi, INTERVAL_MS);
 
 // Optional: Graceful shutdown
 process.on('SIGINT', () => {
   console.log('[Local Cron Trigger] Stopping script...');
-  clearInterval(intervalId);
   process.exit(0);
 }); 

@@ -7,9 +7,15 @@ import { useSupabase } from "@/components/providers/supabase-provider"
 import { calculateCostBasis } from "@/lib/portfolio"
 import { formatCurrency, formatPercent, cn } from "@/lib/utils"
 import { Database } from "@/types/supabase"
-import { ArrowUpDown, ArrowDown, ArrowUp } from "lucide-react"
+import { ArrowUpDown, ArrowDown, ArrowUp, Info } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
-type Transaction = Database['public']['Tables']['transactions']['Row']
+type Order = Database['public']['Tables']['orders']['Row']
 type CostBasisResult = {
   totalCostBasis: number
   averageCost: number
@@ -29,7 +35,7 @@ type SortConfig = {
 
 export function CostBasisComparison() {
   const { supabase } = useSupabase()
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
   const [fifoResults, setFifoResults] = useState<CostBasisResult | null>(null)
   const [lifoResults, setLifoResults] = useState<CostBasisResult | null>(null)
   const [averageResults, setAverageResults] = useState<CostBasisResult | null>(null)
@@ -166,9 +172,6 @@ export function CostBasisComparison() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Cost Basis Comparison</CardTitle>
-      </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
@@ -211,11 +214,31 @@ export function CostBasisComparison() {
               <TableHead onClick={() => handleSort('taxLiabilityST')} className="cursor-pointer">
                 <div className="flex items-center justify-center gap-2">
                   Tax Liability ST {getSortIcon('taxLiabilityST')}
+                  <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                      <TooltipTrigger className="cursor-default">
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Consult tax advisor for actual liability</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </TableHead>
               <TableHead onClick={() => handleSort('taxLiabilityLT')} className="cursor-pointer">
                 <div className="flex items-center justify-center gap-2">
                   Tax Liability LT {getSortIcon('taxLiabilityLT')}
+                  <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                      <TooltipTrigger className="cursor-default">
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Consult tax advisor for actual liability</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </TableHead>
             </TableRow>

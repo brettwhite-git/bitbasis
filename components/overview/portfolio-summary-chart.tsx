@@ -44,6 +44,7 @@ interface MonthlyData {
   costBasis: number
   cumulativeBTC: number
   averagePrice: number
+  btcPrice?: number // Add BTC price field
 }
 
 // Calculate monthly data from transactions (now orders)
@@ -183,6 +184,9 @@ const options: ChartOptions<"line"> = {
       },
     },
     y: {
+      type: 'linear',
+      display: true,
+      position: 'left',
       grid: {
         color: "#374151",
       },
@@ -192,7 +196,9 @@ const options: ChartOptions<"line"> = {
           return `$${value.toLocaleString()}`
         },
       },
-    },
+      min: 0, // Start from 0
+      beginAtZero: true // Ensure axis starts at 0
+    }
   },
 }
 
@@ -203,39 +209,82 @@ interface PortfolioSummaryChartProps {
 
 export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: PortfolioSummaryChartProps) {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
+  const [historicalPrices, setHistoricalPrices] = useState<any[]>([])
   const { supabase } = useSupabase()
 
   useEffect(() => {
-    async function fetchOrders() {
-      // Fetch from 'orders' table and select necessary columns
-      const { data: orders, error } = await supabase
-        .from('orders') // Changed table name
-        .select('date, type, received_btc_amount, sell_btc_amount, buy_fiat_amount, service_fee, price') // Updated select columns
-        .order('date', { ascending: true })
+    async function fetchData() {
+      // Calculate date range based on timeframe
+      const end = new Date()
+      const start = new Date()
+      start.setMonth(end.getMonth() - (timeframe === "6M" ? 6 : 12))
 
-      if (error) {
-        console.error('Error fetching orders:', error) // Updated error message
+      // Format dates for query
+      const startStr = start.toISOString().split('T')[0]
+      const endStr = end.toISOString().split('T')[0]
+
+      // Fetch orders and historical prices in parallel
+      const [ordersResult, pricesResult] = await Promise.all([
+        supabase
+          .from('orders')
+          .select('date, type, received_btc_amount, sell_btc_amount, buy_fiat_amount, service_fee, price')
+          .order('date', { ascending: true }),
+        supabase
+          .from('bitcoin_prices')
+          .select('*')
+          .gte('date', startStr)
+          .lte('date', endStr)
+          .order('date', { ascending: true })
+      ])
+
+      if (ordersResult.error) {
+        console.error('Error fetching orders:', ordersResult.error)
         return
       }
 
-      // Ensure orders is not null before calculating
-      if (orders) {
-          const calculatedData = calculateMonthlyData(orders) // Pass fetched orders
-          setMonthlyData(calculatedData)
+      if (pricesResult.error) {
+        console.error('Error fetching prices:', pricesResult.error)
       } else {
-          console.log("No orders found.")
-          setMonthlyData([]) // Set empty data if no orders
+        setHistoricalPrices(pricesResult.data || [])
+      }
+
+      // Calculate monthly data with orders
+      if (ordersResult.data) {
+        const calculatedData = calculateMonthlyData(ordersResult.data)
+        setMonthlyData(calculatedData)
       }
     }
 
-    fetchOrders() // Renamed function call
-  }, [supabase])
+    fetchData()
+  }, [supabase, timeframe])
 
   // Filter data based on selected period
   const filteredData = (() => {
     const monthsToShow = timeframe === "6M" ? 6 : 12
     return monthlyData.slice(-monthsToShow)
   })()
+
+  // Process historical prices into monthly format
+  const monthlyPrices = historicalPrices.reduce((acc: { [key: string]: number }, price: any) => {
+    const date = new Date(price.date)
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    
+    // Use the first day of each month's price
+    if (date.getDate() === 1) {
+      acc[monthKey] = price.price_usd
+    }
+    
+    return acc
+  }, {})
+
+  // Ensure we have prices for all months in our filtered data
+  const completeMonthlyPrices = filteredData.map(d => {
+    const price = monthlyPrices[d.month]
+    if (!price) {
+      console.warn(`Missing price data for month: ${d.month}`)
+    }
+    return price || 0
+  })
 
   const data = {
     labels: filteredData.map(d => {
@@ -261,6 +310,14 @@ export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: Po
         backgroundColor: "#64748b",
         tension: 0.4,
       },
+      {
+        label: "BTC Price",
+        data: completeMonthlyPrices,
+        borderColor: "#22c55e", // Green-500
+        backgroundColor: "#22c55e",
+        tension: 0.4,
+        borderDash: [5, 5], // Dashed line for BTC price
+      }
     ],
   }
 

@@ -18,7 +18,7 @@ export function formatBTC(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 8,
     maximumFractionDigits: 8
-  }).format(amount)
+  }).format(amount) + " BTC"
 }
 
 export function formatPercent(value: number): string {

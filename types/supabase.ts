@@ -189,16 +189,22 @@ export type Database = {
           id: number
           last_updated: string
           price_usd: number
+          ath_price: number | null
+          ath_date: string | null
         }
         Insert: {
           id?: number
           last_updated?: string
           price_usd: number
+          ath_price?: number | null
+          ath_date?: string | null
         }
         Update: {
           id?: number
           last_updated?: string
           price_usd?: number
+          ath_price?: number | null
+          ath_date?: string | null
         }
         Relationships: []
       }

@@ -33,6 +33,12 @@ async function fetchFromCoinPaprika(): Promise<{ price: number; ath: { price: nu
   }
 
   const data = await response.json() as CoinPaprikaResponse
+  
+  // Validate ATH data exists
+  if (!data.quotes.USD.ath_price || !data.quotes.USD.ath_date) {
+    throw new Error('Missing ATH data from Coinpaprika response')
+  }
+
   return {
     price: data.quotes.USD.price,
     ath: {
@@ -123,17 +129,47 @@ export async function GET() {
 
     // Store the newly fetched price
     try {
+      // First check if we have existing ATH data
+      const { data: existingAth } = await supabase
+        .from('bitcoin_prices')
+        .select('ath_price, ath_date')
+        .not('ath_price', 'is', null)
+        .order('ath_price', { ascending: false })
+        .limit(1)
+        .single()
+
+      // Only update ATH if new price is higher than existing ATH
+      const finalAthPrice = existingAth && existingAth.ath_price > ath.price 
+        ? existingAth.ath_price 
+        : ath.price
+
+      const finalAthDate = existingAth && existingAth.ath_price > ath.price
+        ? existingAth.ath_date
+        : ath.date
+
+      // Insert new price record
       await supabase
         .from('bitcoin_prices')
         .insert({
           date: new Date().toISOString().split('T')[0],
           price_usd: price,
           last_updated: new Date().toISOString(),
-          ath_price: ath.price,
-          ath_date: ath.date
+          ath_price: finalAthPrice,
+          ath_date: finalAthDate
         })
         .throwOnError()
-      console.log(`[API /bitcoin/price] Stored new price: ${price} and ATH: ${ath.price}`)
+
+      // Update all NULL ATH records with the current ATH data
+      await supabase
+        .from('bitcoin_prices')
+        .update({
+          ath_price: finalAthPrice,
+          ath_date: finalAthDate
+        })
+        .is('ath_price', null)
+        .throwOnError()
+
+      console.log(`[API /bitcoin/price] Stored new price: ${price} and ATH: ${finalAthPrice}`)
     } catch (dbError) {
       console.error('[API /bitcoin/price] Failed to store fetched price:', dbError)
     }
@@ -180,3 +216,4 @@ export async function GET() {
     )
   }
 } 
+

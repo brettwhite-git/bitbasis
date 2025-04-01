@@ -4,6 +4,7 @@ import { getPerformanceMetrics } from "@/lib/portfolio"
 import { formatCurrency } from "@/lib/utils"
 import type { Database } from "@/types/supabase"
 import { requireAuth } from "@/lib/server-auth"
+import BitcoinAccumulationCalculator from "@/components/portfolio/BitcoinAccumulationCalculator"
 
 export default async function PerformancePage() {
   const { supabase, user } = await requireAuth()
@@ -87,6 +88,9 @@ export default async function PerformancePage() {
             </PerformanceContainer>
           </CardContent>
         </Card>
+
+        <BitcoinAccumulationCalculator />
+
       </div>
     </div>
   )

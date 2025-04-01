@@ -92,7 +92,7 @@ export default async function PortfolioPage() {
             <CardTitle className="text-sm font-medium">Total Bitcoin</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-bitcoin-orange">{formattedTotalBtc}</div>
+            <div className="text-2xl font-bold text-bitcoin-orange">{formatBTC(totalBtc)}</div>
             <p className="text-xs text-muted-foreground pt-2">
               {metrics.totalTransactions} total transactions
             </p>
@@ -103,7 +103,7 @@ export default async function PortfolioPage() {
             <CardTitle className="text-sm font-medium">Short-Term Holdings</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-bitcoin-orange">{metrics.shortTermHoldings.toFixed(8)}</div>
+            <div className="text-2xl font-bold text-bitcoin-orange">{formatBTC(metrics.shortTermHoldings)}</div>
             <p className="text-xs text-muted-foreground pt-2">
               Value: {formatCurrency(metrics.shortTermHoldings * (metrics.currentValue / metrics.totalBtc))}
             </p>
@@ -114,7 +114,7 @@ export default async function PortfolioPage() {
             <CardTitle className="text-sm font-medium">Long-Term Holdings</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-bitcoin-orange">{metrics.longTermHoldings.toFixed(8)}</div>
+            <div className="text-2xl font-bold text-bitcoin-orange">{formatBTC(metrics.longTermHoldings)}</div>
             <p className="text-xs text-muted-foreground pt-2">
               Value: {formatCurrency(metrics.longTermHoldings * (metrics.currentValue / metrics.totalBtc))}
             </p>
@@ -134,11 +134,9 @@ export default async function PortfolioPage() {
           </CardContent>
         </Card>
       </div>
-      <PerformanceReturns data={performance} />
       <Card>
         <CardHeader>
           <CardTitle>Cost Basis Method Comparison</CardTitle>
-          <CardDescription>Compare different cost basis calculation methods</CardDescription>
         </CardHeader>
         <CardContent>
           <SupabaseProvider>
@@ -146,6 +144,7 @@ export default async function PortfolioPage() {
           </SupabaseProvider>
         </CardContent>
       </Card>
+      <PerformanceReturns data={performance} />
     </div>
   )
 }
