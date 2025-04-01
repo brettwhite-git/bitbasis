@@ -5,7 +5,7 @@
 // const fetch = require('node-fetch');
 
 const API_ENDPOINT = 'http://localhost:3000/api/bitcoin/price';
-const INTERVAL_MINUTES = 15;
+const INTERVAL_MINUTES = 10; // Updated to 10 minutes for Coinpaprika free tier
 const INTERVAL_MS = INTERVAL_MINUTES * 60 * 1000;
 
 async function triggerApi() {
@@ -18,15 +18,20 @@ async function triggerApi() {
     if (!response.ok) {
       console.error(`[Local Cron Trigger] API Error (${response.status}):`, data.error || response.statusText);
     } else {
-      // The API route itself logs storage success/failure
-      console.log(`[Local Cron Trigger] API call successful. Fetched Price: ${data.price}`);
+      // Enhanced logging to include ATH data
+      console.log(`[Local Cron Trigger] API call successful:
+        Current Price: $${data.price?.toLocaleString()}
+        ATH Price: $${data.ath?.price?.toLocaleString()}
+        ATH Date: ${new Date(data.ath?.date).toLocaleDateString()}
+        Cached: ${data.cached ? 'Yes' : 'No'}
+      `);
     }
   } catch (error) {
     console.error('[Local Cron Trigger] Failed to fetch or parse API response:', error.message);
   }
 }
 
-console.log(`[Local Cron Trigger] Starting script to call API every ${INTERVAL_MINUTES} minutes.`);
+console.log(`[Local Cron Trigger] Starting script to call Coinpaprika API every ${INTERVAL_MINUTES} minutes.`);
 
 // Trigger immediately on start
 console.log("[Local Cron Trigger] Performing initial trigger...");

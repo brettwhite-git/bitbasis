@@ -32,7 +32,7 @@ interface DashboardContentProps {
 }
 
 export function DashboardContent({ metrics, performance }: DashboardContentProps) {
-  const [timeframe, setTimeframe] = useState<"6M" | "1Y">("6M")
+  const [timeframe, setTimeframe] = useState<"6M" | "1Y">("1Y")
 
   return (
     <div className="w-full space-y-6">

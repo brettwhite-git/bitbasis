@@ -8,35 +8,38 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-interface CoinMarketCapResponse {
-  data: {
-    BTC: {
-      quote: {
-        USD: {
-          price: number
-        }
-      }
+interface CoinPaprikaResponse {
+  quotes: {
+    USD: {
+      price: number
+      ath_price: number
+      ath_date: string
     }
   }
 }
 
-async function fetchFromCoinMarketCap(): Promise<number> {
+async function fetchFromCoinPaprika(): Promise<{ price: number; ath: { price: number; date: string } }> {
   const response = await fetch(
-    'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC&convert=USD',
+    'https://api.coinpaprika.com/v1/tickers/btc-bitcoin',
     {
       headers: {
-        'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_API_KEY!,
         'Accept': 'application/json'
       }
     }
   )
 
   if (!response.ok) {
-    throw new Error(`CoinMarketCap API error: ${response.statusText}`)
+    throw new Error(`Coinpaprika API error: ${response.statusText}`)
   }
 
-  const data = await response.json() as CoinMarketCapResponse
-  return data.data.BTC.quote.USD.price
+  const data = await response.json() as CoinPaprikaResponse
+  return {
+    price: data.quotes.USD.price,
+    ath: {
+      price: data.quotes.USD.ath_price,
+      date: data.quotes.USD.ath_date
+    }
+  }
 }
 
 function determineNextUpdateInterval(priceChange: number): number {
@@ -75,9 +78,9 @@ export async function GET() {
     // Check cache first
     const { data: cachedPrices, error: cacheError } = await supabase
       .from('bitcoin_prices')
-      .select('price_usd, last_updated')
+      .select('price_usd, last_updated, ath_price, ath_date')
       .order('last_updated', { ascending: false })
-      .limit(2) // Get last 2 prices to check rate of change
+      .limit(2)
       .throwOnError()
 
     const latestPrice = cachedPrices?.[0]
@@ -93,6 +96,10 @@ export async function GET() {
         if (cacheAge < nextUpdateInterval) {
           return NextResponse.json({ 
             price: latestPrice.price_usd,
+            ath: {
+              price: latestPrice.ath_price,
+              date: latestPrice.ath_date
+            },
             cached: true,
             cacheAge,
             nextUpdate: nextUpdateInterval - cacheAge
@@ -101,43 +108,40 @@ export async function GET() {
       } else if (cacheAge < config.cache.duration) {
         return NextResponse.json({ 
           price: latestPrice.price_usd,
+          ath: {
+            price: latestPrice.ath_price,
+            date: latestPrice.ath_date
+          },
           cached: true,
           cacheAge
         })
       }
     }
 
-    // If cache miss or expired, fetch new price
-    const price = await fetchFromCoinMarketCap()
+    // If cache miss or expired, fetch new price from Coinpaprika
+    const { price, ath } = await fetchFromCoinPaprika()
 
-    // Always store the newly fetched price
+    // Store the newly fetched price
     try {
       await supabase
         .from('bitcoin_prices')
         .insert({
-          // Keep the date as just the date part for potential daily analysis
-          date: new Date().toISOString().split('T')[0], 
+          date: new Date().toISOString().split('T')[0],
           price_usd: price,
-          // Store the exact timestamp when this price was fetched and stored
-          last_updated: new Date().toISOString() 
+          last_updated: new Date().toISOString(),
+          ath_price: ath.price,
+          ath_date: ath.date
         })
         .throwOnError()
-      console.log(`[API /bitcoin/price] Stored new price: ${price}`);
+      console.log(`[API /bitcoin/price] Stored new price: ${price} and ATH: ${ath.price}`)
     } catch (dbError) {
-       console.error('[API /bitcoin/price] Failed to store fetched price:', dbError);
-       // Decide if you want to throw or just log here. 
-       // If storing fails, the API might still return the fetched price, 
-       // but subsequent DB reads won't see it until the next successful store.
-       // For simplicity, we'll just log and continue for now.
+      console.error('[API /bitcoin/price] Failed to store fetched price:', dbError)
     }
 
-    // Return the new price regardless of whether we stored it
-    // (or maybe return the stored price if insert succeeded?)
-    // Let's return the fetched price for immediate use by the cron caller if needed.
     return NextResponse.json({ 
       price,
-      cached: false, // Indicate it was freshly fetched by this call
-      // nextUpdate is less relevant now with unconditional storage
+      ath,
+      cached: false
     })
   } catch (error) {
     console.error('Error fetching Bitcoin price:', error)
@@ -146,7 +150,7 @@ export async function GET() {
     try {
       const { data: lastPrice } = await supabase
         .from('bitcoin_prices')
-        .select('price_usd, last_updated')
+        .select('price_usd, last_updated, ath_price, ath_date')
         .order('last_updated', { ascending: false })
         .limit(1)
         .single()
@@ -156,10 +160,14 @@ export async function GET() {
         const cacheAge = Date.now() - new Date(lastPrice.last_updated).getTime()
         return NextResponse.json({ 
           price: lastPrice.price_usd,
+          ath: {
+            price: lastPrice.ath_price,
+            date: lastPrice.ath_date
+          },
           cached: true,
           cacheAge,
           error: error instanceof Error ? error.message : 'Unknown error',
-          nextUpdate: config.cache.retryDelay // Use retry delay for next update
+          nextUpdate: config.cache.retryDelay
         })
       }
     } catch (fallbackError) {

@@ -26,10 +26,10 @@ export default async function PerformancePage() {
             <div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">All-Time High</CardTitle>
+                  <CardTitle className="text-sm font-medium">Bitcoin ATH</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(performance.allTimeHigh.value)}</div>
+                  <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(performance.allTimeHigh.price)}</div>
                   <p className="text-xs text-muted-foreground pt-2">Reached on {performance.allTimeHigh.date}</p>
                 </CardContent>
               </Card>

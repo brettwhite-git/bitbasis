@@ -117,9 +117,9 @@ alwaysApply: true
 
 ### External Integrations
 - **Price Data:**
-  - Coinmarketcap API Integration
-  - Price History Cache
-  - Fallback Sources
+  - Coinpaprika API Integration (for current price and ATH)
+  - Price History Cache (in Supabase `bitcoin_prices` table)
+  - Fallback Sources (consider adding logic if Coinpaprika fails)
 
 - **Payment Processing:**
   - Stripe Integration

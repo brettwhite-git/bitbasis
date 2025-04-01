@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownRight, ArrowUpRight } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, SendHorizontal } from "lucide-react"
 import { useSupabase } from "@/components/providers/supabase-provider"
 import type { Database } from "@/types/supabase"
-import { formatCurrency, formatPercent } from "@/lib/utils"
 
 type Order = Database['public']['Tables']['orders']['Row']
 
@@ -55,49 +54,47 @@ export function RecentTransactions() {
     }
 
     if (supabase) {
-        loadTransactions()
+      loadTransactions()
     }
   }, [supabase])
 
-  const formatBTC = (amount: number | null): string => {
+  const formatCurrency = (amount: number | null) => {
+    if (amount === null || amount === undefined) return '-'
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount)
+  }
+
+  const formatBTC = (amount: number | null) => {
+    if (amount === null || amount === undefined) return '-'
     return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 8,
       maximumFractionDigits: 8
-    }).format(amount || 0)
+    }).format(amount)
   }
 
-  const getTotalFees = (transaction: Order): number => {
-    if (transaction.type === 'buy' && transaction.service_fee_currency === 'USD') {
-      return transaction.service_fee || 0
-    }
-    return 0
+  const getAmount = (transaction: Order): number | null => {
+    return transaction.type === 'buy' ? transaction.received_btc_amount : transaction.sell_btc_amount
   }
 
-  const getAmount = (transaction: Order): number => {
-    return transaction.type === 'buy' ? (transaction.received_btc_amount || 0) : (transaction.sell_btc_amount || 0)
-  }
-
-  const getTotal = (transaction: Order): number => {
-    let totalUSD = 0;
+  const getTotal = (transaction: Order): number | null => {
     if (transaction.type === 'buy') {
-      if (transaction.buy_currency === 'USD') {
-        totalUSD += transaction.buy_fiat_amount || 0;
-      }
-      if (transaction.service_fee_currency === 'USD') {
-         totalUSD += transaction.service_fee || 0;
-      }
+      return transaction.buy_fiat_amount
     } else if (transaction.type === 'sell') {
-      if (transaction.received_fiat_currency === 'USD') {
-        totalUSD += transaction.received_fiat_amount || 0;
-      }
+      return transaction.received_fiat_amount
     }
-    return totalUSD;
+    return null
   }
 
-  const isShortTerm = (date: string): boolean => {
+  const isShortTerm = (date: string) => {
     const transactionDate = new Date(date)
-    const currentYear = new Date().getFullYear()
-    return transactionDate.getFullYear() === currentYear
+    const now = new Date()
+    const oneYearAgo = new Date(now)
+    oneYearAgo.setFullYear(now.getFullYear() - 1)
+    return transactionDate > oneYearAgo
   }
 
   if (isLoading) {
@@ -121,8 +118,8 @@ export function RecentTransactions() {
             <TableHead>Type</TableHead>
             <TableHead>Term</TableHead>
             <TableHead>Amount (BTC)</TableHead>
-            <TableHead className="hidden md:table-cell">Price (USD)</TableHead>
-            <TableHead>Total (USD)</TableHead>
+            <TableHead className="hidden md:table-cell">Price (BTC/USD)</TableHead>
+            <TableHead>Amount (USD)</TableHead>
             <TableHead className="hidden md:table-cell">Fees (USD)</TableHead>
             <TableHead className="hidden lg:table-cell">Exchange</TableHead>
           </TableRow>
@@ -135,26 +132,25 @@ export function RecentTransactions() {
               </TableCell>
               <TableCell>
                 <Badge
-                  variant={
-                    transaction.type === "buy" 
-                      ? "default" 
-                      : transaction.type === "sell"
-                      ? "destructive"
-                      : "secondary"
-                  }
-                  className={`w-[100px] flex items-center justify-center ${
+                  className={`w-[100px] flex items-center justify-center text-white ${
                     transaction.type === "buy" 
                       ? "bg-bitcoin-orange" 
                       : transaction.type === "sell"
                       ? "bg-red-500"
-                      : "bg-gray-500"
+                      : transaction.type === "send"
+                      ? "bg-gray-500"
+                      : "bg-blue-500"
                   }`}
                 >
                   {transaction.type === "buy" ? (
                     <ArrowDownRight className="mr-2 h-4 w-4" />
                   ) : transaction.type === "sell" ? (
                     <ArrowUpRight className="mr-2 h-4 w-4" />
-                  ) : null}
+                  ) : transaction.type === "send" ? (
+                    <SendHorizontal className="mr-2 h-4 w-4" />
+                  ) : (
+                    <SendHorizontal className="mr-2 h-4 w-4 rotate-180" />
+                  )}
                   {transaction.type.toUpperCase()}
                 </Badge>
               </TableCell>
@@ -172,13 +168,11 @@ export function RecentTransactions() {
               </TableCell>
               <TableCell>{formatBTC(getAmount(transaction))}</TableCell>
               <TableCell className="hidden md:table-cell">
-                {formatCurrency(transaction.price || 0)}
+                {formatCurrency(transaction.price)}
               </TableCell>
-              <TableCell>
-                {formatCurrency(getTotal(transaction))}
-              </TableCell>
+              <TableCell>{formatCurrency(getTotal(transaction))}</TableCell>
               <TableCell className="hidden md:table-cell">
-                {formatCurrency(getTotalFees(transaction))}
+                {formatCurrency(transaction.service_fee_currency === 'USD' ? transaction.service_fee : null)}
               </TableCell>
               <TableCell className="hidden lg:table-cell">
                 {transaction.exchange 

@@ -1,5 +1,4 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import { getCurrentBitcoinPrice } from './coinmarketcap'
 import { Database } from '@/types/supabase'
 import { calculatePortfolioMetrics, PortfolioMetrics } from './calculations'
 
@@ -71,7 +70,7 @@ interface PerformanceMetrics {
     eightYear: number | null
   }
   allTimeHigh: {
-    value: number
+    price: number
     date: string
   }
 }
@@ -407,16 +406,22 @@ export async function getPerformanceMetrics(
   supabase: SupabaseClient<Database>
 ): Promise<PerformanceMetrics> {
   try {
-    // Get historical Bitcoin prices
-    const { data: prices } = await supabase
+    // Get historical Bitcoin prices, including ATH data
+    const { data: priceData } = await supabase
       .from('bitcoin_prices')
-      .select('price_usd, last_updated')
+      .select('price_usd, last_updated, ath_price, ath_date')
       .order('last_updated', { ascending: false })
-      .limit(1825) // 5 years of daily prices
+      .limit(1)
+      .single()
 
-    if (!prices || prices.length === 0) {
+    if (!priceData) {
       throw new Error('No Bitcoin price data available')
     }
+
+    const prices = [priceData]; // Adapt to calculation logic expecting an array
+    const currentPrice = priceData.price_usd;
+    const marketAthPrice = priceData.ath_price ?? 0; // Use fetched ATH price
+    const marketAthDate = priceData.ath_date ?? 'N/A'; // Use fetched ATH date
 
     // Get all transactions from different tables
     const [ordersResult, sendsResult, receivesResult] = await Promise.all([
@@ -461,12 +466,7 @@ export async function getPerformanceMetrics(
     const fiveYearAgo = new Date(now)
     fiveYearAgo.setFullYear(now.getFullYear() - 5)
 
-    // Calculate total investment and current portfolio value
-    let totalInvestment = 0
-    let totalBtc = 0
-    let realizedGains = 0
-    let allTimeHigh = 0
-    let allTimeHighDate = ''
+    let totalInvestment = 0 // Keep track of investment for ROI
 
     // Calculate portfolio value at each point in history
     const calculateValueAtDate = (date: Date): { btc: number; usd: number; investment: number } => {
@@ -513,12 +513,6 @@ export async function getPerformanceMetrics(
       }
       
       const value = btc * price
-
-      // Update all-time high if this value is higher
-      if (value > allTimeHigh) {
-        allTimeHigh = value
-        allTimeHighDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-      }
 
       return { btc, usd: value, investment }
     }
@@ -595,8 +589,8 @@ export async function getPerformanceMetrics(
         eightYear: null
       },
       allTimeHigh: {
-        value: allTimeHigh,
-        date: allTimeHighDate
+        price: marketAthPrice,
+        date: new Date(marketAthDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
       }
     }
 

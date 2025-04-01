@@ -6,7 +6,7 @@ alwaysApply: true
 ## Design
 - **Theme:**
   - Dark mode with Bitcoin orange (`#F7931A`), black, and gray tones.
-  - Use Tailwind’s `dark:` prefix (e.g., `dark:bg-gray-900`).
+  - Use Tailwind's `dark:` prefix (e.g., `dark:bg-gray-900`).
 
 - **Charts:**
   - Implement Chart.js with responsive layouts and theme-matching colors.
@@ -89,11 +89,12 @@ alwaysApply: true
 
 ### Bitcoin Price Table
 **Bitcoing Price Table**
-  - `bitcoin_prices`: `date`, `price_usd` 
-  - Using Coinmarketcap api
+  - `bitcoin_prices`: `date`, `price_usd`, `last_updated`, `ath_price`, `ath_date`
+  - Using Coinpaprika API (free tier)
   - Need to be cautious of rate limits
-  - We should cache the price in the most cost effective and easily sourced place
-  - If possible, find api for storing all time BTC price and date occured
+  - Price and ATH are cached in the `bitcoin_prices` table
+  - Coinpaprika provides ATH price and date directly
+
 ### Fear & Greed Index Table
 **Fear & Greed Index Table**
   - Using Coinmaarketcap api 
