@@ -317,7 +317,7 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
             Clear All Filters
           </Button>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-end gap-4">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -338,6 +338,13 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground border rounded-md px-3 py-1">
+            <span>
+              {filteredTransactions.length === transactions.length 
+                ? `${transactions.length} Total Transactions`
+                : `${filteredTransactions.length} / ${transactions.length} Transactions`}
+            </span>
           </div>
           <Button 
             variant="outline" 

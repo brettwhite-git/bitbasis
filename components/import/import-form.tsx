@@ -15,6 +15,12 @@ import { insertTransactions } from '@/lib/supabase'
 import type { PostgrestError } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
+import { FileIcon, Trash2Icon } from "lucide-react"
+import { CheckCircle2Icon } from "lucide-react"
+import { Table, TableHeader, TableBody, TableCell, TableRow, TableHead } from "@/components/ui/table"
+import { ArrowDownRight, ArrowUpRight } from "lucide-react"
 
 type DbTransaction = Database['public']['Tables']['transactions']['Insert']
 
@@ -69,6 +75,14 @@ interface ImportStatus {
     rowNumber: number
     error: string
   }>
+}
+
+interface UploadedCSV {
+  id: string
+  filename: string
+  uploadDate: string
+  size: number
+  status: 'success' | 'error'
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
@@ -180,6 +194,16 @@ const transformCSVToTransaction = (row: CSVRow): ParsedTransaction => {
     })
     throw err
   }
+}
+
+const LoadingDots = () => {
+  return (
+    <span className="inline-flex">
+      <span className="animate-dot1 text-lg leading-none">.</span>
+      <span className="animate-dot2 text-lg leading-none">.</span>
+      <span className="animate-dot3 text-lg leading-none">.</span>
+    </span>
+  )
 }
 
 export function ImportForm() {
@@ -503,25 +527,42 @@ export function ImportForm() {
         throw new Error(result.error.message || 'Failed to upload transactions')
       }
 
+      const successfulImports = result.data?.length || 0
+      const failedImports = parsedData.length - successfulImports
+
       // Update import status with final counts
       setImportStatus(prev => ({
         ...prev,
-        importedRows: result.data?.length || 0,
-        failedRows: prev.totalRows - (result.data?.length || 0)
+        importedRows: successfulImports,
+        failedRows: failedImports,
+        failedRowDetails: failedImports > 0 ? [{
+          rowNumber: -1, // We don't know which specific rows failed
+          error: 'Failed to import some rows. Please try again or contact support if the issue persists.'
+        }] : []
       }))
 
       setUploadProgress(100)
 
-      // Reset form if all rows were imported successfully
-      if (result.data?.length === importStatus.totalRows) {
-        setFile(null)
-        setParsedData(null)
-        setValidationIssues([])
-        setUploadProgress(0)
+      // Reset form only if all rows were imported successfully
+      if (successfulImports === parsedData.length) {
+        setTimeout(() => {
+          setFile(null)
+          setParsedData(null)
+          setValidationIssues([])
+          setUploadProgress(0)
+        }, 2000) // Give user time to see success message
       }
     } catch (err) {
       console.error('Upload error:', err)
       setError(err instanceof Error ? err.message : 'Failed to upload transactions')
+      setImportStatus(prev => ({
+        ...prev,
+        failedRows: parsedData.length,
+        failedRowDetails: [{
+          rowNumber: -1,
+          error: err instanceof Error ? err.message : 'Failed to upload transactions'
+        }]
+      }))
     } finally {
       setIsLoading(false)
     }
@@ -569,15 +610,68 @@ export function ImportForm() {
   const ImportStatusSummary = () => {
     if (!importStatus.totalRows) return null
 
+    const allRowsParsedSuccessfully = importStatus.parsedRows === importStatus.totalRows
+    const allRowsImportedSuccessfully = importStatus.importedRows === importStatus.parsedRows
+    const hasFailures = importStatus.failedRows > 0
+    
+    let statusMessage = ''
+    let statusColor = ''
+    
+    if (allRowsParsedSuccessfully && allRowsImportedSuccessfully) {
+      statusMessage = 'All rows successfully imported!'
+      statusColor = 'text-green-500'
+    } else if (hasFailures) {
+      statusMessage = 'Some rows failed to import. Please review the details below.'
+      statusColor = 'text-red-500'
+    } else {
+      statusMessage = (
+        <span className="flex items-center gap-0">
+          Processing import
+          <LoadingDots />
+        </span>
+      )
+      statusColor = 'text-yellow-500'
+    }
+
     return (
       <Card className="mt-4">
         <CardHeader>
-          <CardTitle>Import Status</CardTitle>
-          <CardDescription>
-            {importStatus.importedRows === importStatus.totalRows 
-              ? 'All rows successfully imported!'
-              : 'Some rows failed to import. Please review the details below.'}
-          </CardDescription>
+          <div className="space-y-4">
+            <div>
+              <CardTitle>Import Status</CardTitle>
+              <CardDescription className={statusColor}>
+                {statusMessage}
+              </CardDescription>
+            </div>
+            <div className="flex flex-col items-center space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {file ? file.name : "CSV Import"} ({file ? (file.size / 1024).toFixed(2) : "0"} KB)
+              </p>
+              <div className="flex gap-4">
+                <Button 
+                  onClick={handleUpload}
+                  disabled={isLoading}
+                  className="bg-bitcoin-orange hover:bg-bitcoin-orange/90"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    'Upload Transactions'
+                  )}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleClose}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -593,23 +687,320 @@ export function ImportForm() {
               <span>Successfully Imported:</span>
               <span className="text-green-500">{importStatus.importedRows}</span>
             </div>
-            <div className="flex justify-between">
-              <span>Failed:</span>
-              <span className="text-red-500">{importStatus.failedRows}</span>
-            </div>
-            {importStatus.failedRowDetails.length > 0 && (
-              <div className="mt-4">
-                <h4 className="font-semibold mb-2">Failed Rows:</h4>
-                <div className="space-y-2">
-                  {importStatus.failedRowDetails.map((detail, index) => (
-                    <Alert key={index} variant="destructive">
-                      <AlertTitle>Row {detail.rowNumber}</AlertTitle>
-                      <AlertDescription>{detail.error}</AlertDescription>
-                    </Alert>
-                  ))}
-                </div>
+            {hasFailures && (
+              <div className="flex justify-between">
+                <span>Failed:</span>
+                <span className="text-red-500">{importStatus.failedRows}</span>
               </div>
             )}
+          </div>
+
+          {/* Failed Row Details */}
+          {importStatus.failedRowDetails.length > 0 && (
+            <div className="mt-4">
+              <h4 className="font-semibold mb-2">Failed Rows:</h4>
+              <div className="space-y-2">
+                {importStatus.failedRowDetails.map((detail, index) => (
+                  <Alert key={index} variant="destructive">
+                    <AlertTitle>Row {detail.rowNumber}</AlertTitle>
+                    <AlertDescription>{detail.error}</AlertDescription>
+                  </Alert>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const ManageCSVs = () => {
+    // Placeholder data - this would come from your database in production
+    const [uploadedFiles, setUploadedFiles] = useState<UploadedCSV[]>([
+      {
+        id: '1',
+        filename: 'transactions_2024.csv',
+        uploadDate: '2024-03-28',
+        size: 1024 * 15, // 15KB
+        status: 'success'
+      },
+      {
+        id: '2',
+        filename: 'coinbase_exports.csv',
+        uploadDate: '2024-03-27',
+        size: 1024 * 8, // 8KB
+        status: 'success'
+      }
+    ])
+
+    const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
+
+    const toggleFileSelection = (id: string) => {
+      const newSelection = new Set(selectedFiles)
+      if (newSelection.has(id)) {
+        newSelection.delete(id)
+      } else {
+        newSelection.add(id)
+      }
+      setSelectedFiles(newSelection)
+    }
+
+    const deleteFile = (id: string) => {
+      setUploadedFiles(files => files.filter(f => f.id !== id))
+      setSelectedFiles(selected => {
+        const newSelection = new Set(selected)
+        newSelection.delete(id)
+        return newSelection
+      })
+    }
+
+    const formatFileSize = (bytes: number) => {
+      if (bytes < 1024) return `${bytes} B`
+      const kb = bytes / 1024
+      if (kb < 1024) return `${kb.toFixed(2)} KB`
+      const mb = kb / 1024
+      return `${mb.toFixed(2)} MB`
+    }
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Manage CSV Files</CardTitle>
+          <CardDescription>View and manage your uploaded CSV files</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {uploadedFiles.map(file => (
+              <div key={file.id} className="flex items-center p-4 bg-card border rounded-lg shadow-sm">
+                <div className="flex items-center flex-1 min-w-0">
+                  <Checkbox
+                    checked={selectedFiles.has(file.id)}
+                    onCheckedChange={() => toggleFileSelection(file.id)}
+                    className="mr-4"
+                  />
+                  <FileIcon className="h-8 w-8 text-blue-500 mr-4 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {file.filename}
+                      </p>
+                      <div className="flex items-center">
+                        <Badge variant="outline" className="mr-4">
+                          {formatFileSize(file.size)}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteFile(file.id)}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2Icon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="mt-1 flex items-center">
+                      <CheckCircle2Icon className="h-4 w-4 text-green-500 mr-2" />
+                      <span className="text-sm text-muted-foreground">
+                        Uploaded successfully on {new Date(file.uploadDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const ManualEntryForm = () => {
+    const [formData, setFormData] = useState({
+      date: '',
+      type: 'buy',
+      btcAmount: '',
+      price: '',
+      usdAmount: '',
+      fees: '',
+      exchange: ''
+    })
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault()
+      // TODO: Implement form submission
+      console.log('Form submitted:', formData)
+    }
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const { name, value } = e.target
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Manual Transaction Entry</CardTitle>
+          <CardDescription>Add a new transaction manually</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="date">Date</Label>
+                <Input
+                  id="date"
+                  name="date"
+                  type="datetime-local"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="type">Type</Label>
+                <select
+                  id="type"
+                  name="type"
+                  value={formData.type}
+                  onChange={handleInputChange}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  required
+                >
+                  <option value="buy">Buy</option>
+                  <option value="sell">Sell</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="btcAmount">Amount (BTC)</Label>
+                <Input
+                  id="btcAmount"
+                  name="btcAmount"
+                  type="number"
+                  step="0.00000001"
+                  placeholder="0.00000000"
+                  value={formData.btcAmount}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="price">Price (BTC/USD)</Label>
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="usdAmount">Amount (USD)</Label>
+                <Input
+                  id="usdAmount"
+                  name="usdAmount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.usdAmount}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fees">Fees (USD)</Label>
+                <Input
+                  id="fees"
+                  name="fees"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.fees}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="exchange">Exchange</Label>
+              <Input
+                id="exchange"
+                name="exchange"
+                type="text"
+                placeholder="Enter exchange name"
+                value={formData.exchange}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="flex justify-end space-x-4">
+              <Button variant="outline" type="reset">
+                Clear
+              </Button>
+              <Button type="submit" className="bg-bitcoin-orange hover:bg-bitcoin-orange/90">
+                Add Transaction
+              </Button>
+            </div>
+          </form>
+
+          {/* Preview Table */}
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">Transaction Preview</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Amount (BTC)</TableHead>
+                  <TableHead>Price (BTC/USD)</TableHead>
+                  <TableHead>Amount (USD)</TableHead>
+                  <TableHead>Fees (USD)</TableHead>
+                  <TableHead>Exchange</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {formData.date && (
+                  <TableRow>
+                    <TableCell>{new Date(formData.date).toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={formData.type === "buy" ? "default" : "destructive"}
+                        className={`w-[100px] flex items-center justify-center ${
+                          formData.type === "buy" 
+                            ? "bg-bitcoin-orange" 
+                            : "bg-red-500"
+                        }`}
+                      >
+                        {formData.type === "buy" ? (
+                          <ArrowDownRight className="mr-2 h-4 w-4" />
+                        ) : (
+                          <ArrowUpRight className="mr-2 h-4 w-4" />
+                        )}
+                        {formData.type.toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{formData.btcAmount || '0.00000000'} BTC</TableCell>
+                    <TableCell>${formData.price || '0.00'}</TableCell>
+                    <TableCell>${formData.usdAmount || '0.00'}</TableCell>
+                    <TableCell>${formData.fees || '0.00'}</TableCell>
+                    <TableCell>{formData.exchange || '-'}</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
@@ -618,77 +1009,65 @@ export function ImportForm() {
 
   return (
     <Tabs defaultValue="csv" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="csv">CSV Upload</TabsTrigger>
+        <TabsTrigger value="manage">Manage CSVs</TabsTrigger>
         <TabsTrigger value="manual">Manual Entry</TabsTrigger>
       </TabsList>
       <TabsContent value="csv" className="mt-4">
-        <div
-          className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center mb-4 ${
-            isDragging ? "border-bitcoin-orange bg-bitcoin-orange/10" : "border-border"
-          } cursor-pointer`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => document.getElementById('file-upload')?.click()}
-        >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <Upload className="h-6 w-6 text-bitcoin-orange" />
+        {!parsedData && (
+          <div
+            className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 min-h-[400px] text-center mb-4 ${
+              isDragging ? "border-bitcoin-orange bg-bitcoin-orange/10" : "border-border"
+            } cursor-pointer`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => {
+              if (!file && !isLoading && !parsedData) {
+                document.getElementById('file-upload')?.click()
+              }
+            }}
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <Upload className="h-6 w-6 text-bitcoin-orange" />
+            </div>
+            <h3 className="mt-4 text-lg font-semibold text-white">
+              Drag and drop your CSV file
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              or click here to browse
+            </p>
+            <Input
+              id="file-upload"
+              type="file"
+              accept=".csv"
+              onChange={handleFileChange}
+              className="hidden"
+            />
           </div>
-          <h3 className="mt-4 text-lg font-semibold text-white">
-            {file ? file.name : "Drag and drop your CSV file"}
-          </h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {file ? `${(file.size / 1024).toFixed(2)} KB` : "or click here to browse"}
-          </p>
-          <Input
-            id="file-upload"
-            type="file"
-            accept=".csv"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          {error && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          {isLoading && (
-            <div className="mt-4 w-full">
-              <Progress value={uploadProgress} className="w-full" />
-            </div>
-          )}
-          {parsedData && !isLoading && (
-            <div className="flex gap-4 mt-4">
-              <Button onClick={handleUpload}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  'Upload Transactions'
-                )}
-              </Button>
-              <Button variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-            </div>
-          )}
-        </div>
+        )}
 
-        {parsedData && <ImportStatusSummary />}
+        {error && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         {parsedData && validationIssues.length === 0 && (
-          <ImportPreview 
-            transactions={parsedData} 
-            validationIssues={validationIssues}
-            originalRows={originalRows}
-            closeAction={handleClose}
-          />
+          <>
+            <ImportStatusSummary />
+            <ImportPreview 
+              transactions={parsedData} 
+              validationIssues={validationIssues}
+              originalRows={originalRows}
+              closeAction={handleClose}
+            />
+          </>
         )}
+
         {validationIssues.length > 0 && (
           <div className="mt-4">
             <h4 className="text-lg font-semibold">Validation Issues</h4>
@@ -711,13 +1090,11 @@ export function ImportForm() {
           </div>
         )}
       </TabsContent>
+      <TabsContent value="manage">
+        <ManageCSVs />
+      </TabsContent>
       <TabsContent value="manual" className="mt-4">
-        <div className="text-center">
-          <h3 className="text-lg font-semibold">Manual Entry Coming Soon</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            This feature is currently under development.
-          </p>
-        </div>
+        <ManualEntryForm />
       </TabsContent>
     </Tabs>
   )

@@ -6,7 +6,6 @@ import {
   CardTitle 
 } from "@/components/ui"
 import { AccountSettings } from "@/components/settings/account-settings"
-import { CostBasisSettings } from "@/components/settings/cost-basis-settings"
 import { PrivacySettings } from "@/components/settings/privacy-settings"
 
 export default function SettingsPage() {
@@ -23,15 +22,6 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <AccountSettings />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Cost Basis Settings</CardTitle>
-            <CardDescription>Configure your preferred cost basis calculation method</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CostBasisSettings />
           </CardContent>
         </Card>
         <Card>

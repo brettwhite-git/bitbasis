@@ -73,10 +73,25 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "dot1": {
+          "0%, 100%": { opacity: "0.2" },
+          "20%": { opacity: "1" }
+        },
+        "dot2": {
+          "0%, 100%": { opacity: "0.2" },
+          "40%": { opacity: "1" }
+        },
+        "dot3": {
+          "0%, 100%": { opacity: "0.2" },
+          "60%": { opacity: "1" }
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "dot1": "dot1 1s infinite linear",
+        "dot2": "dot2 1s infinite linear",
+        "dot3": "dot3 1s infinite linear"
       },
     },
   },

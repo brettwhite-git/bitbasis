@@ -28,9 +28,11 @@ import {
   ArrowUpRight, 
   SendHorizontal, 
   Download,
-  X
+  X,
+  Loader2
 } from "lucide-react"
 import type { Database } from '@/types/supabase'
+import { Button } from "@/components/ui/button"
 
 type DbTransaction = Database['public']['Tables']['transactions']['Insert']
 
@@ -66,6 +68,19 @@ interface ImportPreviewProps {
   validationIssues: ValidationIssue[]
   originalRows: any[]
   closeAction: () => void
+  file: File | null
+  onUpload: () => void
+  isLoading: boolean
+}
+
+const LoadingDots = () => {
+  return (
+    <span className="inline-flex ml-1">
+      <span className="animate-dot1">.</span>
+      <span className="animate-dot2">.</span>
+      <span className="animate-dot3">.</span>
+    </span>
+  )
 }
 
 export function ImportPreview({ transactions, validationIssues, originalRows, closeAction }: ImportPreviewProps) {
@@ -162,56 +177,6 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
 
   return (
     <div className="space-y-4">
-      {/* Summary Statistics */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">
-              {validationIssues.filter(i => i.severity === 'error').length > 0 
-                ? `${transactions.length} valid, ${validationIssues.filter(i => i.severity === 'error').length} with issues`
-                : 'All transactions valid'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total BTC</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(stats.totalBtc)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Transaction Types</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm space-y-1">
-              <div>Buy: {stats.types.buy}</div>
-              <div>Sell: {stats.types.sell}</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Date Range</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {dateRange ? (
-              <div className="text-sm">
-                From {formatDate(dateRange.start.toISOString())} to {formatDate(dateRange.end.toISOString())}
-              </div>
-            ) : (
-              <div className="text-sm">No transactions</div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Preview Table */}
       <Card>
         <CardHeader>
@@ -303,4 +268,23 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
       </Card>
     </div>
   )
-} 
+}
+
+const loadingDotsKeyframes = `
+  @keyframes dotAnimation1 {
+    0%, 100% { opacity: 0.2; }
+    20% { opacity: 1; }
+  }
+  @keyframes dotAnimation2 {
+    0%, 100% { opacity: 0.2; }
+    40% { opacity: 1; }
+  }
+  @keyframes dotAnimation3 {
+    0%, 100% { opacity: 0.2; }
+    60% { opacity: 1; }
+  }
+`
+
+const styleSheet = document.createElement('style')
+styleSheet.textContent = loadingDotsKeyframes
+document.head.appendChild(styleSheet) 
