@@ -18,11 +18,23 @@ export default function TransactionsPage() {
       <div className="w-full">
         <Card>
           <CardHeader>
-            <CardTitle>Transaction History</CardTitle>
-            <CardDescription>View and manage all your Bitcoin transactions</CardDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle>Transaction History</CardTitle>
+                <CardDescription>View and manage all your Bitcoin transactions</CardDescription>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <div id="pagination-container" />
+                <div id="transaction-count-container" className="text-sm text-muted-foreground" />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <TransactionsTable currentDateISO={currentDateISO} />
+            <TransactionsTable 
+              currentDateISO={currentDateISO} 
+              paginationContainerId="pagination-container"
+              transactionCountContainerId="transaction-count-container"
+            />
           </CardContent>
         </Card>
       </div>

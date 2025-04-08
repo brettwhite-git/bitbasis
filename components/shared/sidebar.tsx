@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, LineChart, PieChart, Upload, Settings, History } from "lucide-react"
+import { LayoutDashboard, LineChart, PieChart, Upload, Settings, History, Calculator } from "lucide-react"
 import { useSidebar } from "./sidebar-provider"
 
 export function DashboardSidebar() {
@@ -27,6 +27,12 @@ export function DashboardSidebar() {
       icon: LineChart,
       href: "/dashboard/performance",
       isActive: pathname === "/dashboard/performance",
+    },
+    {
+      title: "Calculator",
+      icon: Calculator,
+      href: "/dashboard/calculator",
+      isActive: pathname === "/dashboard/calculator",
     },
     {
       title: "Transactions",
@@ -55,19 +61,19 @@ export function DashboardSidebar() {
       } transition-all duration-300`}
     >
       <nav className="flex h-full flex-col py-4">
-        <ul className="grid gap-1 px-2">
+        <ul className="flex flex-col items-center gap-2">
           {routes.map((route) => (
-            <li key={route.href}>
+            <li key={route.href} className="w-full px-2">
               <Link
                 href={route.href}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
+                className={`flex h-10 items-center ${isOpen ? 'justify-start px-3' : 'justify-center'} rounded-md text-sm font-medium ${
                   route.isActive
                     ? "bg-bitcoin-orange text-white"
                     : "text-muted-foreground hover:bg-secondary hover:text-white"
                 }`}
               >
                 <route.icon className="h-5 w-5" />
-                {isOpen && route.title}
+                {isOpen && <span className="ml-3">{route.title}</span>}
               </Link>
             </li>
           ))}

@@ -87,13 +87,22 @@ alwaysApply: true
 - `received_transfer_amount`: Amount of BTC received
 - `received_currency`: Currency received (always "BTC")
 
-### Bitcoin Price Table
+### Bitcoin History Table
+**Historical Table and Hourly Update Cron Job
+- `historical_prices`: `timestamp`, `date`, `price_usd`, `created_at`
+- Use mempool api for one time historical import to capture hourly data (24H/ day) for one time data dump into supabase
+- Create cron job to update table hourly with similar data points as a go forward after one time import
+
+## Bitcoing All Time Table
+**Bitciong ATH Table**
+- `date`, `ath_date`, `price`
+- Use Coinpaprike API for ATH data point
+
+### Bitcoin Spot Table
 **Bitcoing Price Table**
-  - `bitcoin_prices`: `date`, `price_usd`, `last_updated`, `ath_price`, `ath_date`
+  - `spot_price`: `date`, `price_usd`,
   - Using Coinpaprika API (free tier)
   - Need to be cautious of rate limits
-  - Price and ATH are cached in the `bitcoin_prices` table
-  - Coinpaprika provides ATH price and date directly
 
 ### Fear & Greed Index Table
 **Fear & Greed Index Table**

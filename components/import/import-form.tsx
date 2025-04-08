@@ -822,7 +822,9 @@ export function ImportForm() {
       price: '',
       usdAmount: '',
       fees: '',
-      exchange: ''
+      exchange: '',
+      network_fee: '',
+      wallet_address: ''
     })
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -839,15 +841,27 @@ export function ImportForm() {
       }))
     }
 
+    const isNetworkFeeEnabled = formData.type === 'send'
+
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Manual Transaction Entry</CardTitle>
-          <CardDescription>Add a new transaction manually</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+          <div>
+            <CardTitle>Manual Transaction Entry</CardTitle>
+            <CardDescription>Add a new transaction manually</CardDescription>
+          </div>
+          <div className="flex space-x-2">
+            <Button variant="outline">
+              Clear
+            </Button>
+            <Button className="bg-bitcoin-orange hover:bg-bitcoin-orange/90">
+              Add Transaction
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>
                 <Input
@@ -871,11 +885,21 @@ export function ImportForm() {
                 >
                   <option value="buy">Buy</option>
                   <option value="sell">Sell</option>
+                  <option value="send">Send</option>
+                  <option value="receive">Receive</option>
                 </select>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="exchange">Exchange/Source</Label>
+                <Input
+                  id="exchange"
+                  name="exchange"
+                  type="text"
+                  placeholder="Enter exchange or source"
+                  value={formData.exchange}
+                  onChange={handleInputChange}
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="btcAmount">Amount (BTC)</Label>
                 <Input
@@ -890,7 +914,7 @@ export function ImportForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="price">Price (BTC/USD)</Label>
+                <Label htmlFor="price">Price per BTC (USD)</Label>
                 <Input
                   id="price"
                   name="price"
@@ -902,11 +926,8 @@ export function ImportForm() {
                   required
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="usdAmount">Amount (USD)</Label>
+                <Label htmlFor="usdAmount">Total Amount (USD)</Label>
                 <Input
                   id="usdAmount"
                   name="usdAmount"
@@ -919,7 +940,7 @@ export function ImportForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="fees">Fees (USD)</Label>
+                <Label htmlFor="fees">Service Fee (USD)</Label>
                 <Input
                   id="fees"
                   name="fees"
@@ -928,31 +949,38 @@ export function ImportForm() {
                   placeholder="0.00"
                   value={formData.fees}
                   onChange={handleInputChange}
-                  required
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="exchange">Exchange</Label>
-              <Input
-                id="exchange"
-                name="exchange"
-                type="text"
-                placeholder="Enter exchange name"
-                value={formData.exchange}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div className="flex justify-end space-x-4">
-              <Button variant="outline" type="reset">
-                Clear
-              </Button>
-              <Button type="submit" className="bg-bitcoin-orange hover:bg-bitcoin-orange/90">
-                Add Transaction
-              </Button>
+              <div className="space-y-2">
+                <Label htmlFor="wallet_address">Wallet Address</Label>
+                <Input
+                  id="wallet_address"
+                  name="wallet_address"
+                  type="text"
+                  placeholder="Enter wallet address"
+                  value={formData.wallet_address}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label 
+                  htmlFor="network_fee" 
+                  className={!isNetworkFeeEnabled ? "text-muted-foreground" : ""}
+                >
+                  Network Fee (BTC)
+                </Label>
+                <Input
+                  id="network_fee"
+                  name="network_fee"
+                  type="number"
+                  step="0.00000001"
+                  placeholder="0.00000000"
+                  value={formData.network_fee}
+                  onChange={handleInputChange}
+                  className={!isNetworkFeeEnabled ? "opacity-50" : ""}
+                  disabled={!isNetworkFeeEnabled}
+                />
+              </div>
             </div>
           </form>
 
@@ -965,9 +993,9 @@ export function ImportForm() {
                   <TableHead>Date</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Amount (BTC)</TableHead>
-                  <TableHead>Price (BTC/USD)</TableHead>
-                  <TableHead>Amount (USD)</TableHead>
-                  <TableHead>Fees (USD)</TableHead>
+                  <TableHead>Price (USD)</TableHead>
+                  <TableHead>Total (USD)</TableHead>
+                  <TableHead>Fees</TableHead>
                   <TableHead>Exchange</TableHead>
                 </TableRow>
               </TableHeader>

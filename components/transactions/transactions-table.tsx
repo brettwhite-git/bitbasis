@@ -5,13 +5,30 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Search, SendHorizontal, ArrowUpDown, ArrowDown, ArrowUp, X, Loader2 } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Search, SendHorizontal, ArrowUpDown, ArrowDown, ArrowUp, X, Loader2, Trash2 } from "lucide-react"
 import { getTransactions } from "@/lib/supabase"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import type { Database } from "@/types/supabase"
 import { DateRange } from "react-day-picker"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { startOfDay, endOfDay, isWithinInterval, format } from "date-fns"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 
 // Define the structure returned by the updated getTransactions
 interface UnifiedTransaction {
@@ -28,7 +45,9 @@ interface UnifiedTransaction {
 
 // Define props for the component
 interface TransactionsTableProps {
-  currentDateISO: string; // Add prop for server-provided date
+  currentDateISO: string;
+  paginationContainerId: string;
+  transactionCountContainerId: string;
 }
 
 type SortConfig = {
@@ -36,7 +55,11 @@ type SortConfig = {
   direction: 'asc' | 'desc'
 }
 
-export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
+export function TransactionsTable({ 
+  currentDateISO, 
+  paginationContainerId,
+  transactionCountContainerId 
+}: TransactionsTableProps) {
   // Log the received prop when the component mounts or the prop changes
   /* useEffect(() => {
     console.log("[Client: TransactionsTable] Received currentDateISO prop:", currentDateISO);
@@ -51,6 +74,11 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const itemsPerPage = 20
   const [isExporting, setIsExporting] = useState(false)
+  const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set())
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [typeFilter, setTypeFilter] = useState<string>("all")
+  const [termFilter, setTermFilter] = useState<string>("all")
+  const [exchangeFilter, setExchangeFilter] = useState<string>("all")
 
   useEffect(() => {
     const loadTransactions = async () => {
@@ -156,7 +184,7 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
       }
 
       // Handle date strings
-      if (sortConfig.column === 'date' || sortConfig.column === 'created_at') {
+      if (sortConfig.column === 'date') {
         const aDate = new Date(aValue as string).getTime()
         const bDate = new Date(bValue as string).getTime()
         return sortConfig.direction === 'asc' ? aDate - bDate : bDate - aDate
@@ -175,23 +203,32 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
 
   const getSortIcon = (column: keyof UnifiedTransaction) => {
     if (sortConfig.column !== column) {
-      return <ArrowUpDown className="h-4 w-4 text-gray-400" />
+      return <ArrowUpDown className="h-4 w-4 text-gray-400 ml-1" />
     }
     return sortConfig.direction === 'asc' ? (
-      <ArrowUp className="h-4 w-4 text-primary" />
+      <ArrowUp className="h-4 w-4 text-primary ml-1" />
     ) : (
-      <ArrowDown className="h-4 w-4 text-primary" />
+      <ArrowDown className="h-4 w-4 text-primary ml-1" />
     )
   }
 
   const handleClear = () => {
     setSearchQuery("")
     setDateRange(undefined)
+    setTypeFilter("all")
+    setTermFilter("all")
+    setExchangeFilter("all")
     setSortConfig({ column: 'date', direction: 'desc' })
     setCurrentPage(1)
   }
 
-  // Filter transactions based on search query and date range
+  // Get unique values for filters
+  const getUniqueExchanges = () => {
+    const exchanges = new Set(transactions.map(t => t.exchange || '-'))
+    return Array.from(exchanges).sort()
+  }
+
+  // Filter transactions based on all criteria
   const filteredTransactions = transactions.filter((transaction) => {
     // Search query filter
     const matchesSearch = Object.values(transaction).some((value) =>
@@ -204,11 +241,22 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
       const transactionDate = new Date(transaction.date)
       const start = dateRange.from ? startOfDay(dateRange.from) : new Date(0)
       const end = dateRange.to ? endOfDay(dateRange.to) : new Date()
-      
       matchesDateRange = isWithinInterval(transactionDate, { start, end })
     }
 
-    return matchesSearch && matchesDateRange
+    // Type filter
+    const matchesType = typeFilter === "all" || transaction.type.toLowerCase() === typeFilter.toLowerCase()
+
+    // Term filter
+    const matchesTerm = termFilter === "all" || 
+      (termFilter === 'SHORT' && isShortTerm(transaction.date)) ||
+      (termFilter === 'LONG' && !isShortTerm(transaction.date))
+
+    // Exchange filter
+    const matchesExchange = exchangeFilter === "all" || 
+      (exchangeFilter === '-' ? !transaction.exchange : transaction.exchange?.toLowerCase() === exchangeFilter.toLowerCase())
+
+    return matchesSearch && matchesDateRange && matchesType && matchesTerm && matchesExchange
   })
 
   // Sort filtered transactions
@@ -265,59 +313,41 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
     }
   }
 
-  if (isLoading) {
-    return <div className="flex justify-center items-center min-h-[400px]">Loading transactions...</div>
+  const handleSelectTransaction = (transactionId: string) => {
+    setSelectedTransactions(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(transactionId)) {
+        newSet.delete(transactionId)
+      } else {
+        newSet.add(transactionId)
+      }
+      return newSet
+    })
   }
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <p className="text-red-500">{error}</p>
-        {error.includes('sign in') ? (
-          <Button onClick={() => window.location.href = '/auth'}>Sign In</Button>
-        ) : (
-          <Button onClick={() => window.location.reload()}>Retry</Button>
-        )}
-      </div>
-    )
+  const handleSelectAll = () => {
+    if (selectedTransactions.size === paginatedTransactions.length) {
+      // If all current page items are selected, unselect all
+      setSelectedTransactions(new Set())
+    } else {
+      // Select all current page items
+      setSelectedTransactions(new Set(paginatedTransactions.map(t => t.id)))
+    }
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="relative w-full sm:w-[350px]">
-            <Input
-              placeholder="Search transactions..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-8"
-            />
-            {searchQuery && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent hover:text-destructive"
-                onClick={() => setSearchQuery("")}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          <DateRangePicker
-            date={dateRange}
-            onDateChange={setDateRange}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleClear}
-            className="text-sm whitespace-nowrap"
-          >
-            Clear All Filters
-          </Button>
-        </div>
-        <div className="flex items-center justify-end gap-4">
+  const handleDeleteSelected = async () => {
+    // For now, just remove from local state
+    setTransactions(prev => prev.filter(t => !selectedTransactions.has(t.id)))
+    setSelectedTransactions(new Set())
+    setDeleteDialogOpen(false)
+  }
+
+  // Effect to render pagination in the header container
+  useEffect(() => {
+    const container = document.getElementById(paginationContainerId);
+    if (container) {
+      const paginationControls = (
+        <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -339,13 +369,6 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground border rounded-md px-3 py-1">
-            <span>
-              {filteredTransactions.length === transactions.length 
-                ? `${transactions.length} Total Transactions`
-                : `${filteredTransactions.length} / ${transactions.length} Transactions`}
-            </span>
-          </div>
           <Button 
             variant="outline" 
             size="icon" 
@@ -360,49 +383,192 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
             )}
           </Button>
         </div>
+      );
+      // Use ReactDOM to render the pagination controls
+      const { createRoot } = require('react-dom/client');
+      const root = createRoot(container);
+      root.render(paginationControls);
+      
+      // Cleanup on unmount
+      return () => {
+        root.unmount();
+      };
+    }
+  }, [currentPage, totalPages, paginationContainerId, isExporting, transactions.length]);
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center min-h-[400px]">Loading transactions...</div>
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <p className="text-red-500">{error}</p>
+        {error.includes('sign in') ? (
+          <Button onClick={() => window.location.href = '/auth'}>Sign In</Button>
+        ) : (
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-grow">
+          <div className="relative w-full sm:w-[260px]">
+            <Input
+              placeholder="Search transactions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={cn(
+                "pr-8",
+                searchQuery && "border-bitcoin-orange"
+              )}
+            />
+            {searchQuery && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent hover:text-bitcoin-orange"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          <DateRangePicker
+            date={dateRange}
+            onDateChange={setDateRange}
+          />
+          <div className="flex items-center gap-2">
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className={cn(
+                "w-[120px]",
+                typeFilter !== "all" && "border-bitcoin-orange"
+              )}>
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="buy">Buy</SelectItem>
+                <SelectItem value="sell">Sell</SelectItem>
+                <SelectItem value="send">Send</SelectItem>
+                <SelectItem value="receive">Receive</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={termFilter} onValueChange={setTermFilter}>
+              <SelectTrigger className={cn(
+                "w-[120px]",
+                termFilter !== "all" && "border-bitcoin-orange"
+              )}>
+                <SelectValue placeholder="Term" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Terms</SelectItem>
+                <SelectItem value="SHORT">Short</SelectItem>
+                <SelectItem value="LONG">Long</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={exchangeFilter} onValueChange={setExchangeFilter}>
+              <SelectTrigger className={cn(
+                "w-[140px]",
+                exchangeFilter !== "all" && "border-bitcoin-orange"
+              )}>
+                <SelectValue placeholder="Exchange" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Exchanges</SelectItem>
+                {getUniqueExchanges().map(exchange => {
+                  const displayName = exchange === '-' ? '-' : 
+                    exchange.split(' ').map(word => 
+                      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                    ).join(' ');
+                  return (
+                    <SelectItem key={exchange} value={exchange.toLowerCase()}>
+                      {displayName}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClear}
+            className="text-sm whitespace-nowrap"
+          >
+            Clear All Filters
+          </Button>
+          {selectedTransactions.size > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="text-sm whitespace-nowrap"
+            >
+              Delete Selected ({selectedTransactions.size})
+            </Button>
+          )}
+        </div>
+        <div className="text-sm text-muted-foreground whitespace-nowrap ml-auto border rounded-md px-4 py-2 hover:bg-accent hover:text-accent-foreground transition-colors">
+          {filteredTransactions.length === transactions.length 
+            ? `${transactions.length} Total Transactions`
+            : `${filteredTransactions.length} / ${transactions.length} Transactions`}
+        </div>
       </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead onClick={() => handleSort('date')} className="cursor-pointer">
-                <div className="flex items-center justify-between">
-                  Date {getSortIcon('date')}
+              <TableHead className="w-[32px] text-center px-2">
+                <Checkbox
+                  checked={selectedTransactions.size === paginatedTransactions.length && paginatedTransactions.length > 0}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all"
+                  className="border-muted-foreground/50 data-[state=checked]:border-bitcoin-orange data-[state=checked]:bg-bitcoin-orange"
+                />
+              </TableHead>
+              <TableHead onClick={() => handleSort('date')} className="cursor-pointer w-[80px]">
+                <div className="flex items-center justify-center">
+                  Date{getSortIcon('date')}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('type')} className="cursor-pointer">
-                <div className="flex items-center justify-between">
-                  Type {getSortIcon('type')}
+              <TableHead onClick={() => handleSort('type')} className="cursor-pointer w-[80px]">
+                <div className="flex items-center justify-center">
+                  Type{getSortIcon('type')}
                 </div>
               </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center justify-between">
+              <TableHead className="cursor-pointer w-[80px]">
+                <div className="flex items-center justify-center">
                   Term
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('btc_amount')} className="cursor-pointer">
-                <div className="flex items-center justify-between">
-                  Amount (BTC) {getSortIcon('btc_amount')}
+              <TableHead onClick={() => handleSort('btc_amount')} className="cursor-pointer w-[80px]">
+                <div className="flex items-center justify-center">
+                  Amount (BTC){getSortIcon('btc_amount')}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('price_at_tx')} className="cursor-pointer hidden md:table-cell">
-                <div className="flex items-center justify-between">
-                  Price (BTC/USD) {getSortIcon('price_at_tx')}
+              <TableHead onClick={() => handleSort('price_at_tx')} className="cursor-pointer hidden md:table-cell w-[80px]">
+                <div className="flex items-center justify-center">
+                  Price (BTC/USD){getSortIcon('price_at_tx')}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('usd_value')} className="cursor-pointer">
-                <div className="flex items-center justify-between">
-                  Amount (USD) {getSortIcon('usd_value')}
+              <TableHead onClick={() => handleSort('usd_value')} className="cursor-pointer w-[80px]">
+                <div className="flex items-center justify-center">
+                  Amount (USD){getSortIcon('usd_value')}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('fee_usd')} className="cursor-pointer hidden md:table-cell">
-                <div className="flex items-center justify-between">
-                  Fees (USD) {getSortIcon('fee_usd')}
+              <TableHead onClick={() => handleSort('fee_usd')} className="cursor-pointer hidden md:table-cell w-[80px]">
+                <div className="flex items-center justify-center">
+                  Fees (USD){getSortIcon('fee_usd')}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('exchange')} className="cursor-pointer hidden lg:table-cell">
-                <div className="flex items-center justify-between">
-                  Exchange {getSortIcon('exchange')}
+              <TableHead onClick={() => handleSort('exchange')} className="cursor-pointer hidden lg:table-cell w-[80px]">
+                <div className="flex items-center justify-center">
+                  Exchange{getSortIcon('exchange')}
                 </div>
               </TableHead>
             </TableRow>
@@ -410,12 +576,20 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
           <TableBody>
             {paginatedTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
-                <TableCell className="font-medium">
+                <TableCell className="text-center px-2">
+                  <Checkbox
+                    checked={selectedTransactions.has(transaction.id)}
+                    onCheckedChange={() => handleSelectTransaction(transaction.id)}
+                    aria-label={`Select transaction from ${new Date(transaction.date).toLocaleDateString()}`}
+                    className="border-muted-foreground/50 data-[state=checked]:border-bitcoin-orange data-[state=checked]:bg-bitcoin-orange"
+                  />
+                </TableCell>
+                <TableCell className="text-center">
                   {new Date(transaction.date).toLocaleDateString()}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-center">
                   <Badge
-                    className={`w-[100px] flex items-center justify-center text-white ${
+                    className={`w-[80px] inline-flex items-center justify-center text-white ${
                       transaction.type?.toLowerCase() === "buy" 
                         ? "bg-bitcoin-orange" 
                         : transaction.type?.toLowerCase() === "sell"
@@ -426,21 +600,21 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
                     }`}
                   >
                     {transaction.type?.toLowerCase() === "buy" ? (
-                      <ArrowDownRight className="mr-2 h-4 w-4" />
+                      <ArrowDownRight className="mr-1 h-4 w-4" />
                     ) : transaction.type?.toLowerCase() === "sell" ? (
-                      <ArrowUpRight className="mr-2 h-4 w-4" />
+                      <ArrowUpRight className="mr-1 h-4 w-4" />
                     ) : transaction.type?.toLowerCase() === "send" ? (
-                      <SendHorizontal className="mr-2 h-4 w-4" />
+                      <SendHorizontal className="mr-1 h-4 w-4" />
                     ) : (
-                      <SendHorizontal className="mr-2 h-4 w-4 rotate-180" />
+                      <SendHorizontal className="mr-1 h-4 w-4 rotate-180" />
                     )}
                     {transaction.type.toUpperCase()}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-center">
                   <Badge
                     variant="outline"
-                    className={`w-[80px] flex items-center justify-center ${
+                    className={`w-[70px] inline-flex items-center justify-center ${
                       isShortTerm(transaction.date)
                         ? "border-green-500 text-green-500"
                         : "border-purple-500 text-purple-500"
@@ -449,15 +623,19 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
                     {isShortTerm(transaction.date) ? "SHORT" : "LONG"}
                   </Badge>
                 </TableCell>
-                <TableCell>{formatBTC(transaction.btc_amount)}</TableCell>
-                <TableCell className="hidden md:table-cell">
+                <TableCell className="text-center">
+                  {formatBTC(transaction.btc_amount)}
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-center">
                   {formatCurrency(transaction.price_at_tx)}
                 </TableCell>
-                <TableCell>{formatCurrency(transaction.usd_value)}</TableCell>
-                <TableCell className="hidden md:table-cell">
+                <TableCell className="text-center">
+                  {formatCurrency(transaction.usd_value)}
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-center">
                   {formatCurrency(transaction.fee_usd)}
                 </TableCell>
-                <TableCell className="hidden lg:table-cell">
+                <TableCell className="hidden lg:table-cell text-center">
                   {transaction.exchange 
                     ? transaction.exchange.charAt(0).toUpperCase() + transaction.exchange.slice(1).toLowerCase()
                     : "-"}
@@ -467,6 +645,26 @@ export function TransactionsTable({ currentDateISO }: TransactionsTableProps) {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Transactions</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedTransactions.size} selected transaction{selectedTransactions.size === 1 ? '' : 's'}?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteSelected}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

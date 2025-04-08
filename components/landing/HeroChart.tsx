@@ -80,7 +80,7 @@ const HeroChart = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent rounded-xl" />
       
       {/* Main chart container */}
-      <div className="relative w-full bg-[#1A1F2C]/90 rounded-xl border border-blue-500/20 shadow-lg shadow-blue-500/5 backdrop-blur-sm">
+      <div className="relative w-full bg-[#1A1F2C]/90 rounded-xl border border-blue-500/10 shadow-lg shadow-blue-500/5 backdrop-blur-sm">
         <style>{animationCSS}</style>
         
         {/* Chart header with value */}

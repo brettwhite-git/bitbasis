@@ -47,6 +47,12 @@ interface MonthlyData {
   btcPrice?: number // Add BTC price field
 }
 
+interface BitcoinPrice {
+  date: string
+  price_usd: number
+  asset: string
+}
+
 // Calculate monthly data from transactions (now orders)
 function calculateMonthlyData(orders: Order[]): MonthlyData[] { // Renamed parameter
   // Sort orders by date
@@ -209,7 +215,7 @@ interface PortfolioSummaryChartProps {
 
 export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: PortfolioSummaryChartProps) {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
-  const [historicalPrices, setHistoricalPrices] = useState<any[]>([])
+  const [historicalPrices, setHistoricalPrices] = useState<BitcoinPrice[]>([])
   const { supabase } = useSupabase()
 
   useEffect(() => {
@@ -220,8 +226,8 @@ export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: Po
       start.setMonth(end.getMonth() - (timeframe === "6M" ? 6 : 12))
 
       // Format dates for query
-      const startStr = start.toISOString().split('T')[0]
-      const endStr = end.toISOString().split('T')[0]
+      const startStr = start.toISOString()
+      const endStr = end.toISOString()
 
       // Fetch orders and historical prices in parallel
       const [ordersResult, pricesResult] = await Promise.all([
@@ -230,8 +236,9 @@ export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: Po
           .select('date, type, received_btc_amount, sell_btc_amount, buy_fiat_amount, service_fee, price')
           .order('date', { ascending: true }),
         supabase
-          .from('bitcoin_prices')
-          .select('*')
+          .from('historical_prices')  // Updated table name
+          .select('date, price_usd, asset')
+          .eq('asset', 'BTC')  // Filter for Bitcoin prices
           .gte('date', startStr)
           .lte('date', endStr)
           .order('date', { ascending: true })
@@ -244,9 +251,13 @@ export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: Po
 
       if (pricesResult.error) {
         console.error('Error fetching prices:', pricesResult.error)
-      } else {
-        setHistoricalPrices(pricesResult.data || [])
+        return
       }
+
+      // Log the fetched price data to verify
+      console.log('Fetched historical prices:', pricesResult.data?.length, 'records')
+      
+      setHistoricalPrices(pricesResult.data || [])
 
       // Calculate monthly data with orders
       if (ordersResult.data) {
@@ -264,27 +275,45 @@ export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: Po
     return monthlyData.slice(-monthsToShow)
   })()
 
-  // Process historical prices into monthly format
-  const monthlyPrices = historicalPrices.reduce((acc: { [key: string]: number }, price: any) => {
+  // Process daily prices into monthly averages for more accurate representation
+  const monthlyPrices = historicalPrices.reduce((acc: { [key: string]: { sum: number; count: number; lastPrice: number } }, price: BitcoinPrice) => {
     const date = new Date(price.date)
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
     
-    // Use the first day of each month's price
-    if (date.getDate() === 1) {
-      acc[monthKey] = price.price_usd
+    if (!acc[monthKey]) {
+      acc[monthKey] = { sum: 0, count: 0, lastPrice: 0 }
     }
+    
+    acc[monthKey].sum += price.price_usd
+    acc[monthKey].count += 1
+    acc[monthKey].lastPrice = price.price_usd // Keep track of the last price for the month
     
     return acc
   }, {})
 
-  // Ensure we have prices for all months in our filtered data
-  const completeMonthlyPrices = filteredData.map(d => {
-    const price = monthlyPrices[d.month]
-    if (!price) {
-      console.warn(`Missing price data for month: ${d.month}`)
+  // Calculate the average price for each month, falling back to the last price if needed
+  const monthlyAveragePrices = Object.entries(monthlyPrices).reduce((acc: { [key: string]: number }, [month, data]) => {
+    acc[month] = data.count > 0 ? data.sum / data.count : data.lastPrice
+    return acc
+  }, {})
+
+  // Match prices with portfolio data, using monthly averages
+  const matchedPrices = filteredData.map(monthData => {
+    const averagePrice = monthlyAveragePrices[monthData.month]
+    if (!averagePrice) {
+      // If no average price is available for this month, find the closest previous month's price
+      const monthDate = new Date(monthData.month + '-01')
+      const availableMonths = Object.entries(monthlyAveragePrices)
+        .filter(([month]) => new Date(month + '-01') <= monthDate)
+        .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+
+      return availableMonths.length > 0 ? availableMonths[0][1] : 0
     }
-    return price || 0
+    return averagePrice
   })
+
+  // Add console log to debug the matched prices
+  console.log('Matched Prices:', matchedPrices)
 
   const data = {
     labels: filteredData.map(d => {
@@ -312,7 +341,7 @@ export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: Po
       },
       {
         label: "BTC Price",
-        data: completeMonthlyPrices,
+        data: matchedPrices,
         borderColor: "#22c55e", // Green-500
         backgroundColor: "#22c55e",
         tension: 0.4,

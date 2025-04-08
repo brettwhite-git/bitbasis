@@ -73,6 +73,7 @@ interface PerformanceMetrics {
     price: number
     date: string
   }
+  hodlTime: number
 }
 
 // Remove standalone client initialization
@@ -423,6 +424,25 @@ export async function calculateCostBasis(
   }
 }
 
+function calculateWeightedHodlTime(orders: any[], currentDate: Date): number {
+  let totalBTC = 0
+  let weightedDaysSum = 0
+
+  // Process only buy orders
+  orders
+    .filter(order => order.type === 'buy' && order.received_btc_amount)
+    .forEach(order => {
+      const purchaseDate = new Date(order.date)
+      const daysHeld = Math.floor((currentDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24))
+      const amount = order.received_btc_amount
+
+      totalBTC += amount
+      weightedDaysSum += amount * daysHeld
+    })
+
+  return totalBTC > 0 ? Math.round(weightedDaysSum / totalBTC) : 0
+}
+
 export async function getPerformanceMetrics(
   userId: string,
   supabase: SupabaseClient<Database>
@@ -635,7 +655,8 @@ export async function getPerformanceMetrics(
               day: 'numeric' 
             })
           : 'Not Available'
-      }
+      },
+      hodlTime: calculateWeightedHodlTime(orders, now)
     }
 
     // Calculate annualized returns

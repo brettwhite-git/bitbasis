@@ -30,7 +30,7 @@ ChartJS.register(
 
 // Use Supabase generated types directly where possible
 type OrderRow = Database['public']['Tables']['orders']['Row'];
-type BitcoinPriceRow = Database['public']['Tables']['bitcoin_prices']['Row'];
+type HistoricalPriceRow = Database['public']['Tables']['historical_prices']['Row'];
 
 type Period = "3M" | "6M" | "1Y" | "3Y" | "ALL"
 
@@ -77,64 +77,59 @@ function ChartProvider({ children }: { children: React.ReactNode }) {
 }
 
 // Helper to find the closest price point at or before the end of a given month
-function findPriceForMonth(monthKey: string, prices: BitcoinPriceRow[]): number {
+function findPriceForMonth(monthKey: string, prices: HistoricalPriceRow[]): number {
   const parts = monthKey.split('-').map(Number);
   
-  // Check array length and element existence
   if (parts.length !== 2 || parts[0] === undefined || parts[1] === undefined) {
     console.error(`[findPriceForMonth] Invalid monthKey format: ${monthKey}`);
     return 0;
   }
 
-  // Now TypeScript knows these exist
   const yearNum = parts[0];
   const monthNum = parts[1];
   
-  // Validate the numbers
   if (!Number.isFinite(yearNum) || !Number.isFinite(monthNum)) {
     console.error(`[findPriceForMonth] Invalid year/month values: ${yearNum}-${monthNum}`);
     return 0;
   }
 
-  // Additional range validation
   if (monthNum < 1 || monthNum > 12 || yearNum < 1970) {
     console.error(`[findPriceForMonth] Invalid year/month range: ${yearNum}-${monthNum}`);
     return 0;
   }
 
-  // Now we can safely use these numbers
   const endOfMonthTimestamp = Date.UTC(yearNum, monthNum, 0, 23, 59, 59, 999);
 
-  // Find the price with the minimum time difference *before or at* the end of the month
+  // Find the price with the minimum time difference before or at the end of the month
   const relevantPrice = prices
-    .filter(p => p.last_updated && new Date(p.last_updated).getTime() <= endOfMonthTimestamp)
-    .sort((a, b) => new Date(b.last_updated!).getTime() - new Date(a.last_updated!).getTime())[0];
+    .filter(p => p.date && new Date(p.date).getTime() <= endOfMonthTimestamp)
+    .sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime())[0];
 
   if (relevantPrice && typeof relevantPrice.price_usd === 'number') {
     return relevantPrice.price_usd;
   }
 
-  // Fallback: If no price before, find the *earliest* price *after* the month ends
+  // Fallback: If no price before, find the earliest price after the month ends
   const earliestAfter = prices
-    .filter(p => p.last_updated && new Date(p.last_updated).getTime() > endOfMonthTimestamp)
-    .sort((a, b) => new Date(a.last_updated!).getTime() - new Date(b.last_updated!).getTime())[0];
+    .filter(p => p.date && new Date(p.date).getTime() > endOfMonthTimestamp)
+    .sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime())[0];
   
   return typeof earliestAfter?.price_usd === 'number' ? earliestAfter.price_usd : 0;
 }
 
 // --- REVISED calculateMonthlyData ---
-function calculateMonthlyData(transactions: OrderRow[], historicalPrices: BitcoinPriceRow[]): MonthlyData[] {
+function calculateMonthlyData(transactions: OrderRow[], historicalPrices: HistoricalPriceRow[]): MonthlyData[] {
   if (transactions.length === 0 || historicalPrices.length === 0) return [];
 
-  // Sort transactions chronologically (ensure date is not null)
+  // Sort transactions chronologically
   const sortedTransactions = [...transactions]
     .filter(tx => tx.date)
     .sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime());
 
-  // Sort prices chronologically
+  // Sort prices chronologically and filter for BTC only
   const sortedPrices = [...historicalPrices]
-    .filter(p => p.last_updated)
-    .sort((a, b) => new Date(b.last_updated!).getTime() - new Date(a.last_updated!).getTime());
+    .filter(p => p.date && p.asset === 'BTC')
+    .sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime());
 
   if (sortedTransactions.length === 0) {
     console.log('No valid transactions after filtering');
@@ -326,59 +321,64 @@ function Chart() {
       console.log('PerformanceChart: Fetching orders and prices...');
       
       try {
-        // Fetch orders using OrderRow type
-        const { data: transactionsData, error: ordersError } = await supabase
-          .from('orders') 
-          .select('*') // Select all columns defined in OrderRow
-          .order('date', { ascending: true });
+        // Always fetch 3 years of data regardless of selected period
+        const end = new Date();
+        const start = new Date();
+        start.setFullYear(end.getFullYear() - 3);
+        
+        const startStr = start.toISOString();
+        const endStr = end.toISOString();
 
-        if (ordersError) throw ordersError;
+        console.log('Fetching data from', startStr, 'to', endStr);
 
-        // Fetch historical prices using BitcoinPriceRow type
-        const { data: historicalPricesData, error: pricesError } = await supabase
-          .from('bitcoin_prices')
-          .select('*') // Select all columns defined in BitcoinPriceRow
-          .order('last_updated', { ascending: false })
-          .limit(1500); // Adjust limit as needed
+        // Fetch orders and historical prices in parallel
+        const [ordersResult, pricesResult] = await Promise.all([
+          supabase
+            .from('orders')
+            .select('*')
+            .order('date', { ascending: true }),
+          supabase
+            .from('historical_prices')
+            .select('*')
+            .eq('asset', 'BTC')
+            .gte('date', startStr)
+            .lte('date', endStr)
+            .order('date', { ascending: false })
+        ]);
 
-        if (pricesError) throw pricesError;
+        if (ordersResult.error) throw ordersResult.error;
+        if (pricesResult.error) throw pricesResult.error;
 
-        // Ensure data is not null before proceeding
-        const transactions = transactionsData || [];
-        const historicalPrices = historicalPricesData || [];
+        const transactions = ordersResult.data || [];
+        const historicalPrices = pricesResult.data || [];
 
+        console.log('Fetched historical prices:', historicalPrices.length);
+        
         if (historicalPrices.length === 0) throw new Error("No historical price data available");
-      
-        console.log('PerformanceChart: Fetched orders:', transactions.length);
-        console.log('PerformanceChart: Fetched prices:', historicalPrices.length);
 
-        // Filter only buy/sell transactions for calculation
+        // Filter only buy/sell transactions
         const buySellTransactions = transactions.filter(
-            (tx): tx is OrderRow => tx.type === 'buy' || tx.type === 'sell'
+          (tx): tx is OrderRow => tx.type === 'buy' || tx.type === 'sell'
         );
 
-        console.log('PerformanceChart: Filtered buy/sell transactions:', buySellTransactions.length);
-
         if (buySellTransactions.length > 0) {
-            const calculatedData = calculateMonthlyData(buySellTransactions, historicalPrices);
-            console.log('PerformanceChart: Calculated monthly data:', calculatedData);
-            setMonthlyData(calculatedData);
+          const calculatedData = calculateMonthlyData(buySellTransactions, historicalPrices);
+          setMonthlyData(calculatedData);
         } else {
-            console.log('PerformanceChart: No valid transactions to calculate data.');
-            setMonthlyData([]);
+          setMonthlyData([]);
         }
 
       } catch (err: any) {
-          console.error('PerformanceChart: Error fetching data:', err); 
-          setError(err.message || "Failed to load chart data");
-          setMonthlyData([]);
+        console.error('PerformanceChart: Error fetching data:', err);
+        setError(err.message || "Failed to load chart data");
+        setMonthlyData([]);
       } finally {
-          setIsLoading(false);
+        setIsLoading(false);
       }
     }
 
     fetchData();
-  }, [supabase]);
+  }, [supabase, period]);
 
   // Filter data based on selected period
   const filteredData = (() => {
@@ -389,7 +389,7 @@ function Chart() {
 
     switch (period) {
       case "3M":
-        startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1); // Start of month 3 months ago
+        startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
         break;
       case "6M":
         startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
@@ -402,14 +402,11 @@ function Chart() {
         break;
       case "ALL":
       default:
-        return monthlyData; // Show all data
+        return monthlyData;
     }
 
     const startMonthKey = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
-    
-    // Find the index of the starting month
     const startIndex = monthlyData.findIndex(d => d.month >= startMonthKey);
-    
     return startIndex === -1 ? [] : monthlyData.slice(startIndex);
   })();
 
@@ -418,26 +415,34 @@ function Chart() {
       const [year, month] = (d.month || '').split('-');
       if (!year || !month) return '';
       const date = new Date(parseInt(year), parseInt(month) - 1);
-      // Format based on period maybe? For now, keep simple
-      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); 
+      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     }),
     datasets: [
       {
         label: "Portfolio Value",
         data: filteredData.map(d => d.portfolioValue),
-        borderColor: "#F7931A",
+        borderColor: "#F7931A", // Bitcoin Orange
         backgroundColor: "#F7931A",
-        tension: 0.1, // Reduced tension for potentially more accurate representation
-        pointRadius: filteredData.length < 50 ? 3 : 0, // Show points for shorter periods
+        tension: 0.1,
+        pointRadius: filteredData.length < 50 ? 3 : 0,
       },
       {
         label: "Cost Basis",
         data: filteredData.map(d => d.costBasis),
-        borderColor: "#64748b",
+        borderColor: "#64748b", // Slate Gray
         backgroundColor: "#64748b",
         tension: 0.1,
         pointRadius: filteredData.length < 50 ? 3 : 0,
       },
+      {
+        label: "BTC Price",
+        data: filteredData.map(d => d.endOfMonthPrice),
+        borderColor: "#22c55e", // Green
+        backgroundColor: "#22c55e",
+        tension: 0.1,
+        borderDash: [5, 5], // Dashed line for BTC price
+        pointRadius: filteredData.length < 50 ? 3 : 0,
+      }
     ],
   };
 
@@ -450,7 +455,7 @@ function Chart() {
   }
 
   if (filteredData.length === 0) {
-     return <div className="h-[400px] flex items-center justify-center text-gray-500">No data available for the selected period.</div>;
+    return <div className="h-[400px] flex items-center justify-center text-gray-500">No data available for the selected period.</div>;
   }
 
   return (

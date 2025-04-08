@@ -27,6 +27,25 @@ const getClassification = (value: number) => {
   return 'Extreme Greed'
 }
 
+// Helper function to find the closest date entry within a window
+const findClosestDateEntry = (entries: FearGreedIndexEntry[], targetDate: string, windowDays: number = 2): FearGreedIndexEntry | undefined => {
+  const target = new Date(targetDate);
+  let closestEntry: FearGreedIndexEntry | undefined;
+  let minDiff = Infinity;
+
+  entries.forEach(entry => {
+    const entryDate = new Date(entry.date);
+    const diffDays = Math.abs((target.getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= windowDays && diffDays < minDiff) {
+      minDiff = diffDays;
+      closestEntry = entry;
+    }
+  });
+
+  return closestEntry;
+};
+
 // Modify fetchFearGreedIndex to return the full array again
 async function fetchFearGreedIndex(): Promise<FearGreedIndexEntry[]> {
   try {
@@ -45,7 +64,6 @@ async function fetchFearGreedIndex(): Promise<FearGreedIndexEntry[]> {
     }
 
     const data = await response.json()
-    console.log('Fear & Greed API Response:', JSON.stringify(data, null, 2))
 
     if (!data.data?.[0]) {
       throw new Error('Fear and Greed data not available in API response')
@@ -56,17 +74,18 @@ async function fetchFearGreedIndex(): Promise<FearGreedIndexEntry[]> {
       const value = parseInt(point.value);
       const timestamp = parseInt(point.timestamp) * 1000;
       const dateObj = new Date(timestamp);
-      const dateString = formatDate(dateObj); // Use helper
+      const dateString = formatDate(dateObj);
 
       return {
-        date: dateString, // Use YYYY-MM-DD
+        date: dateString,
         value: value,
         classification: getClassification(value),
-        last_updated: new Date(timestamp).toISOString() // Keep original timestamp
+        last_updated: new Date(timestamp).toISOString()
       }
     });
+
     console.log(`[fetchFearGreedIndex] Processed ${processedData.length} data points.`);
-    return processedData; // Return the full array
+    return processedData;
 
   } catch (error) {
     console.error('[fetchFearGreedIndex] Error:', error);
@@ -75,7 +94,7 @@ async function fetchFearGreedIndex(): Promise<FearGreedIndexEntry[]> {
 }
 
 export async function GET() {
-  console.log('[API /fear-greed] Route handler started.');
+  console.log('\n[API /fear-greed] ====== Route handler started ======');
   try {
     const supabase = createRouteHandlerClient({ cookies })
 
@@ -88,35 +107,39 @@ export async function GET() {
       .single()
 
     if (cacheError) {
-      console.error('Supabase cache error:', cacheError)
+      console.error('[API /fear-greed] Supabase cache error:', cacheError)
     }
 
     let isCacheFresh = false;
     if (cachedData) {
-      console.log('[API /fear-greed] Latest cache entry found:', cachedData.date);
+      console.log('[API /fear-greed] Latest cache entry found:', {
+        date: cachedData.date,
+        value: cachedData.value,
+        classification: cachedData.classification
+      });
       const lastEntryDate = new Date(cachedData.date);
       const today = new Date();
       const diffDays = (today.getTime() - lastEntryDate.getTime()) / (1000 * 60 * 60 * 24);
       if (diffDays <= 1) { 
         isCacheFresh = true;
-        console.log('[API /fear-greed] Cache determined to be FRESH.');
+        console.log('[API /fear-greed] Cache determined to be FRESH (diff days:', diffDays, ')');
       } else {
-        console.log('[API /fear-greed] Cache determined to be STALE (last entry > 1 day old).');
+        console.log('[API /fear-greed] Cache determined to be STALE (diff days:', diffDays, ')');
       }
     } else {
       console.log('[API /fear-greed] No cache entry found. Cache is STALE.');
     }
 
     if (isCacheFresh && cachedData) {
-      console.log('[API /fear-greed] Attempting to return FRESH data from cache.');
+      console.log('[API /fear-greed] Using CACHED data path');
       const lastUpdated = new Date(cachedData.last_updated)
       const now = new Date()
       const hoursSinceUpdate = (now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60)
 
       if (hoursSinceUpdate < 24) {
-        console.log('Cache is fresh. Fetching historical points from DB.');
+        console.log('[API /fear-greed] Cache is fresh. Fetching historical points from DB...');
         
-        // --- Calculate Dates (Re-added) --- 
+        // --- Calculate Dates --- 
         const today = new Date();
         const yesterdayDate = new Date(today);
         yesterdayDate.setDate(today.getDate() - 1);
@@ -124,35 +147,31 @@ export async function GET() {
         weekAgoDate.setDate(today.getDate() - 7);
         const monthAgoDate = new Date(today);
         monthAgoDate.setDate(today.getDate() - 30);
-        // --- End Calculate Dates --- 
 
-        const datesToFetch = [formatDate(yesterdayDate), formatDate(weekAgoDate), formatDate(monthAgoDate)];
+        console.log('[API /fear-greed] Calculated target dates:', {
+          today: formatDate(today),
+          yesterday: formatDate(yesterdayDate),
+          weekAgo: formatDate(weekAgoDate),
+          monthAgo: formatDate(monthAgoDate)
+        });
+
+        // Calculate date range for query - add buffer days
+        const endDate = formatDate(today);
+        const startDate = formatDate(new Date(today.getTime() - 35 * 24 * 60 * 60 * 1000));
 
         const { data: historicalData, error: historicalError } = await supabase
           .from('fear_greed_index')
           .select('*')
-          .order('created_at', { ascending: false })
-          .limit(31)
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', { ascending: false });
 
         if (!historicalError && historicalData) {
-          // Explicitly type the find function's expected return type and the array it searches
-          const findDataForDate = (dateStr: string | undefined): FearGreedIndexEntry | undefined => {
-            // Add explicit check for undefined dateStr to satisfy strict checking
-            if (typeof dateStr !== 'string') return undefined; 
-             return (historicalData as FearGreedIndexEntry[]).find(d => d.date === dateStr);
-          }
+          const yesterday = findClosestDateEntry(historicalData, formatDate(yesterdayDate), 1);
+          const weekAgo = findClosestDateEntry(historicalData, formatDate(weekAgoDate), 2);
+          const monthAgo = findClosestDateEntry(historicalData, formatDate(monthAgoDate), 2);
 
-          // Assign formatted dates to variables first
-          const yesterdayFormattedDate = formatDate(yesterdayDate);
-          const weekAgoFormattedDate = formatDate(weekAgoDate);
-          const monthAgoFormattedDate = formatDate(monthAgoDate);
-
-          // Now use the variables
-          const yesterday: FearGreedIndexEntry | undefined = findDataForDate(yesterdayFormattedDate);
-          const weekAgo: FearGreedIndexEntry | undefined = findDataForDate(weekAgoFormattedDate);
-          const monthAgo: FearGreedIndexEntry | undefined = findDataForDate(monthAgoFormattedDate);
-
-          console.log('Returning data from cache.');
+          console.log('[API /fear-greed] Returning data from cache.');
 
           return NextResponse.json({
             ...cachedData,
@@ -175,22 +194,29 @@ export async function GET() {
             }
           })
         } else {
-          console.error('Error fetching historical data from cache:', historicalError);
-          // Fall through to fetch new data if historical fetch fails
+          console.error('[API /fear-greed] Error fetching historical data:', historicalError);
           console.log('[API /fear-greed] Falling through to fetch new data due to cache read error.');
         }
       }
     }
 
     // --- Fetch New Data and Update Cache --- 
-    console.log('[API /fear-greed] Cache is STALE or read failed. Fetching new data...');
+    console.log('\n[API /fear-greed] Using FRESH DATA path');
     const newDataArray = await fetchFearGreedIndex(); 
     console.log(`[API /fear-greed] Fetched ${newDataArray?.length ?? 0} new data points from API.`);
-
+    
     if (!newDataArray || newDataArray.length === 0) {
       console.error('[API /fear-greed] No data received from fetchFearGreedIndex');
       throw new Error('No data received from fetchFearGreedIndex');
     }
+
+    console.log('[API /fear-greed] First few entries from API:', 
+      newDataArray.slice(0, 3).map(entry => ({
+        date: entry.date,
+        value: entry.value,
+        classification: entry.classification
+      }))
+    );
 
     console.log('[API /fear-greed] Attempting to upsert new data into fear_greed_index table...');
     const { error: upsertError } = await supabase
@@ -206,9 +232,44 @@ export async function GET() {
 
     // Construct the response from the newly fetched data array
     const current = newDataArray[0]; // Already checked array length > 0
-    const yesterday = newDataArray.length > 1 ? newDataArray[1] : undefined;
-    const weekAgo = newDataArray.length > 7 ? newDataArray[7] : undefined;
-    const monthAgo = newDataArray.length > 30 ? newDataArray[30] : undefined;
+    
+    // Calculate target dates
+    const today = new Date();
+    const yesterdayDate = new Date(today);
+    yesterdayDate.setDate(today.getDate() - 1);
+    const weekAgoDate = new Date(today);
+    weekAgoDate.setDate(today.getDate() - 7);
+    const monthAgoDate = new Date(today);
+    monthAgoDate.setDate(today.getDate() - 30);
+
+    // Format dates for comparison
+    const yesterdayStr = formatDate(yesterdayDate);
+    const weekAgoStr = formatDate(weekAgoDate);
+    const monthAgoStr = formatDate(monthAgoDate);
+
+    // Find entries by exact date match with fallback to closest date
+    const yesterday = findClosestDateEntry(newDataArray, yesterdayStr, 1);
+    const weekAgo = findClosestDateEntry(newDataArray, weekAgoStr, 2);
+    const monthAgo = findClosestDateEntry(newDataArray, monthAgoStr, 2);
+
+    // Debug logging
+    console.log('[API /fear-greed] Date matching:', {
+      targetDates: {
+        yesterday: yesterdayStr,
+        weekAgo: weekAgoStr,
+        monthAgo: monthAgoStr
+      },
+      availableDates: newDataArray.map(entry => entry.date).sort().join(', '),
+      dateRange: {
+        earliest: newDataArray[newDataArray.length - 1]?.date,
+        latest: newDataArray[0]?.date,
+      },
+      matches: {
+        yesterday: yesterday?.date,
+        weekAgo: weekAgo?.date,
+        monthAgo: monthAgo?.date
+      }
+    });
     
     // Type safety check, though unlikely after previous check
     if (!current) {

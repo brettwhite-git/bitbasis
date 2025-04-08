@@ -7,6 +7,10 @@ import HeroChart from "@/components/landing/HeroChart"
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#171923] text-gray-300">
+      <div className="fixed inset-0 bg-gradient-to-br from-blue-500/5 via-blue-400/3 to-transparent" />
+      <div className="fixed inset-0 bg-gradient-to-b from-blue-500/2 via-blue-400/3 to-blue-500/2" />
+      <div className="fixed inset-0 bg-gradient-to-r from-blue-500/3 via-transparent to-blue-500/3" />
+      
       <header className="border-b border-blue-500/20 bg-[#171923]/95 backdrop-blur supports-[backdrop-filter]:bg-[#171923]/60 sticky top-0 z-50">
         <div className="container flex h-16 items-center justify-between">
           <Logo />
@@ -31,11 +35,8 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="flex-1">
+      <main className="flex-1 relative">
         <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-blue-500/5" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-500/5 to-transparent" />
-          
           <div className="container mx-auto py-16 md:py-20 lg:py-24 relative">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
               <div className="flex flex-col space-y-8 lg:col-span-5">

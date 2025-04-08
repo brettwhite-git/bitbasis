@@ -25,9 +25,16 @@ interface DashboardContentProps {
     averageBuyPrice: number
   }
   performance: {
+    allTimeHigh: {
+      price: number
+      date: string
+    }
     cumulative: {
       month: { percent: number | null; dollar: number | null }
+      ytd: { percent: number | null; dollar: number | null }
+      total: { percent: number }
     }
+    hodlTime: number
   }
 }
 
@@ -39,7 +46,7 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
       <div className="flex items-center justify-between w-full">
         <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
       </div>
-      <div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
@@ -82,6 +89,26 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
           <CardContent>
             <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(metrics.averageBuyPrice)}</div>
             <p className="text-xs text-muted-foreground pt-2">Per Bitcoin</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">HODL Time</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-bitcoin-orange">
+              {performance.hodlTime} days
+            </div>
+            <p className="text-xs text-muted-foreground pt-2">Weighted Average</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Bitcoin ATH</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(performance.allTimeHigh.price)}</div>
+            <p className="text-xs text-muted-foreground pt-2">Reached on {performance.allTimeHigh.date}</p>
           </CardContent>
         </Card>
       </div>

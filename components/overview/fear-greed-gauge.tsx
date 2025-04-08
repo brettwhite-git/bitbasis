@@ -76,7 +76,12 @@ const SmallGauge = memo(({ value, label, classification }: { value: number; labe
   return (
     <div className="flex flex-col items-center">
       <div className="text-base text-white mb-1">{label}</div>
-      <div className="text-sm text-gray-400 mb-2">{classification}</div>
+      <div 
+        className="text-sm mb-2"
+        style={{ color: getClassificationColor(classification) }}
+      >
+        {classification}
+      </div>
       <div className="relative w-[100px]">
         <GaugeChart 
           id={`historical-gauge-${label}`}
@@ -92,7 +97,9 @@ const SmallGauge = memo(({ value, label, classification }: { value: number; labe
           animate={true}
         />
         <div className="absolute top-[60%] left-1/2 transform -translate-x-1/2 text-center">
-          <span className="text-2xl font-semibold text-white">{value}</span>
+          <span className="text-2xl font-semibold text-white">
+            {value}
+          </span>
         </div>
       </div>
     </div>

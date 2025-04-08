@@ -208,6 +208,36 @@ export type Database = {
         }
         Relationships: []
       }
+      historical_prices: {
+        Row: {
+          id: number
+          asset: string
+          date: string
+          price_usd: number
+          volume_24h: number | null
+          market_cap: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          asset: string
+          date: string
+          price_usd: number
+          volume_24h?: number | null
+          market_cap?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          asset?: string
+          date?: string
+          price_usd?: number
+          volume_24h?: number | null
+          market_cap?: number | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
