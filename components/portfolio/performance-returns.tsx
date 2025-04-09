@@ -175,7 +175,7 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
         {/* Cost Basis Method Comparison Table */}
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
           <div className="p-6">
-            <h3 className="text-sm font-medium mb-4">Cost Basis Method Comparison</h3>
+            <h3 className="text-sm font-medium mb-4">Cost Basis Method</h3>
             {loading ? (
               <div>Loading cost basis calculations...</div>
             ) : error ? (
@@ -227,7 +227,7 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
                         <TooltipProvider delayDuration={0}>
                           <Tooltip>
                             <TooltipTrigger className="cursor-default">
-                              <Info className="h-4 w-4 text-muted-foreground" />
+                              <Info className="h-4 w-4 text-bitcoin-orange" />
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>Consult tax advisor for actual liability</p>
@@ -242,7 +242,7 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
                         <TooltipProvider delayDuration={0}>
                           <Tooltip>
                             <TooltipTrigger className="cursor-default">
-                              <Info className="h-4 w-4 text-muted-foreground" />
+                              <Info className="h-4 w-4 text-bitcoin-orange" />
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>Consult tax advisor for actual liability</p>
