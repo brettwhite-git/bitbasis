@@ -1,6 +1,5 @@
 import { Metadata } from "next"
 import { BitcoinCalculator } from "@/components/calculator/bitcoin-calculator"
-import { SatoshiConverter } from "@/components/calculator/satoshi-converter"
 
 export const metadata: Metadata = {
   title: "Bitcoin Calculator | BitBasis",
@@ -12,9 +11,9 @@ export default function CalculatorPage() {
     <div className="w-full space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Bitcoin Calculator</h1>
+        <p className="text-muted-foreground">Plan your Bitcoin accumulation strategy with our interactive calculator.</p>
       </div>
       
-      <SatoshiConverter />
       <BitcoinCalculator />
     </div>
   )

@@ -21,6 +21,18 @@ ChartJS.register(
   Legend
 )
 
+// Define interfaces for chart data
+export interface ChartDataPoint {
+  date: string;
+  accumulatedSats: number;
+  periodicSats: number;
+}
+
+export interface CalculatorChartProps {
+  chartData?: ChartDataPoint[];
+  title?: string;
+}
+
 // Mock data for initial display
 const mockData = {
   labels: ['Apr 25', 'May 25', 'Jun 25', 'Jul 25', 'Aug 25', 'Sep 25', 'Oct 25', 'Nov 25', 'Dec 25', 'Jan 26', 'Feb 26', 'Mar 26', 'Apr 26'],
@@ -88,15 +100,41 @@ const options = {
           label += context.parsed.y.toLocaleString() + ' sats'
           return label
         },
+        // Add footer to display BTC equivalent
+        footer: function(tooltipItems: any) {
+          const sum = tooltipItems.reduce((acc: number, item: any) => acc + item.parsed.y, 0);
+          const btc = sum / 100000000;
+          return [`= ${btc.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 })} BTC`];
+        }
       },
     },
   },
 }
 
-export function CalculatorChart() {
+export function CalculatorChart({ chartData, title }: CalculatorChartProps) {
+  // Use provided data or fall back to mock data
+  const chartConfig = chartData ? {
+    labels: chartData.map(point => point.date),
+    datasets: [
+      {
+        label: 'Accumulated Sats',
+        data: chartData.map(point => point.accumulatedSats),
+        backgroundColor: '#F7931A', // Bitcoin orange
+        stack: 'Stack 0',
+      },
+      {
+        label: 'Sats Stacked',
+        data: chartData.map(point => point.periodicSats),
+        backgroundColor: '#818CF8', // Indigo-400 for purple/blue look
+        stack: 'Stack 0',
+      },
+    ],
+  } : mockData;
+
   return (
     <div className="h-[400px] w-full">
-      <Bar options={options} data={mockData} />
+      {title && <h3 className="text-lg font-medium mb-2">{title}</h3>}
+      <Bar options={options} data={chartConfig} />
     </div>
   )
 } 
