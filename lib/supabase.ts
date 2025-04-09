@@ -18,6 +18,9 @@ if (!supabaseAnonKey || supabaseAnonKey.length < 20) {
   throw new Error('Invalid or missing NEXT_PUBLIC_SUPABASE_ANON_KEY')
 }
 
+// Initialize a basic server-side client for internal operations
+const supabase = createSupabaseClient<Database>(supabaseUrl, supabaseAnonKey)
+
 // Create a Supabase client for client-side operations with auth
 let browserClient: ReturnType<typeof createClientComponentClient<Database>> | null = null
 
@@ -76,6 +79,9 @@ export async function checkEmailExists(email: string): Promise<boolean> {
 
 // Test the connection with more detailed error handling
 async function testSupabaseConnection() {
+  // Create a temporary client specifically for this test
+  const testClient = createSupabaseClient<Database>(supabaseUrl!, supabaseAnonKey!)
+  
   try {
     console.log('=== Supabase Connection Test ===')
     console.log('1. Environment Variables:')
@@ -84,7 +90,7 @@ async function testSupabaseConnection() {
 
     // Test basic connection
     console.log('\n2. Testing basic connection...')
-    const { data: testData, error: testError } = await supabase
+    const { data: testData, error: testError } = await testClient
       .from('orders')
       .select('count')
       .limit(1)
@@ -101,7 +107,7 @@ async function testSupabaseConnection() {
 
     // Test table structure
     console.log('\n3. Testing table structure...')
-    const { data: tableInfo, error: tableError } = await supabase
+    const { data: tableInfo, error: tableError } = await testClient
       .from('orders')
       .select('*')
       .limit(0)
@@ -325,7 +331,7 @@ export async function getTransactions() {
     // Map results to a unified structure
     const mappedOrders = ordersResult.data?.map(o => {
       // DEBUG: Log the raw order object and its type
-      if (o.type === 'Buy') { // Log only for Buy orders to reduce noise
+      if (o.type?.toLowerCase() === 'buy') { // Log only for Buy orders to reduce noise
         console.log('[DEBUG] Raw Buy Order:', o);
       }
 

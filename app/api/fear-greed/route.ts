@@ -12,7 +12,13 @@ interface FearGreedIndexEntry {
 }
 
 // Helper function to format date as YYYY-MM-DD
-const formatDate = (date: Date) => date.toISOString().split('T')[0];
+const formatDate = (date: Date): string => {
+  if (!date) {
+    console.error('formatDate called with null or undefined date');
+    return new Date().toISOString().split('T')[0]!;
+  }
+  return date.toISOString().split('T')[0]!;
+};
 
 // Alternative Fear & Greed Index API (free, no API key required)
 // Add limit=31 to get a month of historical data

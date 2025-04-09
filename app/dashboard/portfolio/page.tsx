@@ -1,5 +1,4 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui"
-import { CostBasisComparison } from "@/components/portfolio/cost-basis-comparison"
 import { PerformanceReturns } from "@/components/portfolio/performance-returns"
 import { getPortfolioMetrics, getPerformanceMetrics } from "@/lib/portfolio"
 import { formatCurrency, formatBTC } from "@/lib/utils"
@@ -134,17 +133,9 @@ export default async function PortfolioPage() {
           </CardContent>
         </Card>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Cost Basis Method Comparison</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SupabaseProvider>
-            <CostBasisComparison />
-          </SupabaseProvider>
-        </CardContent>
-      </Card>
-      <PerformanceReturns data={performance} />
+      <SupabaseProvider>
+        <PerformanceReturns data={performance} />
+      </SupabaseProvider>
     </div>
   )
 }

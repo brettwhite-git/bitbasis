@@ -17,6 +17,13 @@ export default async function DashboardPage() {
   } catch (error) {
     console.error("[DashboardPage] Error during requireAuth():", error)
     // Rely on requireAuth's redirect
+    return <div>Redirecting to login...</div>
+  }
+  
+  // Verify user exists before trying to fetch metrics
+  if (!user || !user.id) {
+    console.error("[DashboardPage] No user ID available after requireAuth")
+    return <div>Authentication error. Please try signing in again.</div>
   }
   
   // Fetch portfolio and performance metrics
