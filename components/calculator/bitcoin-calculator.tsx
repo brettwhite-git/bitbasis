@@ -52,8 +52,11 @@ export function BitcoinCalculator() {
 
     // Get number of months based on duration
     let months = 12;
-    if (goalDuration === '2_year') months = 24;
+    if (goalDuration === '1_month') months = 1;
+    if (goalDuration === '6_month') months = 6;
+    if (goalDuration === '3_year') months = 36;
     if (goalDuration === '5_year') months = 60;
+    if (goalDuration === '10_year') months = 120;
     
     // Calculate monthly dollar amount needed
     const btcAmount = satsGoalNum / 100000000;
@@ -89,8 +92,11 @@ export function BitcoinCalculator() {
     
     // Get number of months based on duration
     let months = 12;
-    if (goalDuration === '2_year') months = 24;
+    if (goalDuration === '1_month') months = 1;
+    if (goalDuration === '6_month') months = 6;
+    if (goalDuration === '3_year') months = 36;
     if (goalDuration === '5_year') months = 60;
+    if (goalDuration === '10_year') months = 120;
     
     // Generate dates for the chart
     const startDate = new Date();
@@ -231,22 +237,26 @@ export function BitcoinCalculator() {
             {/* Bitcoin Unit */}
             <div className="space-y-2">
               <Label>Bitcoin Unit</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant={bitcoinUnit === 'satoshi' ? "default" : "outline"}
-                  onClick={() => setBitcoinUnit('satoshi')}
-                  className={`w-full ${bitcoinUnit === 'satoshi' ? 'bg-muted hover:bg-muted/90' : ''}`}
-                >
-                  Satoshi
-                </Button>
-                <Button
-                  variant={bitcoinUnit === 'bitcoin' ? "default" : "outline"}
-                  onClick={() => setBitcoinUnit('bitcoin')}
-                  className={`w-full ${bitcoinUnit === 'bitcoin' ? 'bg-muted hover:bg-muted/90' : ''}`}
-                >
-                  Bitcoin
-                </Button>
-              </div>
+              <RadioGroup value={bitcoinUnit} onValueChange={setBitcoinUnit} className="grid grid-cols-2 gap-2">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="satoshi" id="satoshi" className="peer sr-only" />
+                  <Label
+                    htmlFor="satoshi"
+                    className="flex-1 cursor-pointer rounded-md border-2 border-muted p-4 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10"
+                  >
+                    Satoshi
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="bitcoin" id="bitcoin" className="peer sr-only" />
+                  <Label
+                    htmlFor="bitcoin"
+                    className="flex-1 cursor-pointer rounded-md border-2 border-muted p-4 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10"
+                  >
+                    Bitcoin
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
 
             {/* Fiat Currency */}
@@ -308,9 +318,12 @@ export function BitcoinCalculator() {
                     <SelectValue placeholder="Select duration" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="1_month">1 Month</SelectItem>
+                    <SelectItem value="6_month">6 Months</SelectItem>
                     <SelectItem value="1_year">1 Year</SelectItem>
-                    <SelectItem value="2_year">2 Years</SelectItem>
+                    <SelectItem value="3_year">3 Years</SelectItem>
                     <SelectItem value="5_year">5 Years</SelectItem>
+                    <SelectItem value="10_year">10 Years</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="flex items-center space-x-2">
@@ -328,33 +341,46 @@ export function BitcoinCalculator() {
             <div className="space-y-2">
               <Label>Future Price Estimate</Label>
               <div className="flex items-center space-x-2">
-                <Input
-                  type="text"
-                  placeholder="e.g., 4 Year CAGR: 9%"
-                  value={customPriceChecked ? `${priceGrowth}%` : ''}
-                  onChange={(e) => {
-                    if (customPriceChecked) {
-                      handlePriceGrowthChange(e);
-                    }
-                  }}
-                  disabled={!customPriceChecked}
-                  inputMode="decimal"
-                />
+                {customPriceChecked ? (
+                  <Input
+                    type="text"
+                    placeholder="Enter custom growth rate"
+                    value={priceGrowth ? `${priceGrowth}%` : ''}
+                    onChange={(e) => handlePriceGrowthChange(e)}
+                    inputMode="decimal"
+                  />
+                ) : (
+                  <Select value={priceGrowth} onValueChange={setPriceGrowth}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select CAGR" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="9">1 Year CAGR: 9%</SelectItem>
+                      <SelectItem value="65">2 Year CAGR: 65%</SelectItem>
+                      <SelectItem value="22">3 Year CAGR: 22%</SelectItem>
+                      <SelectItem value="7">4 Year CAGR: 7%</SelectItem>
+                      <SelectItem value="57">6 Year CAGR: 57%</SelectItem>
+                      <SelectItem value="68">8 Year CAGR: 68%</SelectItem>
+                      <SelectItem value="78">10 Year CAGR: 78%</SelectItem>
+                      <SelectItem value="62">12 Year CAGR: 62%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
                 <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="customPrice"
                     checked={customPriceChecked}
-                    onCheckedChange={(checked) => setCustomPriceChecked(checked as boolean)}
+                    onCheckedChange={(checked) => {
+                      setCustomPriceChecked(checked as boolean);
+                      if (!checked) {
+                        setPriceGrowth('9'); // Reset to default when unchecking
+                      }
+                    }}
                   />
-                  <Label htmlFor="customPrice" className="text-sm font-normal text-muted-foreground whitespace-nowrap">Set Custom?</Label>
+                  <Label htmlFor="customPrice" className="text-sm font-normal text-muted-foreground whitespace-nowrap">Custom?</Label>
                 </div>
               </div>
             </div>
-
-            {/* Advanced Options */}
-            <Button variant="secondary" className="w-full mt-4">
-              Advanced Options
-            </Button>
           </div>
 
           {/* Right Section */}
@@ -379,7 +405,7 @@ export function BitcoinCalculator() {
                   </div>
                   <p className="text-sm text-muted-foreground">
                     in bitcoin to accumulate {formatNumber(satsGoal)} sats by {
-                      new Date(new Date().setMonth(new Date().getMonth() + (goalDuration === '1_year' ? 12 : goalDuration === '2_year' ? 24 : 60)))
+                      new Date(new Date().setMonth(new Date().getMonth() + (goalDuration === '1_year' ? 12 : goalDuration === '3_year' ? 36 : 60)))
                         .toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                     }
                   </p>

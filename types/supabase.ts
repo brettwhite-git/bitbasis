@@ -100,87 +100,48 @@ export type Database = {
         }
         Relationships: []
       }
-      receive: {
+      transfers: {
         Row: {
-          asset: string
-          created_at: string
-          date: string
-          exchange: string | null
           id: number
-          price: number
-          received_currency: string
-          received_transfer_amount: number
-          type: string
+          created_at: string
           updated_at: string | null
           user_id: string
+          date: string
+          type: "withdrawal" | "deposit"
+          asset: string
+          amount_btc: number
+          fee_amount_btc: number | null
+          amount_fiat: number | null
+          price: number | null
+          hash: string | null
         }
         Insert: {
-          asset: string
-          created_at?: string
-          date: string
-          exchange?: string | null
           id?: number
-          price: number
-          received_currency?: string
-          received_transfer_amount: number
-          type?: string
+          created_at?: string
           updated_at?: string | null
           user_id: string
+          date: string
+          type: "withdrawal" | "deposit"
+          asset?: string
+          amount_btc: number
+          fee_amount_btc?: number | null
+          amount_fiat?: number | null
+          price?: number | null
+          hash?: string | null
         }
         Update: {
-          asset?: string
-          created_at?: string
-          date?: string
-          exchange?: string | null
           id?: number
-          price?: number
-          received_currency?: string
-          received_transfer_amount?: number
-          type?: string
+          created_at?: string
           updated_at?: string | null
           user_id?: string
-        }
-        Relationships: []
-      }
-      send: {
-        Row: {
-          asset: string
-          created_at: string
-          date: string
-          id: number
-          network_fee: number | null
-          network_fee_currency: string | null
-          sent_amount: number
-          sent_currency: string
-          type: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          asset: string
-          created_at?: string
-          date: string
-          id?: number
-          network_fee?: number | null
-          network_fee_currency?: string | null
-          sent_amount: number
-          sent_currency?: string
-          type?: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          asset?: string
-          created_at?: string
           date?: string
-          id?: number
-          network_fee?: number | null
-          network_fee_currency?: string | null
-          sent_amount?: number
-          sent_currency?: string
-          type?: string
-          updated_at?: string | null
-          user_id?: string
+          type?: "withdrawal" | "deposit"
+          asset?: string
+          amount_btc?: number
+          fee_amount_btc?: number | null
+          amount_fiat?: number | null
+          price?: number | null
+          hash?: string | null
         }
         Relationships: []
       }

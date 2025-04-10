@@ -19,7 +19,8 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
+  CardFooter
 } from "@/components/ui/card"
 import { 
   CheckCircle2, 
@@ -34,56 +35,31 @@ import {
 import type { Database } from '@/types/supabase'
 import { Button } from "@/components/ui/button"
 
-type DbTransaction = Database['public']['Tables']['transactions']['Insert']
+type OrderInsert = Database['public']['Tables']['orders']['Insert']
+type TransferInsert = Database['public']['Tables']['transfers']['Insert']
 
-interface ParsedTransaction {
-  date: string
-  type: 'buy' | 'sell'
-  asset: string
-  price: number
-  exchange: string | null
-  buy_fiat_amount: number | null
-  buy_currency: string | null
-  buy_btc_amount: number | null
-  received_btc_amount: number | null
-  received_currency: string | null
-  sell_btc_amount: number | null
-  sell_btc_currency: string | null
-  received_fiat_amount: number | null
-  received_fiat_currency: string | null
-  service_fee: number | null
-  service_fee_currency: string | null
-}
-
-interface ValidationIssue {
-  row: number
-  field: string
-  issue: string
-  suggestion?: string
-  severity: 'error' | 'warning'
-}
+type ParsedTransaction = OrderInsert | TransferInsert
 
 interface ImportPreviewProps {
   transactions: ParsedTransaction[]
-  validationIssues: ValidationIssue[]
-  originalRows: any[]
+  validationIssues: string[]
+  originalRows: string[][]
   closeAction: () => void
-  file: File | null
-  onUpload: () => void
-  isLoading: boolean
 }
 
-const LoadingDots = () => {
-  return (
-    <span className="inline-flex ml-1">
-      <span className="animate-dot1">.</span>
-      <span className="animate-dot2">.</span>
-      <span className="animate-dot3">.</span>
-    </span>
-  )
+const isOrder = (transaction: ParsedTransaction): transaction is OrderInsert => {
+  return 'buy_fiat_amount' in transaction || 'sell_btc_amount' in transaction
+}
+
+const isTransfer = (transaction: ParsedTransaction): transaction is TransferInsert => {
+  return 'amount_btc' in transaction
 }
 
 export function ImportPreview({ transactions, validationIssues, originalRows, closeAction }: ImportPreviewProps) {
+  // Split transactions into orders and transfers
+  const orders = transactions.filter(isOrder)
+  const transfers = transactions.filter(isTransfer)
+
   // Calculate summary statistics
   const dateRange = transactions.length > 0 ? {
     start: new Date(Math.min(...transactions.map(t => new Date(t.date).getTime()))),
@@ -92,31 +68,43 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
 
   const stats = {
     total: transactions.length,
-    validRows: transactions.length,
-    totalBtc: transactions.reduce((sum, t) => {
-      const type = t.type.toLowerCase();
-      if (type === 'buy') {
-        // Only add received BTC from buy transactions
-        return sum + (t.received_btc_amount || 0);
+    orders: {
+      total: orders.length,
+      buy: orders.filter(t => t.type === 'buy').length,
+      sell: orders.filter(t => t.type === 'sell').length,
+    },
+    transfers: {
+      total: transfers.length,
+      deposit: transfers.filter(t => t.type === 'deposit').length,
+      withdrawal: transfers.filter(t => t.type === 'withdrawal').length,
+    },
+    totalBtc: orders.reduce((sum, t) => {
+      if (t.type === 'buy' && t.received_btc_amount) {
+        return sum + t.received_btc_amount
+      } else if (t.type === 'sell' && t.sell_btc_amount) {
+        return sum - t.sell_btc_amount
       }
-      // Ignore sell transactions for this specific sum
-      return sum;
-    }, 0),
-    types: {
-      buy: transactions.filter(t => t.type.toLowerCase() === 'buy').length,
-      sell: transactions.filter(t => t.type.toLowerCase() === 'sell').length
-    }
+      return sum
+    }, 0) + transfers.reduce((sum, t) => {
+      if (t.type === 'deposit') {
+        return sum + t.amount_btc
+      } else if (t.type === 'withdrawal') {
+        return sum - t.amount_btc
+      }
+      return sum
+    }, 0)
   }
 
   const getTransactionIcon = (type: string) => {
-    switch (type) {
-      case 'Buy':
+    switch (type.toLowerCase()) {
+      case 'buy':
         return <ArrowDownRight className="mr-1 h-3 w-3" />
-      case 'Sell':
+      case 'sell':
         return <ArrowUpRight className="mr-1 h-3 w-3" />
-      case 'Send':
-      case 'Receive':
+      case 'deposit':
         return <SendHorizontal className="mr-1 h-3 w-3" />
+      case 'withdrawal':
+        return <SendHorizontal className="mr-1 h-3 w-3 rotate-180" />
       default:
         return null
     }
@@ -130,142 +118,194 @@ export function ImportPreview({ transactions, validationIssues, originalRows, cl
     })
   }
 
-  const formatNumber = (num: number, decimals: number = 8) => {
+  const formatNumber = (num: number | null | undefined, decimals: number = 8) => {
+    if (num === null || num === undefined) return '-'
     return num.toLocaleString('en-US', {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals
     })
   }
 
-  const getAmount = (t: ParsedTransaction) => {
-    if (t.type === 'buy') {
-      return t.received_btc_amount ?? 0
-    }
-    return t.sell_btc_amount ?? 0
-  }
-
-  const formatAmount = (amount: number | null) => {
-    if (amount === null) return '0.00'
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 8,
-      maximumFractionDigits: 8
-    }).format(amount)
-  }
-
-  const formatCurrency = (amount: number | null) => {
-    if (amount === null) return '0.00'
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount)
-  }
-
-  const getTotalFees = (transaction: ParsedTransaction) => {
-    const networkFee = transaction.network_fee ?? 0
-    const serviceFee = transaction.service_fee ?? 0
-    return networkFee + serviceFee
-  }
-
-  const getTotal = (transaction: ParsedTransaction) => {
-    if (transaction.type === 'buy') {
-      return transaction.buy_fiat_amount ?? 0
-    } else if (transaction.type === 'sell') {
-      return transaction.received_fiat_amount ?? 0
-    }
-    return 0
-  }
-
   return (
     <div className="space-y-4">
-      {/* Preview Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Transaction Preview</CardTitle>
-          <CardDescription>
-            Showing first {Math.min(5, transactions.length)} of {transactions.length} transactions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Term</TableHead>
-                <TableHead>BTC Amount</TableHead>
-                <TableHead>Fiat Amount</TableHead>
-                <TableHead>Price (USD/BTC)</TableHead>
-                <TableHead>Fees</TableHead>
-                <TableHead>Exchange</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions.slice(0, 5).map((transaction, index) => {
-                // Correctly calculate short/long term based on one year holding period
-                const now = new Date();
-                const oneYearAgo = new Date();
-                oneYearAgo.setFullYear(now.getFullYear() - 1);
-                const transactionDate = new Date(transaction.date);
-                const isShortTerm = transactionDate > oneYearAgo;
-
-                const btcAmount = transaction.type === 'buy'
-                  ? transaction.received_btc_amount ?? 0
-                  : transaction.sell_btc_amount ?? 0;
-                const fiatAmount = transaction.type === 'buy'
-                  ? transaction.buy_fiat_amount ?? 0
-                  : transaction.received_fiat_amount ?? 0;
-                const fees = transaction.service_fee ?? 0;
-
-                return (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">
-                      {formatDate(transaction.date)}
-                    </TableCell>
+      {/* Orders Preview */}
+      {orders.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Orders Preview</CardTitle>
+            <CardDescription>
+              Showing first {Math.min(5, orders.length)} of {orders.length} orders
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>BTC Amount</TableHead>
+                  <TableHead>USD Value</TableHead>
+                  <TableHead>Price (USD/BTC)</TableHead>
+                  <TableHead>Fees</TableHead>
+                  <TableHead>Exchange</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.slice(0, 5).map((order, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{formatDate(order.date)}</TableCell>
                     <TableCell>
                       <Badge
-                        variant={transaction.type === "buy" ? "default" : "destructive"}
-                        className={`w-[100px] flex items-center justify-center ${
-                          transaction.type === "buy" 
+                        className={`w-[100px] flex items-center justify-center text-white ${
+                          order.type === "buy" 
                             ? "bg-bitcoin-orange" 
                             : "bg-red-500"
                         }`}
                       >
-                        {transaction.type === "buy" ? (
-                          <ArrowDownRight className="mr-2 h-4 w-4" />
-                        ) : (
-                          <ArrowUpRight className="mr-2 h-4 w-4" />
-                        )}
-                        {transaction.type.toUpperCase()}
+                        {getTransactionIcon(order.type)}
+                        {order.type.toUpperCase()}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      {formatNumber(order.type === 'buy' ? order.received_btc_amount : order.sell_btc_amount)}
+                    </TableCell>
+                    <TableCell>
+                      {formatNumber(order.type === 'buy' ? order.buy_fiat_amount : order.received_fiat_amount, 2)}
+                    </TableCell>
+                    <TableCell>{formatNumber(order.price, 2)}</TableCell>
+                    <TableCell>{formatNumber(order.service_fee, 2)}</TableCell>
+                    <TableCell>{order.exchange || '-'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Transfers Preview */}
+      {transfers.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Transfers Preview</CardTitle>
+            <CardDescription>
+              Showing first {Math.min(5, transfers.length)} of {transfers.length} transfers
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>BTC Amount</TableHead>
+                  <TableHead>Network Fee (BTC)</TableHead>
+                  <TableHead>USD Value</TableHead>
+                  <TableHead>Price (USD/BTC)</TableHead>
+                  <TableHead>Hash</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transfers.slice(0, 5).map((transfer, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{formatDate(transfer.date)}</TableCell>
                     <TableCell>
                       <Badge
-                        variant="outline"
-                        className={`w-[80px] flex items-center justify-center ${
-                          isShortTerm
-                            ? "border-green-500 text-green-500"
-                            : "border-purple-500 text-purple-500"
+                        className={`w-[100px] flex items-center justify-center text-white ${
+                          transfer.type === "deposit" 
+                            ? "bg-gray-500" 
+                            : "bg-blue-500"
                         }`}
                       >
-                        {isShortTerm ? "SHORT" : "LONG"}
+                        {getTransactionIcon(transfer.type)}
+                        {transfer.type.toUpperCase()}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatNumber(btcAmount, 8)} BTC</TableCell>
-                    <TableCell>${formatNumber(fiatAmount, 2)}</TableCell>
-                    <TableCell>${formatNumber(transaction.price, 2)}</TableCell>
-                    <TableCell>${formatNumber(fees, 2)}</TableCell>
+                    <TableCell>{formatNumber(transfer.amount_btc)}</TableCell>
+                    <TableCell>{formatNumber(transfer.fee_amount_btc)}</TableCell>
+                    <TableCell>{formatNumber(transfer.amount_fiat, 2)}</TableCell>
+                    <TableCell>{formatNumber(transfer.price, 2)}</TableCell>
                     <TableCell>
-                      {transaction.exchange 
-                        ? transaction.exchange.charAt(0).toUpperCase() + transaction.exchange.slice(1).toLowerCase()
-                        : "-"}
+                      {transfer.hash ? (
+                        <span className="font-mono text-xs truncate max-w-[100px] inline-block">
+                          {transfer.hash}
+                        </span>
+                      ) : '-'}
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Summary Statistics */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Import Summary</CardTitle>
+          <CardDescription>
+            {dateRange ? (
+              <>
+                Transactions from {formatDate(dateRange.start.toISOString())} to {formatDate(dateRange.end.toISOString())}
+              </>
+            ) : 'No transactions to import'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-lg border">
+              <div className="text-sm font-medium text-muted-foreground">Total Transactions</div>
+              <div className="text-2xl font-bold">{stats.total}</div>
+              <div className="text-sm mt-2">
+                <div>Orders: {stats.orders.total}</div>
+                <div>Transfers: {stats.transfers.total}</div>
+              </div>
+            </div>
+            <div className="p-4 rounded-lg border">
+              <div className="text-sm font-medium text-muted-foreground">Total BTC</div>
+              <div className="text-2xl font-bold">{formatNumber(stats.totalBtc)}</div>
+            </div>
+            <div className="p-4 rounded-lg border">
+              <div className="text-sm font-medium text-muted-foreground">Orders</div>
+              <div className="text-sm mt-2">
+                <div>Buy: {stats.orders.buy}</div>
+                <div>Sell: {stats.orders.sell}</div>
+              </div>
+            </div>
+            <div className="p-4 rounded-lg border">
+              <div className="text-sm font-medium text-muted-foreground">Transfers</div>
+              <div className="text-sm mt-2">
+                <div>Deposits: {stats.transfers.deposit}</div>
+                <div>Withdrawals: {stats.transfers.withdrawal}</div>
+              </div>
+            </div>
+          </div>
         </CardContent>
+        <CardFooter className="flex justify-end space-x-2">
+          <Button variant="outline" onClick={closeAction}>
+            Cancel
+          </Button>
+          <Button className="bg-bitcoin-orange hover:bg-bitcoin-orange/90">
+            Confirm Import
+          </Button>
+        </CardFooter>
       </Card>
+
+      {/* Validation Issues */}
+      {validationIssues.length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Validation Issues</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc list-inside mt-2">
+              {validationIssues.map((issue, i) => (
+                <li key={i}>{issue}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   )
 }

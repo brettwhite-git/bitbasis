@@ -38,11 +38,17 @@ interface CSVRow {
   asset: string
   price?: string
   exchange?: string
+  // Order specific fields
   buy_fiat_amount?: string
   received_btc_amount?: string
   sell_btc_amount?: string
   received_fiat_amount?: string
   service_fee?: string
+  // Transfer specific fields
+  amount_btc?: string
+  fee_amount_btc?: string
+  amount_fiat?: string
+  hash?: string
   // Alternative field names for flexibility
   fiat_amount?: string
   btc_amount?: string
@@ -50,10 +56,14 @@ interface CSVRow {
 
 interface ParsedTransaction {
   date: string
-  type: 'buy' | 'sell'
+  type: string
   asset: string
-  price: number
+  price: number | null
   exchange: string | null
+}
+
+interface ParsedOrder extends ParsedTransaction {
+  type: 'buy' | 'sell'
   buy_fiat_amount: number | null
   buy_currency: string | null
   received_btc_amount: number | null
@@ -64,6 +74,14 @@ interface ParsedTransaction {
   received_fiat_currency: string | null
   service_fee: number | null
   service_fee_currency: string | null
+}
+
+interface ParsedTransfer extends ParsedTransaction {
+  type: 'withdrawal' | 'deposit'
+  amount_btc: number
+  fee_amount_btc: number | null
+  amount_fiat: number | null
+  hash: string | null
 }
 
 interface ImportStatus {
@@ -1037,15 +1055,16 @@ export function ImportForm() {
 
   return (
     <Tabs defaultValue="csv" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="w-full grid grid-cols-3 mb-4">
         <TabsTrigger value="csv">CSV Upload</TabsTrigger>
         <TabsTrigger value="manage">Manage CSVs</TabsTrigger>
         <TabsTrigger value="manual">Manual Entry</TabsTrigger>
       </TabsList>
-      <TabsContent value="csv" className="mt-4">
+      
+      <TabsContent value="csv">
         {!parsedData && (
           <div
-            className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 min-h-[400px] text-center mb-4 ${
+            className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 min-h-[400px] text-center ${
               isDragging ? "border-bitcoin-orange bg-bitcoin-orange/10" : "border-border"
             } cursor-pointer`}
             onDragOver={handleDragOver}
@@ -1060,7 +1079,7 @@ export function ImportForm() {
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
               <Upload className="h-6 w-6 text-bitcoin-orange" />
             </div>
-            <h3 className="mt-4 text-lg font-semibold text-white">
+            <h3 className="mt-4 text-lg font-semibold">
               Drag and drop your CSV file
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -1118,10 +1137,12 @@ export function ImportForm() {
           </div>
         )}
       </TabsContent>
+      
       <TabsContent value="manage">
         <ManageCSVs />
       </TabsContent>
-      <TabsContent value="manual" className="mt-4">
+      
+      <TabsContent value="manual">
         <ManualEntryForm />
       </TabsContent>
     </Tabs>

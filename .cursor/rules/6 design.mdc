@@ -56,36 +56,15 @@ alwaysApply: true
 - `service_fee`: Exchange/service fee
 - `service_fee_currency`: Currency of service fee
 
-### Send Table
-#### Core Fields
-- `id`: Auto-incrementing primary key
-- `created_at`: Timestamp of record creation
-- `updated_at`: Timestamp of last update
-- `user_id`: Foreign key to auth.users table
+### Transfer Table
 - `date`: Transaction date and time
-- `asset`: Cryptocurrency asset (e.g., "BTC")
-- `type`: Transaction type (always "send")
-#### Send Fields
-- `sent_amount`: Amount of BTC sent
-- `sent_currency`: Currency sent ("BTC")
-#### Fee Information
-- `network_fee`: Network/mining fee for the transaction
-- `network_fee_currency`: Currency of network fee ("BTC")
+- `type`: Transaction type (either "withdrawl" or "deposit")
+- `amount_btc`: Amount of BTC withrdawl or deposited (import should accept either positive or negative)
+- `fee_amount_btc` : Amount in network fees in BTC
+- `amount_fiat` : Amount in USD transfered 
+- `price` : Price action of BTC when the transaction occured in USD 
+- `hash` : Transaction hash 
 
-### Receive Table
-#### Core Fields
-- `id`: Auto-incrementing primary key
-- `created_at`: Timestamp of record creation
-- `updated_at`: Timestamp of last update
-- `user_id`: Foreign key to auth.users table
-- `date`: Transaction date and time
-- `asset`: Cryptocurrency asset (e.g., "BTC")
-- `type`: Transaction type (always "receive")
-- `price`: Price of BTC at time of receipt
-- `exchange`: Exchange or source of the received BTC (optional)
-#### Receive Fields
-- `received_transfer_amount`: Amount of BTC received
-- `received_currency`: Currency received (always "BTC")
 
 ### Bitcoin History Table
 **Historical Table and Hourly Update Cron Job

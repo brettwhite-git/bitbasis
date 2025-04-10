@@ -74,24 +74,19 @@ export function SatoshiConverter({ onValuesChange, btcPriceOverride, className =
   }, [values, isUserEditing]);
 
   const isValidInput = (value: string, field: keyof ConversionState): boolean => {
-    // Allow empty input
     if (value === '') return true;
     
-    // Remove existing commas for validation
     const cleanValue = value.replace(/,/g, '');
     
-    // Check if input is a valid number format
-    // For satoshis, don't allow decimal points
-    if (field === 'satoshis') {
-      return /^[0-9]+$/.test(cleanValue);
-    } else {
-      // For USD and BTC, allow decimal points
-      // For BTC, allow up to 8 decimal places
-      if (field === 'btc') {
-        return /^[0-9]+(\.[0-9]{0,8})?$/.test(cleanValue);
-      }
-      // For USD, allow up to 2 decimal places
-      return /^[0-9]+(\.[0-9]{0,2})?$/.test(cleanValue);
+    switch (field) {
+      case 'satoshis':
+        return /^\d+$/.test(cleanValue);
+      case 'usd':
+        return /^\d+(\.\d{0,2})?$/.test(cleanValue);
+      case 'btc':
+        return /^\d+(\.\d{0,8})?$/.test(cleanValue);
+      default:
+        return false;
     }
   };
 
@@ -102,37 +97,46 @@ export function SatoshiConverter({ onValuesChange, btcPriceOverride, className =
   const handleInputChange = (field: keyof ConversionState, value: string) => {
     setIsUserEditing(true);
     
-    // Save cursor position and selection
     const inputRef = 
       field === 'satoshis' ? satoshisInputRef.current :
       field === 'usd' ? usdInputRef.current :
       field === 'btc' ? btcInputRef.current : null;
     
-    if (inputRef) {
-      cursorPositionRef.current = inputRef.selectionStart;
-      selectionEndRef.current = inputRef.selectionEnd;
-      fieldBeingEditedRef.current = field;
-    }
+    if (!inputRef) return;
+
+    // Remove any commas from the input
+    const cleanInput = value.replace(/,/g, '');
     
-    // Validate input
-    if (!isValidInput(value, field)) {
-      return; // Reject invalid input
-    }
+    // Split the current value into whole and decimal parts
+    const parts = cleanInput.split('.');
+    let wholeNumber = parts[0] || '';
+    let decimal = parts[1] || '';
     
-    // Remove commas from input for calculation
-    const cleanValue = value.replace(/,/g, '');
-    const numValue = cleanValue === '' ? '' : parseFloat(cleanValue);
+    // For USD, ensure we maintain 2 decimal places
+    if (field === 'usd') {
+      decimal = decimal.padEnd(2, '0').slice(0, 2);
+      if (!cleanInput.includes('.')) {
+        decimal = '00';
+      }
+    }
+
+    // Construct the final value
+    const newValue = wholeNumber + (decimal ? '.' + decimal : '');
+    
+    // Validate the new value
+    if (!isValidInput(newValue, field)) {
+      return;
+    }
+
+    const numValue = newValue === '' ? '' : parseFloat(newValue);
     const newValues = { ...values };
 
     switch (field) {
       case 'satoshis':
-        newValues.satoshis = cleanValue;
+        newValues.satoshis = newValue;
         if (numValue !== '') {
-          // Ensure we get exact precision by using string operations for BTC
           const btcValue = (numValue / 100000000).toFixed(8);
           newValues.btc = btcValue;
-          
-          // Calculate USD value
           const usdValue = parseFloat(btcValue) * btcPrice;
           newValues.usd = usdValue.toFixed(2);
         } else {
@@ -142,13 +146,10 @@ export function SatoshiConverter({ onValuesChange, btcPriceOverride, className =
         break;
 
       case 'usd':
-        newValues.usd = cleanValue;
+        newValues.usd = newValue;
         if (numValue !== '') {
-          // Calculate BTC with exact precision
           const btcAmount = numValue / btcPrice;
           newValues.btc = btcAmount.toFixed(8);
-          
-          // Calculate satoshis as whole numbers
           const satoshiValue = Math.floor(btcAmount * 100000000);
           newValues.satoshis = satoshiValue.toString();
         } else {
@@ -158,13 +159,10 @@ export function SatoshiConverter({ onValuesChange, btcPriceOverride, className =
         break;
 
       case 'btc':
-        newValues.btc = cleanValue;
+        newValues.btc = newValue;
         if (numValue !== '') {
-          // Calculate satoshis with exact precision
           const satoshiValue = Math.floor(numValue * 100000000);
           newValues.satoshis = satoshiValue.toString();
-          
-          // Calculate USD value
           const usdValue = numValue * btcPrice;
           newValues.usd = usdValue.toFixed(2);
         } else {
@@ -176,10 +174,15 @@ export function SatoshiConverter({ onValuesChange, btcPriceOverride, className =
 
     setValues(newValues);
     
-    // Call the callback if provided
     if (onValuesChange) {
       onValuesChange(newValues);
     }
+
+    // Set cursor position before the decimal point
+    setTimeout(() => {
+      const decimalIndex = wholeNumber.length;
+      inputRef.setSelectionRange(decimalIndex, decimalIndex);
+    }, 0);
   };
 
   // Format display values with commas

@@ -8,9 +8,21 @@ import { useSupabase } from "@/components/providers/supabase-provider"
 import type { Database } from "@/types/supabase"
 
 type Order = Database['public']['Tables']['orders']['Row']
+type Transfer = Database['public']['Tables']['transfers']['Row']
+
+interface UnifiedTransaction {
+  id: string
+  date: string
+  type: 'buy' | 'sell' | 'withdrawal' | 'deposit'
+  btc_amount: number | null
+  usd_value: number | null
+  price: number | null
+  fee_usd: number | null
+  exchange: string | null
+}
 
 export function RecentTransactions() {
-  const [transactions, setTransactions] = useState<Order[]>([])
+  const [transactions, setTransactions] = useState<UnifiedTransaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { supabase } = useSupabase()
@@ -23,28 +35,58 @@ export function RecentTransactions() {
 
         const { data: { user }, error: authError } = await supabase.auth.getUser()
         
-        if (authError) {
-          throw new Error('Authentication error: ' + authError.message)
-        }
-        
-        if (!user) {
-          throw new Error('Please sign in to view transactions')
-        }
+        if (authError) throw new Error('Authentication error: ' + authError.message)
+        if (!user) throw new Error('Please sign in to view transactions')
 
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('date', { ascending: false })
-          .limit(5)
+        // Fetch orders and transfers in parallel
+        const [ordersResult, transfersResult] = await Promise.all([
+          supabase
+            .from('orders')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('date', { ascending: false })
+            .limit(5),
+          supabase
+            .from('transfers')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('date', { ascending: false })
+            .limit(5)
+        ])
 
-        if (error) throw error
+        if (ordersResult.error) throw ordersResult.error
+        if (transfersResult.error) throw transfersResult.error
 
-        if (data) {
-          setTransactions(data)
-        } else {
-          setTransactions([])
-        }
+        // Map orders to unified format
+        const mappedOrders = (ordersResult.data || []).map((order): UnifiedTransaction => ({
+          id: `order-${order.id}`,
+          date: order.date,
+          type: order.type,
+          btc_amount: order.type === 'buy' ? order.received_btc_amount : order.sell_btc_amount,
+          usd_value: order.type === 'buy' ? order.buy_fiat_amount : order.received_fiat_amount,
+          price: order.price,
+          fee_usd: order.service_fee_currency === 'USD' ? order.service_fee : null,
+          exchange: order.exchange
+        }))
+
+        // Map transfers to unified format
+        const mappedTransfers = (transfersResult.data || []).map((transfer): UnifiedTransaction => ({
+          id: `transfer-${transfer.id}`,
+          date: transfer.date,
+          type: transfer.type,
+          btc_amount: transfer.amount_btc,
+          usd_value: transfer.amount_fiat,
+          price: transfer.price,
+          fee_usd: transfer.fee_amount_btc ? transfer.fee_amount_btc * (transfer.price || 0) : null,
+          exchange: null
+        }))
+
+        // Combine and sort all transactions
+        const allTransactions = [...mappedOrders, ...mappedTransfers]
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 5) // Take only the 5 most recent
+
+        setTransactions(allTransactions)
       } catch (err) {
         console.error('Failed to load transactions:', err)
         setError(err instanceof Error ? err.message : 'Failed to load transactions')
@@ -74,19 +116,6 @@ export function RecentTransactions() {
       minimumFractionDigits: 8,
       maximumFractionDigits: 8
     }).format(amount)
-  }
-
-  const getAmount = (transaction: Order): number | null => {
-    return transaction.type === 'buy' ? transaction.received_btc_amount : transaction.sell_btc_amount
-  }
-
-  const getTotal = (transaction: Order): number | null => {
-    if (transaction.type === 'buy') {
-      return transaction.buy_fiat_amount
-    } else if (transaction.type === 'sell') {
-      return transaction.received_fiat_amount
-    }
-    return null
   }
 
   const isShortTerm = (date: string) => {
@@ -137,7 +166,7 @@ export function RecentTransactions() {
                       ? "bg-bitcoin-orange" 
                       : transaction.type === "sell"
                       ? "bg-red-500"
-                      : transaction.type === "send"
+                      : transaction.type === "deposit"
                       ? "bg-gray-500"
                       : "bg-blue-500"
                   }`}
@@ -146,7 +175,7 @@ export function RecentTransactions() {
                     <ArrowDownRight className="mr-2 h-4 w-4" />
                   ) : transaction.type === "sell" ? (
                     <ArrowUpRight className="mr-2 h-4 w-4" />
-                  ) : transaction.type === "send" ? (
+                  ) : transaction.type === "deposit" ? (
                     <SendHorizontal className="mr-2 h-4 w-4" />
                   ) : (
                     <SendHorizontal className="mr-2 h-4 w-4 rotate-180" />
@@ -166,13 +195,13 @@ export function RecentTransactions() {
                   {isShortTerm(transaction.date) ? "SHORT" : "LONG"}
                 </Badge>
               </TableCell>
-              <TableCell>{formatBTC(getAmount(transaction))}</TableCell>
+              <TableCell>{formatBTC(transaction.btc_amount)}</TableCell>
               <TableCell className="hidden md:table-cell">
                 {formatCurrency(transaction.price)}
               </TableCell>
-              <TableCell>{formatCurrency(getTotal(transaction))}</TableCell>
+              <TableCell>{formatCurrency(transaction.usd_value)}</TableCell>
               <TableCell className="hidden md:table-cell">
-                {formatCurrency(transaction.service_fee_currency === 'USD' ? transaction.service_fee : null)}
+                {formatCurrency(transaction.fee_usd)}
               </TableCell>
               <TableCell className="hidden lg:table-cell">
                 {transaction.exchange 

@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils"
 interface UnifiedTransaction {
   id: string; 
   date: string;
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive';
+  type: 'Buy' | 'Sell' | 'Deposit' | 'Withdrawal';
   asset: string;
   btc_amount: number | null;
   usd_value: number | null;
@@ -81,37 +81,67 @@ export function TransactionsTable({
   const [exchangeFilter, setExchangeFilter] = useState<string>("all")
 
   useEffect(() => {
-    const loadTransactions = async () => {
+    const fetchTransactions = async () => {
+      setIsLoading(true)
       try {
-        setIsLoading(true)
-        
-        // Check authentication first
         const supabase = createClientComponentClient<Database>()
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
         
-        if (authError) {
-          throw new Error('Authentication error: ' + authError.message)
-        }
-        
-        if (!user) {
-          throw new Error('Please sign in to view transactions')
-        }
+        // Fetch orders and transfers in parallel
+        const [ordersResult, transfersResult] = await Promise.all([
+          supabase
+            .from('orders')
+            .select('*')
+            .order('date', { ascending: false }),
+          supabase
+            .from('transfers')
+            .select('*')
+            .order('date', { ascending: false })
+        ])
 
-        // Fetch transactions
-        const { data, error } = await getTransactions()
-        if (error) throw error
-        if (data) {
-          setTransactions(data)
-        }
-      } catch (err) {
-        console.error('Failed to load transactions:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load transactions')
+        if (ordersResult.error) throw ordersResult.error
+        if (transfersResult.error) throw transfersResult.error
+
+        // Map orders to unified format
+        const mappedOrders = (ordersResult.data || []).map(order => ({
+          id: `order-${order.id}`,
+          date: order.date,
+          type: order.type === 'buy' ? 'Buy' : 'Sell',
+          asset: order.asset,
+          btc_amount: order.type === 'buy' ? order.received_btc_amount : order.sell_btc_amount,
+          usd_value: order.type === 'buy' ? order.buy_fiat_amount : order.received_fiat_amount,
+          fee_usd: order.service_fee,
+          price_at_tx: order.price,
+          exchange: order.exchange
+        }))
+
+        // Map transfers to unified format
+        const mappedTransfers = (transfersResult.data || []).map(transfer => ({
+          id: `transfer-${transfer.id}`,
+          date: transfer.date,
+          type: transfer.type === 'withdrawal' ? 'Withdrawal' : 'Deposit',
+          asset: transfer.asset,
+          btc_amount: transfer.amount_btc,
+          usd_value: transfer.amount_fiat,
+          fee_usd: transfer.fee_amount_btc ? transfer.fee_amount_btc * (transfer.price || 0) : null,
+          price_at_tx: transfer.price,
+          exchange: null
+        }))
+
+        // Combine and sort all transactions
+        const allTransactions = [...mappedOrders, ...mappedTransfers].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        )
+
+        setTransactions(allTransactions)
+      } catch (error) {
+        console.error('Error fetching transactions:', error)
+        setError('Failed to load transactions')
       } finally {
         setIsLoading(false)
       }
     }
 
-    loadTransactions()
+    fetchTransactions()
   }, [])
 
   const formatCurrency = (amount: number | null) => {
@@ -454,8 +484,8 @@ export function TransactionsTable({
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="buy">Buy</SelectItem>
                 <SelectItem value="sell">Sell</SelectItem>
-                <SelectItem value="send">Send</SelectItem>
-                <SelectItem value="receive">Receive</SelectItem>
+                <SelectItem value="deposit">Deposit</SelectItem>
+                <SelectItem value="withdrawal">Withdrawal</SelectItem>
               </SelectContent>
             </Select>
             <Select value={termFilter} onValueChange={setTermFilter}>
@@ -594,7 +624,7 @@ export function TransactionsTable({
                         ? "bg-bitcoin-orange" 
                         : transaction.type?.toLowerCase() === "sell"
                         ? "bg-red-500"
-                        : transaction.type?.toLowerCase() === "send"
+                        : transaction.type?.toLowerCase() === "deposit"
                         ? "bg-gray-500"
                         : "bg-blue-500"
                     }`}
@@ -603,7 +633,7 @@ export function TransactionsTable({
                       <ArrowDownRight className="mr-1 h-4 w-4" />
                     ) : transaction.type?.toLowerCase() === "sell" ? (
                       <ArrowUpRight className="mr-1 h-4 w-4" />
-                    ) : transaction.type?.toLowerCase() === "send" ? (
+                    ) : transaction.type?.toLowerCase() === "deposit" ? (
                       <SendHorizontal className="mr-1 h-4 w-4" />
                     ) : (
                       <SendHorizontal className="mr-1 h-4 w-4 rotate-180" />

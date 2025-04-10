@@ -83,25 +83,74 @@ interface PerformanceMetrics {
 //   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 // )
 
+function calculateShortTermHoldings(orders: any[]): number {
+  const oneYearAgo = new Date()
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+  
+  let shortTermHoldings = 0
+  
+  orders.forEach(order => {
+    const txDate = new Date(order.date)
+    const isShortTerm = txDate > oneYearAgo
+
+    if (order.type === 'buy' && order.received_btc_amount) {
+      if (isShortTerm) {
+        shortTermHoldings += order.received_btc_amount
+      }
+    } else if (order.type === 'sell' && order.sell_btc_amount) {
+      const amount = order.sell_btc_amount
+      // Deduct sells proportionally from short term holdings
+      const totalHoldings = shortTermHoldings
+      if (totalHoldings > 0) {
+        shortTermHoldings -= amount * (shortTermHoldings / totalHoldings)
+      }
+    }
+  })
+
+  return Math.max(0, shortTermHoldings)
+}
+
+function calculateLongTermHoldings(orders: any[]): number {
+  const oneYearAgo = new Date()
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+  
+  let longTermHoldings = 0
+  
+  orders.forEach(order => {
+    const txDate = new Date(order.date)
+    const isLongTerm = txDate <= oneYearAgo
+
+    if (order.type === 'buy' && order.received_btc_amount) {
+      if (isLongTerm) {
+        longTermHoldings += order.received_btc_amount
+      }
+    } else if (order.type === 'sell' && order.sell_btc_amount) {
+      const amount = order.sell_btc_amount
+      // Deduct sells proportionally from long term holdings
+      const totalHoldings = longTermHoldings
+      if (totalHoldings > 0) {
+        longTermHoldings -= amount * (longTermHoldings / totalHoldings)
+      }
+    }
+  })
+
+  return Math.max(0, longTermHoldings)
+}
+
 export async function getPortfolioMetrics(
   userId: string,
   supabase: SupabaseClient<Database>
 ): Promise<ExtendedPortfolioMetrics> {
   try {
-    // Get all transactions from different tables
-    const [ordersResult, sendsResult, receivesResult, priceResult] = await Promise.all([
+    // Get all transactions from orders and transfers tables
+    const [ordersResult, transfersResult, priceResult] = await Promise.all([
       supabase
         .from('orders')
         .select('*')
         .eq('user_id', userId)
         .order('date', { ascending: true }),
       supabase
-        .from('send')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true }),
-      supabase
-        .from('receive')
+        .from('transfers')
         .select('*')
         .eq('user_id', userId)
         .order('date', { ascending: true }),
@@ -114,13 +163,11 @@ export async function getPortfolioMetrics(
     ])
 
     if (ordersResult.error) throw ordersResult.error
-    if (sendsResult.error) throw sendsResult.error
-    if (receivesResult.error) throw receivesResult.error
+    if (transfersResult.error) throw transfersResult.error
     if (priceResult.error) throw priceResult.error
 
     const orders = ordersResult.data || []
-    const sends = sendsResult.data || []
-    const receives = receivesResult.data || []
+    const transfers = transfersResult.data || []
     
     if (!priceResult.data) throw new Error('No Bitcoin price available')
     const currentPrice = priceResult.data.price_usd
@@ -128,51 +175,21 @@ export async function getPortfolioMetrics(
     // Calculate core metrics using only buy/sell orders
     const coreMetrics = calculatePortfolioMetrics(orders, currentPrice)
 
-    // Calculate send/receive metrics separately
-    const totalSent = sends.reduce((total, send) => total + (send.sent_amount || 0), 0)
-    const totalReceived = receives.reduce((total, receive) => total + (receive.received_transfer_amount || 0), 0)
-    const netTransfers = totalReceived - totalSent
-
-    // Calculate short-term and long-term holdings
-    const oneYearAgo = new Date()
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    // Calculate transfer metrics
+    const totalSent = transfers
+      .filter(t => t.type === 'withdrawal')
+      .reduce((total, t) => total + (t.amount_btc || 0), 0)
     
-    let shortTermHoldings = 0
-    let longTermHoldings = 0
+    const totalReceived = transfers
+      .filter(t => t.type === 'deposit')
+      .reduce((total, t) => total + (t.amount_btc || 0), 0)
 
-    // Only consider buy orders for holdings age
-    orders.forEach(order => {
-      const txDate = new Date(order.date)
-      const isShortTerm = txDate > oneYearAgo
-
-      if (order.type === 'buy' && order.received_btc_amount) {
-        if (isShortTerm) {
-          shortTermHoldings += order.received_btc_amount
-        } else {
-          longTermHoldings += order.received_btc_amount
-        }
-      } else if (order.type === 'sell' && order.sell_btc_amount) {
-        const amount = order.sell_btc_amount
-        // Deduct sells proportionally from short and long term holdings
-        const totalHoldings = shortTermHoldings + longTermHoldings
-        if (totalHoldings > 0) {
-          const shortTermRatio = shortTermHoldings / totalHoldings
-          const longTermRatio = longTermHoldings / totalHoldings
-          
-          shortTermHoldings -= amount * shortTermRatio
-          longTermHoldings -= amount * longTermRatio
-        }
-      }
-    })
-
-    // Ensure non-negative values
-    shortTermHoldings = Math.max(0, shortTermHoldings)
-    longTermHoldings = Math.max(0, longTermHoldings)
+    const netTransfers = totalReceived - totalSent
 
     return {
       ...coreMetrics,
-      shortTermHoldings,
-      longTermHoldings,
+      shortTermHoldings: calculateShortTermHoldings(orders),
+      longTermHoldings: calculateLongTermHoldings(orders),
       sendReceiveMetrics: {
         totalSent,
         totalReceived,
@@ -180,7 +197,7 @@ export async function getPortfolioMetrics(
       }
     }
   } catch (error) {
-    console.error('Error calculating portfolio metrics:', error)
+    console.error('Error in getPortfolioMetrics:', error)
     throw error
   }
 }
@@ -481,32 +498,25 @@ export async function getPerformanceMetrics(
     const marketAthPrice = priceData.ath_price;
     const marketAthDate = priceData.ath_date;
 
-    // Get all transactions from different tables
-    const [ordersResult, sendsResult, receivesResult] = await Promise.all([
+    // Get all transactions from orders and transfers tables
+    const [ordersResult, transfersResult] = await Promise.all([
       supabase
         .from('orders')
         .select('*')
         .eq('user_id', userId)
         .order('date', { ascending: true }),
       supabase
-        .from('send')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true }),
-      supabase
-        .from('receive')
+        .from('transfers')
         .select('*')
         .eq('user_id', userId)
         .order('date', { ascending: true })
     ])
 
     if (ordersResult.error) throw ordersResult.error
-    if (sendsResult.error) throw sendsResult.error
-    if (receivesResult.error) throw receivesResult.error
+    if (transfersResult.error) throw transfersResult.error
 
     const orders = ordersResult.data || []
-    const sends = sendsResult.data || []
-    const receives = receivesResult.data || []
+    const transfers = transfersResult.data || []
 
     // Calculate portfolio value at different points in time
     const now = new Date()
@@ -546,6 +556,17 @@ export async function getPerformanceMetrics(
             }
           } else if (order.type === 'sell' && order.sell_btc_amount) {
             btc -= order.sell_btc_amount
+          }
+        }
+      })
+
+      // Process transfers up to the date
+      transfers.forEach(transfer => {
+        if (new Date(transfer.date) <= date) {
+          if (transfer.type === 'deposit') {
+            btc += transfer.amount_btc
+          } else if (transfer.type === 'withdrawal') {
+            btc -= transfer.amount_btc
           }
         }
       })

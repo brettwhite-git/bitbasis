@@ -280,111 +280,57 @@ export async function insertTransactions(transactions: Array<{
 
 export async function getTransactions() {
   const supabaseClient = createBrowserClient()
-  
+
   try {
-    console.log('Fetching transactions: Starting...')
-    
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-    
-    if (userError) {
-      console.error('Authentication error:', userError)
-      throw new Error(`Authentication error: ${userError.message}`)
-    }
-    
-    if (!user) {
-      console.error('No user found')
-      throw new Error('Authentication required')
-    }
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    if (authError) throw authError
+    if (!user) throw new Error('User not authenticated')
 
-    console.log('User authenticated, fetching transactions for user:', user.id)
-
-    // Fetch from all three tables in parallel
-    const [ordersResult, sendsResult, receivesResult] = await Promise.all([
+    // Fetch orders and transfers in parallel
+    const [ordersResult, transfersResult] = await Promise.all([
       supabaseClient
         .from('orders')
-        .select('id, date, type, asset, price, exchange, buy_fiat_amount, received_btc_amount, sell_btc_amount, received_fiat_amount, service_fee, service_fee_currency')
-        .eq('user_id', user.id),
-      supabaseClient
-        .from('send')
-        .select('id, date, type, asset, sent_amount, network_fee, network_fee_currency')
-        .eq('user_id', user.id),
-      supabaseClient
-        .from('receive')
-        .select('id, date, type, asset, price, exchange, received_transfer_amount')
+        .select('*')
         .eq('user_id', user.id)
+        .order('date', { ascending: false }),
+      supabaseClient
+        .from('transfers')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false })
     ])
 
-    // Check for errors in individual queries
-    if (ordersResult.error) {
-      console.error('Error fetching orders:', ordersResult.error)
-      throw ordersResult.error
-    }
-     if (sendsResult.error) {
-      console.error('Error fetching sends:', sendsResult.error)
-      throw sendsResult.error
-    }
-     if (receivesResult.error) {
-      console.error('Error fetching receives:', receivesResult.error)
-      throw receivesResult.error
-    }
+    if (ordersResult.error) throw ordersResult.error
+    if (transfersResult.error) throw transfersResult.error
 
-    // Map results to a unified structure
-    const mappedOrders = ordersResult.data?.map(o => {
-      // DEBUG: Log the raw order object and its type
-      if (o.type?.toLowerCase() === 'buy') { // Log only for Buy orders to reduce noise
-        console.log('[DEBUG] Raw Buy Order:', o);
-      }
+    // Map orders to unified format
+    const mappedOrders = (ordersResult.data || []).map(order => ({
+      id: `order-${order.id}`,
+      date: order.date,
+      type: order.type,
+      asset: order.asset,
+      btc_amount: order.type === 'buy' ? order.received_btc_amount : order.sell_btc_amount,
+      usd_value: order.type === 'buy' ? order.buy_fiat_amount : order.received_fiat_amount,
+      fee_usd: order.service_fee_currency === 'USD' ? order.service_fee : null,
+      price_at_tx: order.price,
+      exchange: order.exchange
+    }))
 
-      const mapped = {
-        id: `order-${o.id}`, // Create unique ID
-        date: o.date,
-        type: o.type as 'Buy' | 'Sell',
-        asset: o.asset,
-        // Make type comparison case-insensitive
-        btc_amount: o.type?.toLowerCase() === 'buy' ? o.received_btc_amount : o.sell_btc_amount,
-        usd_value: o.type?.toLowerCase() === 'buy' ? o.buy_fiat_amount : o.received_fiat_amount,
-        // Assuming fees are in USD for now, add currency check later if needed
-        fee_usd: o.service_fee, 
-        price_at_tx: o.price,
-        exchange: o.exchange
-      };
-
-      // DEBUG: Log the mapped object for Buy orders
-      if (mapped.type === 'Buy') {
-        console.log('[DEBUG] Mapped Buy Order:', mapped);
-      }
-      
-      return mapped;
-    }) || []
-
-    const mappedSends = sendsResult.data?.map(s => ({
-      id: `send-${s.id}`,
-      date: s.date,
-      type: s.type as 'Send',
-      asset: s.asset,
-      btc_amount: s.sent_amount,
-      usd_value: null, // USD value not directly stored for sends
-      // Assuming fees are in USD for now, add currency check later if needed
-      fee_usd: s.network_fee, 
-      price_at_tx: null, // Price not stored for sends
+    // Map transfers to unified format
+    const mappedTransfers = (transfersResult.data || []).map(transfer => ({
+      id: `transfer-${transfer.id}`,
+      date: transfer.date,
+      type: transfer.type,
+      asset: transfer.asset,
+      btc_amount: transfer.amount_btc,
+      usd_value: transfer.amount_fiat,
+      fee_usd: transfer.fee_amount_btc ? transfer.fee_amount_btc * (transfer.price || 0) : null,
+      price_at_tx: transfer.price,
       exchange: null
-    })) || []
-
-    const mappedReceives = receivesResult.data?.map(r => ({
-      id: `receive-${r.id}`,
-      date: r.date,
-      type: r.type as 'Receive',
-      asset: r.asset,
-      btc_amount: r.received_transfer_amount,
-      // Calculate USD value if price is available
-      usd_value: r.price && r.received_transfer_amount ? r.received_transfer_amount * r.price : null,
-      fee_usd: null, // No fees stored for receives
-      price_at_tx: r.price,
-      exchange: r.exchange
-    })) || []
+    }))
 
     // Combine and sort by date descending
-    const allTransactions = [...mappedOrders, ...mappedSends, ...mappedReceives].sort(
+    const allTransactions = [...mappedOrders, ...mappedTransfers].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     )
 
