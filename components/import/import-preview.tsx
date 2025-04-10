@@ -66,6 +66,14 @@ type SerializableImportPreviewProps = {
   originalRows: any[]
 }
 
+// Add utility function for capitalizing exchange names
+function capitalizeExchange(exchange: string | null): string {
+  if (!exchange) return '-';
+  return exchange.split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export function ImportPreview({ 
   transactions, 
   validationIssues, 
@@ -134,18 +142,53 @@ export function ImportPreview({
     setImportSuccess(false)
     
     try {
-      const processedOrders = orders.map(order => ({
-        ...order,
-        asset: 'BTC'
-      }));
+      // Process orders with correct field names
+      const processedOrders = orders.map(order => {
+        const baseOrder = {
+          type: order.type,
+          date: order.date,
+          asset: 'BTC',
+          price: order.price,
+          exchange: order.exchange ? capitalizeExchange(order.exchange) : null,
+          service_fee: order.service_fee,
+          service_fee_currency: 'USD',
+          user_id: order.user_id
+        };
 
+        if (order.type === 'buy') {
+          return {
+            ...baseOrder,
+            buy_fiat_amount: order.buy_fiat_amount,
+            buy_currency: 'USD',
+            received_btc_amount: order.received_btc_amount,
+            received_currency: 'BTC',
+          };
+        } else { // sell
+          return {
+            ...baseOrder,
+            sell_btc_amount: order.sell_btc_amount,
+            sell_btc_currency: 'BTC',
+            received_fiat_amount: order.received_fiat_amount,
+            received_fiat_currency: 'USD',
+          };
+        }
+      });
+
+      // Process transfers
       const processedTransfers = transfers.map(transfer => ({
-        ...transfer,
+        type: transfer.type,
+        date: transfer.date,
         asset: 'BTC',
-        amount_btc: Math.abs(transfer.amount_btc), // Ensure positive value
-        fee_amount_btc: transfer.fee_amount_btc ? Math.abs(transfer.fee_amount_btc) : null // Handle negative fees
+        amount_btc: Math.abs(transfer.amount_btc),
+        fee_amount_btc: transfer.fee_amount_btc ? Math.abs(transfer.fee_amount_btc) : null,
+        amount_fiat: transfer.amount_fiat,
+        price: transfer.price,
+        hash: transfer.hash,
+        user_id: transfer.user_id
       }));
 
+      console.log('Processed orders:', processedOrders);
+      
       const result = await insertTransactions({
         orders: processedOrders,
         transfers: processedTransfers
@@ -155,7 +198,6 @@ export function ImportPreview({
         throw new Error(result.error.message || 'Failed to import transactions')
       }
 
-      // Ensure the import is complete before setting success
       await router.refresh();
       setImportSuccess(true);
     } catch (err) {
@@ -362,7 +404,7 @@ export function ImportPreview({
                     </TableCell>
                     <TableCell className="text-center">{formatCurrency(order.price)}</TableCell>
                     <TableCell className="text-center">{formatCurrency(order.service_fee)}</TableCell>
-                    <TableCell className="text-center">{order.exchange || '-'}</TableCell>
+                    <TableCell className="text-center">{capitalizeExchange(order.exchange ?? null)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
