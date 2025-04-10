@@ -67,10 +67,9 @@ alwaysApply: true
 
 
 ### Bitcoin History Table
-**Historical Table and Hourly Update Cron Job
+**Historical Table and Hourly Update Cron Job**
 - `historical_prices`: `timestamp`, `date`, `price_usd`, `created_at`
-- Use mempool api for one time historical import to capture hourly data (24H/ day) for one time data dump into supabase
-- Create cron job to update table hourly with similar data points as a go forward after one time import
+
 
 ## Bitcoing All Time Table
 **Bitciong ATH Table**
@@ -94,16 +93,16 @@ alwaysApply: true
 **Transaction Types**:
    - `Buy`: Use `buy_fiat_amount`, `buy_currency`, `received_btc_amount`, `price`
    - `Sell`: Use `sell_btc_amount`, `sell_btc_currency`, `received_fiat_amount`, `recieved_fiat_currency`
-   - `Receive`: Use - `received_transfer_amount`, `received_currency`
-   - `Send`: Use - `sent_amount`, `sent_currency`, `network_fee`, `network_currency`
+   - `Deposit`: Use - `amount_btc`, `amount_fiat`, `price`, `hash`
+   - `Withdrawal`: Use - `amount_btc`, `amount_fiat`, `price`, `hash`, `fee_amount_btc`
 
 **Fee Calculation**:
    - Total fees = `service_fee`
-   - Total network fee = `network_fee`
+   - Total network fee = `fee_amount_btc`
    - Always check for currency field 
 
 **Other Calculations**:
-   - `receive` and `send` should not be included in any main calculations
+   - `Deposit` and `Withdrawal` should not be included in any main calculations, unless explicit in the chat prompt
 
 **Data Validation**:
    - All amounts must be positive

@@ -156,24 +156,13 @@ export interface Transaction {
 }
 
 // Use client-side client for authenticated operations
-export async function insertTransactions(transactions: Array<{
-  date: string
-  type: 'buy' | 'sell'
-  asset: string
-  price: number
-  exchange: string | null
-  buy_fiat_amount: number | null
-  buy_currency: string | null
-  buy_btc_amount: number | null
-  received_btc_amount: number | null
-  received_currency: string | null
-  sell_btc_amount: number | null
-  sell_btc_currency: string | null
-  received_fiat_amount: number | null
-  received_fiat_currency: string | null
-  service_fee: number | null
-  service_fee_currency: string | null
-}>) {
+export async function insertTransactions({ 
+  orders, 
+  transfers 
+}: { 
+  orders: Database['public']['Tables']['orders']['Insert'][], 
+  transfers: Database['public']['Tables']['transfers']['Insert'][] 
+}) {
   const supabase = createClientComponentClient<Database>()
 
   try {
@@ -188,80 +177,45 @@ export async function insertTransactions(transactions: Array<{
       return { data: null, error: { message: 'Please sign in to continue' } }
     }
 
-    // Add user_id to transactions and ensure they match the orders table schema
-    const preparedTransactions = transactions.map(t => {
-      // Log the transaction being processed
-      console.log('Processing transaction:', {
-        type: t.type,
-        amounts: {
-          buy_fiat_amount: t.buy_fiat_amount,
-          received_btc_amount: t.received_btc_amount,
-          sell_btc_amount: t.sell_btc_amount,
-          received_fiat_amount: t.received_fiat_amount
-        }
-      })
+    // Insert orders and transfers in parallel
+    const [ordersResult, transfersResult] = await Promise.all([
+      orders.length > 0 ? supabase.from('orders').insert(orders).select() : Promise.resolve({ data: [], error: null }),
+      transfers.length > 0 ? supabase.from('transfers').insert(transfers).select() : Promise.resolve({ data: [], error: null })
+    ])
 
-      // Validate required fields
-      if (!t.date || !t.type || !t.asset || typeof t.price !== 'number') {
-        throw new Error(`Missing required fields: date, type, asset, or price`)
-      }
-
-      // Validate type-specific required fields
-      if (t.type === 'buy' && (!t.buy_fiat_amount || !t.received_btc_amount)) {
-        throw new Error(`Buy transaction requires buy_fiat_amount and received_btc_amount`)
-      }
-      if (t.type === 'sell' && (!t.sell_btc_amount || !t.received_fiat_amount)) {
-        throw new Error(`Sell transaction requires sell_btc_amount and received_fiat_amount`)
-      }
-
-      return {
-        user_id: authData.user.id,
-        date: t.date,
-        type: t.type,
-        asset: t.asset,
-        price: t.price,
-        exchange: t.exchange,
-        buy_fiat_amount: t.type === 'buy' ? t.buy_fiat_amount : null,
-        buy_currency: t.type === 'buy' ? t.buy_currency : null,
-        received_btc_amount: t.type === 'buy' ? t.received_btc_amount : null,
-        received_currency: t.type === 'buy' ? t.received_currency : null,
-        sell_btc_amount: t.type === 'sell' ? t.sell_btc_amount : null,
-        sell_btc_currency: t.type === 'sell' ? t.sell_btc_currency : null,
-        received_fiat_amount: t.type === 'sell' ? t.received_fiat_amount : null,
-        received_fiat_currency: t.type === 'sell' ? t.received_fiat_currency : null,
-        service_fee: t.service_fee,
-        service_fee_currency: t.service_fee_currency
-      }
-    })
-
-    // Log the prepared transactions
-    console.log('Prepared transactions:', preparedTransactions)
-
-    // Try to insert the transactions
-    const { data, error: insertError } = await supabase
-      .from('orders')
-      .insert(preparedTransactions)
-      .select()
-
-    if (insertError) {
-      console.error('Insert error:', {
-        message: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint,
-        code: insertError.code
-      })
+    if (ordersResult.error) {
+      console.error('Orders insert error:', ordersResult.error)
       return { 
         data: null, 
         error: { 
-          message: insertError.message || 'Failed to insert transactions',
-          details: insertError.details,
-          hint: insertError.hint,
-          code: insertError.code
+          message: ordersResult.error.message || 'Failed to insert orders',
+          details: ordersResult.error.details,
+          hint: ordersResult.error.hint,
+          code: ordersResult.error.code
         } 
       }
     }
 
-    return { data, error: null }
+    if (transfersResult.error) {
+      console.error('Transfers insert error:', transfersResult.error)
+      return { 
+        data: null, 
+        error: { 
+          message: transfersResult.error.message || 'Failed to insert transfers',
+          details: transfersResult.error.details,
+          hint: transfersResult.error.hint,
+          code: transfersResult.error.code
+        } 
+      }
+    }
+
+    return { 
+      data: { 
+        orders: ordersResult.data || [], 
+        transfers: transfersResult.data || [] 
+      }, 
+      error: null 
+    }
   } catch (err) {
     console.error('Unexpected error:', {
       error: err,
