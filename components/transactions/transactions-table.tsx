@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Search, SendHorizontal, ArrowUpDown, ArrowDown, ArrowUp, X, Loader2, Trash2 } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Search, SendHorizontal, ArrowUpDown, ArrowDown, ArrowUp, X, Loader2, Trash2, ArrowDownToLine, ArrowUpFromLine } from "lucide-react"
 import { getTransactions } from "@/lib/supabase"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import type { Database } from "@/types/supabase"
@@ -79,6 +79,9 @@ export function TransactionsTable({
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [termFilter, setTermFilter] = useState<string>("all")
   const [exchangeFilter, setExchangeFilter] = useState<string>("all")
+
+  // Store pagination root in a ref to avoid synchronous unmounting issues
+  const paginationRootRef = useRef<any>(null);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -414,17 +417,40 @@ export function TransactionsTable({
           </Button>
         </div>
       );
-      // Use ReactDOM to render the pagination controls
-      const { createRoot } = require('react-dom/client');
-      const root = createRoot(container);
-      root.render(paginationControls);
       
-      // Cleanup on unmount
-      return () => {
-        root.unmount();
-      };
+      // Use ReactDOM to render the pagination controls
+      if (!paginationRootRef.current) {
+        const { createRoot } = require('react-dom/client');
+        paginationRootRef.current = createRoot(container);
+      }
+      
+      paginationRootRef.current.render(paginationControls);
     }
+    
+    // Cleanup on component unmount, not on every render
+    return () => {
+      // Do nothing here - we'll handle unmount in a separate effect
+    };
   }, [currentPage, totalPages, paginationContainerId, isExporting, transactions.length]);
+  
+  // Separate effect for cleanup to prevent synchronous unmounting
+  useEffect(() => {
+    // This will only run when the component is unmounted
+    return () => {
+      // Safely unmount the root when component unmounts
+      if (paginationRootRef.current) {
+        // Use setTimeout to defer unmounting until after rendering
+        setTimeout(() => {
+          try {
+            paginationRootRef.current.unmount();
+            paginationRootRef.current = null;
+          } catch (e) {
+            console.error("Error unmounting pagination root:", e);
+          }
+        }, 0);
+      }
+    };
+  }, []);
 
   if (isLoading) {
     return <div className="flex justify-center items-center min-h-[400px]">Loading transactions...</div>
@@ -619,13 +645,13 @@ export function TransactionsTable({
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge
-                    className={`w-[80px] inline-flex items-center justify-center text-white ${
+                    className={`w-[100px] inline-flex items-center justify-center text-white ${
                       transaction.type?.toLowerCase() === "buy" 
                         ? "bg-bitcoin-orange" 
                         : transaction.type?.toLowerCase() === "sell"
                         ? "bg-red-500"
                         : transaction.type?.toLowerCase() === "deposit"
-                        ? "bg-gray-500"
+                        ? "bg-green-500"
                         : "bg-blue-500"
                     }`}
                   >
@@ -634,9 +660,9 @@ export function TransactionsTable({
                     ) : transaction.type?.toLowerCase() === "sell" ? (
                       <ArrowUpRight className="mr-1 h-4 w-4" />
                     ) : transaction.type?.toLowerCase() === "deposit" ? (
-                      <SendHorizontal className="mr-1 h-4 w-4" />
+                      <ArrowDownToLine className="mr-1 h-4 w-4" />
                     ) : (
-                      <SendHorizontal className="mr-1 h-4 w-4 rotate-180" />
+                      <ArrowUpFromLine className="mr-1 h-4 w-4" />
                     )}
                     {transaction.type.toUpperCase()}
                   </Badge>
