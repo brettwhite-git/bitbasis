@@ -106,7 +106,7 @@ const getChartOptions = (data: FearGreedData | null): ApexOptions => {
         endAngle: 270,
         hollow: {
           margin: 5,
-          size: '35%',
+          size: '40%',
           background: 'transparent',
         },
         dataLabels: {
@@ -129,7 +129,7 @@ const getChartOptions = (data: FearGreedData | null): ApexOptions => {
         },
         track: {
           background: '#1e293b',
-          opacity: 0.2,
+          opacity: 0.5,
           strokeWidth: '97%',
           margin: 5,
           dropShadow: {
@@ -224,7 +224,7 @@ const FearGreedCircularChart = () => {
       <CardHeader className="flex flex-row items-start justify-between pb-2">
         <CardTitle className="text-left py-1.5">Fear & Greed Index</CardTitle>
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent className="pt-0">
         {loading ? (
           <div className="flex justify-center items-center h-[350px]">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -238,7 +238,7 @@ const FearGreedCircularChart = () => {
                   options={chartOptions}
                   series={series}
                   type="radialBar"
-                  height={350}
+                  height={380}
                 />
               )}
             </div>

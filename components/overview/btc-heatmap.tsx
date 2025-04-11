@@ -86,7 +86,7 @@ function calculateMonthlyTransactions(orders: Order[]): HeatmapData[] {
     .sort((a, b) => parseInt(a.name) - parseInt(b.name)) // Sort by year ascending
 }
 
-export function BitcoinAllocationChart() {
+export function BtcHeatmap() {
   const [heatmapData, setHeatmapData] = useState<HeatmapData[]>([])
   const { supabase } = useSupabase()
 

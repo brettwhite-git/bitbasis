@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { RecentTransactions } from "@/components/overview/recent-transactions"
 import { PortfolioSummaryChart } from "@/components/overview/portfolio-summary-chart"
-import { BitcoinAllocationChart } from "@/components/overview/bitcoin-allocation-chart"
+import { BtcHeatmap } from "@/components/overview/btc-heatmap"
 // import FearGreedGauge from "@/components/overview/fear-greed-gauge"
 import FearGreedCircularChart from "@/components/overview/fear-greed-circular-chart"
 import { useState } from "react"
@@ -146,7 +146,7 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
             <CardTitle className="text-left py-1.5">Bitcoin Transaction Heatmap</CardTitle>
           </CardHeader>
           <CardContent className="pt-8 min-h-[350px] flex items-center justify-center">
-            <BitcoinAllocationChart />
+            <BtcHeatmap />
           </CardContent>
         </Card>
         <FearGreedCircularChart />
