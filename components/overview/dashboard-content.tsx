@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button"
 import { RecentTransactions } from "@/components/overview/recent-transactions"
 import { PortfolioSummaryChart } from "@/components/overview/portfolio-summary-chart"
 import { BitcoinAllocationChart } from "@/components/overview/bitcoin-allocation-chart"
-import FearGreedGauge from "@/components/overview/fear-greed-gauge"
+// import FearGreedGauge from "@/components/overview/fear-greed-gauge"
+import FearGreedCircularChart from "@/components/overview/fear-greed-circular-chart"
 import { useState } from "react"
 import { formatCurrency, formatPercent } from "@/lib/utils"
 
@@ -42,7 +43,7 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
   const [timeframe, setTimeframe] = useState<"6M" | "1Y">("1Y")
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-4">
       <div className="flex items-center justify-between w-full">
         <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
       </div>
@@ -112,8 +113,8 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
           </CardContent>
         </Card>
       </div>
-      <div className="grid w-full gap-4 grid-cols-1 md:grid-cols-4">
-        <Card className="md:col-span-2">
+      <div className="grid w-full gap-4 grid-cols-1 md:grid-cols-3">
+        <Card className="col-span-1">
           <CardHeader className="flex flex-row items-start justify-between pb-2">
             <CardTitle className="text-left py-1.5">Portfolio Summary</CardTitle>
             <div className="flex items-center gap-2">
@@ -140,7 +141,7 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
             />
           </CardContent>
         </Card>
-        <Card>
+        <Card className="col-span-1">
           <CardHeader className="flex flex-row items-start justify-between pb-2">
             <CardTitle className="text-left py-1.5">Bitcoin Transaction Heatmap</CardTitle>
           </CardHeader>
@@ -148,7 +149,7 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
             <BitcoinAllocationChart />
           </CardContent>
         </Card>
-        <FearGreedGauge />
+        <FearGreedCircularChart />
       </div>
       <div className="w-full">
         <Card>
