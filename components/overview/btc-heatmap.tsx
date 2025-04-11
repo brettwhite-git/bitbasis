@@ -158,7 +158,7 @@ export function BtcHeatmap() {
       enabled: false
     },
     stroke: {
-      width: 1,
+      width: 1.3,
       colors: ['#1A202C']
     },
     title: {

@@ -83,7 +83,9 @@ const options = {
       ticks: {
         color: '#94A3B8', // text-slate-400
         callback: function(value: any) {
-          return value.toLocaleString() + ' sats'
+          // Convert sats to BTC for display
+          const btc = value / 100000000;
+          return btc.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 }) + ' BTC';
         },
       },
       position: 'left' as const,
@@ -91,7 +93,7 @@ const options = {
     y1: {
       position: 'right' as const,
       grid: {
-        drawOnChartArea: false, // only want the grid lines for one y-axis to show
+        drawOnChartArea: false,
         color: '#1E293B', // slate-800
       },
       ticks: {
@@ -105,10 +107,20 @@ const options = {
   plugins: {
     legend: {
       position: 'top' as const,
+      align: 'center' as const,
       labels: {
         color: '#94A3B8', // text-slate-400
         padding: 20,
-      },
+        generateLabels: function(chart: any) {
+          const originalLabels = ChartJS.defaults.plugins.legend.labels.generateLabels(chart);
+          // Reorder labels to put USD Value last
+          return originalLabels.sort((a, b) => {
+            if (a.text.includes('USD')) return 1;
+            if (b.text.includes('USD')) return -1;
+            return 0;
+          });
+        }
+      }
     },
     tooltip: {
       backgroundColor: '#1E293B', // slate-800
@@ -117,22 +129,27 @@ const options = {
       padding: 12,
       callbacks: {
         label: function(context: any) {
-          let label = context.dataset.label || ''
+          let label = context.dataset.label || '';
           if (label) {
-            label += ': '
+            label += ': ';
           }
           if (context.dataset.yAxisID === 'y1') {
             label += '$' + context.parsed.y.toLocaleString()
           } else {
-            label += context.parsed.y.toLocaleString() + ' sats'
+            // Convert sats to BTC for tooltip
+            const btc = context.parsed.y / 100000000;
+            label += btc.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 }) + ' BTC';
           }
-          return label
+          return label;
         },
-        // Add footer to display BTC equivalent
         footer: function(tooltipItems: any) {
           const sum = tooltipItems.reduce((acc: number, item: any) => acc + item.parsed.y, 0);
+          // Show both BTC and sats in footer
           const btc = sum / 100000000;
-          return [`= ${btc.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 })} BTC`];
+          return [
+            `= ${btc.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 })} BTC`,
+            `= ${sum.toLocaleString()} sats`
+          ];
         }
       },
     },
@@ -160,18 +177,20 @@ export function CalculatorChart({ chartData, title, btcPrice = 65000 }: Calculat
     labels: chartData.map(point => point.date),
     datasets: [
       {
-        label: 'Buys',
+        label: 'Total Accumulated',
         data: chartData.map(point => point.accumulatedSats),
         backgroundColor: '#F7931A', // Bitcoin orange
         type: 'bar' as const,
         stack: 'Stack 0',
+        order: 2,
       },
       {
-        label: 'Sells',
+        label: 'Sats Stacked This Period',
         data: chartData.map(point => point.periodicSats),
         backgroundColor: '#818CF8', // Indigo-400 for purple/blue look
         type: 'bar' as const,
-        stack: 'Stack 0',
+        stack: 'Stack 1', // Different stack to show separately
+        order: 2,
       },
       // Add a line dataset for USD value
       {
@@ -184,6 +203,7 @@ export function CalculatorChart({ chartData, title, btcPrice = 65000 }: Calculat
         pointRadius: 3,
         pointHoverRadius: 5,
         yAxisID: 'y1', // Use the right y-axis
+        order: 1,
       }
     ],
   } : mockData;

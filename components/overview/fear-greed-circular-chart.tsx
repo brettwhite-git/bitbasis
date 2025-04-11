@@ -129,7 +129,7 @@ const getChartOptions = (data: FearGreedData | null): ApexOptions => {
         },
         track: {
           background: '#1e293b',
-          opacity: 0.5,
+          opacity: 0.9,
           strokeWidth: '97%',
           margin: 5,
           dropShadow: {

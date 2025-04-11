@@ -20,22 +20,22 @@ export function BitcoinCalculator() {
   const [bitcoinUnit, setBitcoinUnit] = useState('bitcoin');
   const [frequency, setFrequency] = useState('weekly');
   const [goalDuration, setGoalDuration] = useState('1_year');
-  const [satsGoal, setSatsGoal] = useState('10000000'); // 0.1 BTC default (10M sats)
-  const [btcPrice, setBtcPrice] = useState(65000); // Default BTC price
+  const [satsGoal, setSatsGoal] = useState('0.1'); // 0.1 BTC default
+  const [btcPrice, setBtcPrice] = useState(83729); // Current BTC price in USD
   const [monthlyAmount, setMonthlyAmount] = useState('');
-  const [priceGrowth, setPriceGrowth] = useState('9'); // Default 9% annual growth
+  const [priceGrowth, setPriceGrowth] = useState('48'); // Default 48% (1 year CAGR)
   
   // Refs for cursor position
   const satsGoalInputRef = useRef<HTMLInputElement>(null);
   const cursorPositionRef = useRef<number | null>(null);
   const [isUserEditing, setIsUserEditing] = useState(false);
 
-  // Calculate monthly amount needed to reach sats goal
+  // Calculate monthly amount needed to reach BTC goal
   useEffect(() => {
     if (!satsGoal) return;
     
-    const satsGoalNum = parseFloat(satsGoal.replace(/,/g, ''));
-    if (isNaN(satsGoalNum)) return;
+    const btcGoal = parseFloat(satsGoal.replace(/,/g, ''));
+    if (isNaN(btcGoal)) return;
 
     // Get number of months based on duration
     let months = 12;
@@ -46,8 +46,7 @@ export function BitcoinCalculator() {
     if (goalDuration === '10_year') months = 120;
     
     // Calculate monthly dollar amount needed
-    const btcAmount = satsGoalNum / 100000000;
-    const totalUSD = btcAmount * btcPrice;
+    const totalUSD = btcGoal * btcPrice;
     const monthlyUSD = totalUSD / months;
     
     setMonthlyAmount(monthlyUSD.toFixed(2));
@@ -73,9 +72,9 @@ export function BitcoinCalculator() {
   const chartData = useMemo(() => {
     if (!satsGoal || !monthlyAmount) return undefined;
     
-    const satsGoalNum = parseFloat(satsGoal.replace(/,/g, ''));
+    const btcGoal = parseFloat(satsGoal.replace(/,/g, ''));
     const monthlyUSD = parseFloat(monthlyAmount);
-    if (isNaN(satsGoalNum) || isNaN(monthlyUSD)) return undefined;
+    if (isNaN(btcGoal) || isNaN(monthlyUSD)) return undefined;
     
     // Get number of months based on duration
     let months = 12;
@@ -90,28 +89,26 @@ export function BitcoinCalculator() {
     const result: ChartDataPoint[] = [];
     
     let currentPrice = btcPrice;
-    let cumulativeSats = 0;
+    let cumulativeBTC = 0;
     
     for (let i = 0; i < months; i++) {
       const date = new Date(startDate);
       date.setMonth(startDate.getMonth() + i);
       
-      // Always apply price growth based on selected rate
+      // Apply price growth based on selected rate
       if (i > 0) {
         const growthRate = parseFloat(priceGrowth) / 100 / 12; // Monthly growth rate
         currentPrice *= (1 + growthRate);
       }
       
-      // Calculate how many sats can be bought with monthly amount
+      // Calculate how much BTC can be bought with monthly amount
       const monthlyBTC = monthlyUSD / currentPrice;
-      const monthlySats = Math.round(monthlyBTC * 100000000);
-      
-      cumulativeSats += monthlySats;
+      cumulativeBTC += monthlyBTC;
       
       result.push({
         date: date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-        accumulatedSats: cumulativeSats,
-        periodicSats: monthlySats
+        accumulatedSats: Math.round(cumulativeBTC * 100000000), // Convert BTC to sats
+        periodicSats: Math.round(monthlyBTC * 100000000) // Convert BTC to sats
       });
     }
     
@@ -119,14 +116,14 @@ export function BitcoinCalculator() {
   }, [satsGoal, monthlyAmount, goalDuration, btcPrice, priceGrowth]);
 
   const isValidSatsInput = (value: string): boolean => {
-    // Allow empty input
-    if (value === '') return true;
+    // Allow empty input and decimal points
+    if (value === '' || value === '.') return true;
     
     // Remove existing commas for validation
     const cleanValue = value.replace(/,/g, '');
     
-    // Only allow whole numbers for satoshis
-    return /^[0-9]+$/.test(cleanValue);
+    // Allow decimal numbers
+    return /^\d*\.?\d*$/.test(cleanValue);
   };
 
   const handleSatsGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,7 +141,7 @@ export function BitcoinCalculator() {
       return; // Reject invalid input
     }
     
-    // Remove commas for storage, but allow input
+    // Remove commas for storage
     const cleanValue = value.replace(/,/g, '');
     setSatsGoal(cleanValue);
   };
@@ -168,7 +165,17 @@ export function BitcoinCalculator() {
     setPriceGrowth(value);
   };
 
-  // Format number with commas
+  // Format BTC with 8 decimal places
+  const formatBTC = (btc: string | number): string => {
+    if (!btc) return '0';
+    
+    const value = typeof btc === 'string' ? parseFloat(btc.replace(/,/g, '')) : btc;
+    if (isNaN(value)) return '0';
+    
+    return value.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 });
+  };
+
+  // Format number with commas and optional decimal places
   const formatNumber = (value: string | number, options?: Intl.NumberFormatOptions): string => {
     if (value === '' || value === undefined || value === null) return '';
     
@@ -178,15 +185,11 @@ export function BitcoinCalculator() {
     return num.toLocaleString('en-US', options);
   };
 
-  // Format BTC with 8 decimal places
-  const formatBTC = (satoshis: string | number): string => {
-    if (!satoshis) return '0';
-    
-    const sats = typeof satoshis === 'string' ? parseFloat(satoshis.replace(/,/g, '')) : satoshis;
-    if (isNaN(sats)) return '0';
-    
-    const btc = sats / 100000000;
-    return btc.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 });
+  // Convert BTC to sats
+  const btcToSats = (btc: string): string => {
+    const btcNum = parseFloat(btc);
+    if (isNaN(btcNum)) return '0';
+    return (btcNum * 100000000).toLocaleString();
   };
 
   return (
@@ -223,7 +226,7 @@ export function BitcoinCalculator() {
                   <RadioGroupItem value="bitcoin" id="bitcoin" className="peer sr-only" />
                   <Label
                     htmlFor="bitcoin"
-                    className="flex-1 cursor-pointer rounded-md border-2 border-muted p-4 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10"
+                    className="flex-1 cursor-pointer rounded-md border-2 border-muted p-3 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10"
                   >
                     Bitcoin
                   </Label>
@@ -232,7 +235,7 @@ export function BitcoinCalculator() {
                   <RadioGroupItem value="satoshi" id="satoshi" className="peer sr-only" />
                   <Label
                     htmlFor="satoshi"
-                    className="flex-1 cursor-pointer rounded-md border-2 border-muted p-4 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10"
+                    className="flex-1 cursor-pointer rounded-md border-2 border-muted p-3 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10"
                   >
                     Satoshi
                   </Label>
@@ -256,37 +259,45 @@ export function BitcoinCalculator() {
             {/* Buying Frequency */}
             <div className="space-y-2">
               <Label>Buying Frequency</Label>
-              <div className="grid grid-cols-4 gap-2">
-                {["Daily", "Weekly", "Monthly", "Yearly"].map((period) => (
-                  <Button
-                    key={period.toLowerCase()}
-                    variant={frequency === period.toLowerCase() ? "default" : "outline"}
-                    onClick={() => setFrequency(period.toLowerCase() as typeof frequency)}
-                    className={`w-full ${frequency === period.toLowerCase() ? 'bg-muted hover:bg-muted/90' : ''}`}
-                  >
-                    {period}
-                  </Button>
+              <RadioGroup value={frequency} onValueChange={setFrequency} className="grid grid-cols-4 gap-2">
+                {["daily", "weekly", "monthly", "yearly"].map((period) => (
+                  <div key={period} className="flex items-center space-x-2">
+                    <RadioGroupItem value={period} id={period} className="peer sr-only" />
+                    <Label
+                      htmlFor={period}
+                      className="flex-1 cursor-pointer rounded-md border-2 border-muted p-3 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 text-center capitalize"
+                    >
+                      {period}
+                    </Label>
+                  </div>
                 ))}
-              </div>
+              </RadioGroup>
             </div>
 
-            {/* Sats Goal */}
+            {/* BTC Goal */}
             <div className="space-y-2">
-              <Label>Sats Goal</Label>
-              <div className="relative">
-                <Input
-                  ref={satsGoalInputRef}
-                  type="text"
-                  placeholder="10,000,000"
-                  value={formatNumber(satsGoal)}
-                  onChange={handleSatsGoalChange}
-                  className="pr-20"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                />
-                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-muted-foreground">
-                  = {formatBTC(satsGoal)} BTC
-                </span>
+              <Label>BTC Goal</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="relative">
+                  <Input
+                    ref={satsGoalInputRef}
+                    type="text"
+                    placeholder="0.1"
+                    value={formatNumber(satsGoal, { minimumFractionDigits: 1, maximumFractionDigits: 8 })}
+                    onChange={handleSatsGoalChange}
+                    className="pr-16"
+                    inputMode="decimal"
+                  />
+                  <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
+                    BTC
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-sm text-muted-foreground">=</span>
+                  <span className="flex-1 text-center text-sm text-muted-foreground">
+                    {btcToSats(satsGoal)} sats
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -344,14 +355,14 @@ export function BitcoinCalculator() {
               <div className="space-y-4">
                 <div className="relative">
                   <div className="flex justify-between text-xs text-muted-foreground px-1">
-                    <span>9%</span>
-                    <span>65%</span>
-                    <span>22%</span>
-                    <span>7%</span>
-                    <span>57%</span>
-                    <span>68%</span>
-                    <span>78%</span>
-                    <span>62%</span>
+                    <span>1Y</span>
+                    <span>2Y</span>
+                    <span>4Y</span>
+                    <span>5Y</span>
+                    <span>6Y</span>
+                    <span>8Y</span>
+                    <span>10Y</span>
+                    <span>12Y</span>
                   </div>
                   <input
                     type="range"
@@ -359,37 +370,31 @@ export function BitcoinCalculator() {
                     max="7"
                     step="1"
                     value={
-                      priceGrowth === '9' ? 0 :
-                      priceGrowth === '65' ? 1 :
-                      priceGrowth === '22' ? 2 :
-                      priceGrowth === '7' ? 3 :
-                      priceGrowth === '57' ? 4 :
-                      priceGrowth === '68' ? 5 :
-                      priceGrowth === '78' ? 6 : 7
+                      priceGrowth === '48' ? 0 :
+                      priceGrowth === '85' ? 1 :
+                      priceGrowth === '15' ? 2 :
+                      priceGrowth === '72' ? 3 :
+                      priceGrowth === '65' ? 4 :
+                      priceGrowth === '74' ? 5 :
+                      priceGrowth === '84' ? 6 : 7
                     }
                     onChange={(e) => {
                       const value = parseInt(e.target.value);
                       setPriceGrowth(
-                        value === 0 ? '9' :
-                        value === 1 ? '65' :
-                        value === 2 ? '22' :
-                        value === 3 ? '7' :
-                        value === 4 ? '57' :
-                        value === 5 ? '68' :
-                        value === 6 ? '78' : '62'
+                        value === 0 ? '48' :
+                        value === 1 ? '85' :
+                        value === 2 ? '15' :
+                        value === 3 ? '72' :
+                        value === 4 ? '65' :
+                        value === 5 ? '74' :
+                        value === 6 ? '84' : '75'
                       );
                     }}
                     className="w-full accent-bitcoin-orange cursor-pointer h-2 rounded-lg appearance-none bg-muted"
                   />
                 </div>
                 <div className="text-center font-medium">
-                  {priceGrowth === '9' ? '1 Year CAGR: 9%' :
-                  priceGrowth === '65' ? '2 Year CAGR: 65%' :
-                  priceGrowth === '22' ? '3 Year CAGR: 22%' :
-                  priceGrowth === '7' ? '4 Year CAGR: 7%' :
-                  priceGrowth === '57' ? '6 Year CAGR: 57%' :
-                  priceGrowth === '68' ? '8 Year CAGR: 68%' :
-                  priceGrowth === '78' ? '10 Year CAGR: 78%' : '12 Year CAGR: 62%'}
+                  CAGR: {priceGrowth}%
                 </div>
               </div>
             </div>
