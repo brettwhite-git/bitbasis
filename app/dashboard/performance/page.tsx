@@ -1,21 +1,34 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui"
 import { PerformanceChart, PerformanceFilters, PerformanceContainer } from "@/components/performance/performance-chart"
-import { getPerformanceMetrics } from "@/lib/portfolio"
+import { KPICards } from "@/components/performance/kpi-cards"
+import { getPerformanceMetrics, calculateCostBasis } from "@/lib/portfolio"
 import { formatCurrency } from "@/lib/utils"
 import type { Database } from "@/types/supabase"
 import { requireAuth } from "@/lib/server-auth"
+import { TradingViewSection } from "@/components/performance/trading-view-section"
 
 export default async function PerformancePage() {
   const { supabase, user } = await requireAuth()
   
   // Fetch performance metrics
   const performance = await getPerformanceMetrics(user.id, supabase)
+  
+  // Fetch tax liability data using FIFO method
+  const costBasisData = await calculateCostBasis(user.id, 'FIFO', supabase)
+  const taxLiability = {
+    shortTerm: costBasisData.potentialTaxLiabilityST,
+    longTerm: costBasisData.potentialTaxLiabilityLT
+  }
 
   return (
     <div className="w-full space-y-6">
       <div className="w-full">
         <h1 className="text-2xl font-bold tracking-tight text-white">Performance</h1>
       </div>
+      
+      {/* KPI Cards */}
+      <KPICards performance={performance} taxLiability={taxLiability} />
+      
       <div className="w-full grid gap-4">
         <Card>
           <CardContent className="pt-6">
@@ -33,6 +46,11 @@ export default async function PerformancePage() {
             </PerformanceContainer>
           </CardContent>
         </Card>
+      </div>
+
+      {/* TradingView chart container */}
+      <div className="w-full">
+        <TradingViewSection />
       </div>
     </div>
   )

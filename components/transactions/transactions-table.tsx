@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Search, SendHorizontal, ArrowUpDown, ArrowDown, ArrowUp, X, Loader2, Trash2, ArrowDownToLine, ArrowUpFromLine } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Search, SendHorizontal, ArrowUpDown, ArrowDown, ArrowUp, X, Loader2, Trash2, ArrowDownToLine, ArrowUpFromLine, ExternalLink } from "lucide-react"
 import { getTransactions } from "@/lib/supabase"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import type { Database } from "@/types/supabase"
@@ -41,6 +41,8 @@ interface UnifiedTransaction {
   fee_usd: number | null;
   price_at_tx: number | null;
   exchange: string | null;
+  network_fee_btc: number | null;
+  txid: string | null;
 }
 
 // Define props for the component
@@ -108,26 +110,30 @@ export function TransactionsTable({
         const mappedOrders = (ordersResult.data || []).map(order => ({
           id: `order-${order.id}`,
           date: order.date,
-          type: order.type === 'buy' ? 'Buy' : 'Sell',
+          type: order.type === 'buy' ? 'Buy' as const : 'Sell' as const,
           asset: order.asset,
           btc_amount: order.type === 'buy' ? order.received_btc_amount : order.sell_btc_amount,
           usd_value: order.type === 'buy' ? order.buy_fiat_amount : order.received_fiat_amount,
           fee_usd: order.service_fee,
           price_at_tx: order.price,
-          exchange: order.exchange
+          exchange: order.exchange,
+          network_fee_btc: null, // Orders don't typically have network fees in BTC
+          txid: null // Orders typically don't have txids
         }))
 
         // Map transfers to unified format
         const mappedTransfers = (transfersResult.data || []).map(transfer => ({
           id: `transfer-${transfer.id}`,
           date: transfer.date,
-          type: transfer.type === 'withdrawal' ? 'Withdrawal' : 'Deposit',
+          type: transfer.type === 'withdrawal' ? 'Withdrawal' as const : 'Deposit' as const,
           asset: transfer.asset,
           btc_amount: transfer.amount_btc,
           usd_value: transfer.amount_fiat,
           fee_usd: transfer.fee_amount_btc ? transfer.fee_amount_btc * (transfer.price || 0) : null,
           price_at_tx: transfer.price,
-          exchange: null
+          exchange: null,
+          network_fee_btc: transfer.fee_amount_btc,
+          txid: transfer.hash
         }))
 
         // Combine and sort all transactions
@@ -312,7 +318,9 @@ export function TransactionsTable({
       "Price at Tx (USD)": formatCurrency(transaction.price_at_tx),
       "Value (USD)": formatCurrency(transaction.usd_value),
       "Fees (USD)": formatCurrency(transaction.fee_usd),
-      Exchange: transaction.exchange || "-"
+      Exchange: transaction.exchange || "-",
+      "Fees (BTC)": formatBTC(transaction.network_fee_btc),
+      "Transaction ID": transaction.txid || "-"
     }
   }
 
@@ -627,6 +635,16 @@ export function TransactionsTable({
                   Exchange{getSortIcon('exchange')}
                 </div>
               </TableHead>
+              <TableHead onClick={() => handleSort('network_fee_btc')} className="cursor-pointer hidden lg:table-cell w-[80px]">
+                <div className="flex items-center justify-center">
+                  Fees (BTC){getSortIcon('network_fee_btc')}
+                </div>
+              </TableHead>
+              <TableHead className="hidden lg:table-cell w-[60px]">
+                <div className="flex items-center justify-center">
+                  TXID
+                </div>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -645,7 +663,7 @@ export function TransactionsTable({
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge
-                    className={`w-[100px] inline-flex items-center justify-center text-white ${
+                    className={`w-[125px] inline-flex items-center justify-center text-white ${
                       transaction.type?.toLowerCase() === "buy" 
                         ? "bg-bitcoin-orange" 
                         : transaction.type?.toLowerCase() === "sell"
@@ -695,6 +713,24 @@ export function TransactionsTable({
                   {transaction.exchange 
                     ? transaction.exchange.charAt(0).toUpperCase() + transaction.exchange.slice(1).toLowerCase()
                     : "-"}
+                </TableCell>
+                <TableCell className="hidden lg:table-cell text-center">
+                  {formatBTC(transaction.network_fee_btc)}
+                </TableCell>
+                <TableCell className="hidden lg:table-cell text-center">
+                  {transaction.txid ? (
+                    <a 
+                      href={`https://mempool.space/tx/${transaction.txid}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center text-blue-500 hover:text-blue-700"
+                      title="View transaction on Mempool.space"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  ) : (
+                    "-"
+                  )}
                 </TableCell>
               </TableRow>
             ))}

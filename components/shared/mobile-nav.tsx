@@ -70,10 +70,6 @@ export function MobileNav() {
         <SheetHeader className="border-b border-border/40 px-4 py-2">
           <div className="flex items-center justify-between">
             <Logo />
-            <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
-              <X className="h-6 w-6" />
-              <span className="sr-only">Close navigation menu</span>
-            </Button>
           </div>
           <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
         </SheetHeader>

@@ -337,6 +337,42 @@ function Chart() {
     return startIndex === -1 ? [] : monthlyData.slice(startIndex);
   })();
 
+  // Calculate moving average based on data points
+  const calculateMovingAverage = (data: number[], windowSize: number) => {
+    const result: number[] = [];
+    
+    // For the first windowSize-1 elements, we don't have enough data for a full window
+    for (let i = 0; i < windowSize - 1; i++) {
+      result.push(NaN);
+    }
+    
+    // Calculate moving average for the rest of the data
+    for (let i = windowSize - 1; i < data.length; i++) {
+      const window = data.slice(i - windowSize + 1, i + 1);
+      const sum = window.reduce((acc, val) => acc + val, 0);
+      result.push(sum / windowSize);
+    }
+    
+    return result;
+  };
+
+  // Calculate 2-month moving average for portfolio value
+  const portfolioValues = filteredData.map(d => d.portfolioValue);
+  const twoMonthMovingAverage = calculateMovingAverage(portfolioValues, 2);
+  
+  // Calculate longer-term moving average (approximately 6 months)
+  const windowSize = Math.min(6, Math.floor(portfolioValues.length / 2));
+  const longTermMovingAverage = calculateMovingAverage(portfolioValues, windowSize);
+
+  // Create more visible moving average lines by replacing NaN values with null
+  const visibleTwoMonthMA = twoMonthMovingAverage.map(value => 
+    isNaN(value) ? null : value
+  );
+  
+  const visibleLongTermMA = longTermMovingAverage.map(value => 
+    isNaN(value) ? null : value
+  );
+
   const chartData = {
     labels: filteredData.map(d => {
       const [year, month] = (d.month || '').split('-');
@@ -352,6 +388,30 @@ function Chart() {
         backgroundColor: "#F7931A",
         tension: 0.1,
         pointRadius: filteredData.length < 50 ? 3 : 0,
+      },
+      {
+        label: "2-Month Moving Average",
+        data: visibleTwoMonthMA,
+        borderColor: "#3B82F6", // Blue
+        backgroundColor: "#3B82F6",
+        tension: 0.1,
+        pointRadius: 0,
+        borderWidth: 2,
+        borderDash: [5, 5], // Dashed line
+        fill: false,
+        spanGaps: true, // Connect across null values
+      },
+      {
+        label: `${windowSize}-Month Moving Average`,
+        data: visibleLongTermMA,
+        borderColor: "#10B981", // Green
+        backgroundColor: "#10B981",
+        tension: 0.1,
+        pointRadius: 0,
+        borderWidth: 2,
+        borderDash: [2, 2], // Different dash pattern
+        fill: false,
+        spanGaps: true, // Connect across null values
       },
       {
         label: "Cost Basis",
