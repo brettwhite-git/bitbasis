@@ -142,7 +142,7 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-start justify-between pb-2">
-            <CardTitle className="text-left py-1.5">Bitcoin Allocation By Year</CardTitle>
+            <CardTitle className="text-left py-1.5">Bitcoin Transaction Heatmap</CardTitle>
           </CardHeader>
           <CardContent className="pt-8 min-h-[350px] flex items-center justify-center">
             <BitcoinAllocationChart />

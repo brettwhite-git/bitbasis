@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/utils"
 import type { Database } from "@/types/supabase"
 import { requireAuth } from "@/lib/server-auth"
 import { TradingViewSection } from "@/components/performance/trading-view-section"
+import { BitcoinHoldingsWaterfall } from "@/components/performance/bitcoin-holdings-waterfall"
 
 export default async function PerformancePage() {
   const { supabase, user } = await requireAuth()
@@ -21,7 +22,7 @@ export default async function PerformancePage() {
   }
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-4">
       <div className="w-full">
         <h1 className="text-2xl font-bold tracking-tight text-white">Performance</h1>
       </div>
@@ -29,8 +30,9 @@ export default async function PerformancePage() {
       {/* KPI Cards */}
       <KPICards performance={performance} taxLiability={taxLiability} />
       
-      <div className="w-full grid gap-4">
-        <Card>
+      <div className="w-full grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Performance Chart (Left) */}
+        <Card className="lg:col-span-3">
           <CardContent className="pt-6">
             <PerformanceContainer>
               <div className="flex items-center justify-between mb-4">
@@ -46,6 +48,11 @@ export default async function PerformancePage() {
             </PerformanceContainer>
           </CardContent>
         </Card>
+
+        {/* Bitcoin Holdings Waterfall (Right) */}
+        <div className="lg:col-span-2">
+          <BitcoinHoldingsWaterfall />
+        </div>
       </div>
 
       {/* TradingView chart container */}

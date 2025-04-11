@@ -160,14 +160,14 @@ export function CalculatorChart({ chartData, title, btcPrice = 65000 }: Calculat
     labels: chartData.map(point => point.date),
     datasets: [
       {
-        label: 'Accumulated Sats',
+        label: 'Buys',
         data: chartData.map(point => point.accumulatedSats),
         backgroundColor: '#F7931A', // Bitcoin orange
         type: 'bar' as const,
         stack: 'Stack 0',
       },
       {
-        label: 'Sats Stacked',
+        label: 'Sells',
         data: chartData.map(point => point.periodicSats),
         backgroundColor: '#818CF8', // Indigo-400 for purple/blue look
         type: 'bar' as const,
