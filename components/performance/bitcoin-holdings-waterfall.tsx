@@ -115,7 +115,6 @@ function formatBTC(amount: number): string {
 const options: ChartOptions<"bar"> = {
   responsive: true,
   maintainAspectRatio: false,
-  // Remove indexAxis to use default vertical orientation (x-axis categories)
   plugins: {
     legend: {
       display: false,
@@ -124,19 +123,25 @@ const options: ChartOptions<"bar"> = {
       titleColor: "#ffffff",
       bodyColor: "#ffffff",
       callbacks: {
-        label: function(context) {
-          // For floating bars, context.raw is an array [start, end]
-          const range = context.raw as number[]
-          const value = range[1] - range[0]
-          const total = range[1]
+        label: function(context: any) {
+          if (!context.raw) return [];
+          const range = context.raw as number[];
+          if (!Array.isArray(range) || range.length < 2) return [];
+          
+          // Ensure we have valid numbers
+          const start = range[0] ?? 0;
+          const end = range[1] ?? 0;
+          const value = end - start;
           
           return [
             `Change: ${formatBTC(value)}`,
-            `Total: ${formatBTC(total)}`
-          ]
+            `Total: ${formatBTC(end)}`
+          ];
         },
-        title: function(context) {
-          return `Year: ${context[0].label}`
+        title: function(context: any[]) {
+          const label = context?.[0]?.label;
+          if (typeof label !== 'string') return '';
+          return `Year: ${label}`;
         }
       }
     },
@@ -163,15 +168,15 @@ const options: ChartOptions<"bar"> = {
       ticks: {
         color: "#9ca3af",
         callback: function(value) {
-          // Format BTC with fewer decimal places for readability
-          return `${parseFloat(value.toString()).toFixed(4)}`
+          if (typeof value !== 'number') return '';
+          return `${value.toFixed(4)}`;
         },
       },
       title: {
         display: true,
         text: 'Bitcoin Amount (BTC)',
         color: '#9ca3af',
-        padding: {right: 10}
+        padding: 10
       }
     },
   },

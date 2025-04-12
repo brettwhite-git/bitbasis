@@ -7,6 +7,7 @@ import type { Database } from "@/types/supabase"
 import { requireAuth } from "@/lib/server-auth"
 import { TradingViewSection } from "@/components/performance/trading-view-section"
 import { BitcoinHoldingsWaterfall } from "@/components/performance/bitcoin-holdings-waterfall"
+import { HodlAgeDistribution } from "@/components/portfolio/hodl-age-distribution"
 
 export default async function PerformancePage() {
   const { supabase, user } = await requireAuth()
@@ -30,29 +31,28 @@ export default async function PerformancePage() {
       {/* KPI Cards */}
       <KPICards performance={performance} taxLiability={taxLiability} />
       
-      <div className="w-full grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Performance Chart (Left) */}
-        <Card className="lg:col-span-3">
-          <CardContent className="pt-6">
-            <PerformanceContainer>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Performance Over Time</h3>
-                  <p className="text-sm text-muted-foreground">Track your Bitcoin portfolio performance</p>
-                </div>
-                <PerformanceFilters />
+      {/* Performance Chart (Full Width) */}
+      <Card>
+        <CardContent className="pt-6">
+          <PerformanceContainer>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">Performance Over Time</h3>
+                <p className="text-sm text-muted-foreground">Track your Bitcoin portfolio performance</p>
               </div>
-              <div className="w-full">
-                <PerformanceChart />
-              </div>
-            </PerformanceContainer>
-          </CardContent>
-        </Card>
+              <PerformanceFilters />
+            </div>
+            <div className="w-full">
+              <PerformanceChart />
+            </div>
+          </PerformanceContainer>
+        </CardContent>
+      </Card>
 
-        {/* Bitcoin Holdings Waterfall (Right) */}
-        <div className="lg:col-span-2">
-          <BitcoinHoldingsWaterfall />
-        </div>
+      {/* HODL Age Distribution and Bitcoin Holdings Waterfall */}
+      <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <HodlAgeDistribution />
+        <BitcoinHoldingsWaterfall />
       </div>
 
       {/* TradingView chart container */}

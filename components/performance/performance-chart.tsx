@@ -31,7 +31,7 @@ ChartJS.register(
 // Use Supabase generated types directly where possible
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 
-type Period = "3M" | "6M" | "1Y" | "3Y" | "ALL"
+type Period = "1Y" | "2Y" | "3Y" | "5Y" | "ALL"
 
 interface ChartContextType {
   period: Period
@@ -222,12 +222,21 @@ const options: ChartOptions<"line"> = {
       grid: {
         color: "#374151",
       },
+      min: 0,
       ticks: {
         color: "#9ca3af",
         callback: function(value) {
           return `$${value.toLocaleString()}`
         },
+        // Let Chart.js determine the best intervals
+        autoSkip: true,
+        maxTicksLimit: 8, // Show maximum 8 ticks on the y-axis
+        // Include 0 and the max value
+        includeBounds: true
       },
+      // Ensure the scale is "nice" looking
+      grace: '5%', // Add 5% padding to the top
+      beginAtZero: true
     },
   },
 }
@@ -240,10 +249,10 @@ function ChartFilters() {
   return (
     <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-[300px]">
       <TabsList className="grid w-full grid-cols-5">
-        <TabsTrigger value="3M">3M</TabsTrigger>
-        <TabsTrigger value="6M">6M</TabsTrigger>
         <TabsTrigger value="1Y">1Y</TabsTrigger>
+        <TabsTrigger value="2Y">2Y</TabsTrigger>
         <TabsTrigger value="3Y">3Y</TabsTrigger>
+        <TabsTrigger value="5Y">5Y</TabsTrigger>
         <TabsTrigger value="ALL">ALL</TabsTrigger>
       </TabsList>
     </Tabs>
@@ -315,17 +324,17 @@ function Chart() {
     let startDate: Date;
 
     switch (period) {
-      case "3M":
-        startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-        break;
-      case "6M":
-        startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-        break;
       case "1Y":
         startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
         break;
+      case "2Y":
+        startDate = new Date(now.getFullYear() - 2, now.getMonth(), 1);
+        break;
       case "3Y":
         startDate = new Date(now.getFullYear() - 3, now.getMonth(), 1);
+        break;
+      case "5Y":
+        startDate = new Date(now.getFullYear() - 5, now.getMonth(), 1);
         break;
       case "ALL":
       default:
@@ -356,16 +365,16 @@ function Chart() {
     return result;
   };
 
-  // Calculate 2-month moving average for portfolio value
+  // Calculate 3-month moving average for portfolio value
   const portfolioValues = filteredData.map(d => d.portfolioValue);
-  const twoMonthMovingAverage = calculateMovingAverage(portfolioValues, 2);
+  const threeMonthMovingAverage = calculateMovingAverage(portfolioValues, 3);
   
   // Calculate longer-term moving average (approximately 6 months)
   const windowSize = Math.min(6, Math.floor(portfolioValues.length / 2));
   const longTermMovingAverage = calculateMovingAverage(portfolioValues, windowSize);
 
   // Create more visible moving average lines by replacing NaN values with null
-  const visibleTwoMonthMA = twoMonthMovingAverage.map(value => 
+  const visibleThreeMonthMA = threeMonthMovingAverage.map(value => 
     isNaN(value) ? null : value
   );
   
@@ -390,8 +399,8 @@ function Chart() {
         pointRadius: filteredData.length < 50 ? 3 : 0,
       },
       {
-        label: "2-Month Moving Average",
-        data: visibleTwoMonthMA,
+        label: "3-Month Moving Average",
+        data: visibleThreeMonthMA,
         borderColor: "#3B82F6", // Blue
         backgroundColor: "#3B82F6",
         tension: 0.1,
