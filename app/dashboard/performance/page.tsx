@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui"
 import { PerformanceChart, PerformanceFilters, PerformanceContainer } from "@/components/performance/performance-chart"
 import { KPICards } from "@/components/performance/kpi-cards"
-import { getPerformanceMetrics, calculateCostBasis } from "@/lib/portfolio"
+import { getPerformanceMetrics } from "@/lib/portfolio"
 import { formatCurrency } from "@/lib/utils"
 import type { Database } from "@/types/supabase"
 import { requireAuth } from "@/lib/server-auth"
@@ -14,13 +14,6 @@ export default async function PerformancePage() {
   
   // Fetch performance metrics
   const performance = await getPerformanceMetrics(user.id, supabase)
-  
-  // Fetch tax liability data using FIFO method
-  const costBasisData = await calculateCostBasis(user.id, 'FIFO', supabase)
-  const taxLiability = {
-    shortTerm: costBasisData.potentialTaxLiabilityST,
-    longTerm: costBasisData.potentialTaxLiabilityLT
-  }
 
   return (
     <div className="w-full space-y-4">
@@ -29,7 +22,7 @@ export default async function PerformancePage() {
       </div>
       
       {/* KPI Cards */}
-      <KPICards performance={performance} taxLiability={taxLiability} />
+      <KPICards performance={performance} />
       
       {/* Performance Chart (Full Width) */}
       <Card>

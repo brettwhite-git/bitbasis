@@ -36,6 +36,8 @@ type Period = "1Y" | "2Y" | "3Y" | "5Y" | "ALL"
 interface ChartContextType {
   period: Period
   setPeriod: (period: Period) => void
+  scaleType: 'auto' | 'fixed'
+  setScaleType: (type: 'auto' | 'fixed') => void
 }
 
 // Keep simplified OrderTransaction for internal logic if needed, but rely on OrderRow for fetching
@@ -65,8 +67,9 @@ const ChartContext = createContext<ChartContextType | undefined>(undefined)
 
 function ChartProvider({ children }: { children: React.ReactNode }) {
   const [period, setPeriod] = useState<Period>("3Y")
+  const [scaleType, setScaleType] = useState<'auto' | 'fixed'>('auto')
   return (
-    <ChartContext.Provider value={{ period, setPeriod }}>
+    <ChartContext.Provider value={{ period, setPeriod, scaleType, setScaleType }}>
       {children}
     </ChartContext.Provider>
   )
@@ -181,6 +184,35 @@ function calculateMonthlyData(transactions: OrderRow[]): MonthlyData[] {
   return finalMonthlyData;
 }
 
+// Add this utility function
+function calculateNiceScale(min: number, max: number): { min: number; max: number } {
+  // Calculate the range
+  const range = max - min;
+  
+  // Calculate an initial tick size
+  const roughStep = range / 6; // Aim for about 6-7 ticks
+  
+  // Calculate magnitude for rounding
+  const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  
+  // Calculate a nice step size
+  const normalizedStep = roughStep / magnitude;
+  let niceStep: number;
+  
+  if (normalizedStep < 1.5) niceStep = 1;
+  else if (normalizedStep < 3) niceStep = 2;
+  else if (normalizedStep < 7) niceStep = 5;
+  else niceStep = 10;
+  
+  niceStep *= magnitude;
+  
+  // Calculate nice min and max values
+  const niceMin = Math.floor(min / niceStep) * niceStep;
+  const niceMax = Math.ceil(max / niceStep) * niceStep;
+  
+  return { min: niceMin, max: niceMax };
+}
+
 // Chart options
 const options: ChartOptions<"line"> = {
   responsive: true,
@@ -212,7 +244,7 @@ const options: ChartOptions<"line"> = {
   scales: {
     x: {
       grid: {
-        color: "#374151",
+        display: false,
       },
       ticks: {
         color: "#9ca3af",
@@ -222,21 +254,30 @@ const options: ChartOptions<"line"> = {
       grid: {
         color: "#374151",
       },
-      min: 0,
+      min: undefined,
+      suggestedMin: function(context: { chart: { data: { datasets: { data: number[] }[] } } }) {
+        const dataset = context.chart.data.datasets[0];
+        if (!dataset?.data.length) return 0;
+        const minValue = Math.min(...dataset.data);
+        return minValue <= 0 ? minValue : -(Math.ceil(minValue * 0.05));
+      },
+      suggestedMax: function(context: { chart: { data: { datasets: { data: number[] }[] } } }) {
+        const dataset = context.chart.data.datasets[0];
+        if (!dataset?.data.length) return 0;
+        const maxValue = Math.max(...dataset.data);
+        return maxValue + (Math.ceil(maxValue * 0.05));
+      },
       ticks: {
         color: "#9ca3af",
         callback: function(value) {
           return `$${value.toLocaleString()}`
         },
-        // Let Chart.js determine the best intervals
         autoSkip: true,
-        maxTicksLimit: 8, // Show maximum 8 ticks on the y-axis
-        // Include 0 and the max value
+        maxTicksLimit: 8,
         includeBounds: true
       },
-      // Ensure the scale is "nice" looking
-      grace: '5%', // Add 5% padding to the top
-      beginAtZero: true
+      grace: '5%',
+      beginAtZero: false
     },
   },
 }
@@ -244,18 +285,26 @@ const options: ChartOptions<"line"> = {
 function ChartFilters() {
   const context = useContext(ChartContext)
   if (!context) throw new Error("ChartFilters must be used within a ChartProvider")
-  const { period, setPeriod } = context
+  const { period, setPeriod, scaleType, setScaleType } = context
 
   return (
-    <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-[300px]">
-      <TabsList className="grid w-full grid-cols-5">
-        <TabsTrigger value="1Y">1Y</TabsTrigger>
-        <TabsTrigger value="2Y">2Y</TabsTrigger>
-        <TabsTrigger value="3Y">3Y</TabsTrigger>
-        <TabsTrigger value="5Y">5Y</TabsTrigger>
-        <TabsTrigger value="ALL">ALL</TabsTrigger>
-      </TabsList>
-    </Tabs>
+    <div className="flex items-center gap-4">
+      <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-[300px]">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="1Y">1Y</TabsTrigger>
+          <TabsTrigger value="2Y">2Y</TabsTrigger>
+          <TabsTrigger value="3Y">3Y</TabsTrigger>
+          <TabsTrigger value="5Y">5Y</TabsTrigger>
+          <TabsTrigger value="ALL">ALL</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      <Tabs value={scaleType} onValueChange={(value) => setScaleType(value as 'auto' | 'fixed')} className="w-[200px]">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="auto">Auto Scale</TabsTrigger>
+          <TabsTrigger value="fixed">Fixed Scale</TabsTrigger>
+        </TabsList>
+      </Tabs>
+    </div>
   )
 }
 
@@ -263,12 +312,13 @@ function ChartFilters() {
 function Chart() {
   const context = useContext(ChartContext);
   if (!context) throw new Error("Chart must be used within a ChartProvider");
-  const { period } = context;
+  const { period, scaleType } = context;
   const { supabase } = useSupabase();
   
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [globalRange, setGlobalRange] = useState<{ min: number; max: number }>({ min: 0, max: 0 });
 
   useEffect(() => {
     if (!supabase) {
@@ -315,6 +365,16 @@ function Chart() {
 
     fetchData();
   }, [supabase]);
+
+  // Update global range when data changes
+  useEffect(() => {
+    if (monthlyData.length > 0) {
+      const allValues = monthlyData.flatMap(d => [d.portfolioValue, d.costBasis]);
+      const min = Math.min(...allValues);
+      const max = Math.max(...allValues);
+      setGlobalRange(calculateNiceScale(min, max));
+    }
+  }, [monthlyData]);
 
   // Filter data based on selected period
   const filteredData = (() => {
@@ -387,7 +447,8 @@ function Chart() {
       const [year, month] = (d.month || '').split('-');
       if (!year || !month) return '';
       const date = new Date(parseInt(year), parseInt(month) - 1);
-      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      const shortYear = year.slice(-2); // Get last two digits
+      return `${date.toLocaleDateString('en-US', { month: 'short' })}'${shortYear}`;
     }),
     datasets: [
       {

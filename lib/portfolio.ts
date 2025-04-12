@@ -46,7 +46,7 @@ interface BTCHolding {
   pricePerCoin: number
 }
 
-interface PerformanceMetrics {
+export interface PerformanceMetrics {
   cumulative: {
     total: { percent: number; dollar: number }
     day: { percent: number; dollar: number }
