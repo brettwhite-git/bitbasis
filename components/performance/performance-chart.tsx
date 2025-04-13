@@ -202,77 +202,6 @@ function calculateNiceScale(min: number, max: number): { min: number; max: numbe
   return { min: niceMin, max: niceMax };
 }
 
-// Chart options
-const options: ChartOptions<"line"> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: {
-    mode: "index",
-    intersect: false,
-  },
-  plugins: {
-    legend: {
-      position: "bottom",
-      labels: {
-        color: "#fff",
-        padding: 20,
-        usePointStyle: true,
-        pointStyle: "circle",
-      },
-    },
-    tooltip: {
-      mode: "index",
-      intersect: false,
-      callbacks: {
-        label: function(context) {
-          return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`
-        }
-      }
-    },
-  },
-  scales: {
-    x: {
-      grid: {
-        display: false,
-      },
-      ticks: {
-        color: "#9ca3af",
-      },
-    },
-    y: {
-      grid: {
-        color: "#374151",
-      },
-      min: undefined,
-      suggestedMin: function(context: { chart: { data: { datasets: { data: number[] }[] } } }) {
-        const dataset = context.chart.data.datasets[0];
-        if (!dataset?.data.length) return 0;
-        const values = dataset.data.filter(v => v !== null);
-        const { min: niceMin } = calculateNiceScale(Math.min(...values), Math.max(...values));
-        return niceMin;
-      },
-      suggestedMax: function(context: { chart: { data: { datasets: { data: number[] }[] } } }) {
-        const dataset = context.chart.data.datasets[0];
-        if (!dataset?.data.length) return 0;
-        const values = dataset.data.filter(v => v !== null);
-        const { max: niceMax } = calculateNiceScale(Math.min(...values), Math.max(...values));
-        return niceMax;
-      },
-      ticks: {
-        color: "#9ca3af",
-        callback: function(value) {
-          return `$${value.toLocaleString()}`
-        },
-        autoSkip: true,
-        maxTicksLimit: 8,
-        includeBounds: true
-      },
-      grace: '5%',
-      beginAtZero: false
-    },
-  },
-}
-
 function ChartFilters() {
   const context = useContext(ChartContext)
   if (!context) throw new Error("ChartFilters must be used within a ChartProvider")
@@ -301,7 +230,6 @@ function Chart() {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [globalRange, setGlobalRange] = useState<{ min: number; max: number }>({ min: 0, max: 0 });
 
   useEffect(() => {
     if (!supabase) {
@@ -349,16 +277,6 @@ function Chart() {
     fetchData();
   }, [supabase]);
 
-  // Update global range when data changes
-  useEffect(() => {
-    if (monthlyData.length > 0) {
-      const allValues = monthlyData.flatMap(d => [d.portfolioValue, d.costBasis]);
-      const min = Math.min(...allValues);
-      const max = Math.max(...allValues);
-      setGlobalRange(calculateNiceScale(min, max));
-    }
-  }, [monthlyData]);
-
   // Filter data based on selected period
   const filteredData = (() => {
     if (monthlyData.length === 0) return [];
@@ -389,41 +307,155 @@ function Chart() {
     return startIndex === -1 ? [] : monthlyData.slice(startIndex);
   })();
 
-  // Calculate moving average based on data points
-  const calculateMovingAverage = (data: number[], windowSize: number) => {
-    const result: number[] = [];
-    
-    // For the first windowSize-1 elements, we don't have enough data for a full window
-    for (let i = 0; i < windowSize - 1; i++) {
-      result.push(NaN);
+  // Calculate moving averages
+  const calculateMovingAverage = (data: (number | null)[], windowSize: number): (number | null)[] => {
+    const result: (number | null)[] = [];
+    const validData = data.map(d => d === null ? NaN : d); // Treat null as NaN for calculations
+
+    for (let i = 0; i < validData.length; i++) {
+      if (i < windowSize - 1) {
+        result.push(null); // Not enough data for a full window
+      } else {
+        const windowSlice = validData.slice(i - windowSize + 1, i + 1);
+        const validWindowValues = windowSlice.filter(v => !isNaN(v));
+        if (validWindowValues.length > 0) {
+          const sum = validWindowValues.reduce((acc, val) => acc + val, 0);
+          result.push(sum / validWindowValues.length);
+        } else {
+          result.push(null); // No valid data in window
+        }
+      }
     }
-    
-    // Calculate moving average for the rest of the data
-    for (let i = windowSize - 1; i < data.length; i++) {
-      const window = data.slice(i - windowSize + 1, i + 1);
-      const sum = window.reduce((acc, val) => acc + val, 0);
-      result.push(sum / windowSize);
-    }
-    
     return result;
   };
 
-  // Calculate 3-month moving average for portfolio value
-  const portfolioValues = filteredData.map(d => d.portfolioValue);
+  // Calculate MAs using filtered data
+  const portfolioValues = filteredData.map(d => d?.portfolioValue ?? null);
   const threeMonthMovingAverage = calculateMovingAverage(portfolioValues, 3);
-  
-  // Calculate longer-term moving average (approximately 6 months)
-  const windowSize = Math.min(6, Math.floor(portfolioValues.length / 2));
+  const windowSize = Math.min(6, Math.floor(portfolioValues.filter(v => v !== null).length / 2) || 1); // Ensure windowSize >= 1
   const longTermMovingAverage = calculateMovingAverage(portfolioValues, windowSize);
 
-  // Create more visible moving average lines by replacing NaN values with null
-  const visibleThreeMonthMA = threeMonthMovingAverage.map(value => 
-    isNaN(value) ? null : value
-  );
-  
-  const visibleLongTermMA = longTermMovingAverage.map(value => 
-    isNaN(value) ? null : value
-  );
+  // Define chart options INSIDE the component to access filteredData
+  const dynamicOptions: ChartOptions<"line"> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: "index",
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          color: "#fff",
+          padding: 25,
+          usePointStyle: true,
+          pointStyle: "circle",
+        },
+      },
+      tooltip: {
+        mode: "index",
+        intersect: false,
+        callbacks: {
+          label: function(context) {
+            const value = context.parsed.y;
+            // Check if value is null or undefined before formatting
+            if (value === null || typeof value === 'undefined') {
+              return `${context.dataset.label}: N/A`; // Or handle as appropriate
+            }
+            return `${context.dataset.label}: $${value.toLocaleString()}`;
+          }
+        }
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: "#9ca3af",
+        },
+      },
+      y: {
+        grid: {
+          color: "#374151",
+        },
+        // Calculate min/max based on FILTERED data
+        suggestedMin: function(context: any) {
+          // Filter MA arrays *before* concatenation
+          const validThreeMonthMA = threeMonthMovingAverage.filter((v): v is number => v !== null && !isNaN(v));
+          const validLongTermMA = longTermMovingAverage.filter((v): v is number => v !== null && !isNaN(v));
+          
+          const allValues = filteredData.flatMap(d => [
+            d.portfolioValue,
+            d.costBasis,
+          ]).filter((v): v is number => v !== null && typeof v === 'number' && !isNaN(v)) // Filter base values
+            .concat(validThreeMonthMA, validLongTermMA); // Concat pre-filtered MAs
+
+          if (allValues.length === 0) return -10; // Default slightly negative if no data
+
+          const minValue = Math.min(...allValues);
+          const maxValue = Math.max(...allValues);
+          
+          // Calculate the nice scale and step
+          const range = Math.max(1, maxValue - minValue); // Ensure range is at least 1 to avoid division by zero
+          const roughStep = range / 6;
+          const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep || 1))); // Handle roughStep potentially being 0
+          const normalizedStep = roughStep / magnitude;
+          let niceStep: number;
+          if (normalizedStep < 1.5) niceStep = 1;
+          else if (normalizedStep < 3) niceStep = 2;
+          else if (normalizedStep < 7) niceStep = 5;
+          else niceStep = 10;
+          niceStep *= magnitude;
+
+          let niceMin = Math.floor(minValue / niceStep) * niceStep;
+          
+          // *** Ensure minimum is below zero if calculated min is >= 0 ***
+          if (niceMin >= 0) {
+            niceMin = -niceStep; // Set to one step below zero
+            // Optional: Add a check to ensure it's not excessively negative if minValue itself was very small positive
+            if (minValue >= 0 && niceMin < -maxValue * 0.2) { // Avoid huge negative dip if max value is small
+                niceMin = -Math.max(niceStep, maxValue * 0.1);
+            }
+          }
+
+          return niceMin;
+        },
+        suggestedMax: function(context: any) {
+           // Filter MA arrays *before* concatenation
+          const validThreeMonthMA = threeMonthMovingAverage.filter((v): v is number => v !== null && !isNaN(v));
+          const validLongTermMA = longTermMovingAverage.filter((v): v is number => v !== null && !isNaN(v));
+
+           const allValues = filteredData.flatMap(d => [
+            d.portfolioValue,
+            d.costBasis,
+          ]).filter((v): v is number => v !== null && typeof v === 'number' && !isNaN(v)) // Filter base values
+            .concat(validThreeMonthMA, validLongTermMA); // Concat pre-filtered MAs
+
+          if (allValues.length === 0) return 100; // Default if no valid data
+
+          const minValue = Math.min(...allValues);
+          const maxValue = Math.max(...allValues);
+          const { max: niceMax } = calculateNiceScale(minValue, maxValue);
+          return niceMax;
+        },
+        ticks: {
+          color: "#9ca3af",
+          callback: function(value) {
+            if (typeof value !== 'number') return ''; // Add type check
+            return `$${value.toLocaleString()}`
+          },
+          autoSkip: true,
+          maxTicksLimit: 8,
+          includeBounds: true
+        },
+        grace: '5%', // Keep grace for a little extra padding
+        beginAtZero: false // Ensure axis doesn't always start at zero
+      },
+    },
+  } // End of dynamicOptions definition
 
   const chartData = {
     labels: filteredData.map(d => {
@@ -436,62 +468,64 @@ function Chart() {
     datasets: [
       {
         label: "Portfolio Value",
-        data: filteredData.map(d => d.portfolioValue),
+        data: filteredData.map(d => d?.portfolioValue ?? null), // Use null for gaps
         borderColor: "#F7931A", // Bitcoin Orange
         backgroundColor: "#F7931A",
         tension: 0.1,
-        pointRadius: filteredData.length < 50 ? 3 : 0,
+        pointRadius: filteredData.length < 50 ? 4 : 0,
+        spanGaps: true, // Connect lines over null data points
       },
       {
         label: "3-Month Moving Average",
-        data: visibleThreeMonthMA,
-        borderColor: "#3B82F6", // Blue
-        backgroundColor: "#3B82F6",
+        data: threeMonthMovingAverage, // Already contains nulls
+        borderColor: "#A855F7", // Changed to Purple
+        backgroundColor: "#A855F7", // Changed to Purple
         tension: 0.1,
         pointRadius: 0,
         borderWidth: 2,
-        borderDash: [5, 5], // Dashed line
+        borderDash: [10, 5], // Dashed line
         fill: false,
         spanGaps: true, // Connect across null values
       },
       {
         label: `${windowSize}-Month Moving Average`,
-        data: visibleLongTermMA,
+        data: longTermMovingAverage, // Already contains nulls
         borderColor: "#10B981", // Green
         backgroundColor: "#10B981",
         tension: 0.1,
         pointRadius: 0,
         borderWidth: 2,
-        borderDash: [2, 2], // Different dash pattern
+        borderDash: [5, 10], // Different dash pattern
         fill: false,
         spanGaps: true, // Connect across null values
       },
       {
         label: "Cost Basis",
-        data: filteredData.map(d => d.costBasis),
-        borderColor: "#64748b", // Slate Gray
-        backgroundColor: "#64748b",
+        data: filteredData.map(d => d?.costBasis ?? null), // Use null for gaps
+        borderColor: "#3B82F6", // Changed to Blue
+        backgroundColor: "#3B82F6", // Changed to Blue
         tension: 0.1,
-        pointRadius: filteredData.length < 50 ? 3 : 0,
+        pointRadius: filteredData.length < 50 ? 4 : 0,
+        spanGaps: true, // Connect lines over null data points
       }
     ],
   };
 
   if (isLoading) {
-    return <div className="h-[400px] flex items-center justify-center text-white">Loading Chart...</div>;
+    return <div className="h-[500px] w-full">Loading chart data...</div>;
   }
 
   if (error) {
-    return <div className="h-[400px] flex items-center justify-center text-red-500">Error: {error}</div>;
+    return <div className="h-[500px] w-full text-red-500">Error: {error}</div>;
   }
 
   if (filteredData.length === 0) {
-    return <div className="h-[400px] flex items-center justify-center text-gray-500">No data available for the selected period.</div>;
+    return <div className="h-[500px] w-full text-gray-500">No data available for the selected period.</div>;
   }
 
   return (
-    <div className="h-[400px]">
-      <Line options={options} data={chartData} />
+    <div className="h-[500px] w-full">
+      <Line options={dynamicOptions} data={chartData} />
     </div>
   );
 }
