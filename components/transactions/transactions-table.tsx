@@ -163,11 +163,14 @@ export function TransactionsTable({
     }).format(amount)
   }
 
-  const formatBTC = (amount: number | null) => {
+  const formatBTC = (amount: number | null, includeSuffix: boolean = true) => {
     if (amount === null || amount === undefined) return '-'
     return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 8,
-      maximumFractionDigits: 8
+      maximumFractionDigits: 8,
+      ...(includeSuffix && {
+        suffix: ' BTC'
+      })
     }).format(amount)
   }
 
@@ -314,12 +317,12 @@ export function TransactionsTable({
       Date: new Date(transaction.date).toLocaleDateString(),
       Type: transaction.type,
       Asset: transaction.asset,
-      "Amount (BTC)": formatBTC(transaction.btc_amount), 
+      "Amount (BTC)": formatBTC(transaction.btc_amount, false), 
       "Price at Tx (USD)": formatCurrency(transaction.price_at_tx),
       "Value (USD)": formatCurrency(transaction.usd_value),
       "Fees (USD)": formatCurrency(transaction.fee_usd),
       Exchange: transaction.exchange || "-",
-      "Fees (BTC)": formatBTC(transaction.network_fee_btc),
+      "Fees (BTC)": formatBTC(transaction.network_fee_btc, false),
       "Transaction ID": transaction.txid || "-"
     }
   }
@@ -698,7 +701,7 @@ export function TransactionsTable({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center">
-                  {formatBTC(transaction.btc_amount)}
+                  {formatBTC(transaction.btc_amount, false)}
                 </TableCell>
                 <TableCell className="hidden md:table-cell text-center">
                   {formatCurrency(transaction.price_at_tx)}
@@ -715,7 +718,7 @@ export function TransactionsTable({
                     : "-"}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell text-center">
-                  {formatBTC(transaction.network_fee_btc)}
+                  {formatBTC(transaction.network_fee_btc, false)}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell text-center">
                   {transaction.txid ? (

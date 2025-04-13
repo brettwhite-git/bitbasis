@@ -14,11 +14,12 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-export function formatBTC(amount: number): string {
+export function formatBTC(amount: number | null, includeSuffix: boolean = false): string {
+  if (amount === null || amount === undefined) return '-'
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 8,
     maximumFractionDigits: 8
-  }).format(amount) + " BTC"
+  }).format(amount) + (includeSuffix ? " BTC" : "")
 }
 
 export function formatPercent(value: number): string {

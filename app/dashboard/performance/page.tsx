@@ -44,8 +44,8 @@ export default async function PerformancePage() {
 
       {/* HODL Age Distribution and Bitcoin Holdings Waterfall */}
       <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <HodlAgeDistribution />
         <BitcoinHoldingsWaterfall />
+        <HodlAgeDistribution />
       </div>
 
       {/* TradingView chart container */}

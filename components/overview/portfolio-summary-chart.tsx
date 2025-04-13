@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
   ChartOptions,
+  Filler,
 } from "chart.js"
 import { Line } from "react-chartjs-2"
 import { Button } from "@/components/ui/button"
@@ -24,7 +25,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 )
 
 // Updated interface to match 'orders' table structure and needed fields
@@ -176,6 +178,7 @@ const options: ChartOptions<"line"> = {
   scales: {
     x: {
       grid: {
+        display: false,
         color: "#374151",
       },
       ticks: {
@@ -262,15 +265,19 @@ export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: Po
         label: "Portfolio Value",
         data: filteredData.map(d => d.portfolioValue),
         borderColor: "#F7931A", // Bitcoin Orange
-        backgroundColor: "#F7931A",
+        backgroundColor: "rgba(247, 147, 26, 0.2)", // Semi-transparent Bitcoin Orange
         tension: 0.4,
+        fill: true,
+        pointRadius: 0 // Hide points for smoother area look
       },
       {
         label: "Cost Basis",
         data: filteredData.map(d => d.costBasis),
-        borderColor: "#64748b", // Slate-500
-        backgroundColor: "#64748b",
+        borderColor: "#3b82f6", // Blue-500
+        backgroundColor: "rgba(59, 130, 246, 0.2)", // Semi-transparent Blue
         tension: 0.4,
+        fill: true,
+        pointRadius: 0 // Hide points for smoother area look
       }
     ],
   }

@@ -149,7 +149,7 @@ const options: ChartOptions<"bar"> = {
   scales: {
     x: {
       grid: {
-        color: "#374151",
+        display: false,
       },
       ticks: {
         color: "#9ca3af",
