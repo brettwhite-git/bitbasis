@@ -106,7 +106,7 @@ const getChartOptions = (data: FearGreedData | null): ApexOptions => {
         endAngle: 270,
         hollow: {
           margin: 5,
-          size: '40%',
+          size: '35%',
           background: 'transparent',
         },
         dataLabels: {
@@ -124,7 +124,17 @@ const getChartOptions = (data: FearGreedData | null): ApexOptions => {
           fontSize: '16px',
           fontWeight: 'bold',
           formatter: function(seriesName: string, opts: any) {
-            return seriesName + ": " + opts.w.globals.series[opts.seriesIndex]
+            const value = opts.w.globals.series[opts.seriesIndex];
+            let classification = 'N/A';
+            if (data) {
+              switch (opts.seriesIndex) {
+                case 0: classification = data.classification; break;
+                case 1: classification = data.historical?.yesterday?.classification || 'N/A'; break;
+                case 2: classification = data.historical?.week_ago?.classification || 'N/A'; break;
+                case 3: classification = data.historical?.month_ago?.classification || 'N/A'; break;
+              }
+            }
+            return `${seriesName}: ${value} (${classification})`;
           },
         },
         track: {
@@ -231,7 +241,7 @@ const FearGreedCircularChart = () => {
           </div>
         ) : (
           <div className="flex flex-col" ref={chartRef}>
-            <div className="h-[350px] relative">
+            <div className="h-[350px] relative rounded-md border">
               {/* Main Chart */}
               {typeof window !== 'undefined' && (
                 <ReactApexChart
@@ -240,6 +250,20 @@ const FearGreedCircularChart = () => {
                   type="radialBar"
                   height={365}
                 />
+              )}
+              {/* Center Text Overlay */}
+              {data && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  style={{ top: '5px' }} // Adjust vertical position if needed
+                >
+                  <span
+                    className="text-xl font-bold"
+                    style={{ color: getColorByValue(data.value) }}
+                  >
+                    {data.classification}
+                  </span>
+                </div>
               )}
             </div>
           </div>
