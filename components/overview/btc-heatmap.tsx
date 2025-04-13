@@ -166,14 +166,21 @@ export function BtcHeatmap() {
       align: 'center',
       style: {
         color: '#FFFFFF',
-        fontWeight: 500,
+        fontWeight: 600,
       }
     },
     legend: {
       position: 'bottom',
       horizontalAlign: 'center',
+      offsetY: 10,
       labels: {
         colors: '#FFFFFF'
+      },
+      markers: {
+        size: 8
+      },
+      formatter: function(seriesName, opts) {
+        return `<span style="padding-left: 5px;">${seriesName}</span>`
       }
     },
     xaxis: {
@@ -221,20 +228,20 @@ export function BtcHeatmap() {
   // Return loading state if no data yet
   if (heatmapData.length === 0) {
     return (
-      <div className="h-[300px] w-full flex items-center justify-center text-white">
+      <div className="h-[375px] w-full flex items-center justify-center text-white">
         <p>Loading transaction data...</p>
       </div>
     )
   }
 
   return (
-    <div className="h-[300px] w-full text-white">
+    <div className="h-[375px] w-full text-white">
       {typeof window !== 'undefined' && (
         <ReactApexChart
           options={options}
           series={heatmapData}
           type="heatmap"
-          height={300}
+          height={375}
         />
       )}
     </div>

@@ -156,13 +156,13 @@ export function HodlAgeDistribution() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="h-[400px] flex items-center justify-center text-white">Loading Chart...</div>
+          <div className="h-[350px] flex items-center justify-center text-white">Loading Chart...</div>
         ) : error ? (
-          <div className="h-[400px] flex items-center justify-center text-red-500">{error}</div>
+          <div className="h-[350px] flex items-center justify-center text-red-500">{error}</div>
         ) : hodlData.length === 0 ? (
-          <div className="h-[400px] flex items-center justify-center text-gray-500">No data available to display.</div>
+          <div className="h-[350px] flex items-center justify-center text-gray-500">No data available to display.</div>
         ) : (
-          <div className="h-[400px] w-full">
+          <div className="h-[350px] w-full">
             <Bar options={options} data={data} />
           </div>
         )}

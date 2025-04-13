@@ -5,9 +5,10 @@ import { getPerformanceMetrics } from "@/lib/portfolio"
 import { formatCurrency } from "@/lib/utils"
 import type { Database } from "@/types/supabase"
 import { requireAuth } from "@/lib/server-auth"
-import { TradingViewSection } from "@/components/performance/trading-view-section"
+// import { TradingViewSection } from "@/components/performance/trading-view-section"
 import { BitcoinHoldingsWaterfall } from "@/components/performance/bitcoin-holdings-waterfall"
 import { HodlAgeDistribution } from "@/components/portfolio/hodl-age-distribution"
+import { BtcHeatmap } from "@/components/overview/btc-heatmap"
 
 export default async function PerformancePage() {
   const { supabase, user } = await requireAuth()
@@ -24,7 +25,24 @@ export default async function PerformancePage() {
       {/* KPI Cards */}
       <KPICards performance={performance} />
       
-      {/* Performance Chart (Full Width) */}
+      {/* Bitcoin Holdings Waterfall, Heatmap, and HODL Age Distribution */}
+      <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <BitcoinHoldingsWaterfall />
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-semibold">Transaction Heatmap</CardTitle>
+            <p className="text-sm text-muted-foreground">Monthly buy/sell activity overview</p>
+          </CardHeader>
+          <CardContent>
+            <BtcHeatmap />
+          </CardContent>
+        </Card>
+        
+        <HodlAgeDistribution />
+      </div>
+
+      {/* Performance Chart (Full Width) - MOVED HERE */}
       <Card>
         <CardContent className="pt-6">
           <PerformanceContainer>
@@ -42,16 +60,10 @@ export default async function PerformancePage() {
         </CardContent>
       </Card>
 
-      {/* HODL Age Distribution and Bitcoin Holdings Waterfall */}
-      <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <BitcoinHoldingsWaterfall />
-        <HodlAgeDistribution />
-      </div>
-
-      {/* TradingView chart container */}
-      <div className="w-full">
+      {/* TradingView chart container - REMOVED */}
+      {/* <div className="w-full">
         <TradingViewSection />
-      </div>
+      </div> */}
     </div>
   )
 }

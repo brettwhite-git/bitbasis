@@ -285,18 +285,19 @@ export function BitcoinCalculator() {
                     placeholder="0.1"
                     value={formatNumber(satsGoal, { minimumFractionDigits: 1, maximumFractionDigits: 8 })}
                     onChange={handleSatsGoalChange}
-                    className="pr-16"
+                    className="pr-16 bg-muted/50 border-muted"
                     inputMode="decimal"
                   />
                   <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
                     BTC
                   </span>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-sm text-muted-foreground">=</span>
-                  <span className="flex-1 text-center text-sm text-muted-foreground">
-                    {btcToSats(satsGoal)} sats
-                  </span>
+                <div className="relative">
+                  <div className="flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+                    <span className="text-sm mr-2">=</span>
+                    <span className="flex-1 text-sm font-medium">{btcToSats(satsGoal)}</span>
+                    <span className="text-sm">sats</span>
+                  </div>
                 </div>
               </div>
             </div>

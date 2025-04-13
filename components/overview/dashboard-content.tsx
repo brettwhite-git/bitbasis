@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { RecentTransactions } from "@/components/overview/recent-transactions"
 import { PortfolioSummaryChart } from "@/components/overview/portfolio-summary-chart"
-import { BtcHeatmap } from "@/components/overview/btc-heatmap"
+// import { BtcHeatmap } from "@/components/overview/btc-heatmap"
 // import FearGreedGauge from "@/components/overview/fear-greed-gauge"
 import FearGreedCircularChart from "@/components/overview/fear-greed-circular-chart"
 import { useState } from "react"
@@ -105,7 +105,7 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
         </Card>
       </div>
       <div className="grid w-full gap-4 grid-cols-1 md:grid-cols-3">
-        <Card className="col-span-1">
+        <Card className="col-span-1 md:col-span-2">
           <CardHeader className="flex flex-row items-start justify-between pb-2">
             <CardTitle className="text-left py-1.5">Portfolio Summary</CardTitle>
             <div className="flex items-center gap-2">
@@ -130,14 +130,6 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
               timeframe={timeframe}
               onTimeframeChangeAction={setTimeframe}
             />
-          </CardContent>
-        </Card>
-        <Card className="col-span-1">
-          <CardHeader className="flex flex-row items-start justify-between pb-2">
-            <CardTitle className="text-left py-1.5">Bitcoin Transaction Heatmap</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-8 min-h-[350px] flex items-center justify-center">
-            <BtcHeatmap />
           </CardContent>
         </Card>
         <FearGreedCircularChart />

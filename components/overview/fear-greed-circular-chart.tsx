@@ -238,7 +238,7 @@ const FearGreedCircularChart = () => {
                   options={chartOptions}
                   series={series}
                   type="radialBar"
-                  height={380}
+                  height={365}
                 />
               )}
             </div>
