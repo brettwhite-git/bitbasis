@@ -206,10 +206,9 @@ const options: ChartOptions<"line"> = {
 
 interface PortfolioSummaryChartProps {
   timeframe: "6M" | "1Y"
-  onTimeframeChangeAction: (timeframe: "6M" | "1Y") => void
 }
 
-export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: PortfolioSummaryChartProps) {
+export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps) {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
   const { supabase } = useSupabase()
 

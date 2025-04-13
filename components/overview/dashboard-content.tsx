@@ -128,7 +128,6 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
           <CardContent className="pt-0 min-h-[350px]">
             <PortfolioSummaryChart 
               timeframe={timeframe}
-              onTimeframeChangeAction={setTimeframe}
             />
           </CardContent>
         </Card>
