@@ -241,14 +241,14 @@ const FearGreedCircularChart = () => {
           </div>
         ) : (
           <div className="flex flex-col" ref={chartRef}>
-            <div className="h-[350px] relative rounded-md border">
+            <div className="h-[350px] relative rounded-md">
               {/* Main Chart */}
               {typeof window !== 'undefined' && (
                 <ReactApexChart
                   options={chartOptions}
                   series={series}
                   type="radialBar"
-                  height={365}
+                  height={375}
                 />
               )}
               {/* Center Text Overlay */}

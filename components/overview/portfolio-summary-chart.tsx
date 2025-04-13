@@ -268,7 +268,7 @@ export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: Po
         backgroundColor: "rgba(247, 147, 26, 0.2)", // Semi-transparent Bitcoin Orange
         tension: 0.4,
         fill: true,
-        pointRadius: 0 // Hide points for smoother area look
+        pointRadius: 5 // Hide points for smoother area look
       },
       {
         label: "Cost Basis",
@@ -277,13 +277,13 @@ export function PortfolioSummaryChart({ timeframe, onTimeframeChangeAction }: Po
         backgroundColor: "rgba(59, 130, 246, 0.2)", // Semi-transparent Blue
         tension: 0.4,
         fill: true,
-        pointRadius: 0 // Hide points for smoother area look
+        pointRadius: 5 // Hide points for smoother area look
       }
     ],
   }
 
   return (
-    <div className="h-[350px] w-full">
+    <div className="h-[375px] w-full">
       <Line options={options} data={data} />
     </div>
   )
