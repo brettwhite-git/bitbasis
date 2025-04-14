@@ -29,12 +29,6 @@ export function DashboardSidebar() {
       isActive: pathname === "/dashboard/performance",
     },
     {
-      title: "Calculator",
-      icon: Calculator,
-      href: "/dashboard/calculator",
-      isActive: pathname === "/dashboard/calculator",
-    },
-    {
       title: "Transactions",
       icon: History,
       href: "/dashboard/transactions",
@@ -45,6 +39,12 @@ export function DashboardSidebar() {
       icon: Upload,
       href: "/dashboard/import",
       isActive: pathname === "/dashboard/import",
+    },
+    {
+      title: "Calculator",
+      icon: Calculator,
+      href: "/dashboard/calculator",
+      isActive: pathname === "/dashboard/calculator",
     },
     {
       title: "Settings",

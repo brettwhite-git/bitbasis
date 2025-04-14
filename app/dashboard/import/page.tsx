@@ -40,7 +40,7 @@ export default function ImportPage() {
                 Template for buy and sell orders. Includes fields for fiat amounts,
                 BTC amounts, prices, exchange fees, and metadata.
               </p>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-fit">
                 <FileDown className="mr-2 h-4 w-4" />
                 Download Orders Template
               </Button>
@@ -56,7 +56,7 @@ export default function ImportPage() {
                 Template for deposits and withdrawals. Includes fields for BTC amounts,
                 network fees, transaction hashes, and optional price data.
               </p>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-fit">
                 <FileDown className="mr-2 h-4 w-4" />
                 Download Transfers Template
               </Button>

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
-import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle } from "lucide-react"
+import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle, Trash2 } from "lucide-react"
 import Papa from 'papaparse'
 import { ImportPreview } from "@/components/import/import-preview"
 import { insertTransactions } from '@/lib/supabase'
@@ -17,12 +17,13 @@ import type { Database } from '@/types/supabase'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { FileIcon, Trash2Icon } from "lucide-react"
+import { FileIcon } from "lucide-react"
 import { CheckCircle2Icon } from "lucide-react"
 import { Table, TableHeader, TableBody, TableCell, TableRow, TableHead } from "@/components/ui/table"
 import { ArrowDownRight, ArrowUpRight } from "lucide-react"
 import { useAuth } from "@/providers/supabase-auth-provider"
 import { useRouter } from 'next/navigation'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type OrderInsert = Database['public']['Tables']['orders']['Insert']
 type TransferInsert = Database['public']['Tables']['transfers']['Insert']
@@ -346,6 +347,21 @@ function useUserId() {
   }
   return user.id;
 }
+
+// Define a type for the form data for clarity
+type ManualTransactionFormData = {
+  date: string;
+  type: 'buy' | 'sell' | 'withdrawal' | 'deposit';
+  btcAmount: string;
+  price: string;
+  usdAmount: string;
+  fees: string;
+  exchange: string;
+  network_fee: string;
+  txid: string;
+  // Add a temporary unique ID for list handling
+  tempId?: number;
+};
 
 export function ImportForm() {
   const router = useRouter()
@@ -921,7 +937,7 @@ export function ImportForm() {
                           onClick={() => deleteFile(file.id)}
                           className="h-8 w-8 text-muted-foreground hover:text-destructive"
                         >
-                          <Trash2Icon className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -942,7 +958,7 @@ export function ImportForm() {
   }
 
   const ManualEntryForm = () => {
-    const [formData, setFormData] = useState({
+    const initialFormData: ManualTransactionFormData = {
       date: '',
       type: 'buy',
       btcAmount: '',
@@ -951,82 +967,136 @@ export function ImportForm() {
       fees: '',
       exchange: '',
       network_fee: '',
-      wallet_address: ''
-    })
+      txid: ''
+    };
+    const [formData, setFormData] = useState<ManualTransactionFormData>(initialFormData);
+    // Add state for staged transactions
+    const [stagedTransactions, setStagedTransactions] = useState<ManualTransactionFormData[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false); // State for loading indicator
 
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault()
-      // TODO: Implement form submission
-      console.log('Form submitted:', formData)
-    }
+    // Function to add current form data to the staged list
+    const handleAddToPreview = () => {
+      // Basic validation (add more specific validation as needed)
+      if (!formData.date || !formData.btcAmount || !formData.price || !formData.usdAmount) {
+        // TODO: Show validation error message to the user
+        console.error("Validation failed: Missing required fields");
+        return;
+      }
+
+      // Add a temporary ID for list key and removal
+      const newTransaction = { ...formData, tempId: Date.now() }; 
+      setStagedTransactions(prev => [...prev, newTransaction]);
+      // Reset the form (or maybe keep date/type?)
+      setFormData(initialFormData);
+    };
+
+    // Function to remove a transaction from the staged list
+    const handleRemoveFromPreview = (tempIdToRemove: number) => {
+      setStagedTransactions(prev => prev.filter(tx => tx.tempId !== tempIdToRemove));
+    };
+
+    // Function to clear the input form
+    const handleClearForm = () => {
+      setFormData(initialFormData);
+    };
+
+    // Function to submit all staged transactions
+    const handleSubmitAll = async () => {
+      if (stagedTransactions.length === 0) {
+        console.log("No transactions to submit.");
+        return;
+      }
+      setIsSubmitting(true);
+      console.log("Submitting staged transactions:", stagedTransactions);
+
+      // TODO: Add actual submission logic here
+      // 1. Transform stagedTransactions to the required format for insertTransactions
+      //    (separate into orders and transfers, parse numbers, etc.)
+      // 2. Call insertTransactions({ orders, transfers })
+      // 3. Handle success: clear stagedTransactions, show success message, maybe refresh router?
+      // 4. Handle error: show error message to user
+
+      // Placeholder for async operation
+      await new Promise(resolve => setTimeout(resolve, 1500)); 
+
+      // Example success flow:
+      console.log("Submission successful (placeholder)");
+      setStagedTransactions([]); // Clear list on success
+      // router.refresh(); // Optional: Refresh data if needed
+
+      setIsSubmitting(false);
+    };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const { name, value } = e.target
+      const { name, value } = e.target;
       setFormData(prev => ({
         ...prev,
         [name]: value
-      }))
-    }
-
-    const isNetworkFeeEnabled = formData.type === 'send'
+      }));
+    };
 
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
           <div>
             <CardTitle>Manual Transaction Entry</CardTitle>
-            <CardDescription>Add a new transaction manually</CardDescription>
+            <CardDescription>Add transactions to preview below</CardDescription>
           </div>
           <div className="flex space-x-2">
-            <Button variant="outline">
-              Clear
+            <Button className="bg-bitcoin-orange hover:bg-bitcoin-orange/90" onClick={handleAddToPreview}> 
+              Add to Preview
             </Button>
-            <Button className="bg-bitcoin-orange hover:bg-bitcoin-orange/90">
-              Add Transaction
+            <Button variant="outline" onClick={handleClearForm}> 
+              Clear Form
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>
-                <Input
+                <input
                   id="date"
                   name="date"
                   type="datetime-local"
                   value={formData.date}
                   onChange={handleInputChange}
                   required
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="type">Type</Label>
-                <select
-                  id="type"
-                  name="type"
+                <Select
                   value={formData.type}
-                  onChange={handleInputChange}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
-                  required
+                  onValueChange={(value) => handleInputChange({ target: { name: 'type', value } } as any)}
                 >
-                  <option value="buy">Buy</option>
-                  <option value="sell">Sell</option>
-                  <option value="send">Send</option>
-                  <option value="receive">Receive</option>
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="buy">Buy</SelectItem>
+                    <SelectItem value="sell">Sell</SelectItem>
+                    <SelectItem value="withdrawal">Withdrawal</SelectItem>
+                    <SelectItem value="deposit">Deposit</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="exchange">Exchange/Source</Label>
-                <Input
-                  id="exchange"
-                  name="exchange"
-                  type="text"
-                  placeholder="Enter exchange or source"
-                  value={formData.exchange}
-                  onChange={handleInputChange}
-                />
-              </div>
+              {/* Exchange Input - Conditional */}
+              {(formData.type === 'buy' || formData.type === 'sell') && (
+                  <div className="space-y-2">
+                      <Label htmlFor="exchange">Exchange/Source</Label>
+                      <Input
+                          id="exchange"
+                          name="exchange"
+                          type="text"
+                          placeholder="Enter exchange or source"
+                          value={formData.exchange}
+                          onChange={handleInputChange}
+                      />
+                  </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="btcAmount">Amount (BTC)</Label>
                 <Input
@@ -1040,6 +1110,38 @@ export function ImportForm() {
                   required
                 />
               </div>
+              {/* USD Amount Input - Moved Here & Conditional */}
+              {(formData.type === 'buy' || formData.type === 'sell' || formData.type === 'withdrawal' || formData.type === 'deposit') && (
+                <div className="space-y-2">
+                    <Label htmlFor="usdAmount">Amount (USD)</Label>
+                    <Input
+                        id="usdAmount"
+                        name="usdAmount"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.usdAmount}
+                        onChange={handleInputChange}
+                        required
+                    />
+                </div>
+              )}
+              {/* Network Fee Input - Conditional */}
+              {formData.type === 'withdrawal' && (
+                <div className="space-y-2">
+                  <Label htmlFor="network_fee">Network Fee (BTC)</Label>
+                  <Input
+                    id="network_fee"
+                    name="network_fee"
+                    type="number"
+                    step="0.00000001"
+                    placeholder="0.00000000"
+                    value={formData.network_fee}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              )}
+              {/* Price Input - Always visible */}
               <div className="space-y-2">
                 <Label htmlFor="price">Price per BTC (USD)</Label>
                 <Input
@@ -1053,114 +1155,151 @@ export function ImportForm() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="usdAmount">Total Amount (USD)</Label>
-                <Input
-                  id="usdAmount"
-                  name="usdAmount"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.usdAmount}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="fees">Service Fee (USD)</Label>
-                <Input
-                  id="fees"
-                  name="fees"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.fees}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="wallet_address">Wallet Address</Label>
-                <Input
-                  id="wallet_address"
-                  name="wallet_address"
-                  type="text"
-                  placeholder="Enter wallet address"
-                  value={formData.wallet_address}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label 
-                  htmlFor="network_fee" 
-                  className={!isNetworkFeeEnabled ? "text-muted-foreground" : ""}
-                >
-                  Network Fee (BTC)
-                </Label>
-                <Input
-                  id="network_fee"
-                  name="network_fee"
-                  type="number"
-                  step="0.00000001"
-                  placeholder="0.00000000"
-                  value={formData.network_fee}
-                  onChange={handleInputChange}
-                  className={!isNetworkFeeEnabled ? "opacity-50" : ""}
-                  disabled={!isNetworkFeeEnabled}
-                />
-              </div>
+              {/* Fees Input - Conditional */}
+              {(formData.type === 'buy' || formData.type === 'sell') && (
+                <div className="space-y-2">
+                    <Label htmlFor="fees">Service Fee (USD)</Label>
+                    <Input
+                        id="fees"
+                        name="fees"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.fees}
+                        onChange={handleInputChange}
+                    />
+                </div>
+              )}
+              {/* TXID Input - Conditional */}
+              {(formData.type === 'withdrawal' || formData.type === 'deposit') && (
+                <div className="space-y-2">
+                  <Label htmlFor="txid">TXID</Label>
+                  <Input
+                    id="txid"
+                    name="txid"
+                    type="text"
+                    placeholder="Enter transaction ID"
+                    value={formData.txid}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              )}
             </div>
-          </form>
+          </div>
 
-          {/* Preview Table */}
           <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4">Transaction Preview</h3>
+            <h3 className="text-lg font-semibold mb-4">Transaction Preview ({stagedTransactions.length})</h3>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Amount (BTC)</TableHead>
-                  <TableHead>Price (USD)</TableHead>
-                  <TableHead>Total (USD)</TableHead>
-                  <TableHead>Fees</TableHead>
-                  <TableHead>Exchange</TableHead>
+                  <TableHead className="text-center">Date</TableHead>
+                  <TableHead className="text-center">Type</TableHead>
+                  <TableHead className="text-center">Amount (BTC)</TableHead>
+                  <TableHead className="text-center">Price (USD)</TableHead>
+                  <TableHead className="text-center">Amount (USD)</TableHead>
+                  <TableHead className="text-center">Fees</TableHead>
+                  {/* Network Fee Header - Moved Here */}
+                  {stagedTransactions.some(tx => tx.type === 'withdrawal') && (
+                    <TableHead className="text-center">Network Fee</TableHead>
+                  )}
+                  <TableHead className="text-center">Exchange</TableHead>
+                  {/* TXID Header */}
+                  {stagedTransactions.some(tx => tx.type === 'withdrawal' || tx.type === 'deposit') && (
+                    <TableHead className="text-center">TXID</TableHead>
+                  )}
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {formData.date && (
-                  <TableRow>
-                    <TableCell>{new Date(formData.date).toLocaleString()}</TableCell>
-                    <TableCell>
+                {stagedTransactions.length === 0 && (
+                   <TableRow>
+                     <TableCell colSpan={10} className="text-center text-muted-foreground py-4">
+                       No transactions added to preview yet.
+                     </TableCell>
+                   </TableRow>
+                )}
+                {stagedTransactions.map((tx) => (
+                  <TableRow key={tx.tempId}>
+                    <TableCell className="text-center">{new Date(tx.date).toLocaleString()}</TableCell>
+                    <TableCell className="flex justify-center items-center">
                       <Badge
-                        variant={formData.type === "buy" ? "default" : "destructive"}
+                        variant={
+                          tx.type === "buy" ? "default" :
+                          tx.type === "sell" ? "destructive" :
+                          tx.type === "deposit" ? "secondary" :
+                          "outline"
+                        }
                         className={`w-[100px] flex items-center justify-center ${
-                          formData.type === "buy" 
+                          tx.type === "buy" 
                             ? "bg-bitcoin-orange" 
-                            : "bg-red-500"
+                            : tx.type === "sell" ? "bg-red-500" :
+                            tx.type === "deposit" ? "bg-green-500" :
+                            "border-gray-500"
                         }`}
                       >
-                        {formData.type === "buy" ? (
+                        {tx.type === "buy" || tx.type === "deposit" ? (
                           <ArrowDownRight className="mr-2 h-4 w-4" />
                         ) : (
                           <ArrowUpRight className="mr-2 h-4 w-4" />
                         )}
-                        {formData.type.toUpperCase()}
+                        {tx.type.toUpperCase()}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formData.btcAmount || '0.00000000'} BTC</TableCell>
-                    <TableCell>${formData.price || '0.00'}</TableCell>
-                    <TableCell>${formData.usdAmount || '0.00'}</TableCell>
-                    <TableCell>${formData.fees || '0.00'}</TableCell>
-                    <TableCell>{formData.exchange || '-'}</TableCell>
+                    <TableCell className="text-center">{tx.btcAmount || '0.00000000'} BTC</TableCell>
+                    <TableCell className="text-center">${tx.price || '0.00'}</TableCell>
+                    <TableCell className="text-center">${tx.usdAmount || '0.00'}</TableCell>
+                    <TableCell className="text-center">${tx.fees || '0.00'}</TableCell>
+                    {/* Network Fee Cell - Moved Here */}
+                    {stagedTransactions.some(t => t.type === 'withdrawal') && (
+                        <TableCell className="text-center">
+                           {tx.type === 'withdrawal' ? (tx.network_fee || '0.00000000') + ' BTC' : '-'}
+                        </TableCell>
+                    )}
+                    <TableCell className="text-center">{tx.exchange || '-'}</TableCell>
+                    {/* TXID Cell */}
+                     {stagedTransactions.some(t => t.type === 'withdrawal' || t.type === 'deposit') && (
+                        <TableCell className="text-center">
+                           {(tx.type === 'withdrawal' || tx.type === 'deposit') ? tx.txid || '-' : '-'}
+                        </TableCell>
+                    )}
+                    <TableCell className="text-center">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-destructive hover:text-destructive/80 h-8 w-8"
+                        onClick={() => handleRemoveFromPreview(tx.tempId!)}
+                       >
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                    </TableCell>
                   </TableRow>
-                )}
+                ))}
               </TableBody>
             </Table>
           </div>
+          
+          {stagedTransactions.length > 0 && (
+             <div className="flex justify-end mt-6">
+                <Button 
+                   onClick={handleSubmitAll} 
+                   disabled={isSubmitting}
+                   className="bg-green-600 hover:bg-green-700"
+                 >
+                   {isSubmitting ? (
+                      <>
+                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                         Submitting...
+                      </>
+                   ) : (
+                     `Submit ${stagedTransactions.length} Transaction(s)`
+                   )}
+                 </Button>
+             </div>
+          )}
         </CardContent>
       </Card>
-    )
-  }
+    );
+  };
 
   const previewTransactions = async (parsedTransactions: ParsedTransaction[]): Promise<{ orders: OrderInsert[], transfers: TransferInsert[] }> => {
     const orders: OrderInsert[] = [];
@@ -1181,8 +1320,8 @@ export function ImportForm() {
     <Tabs defaultValue="csv" className="w-full">
       <TabsList className="w-full grid grid-cols-3 mb-4">
         <TabsTrigger value="csv">CSV Upload</TabsTrigger>
-        <TabsTrigger value="manage">Manage CSVs</TabsTrigger>
         <TabsTrigger value="manual">Manual Entry</TabsTrigger>
+        <TabsTrigger value="manage">Manage CSVs</TabsTrigger>
       </TabsList>
       
       <TabsContent value="csv">
@@ -1261,12 +1400,12 @@ export function ImportForm() {
         )}
       </TabsContent>
       
-      <TabsContent value="manage">
-        <ManageCSVs />
-      </TabsContent>
-      
       <TabsContent value="manual">
         <ManualEntryForm />
+      </TabsContent>
+
+      <TabsContent value="manage">
+        <ManageCSVs />
       </TabsContent>
     </Tabs>
   )
