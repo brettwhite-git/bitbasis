@@ -34,6 +34,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      csv_uploads: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string
+          filename: string
+          original_filename: string
+          status: 'pending' | 'processing' | 'completed' | 'error'
+          row_count: number | null
+          imported_row_count: number | null
+          error_message: string | null
+          file_size: number
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id: string
+          filename: string
+          original_filename: string
+          status: 'pending' | 'processing' | 'completed' | 'error'
+          row_count?: number | null
+          imported_row_count?: number | null
+          error_message?: string | null
+          file_size: number
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string
+          filename?: string
+          original_filename?: string
+          status?: 'pending' | 'processing' | 'completed' | 'error'
+          row_count?: number | null
+          imported_row_count?: number | null
+          error_message?: string | null
+          file_size?: number
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           asset: string
@@ -55,6 +94,7 @@ export type Database = {
           type: "buy" | "sell"
           updated_at: string | null
           user_id: string
+          csv_upload_id: string | null
         }
         Insert: {
           asset: string
@@ -76,6 +116,7 @@ export type Database = {
           type: "buy" | "sell"
           updated_at?: string | null
           user_id: string
+          csv_upload_id?: string | null
         }
         Update: {
           asset?: string
@@ -97,6 +138,7 @@ export type Database = {
           type?: "buy" | "sell"
           updated_at?: string | null
           user_id?: string
+          csv_upload_id?: string | null
         }
         Relationships: []
       }
@@ -114,6 +156,7 @@ export type Database = {
           amount_fiat: number | null
           price: number | null
           hash: string | null
+          csv_upload_id: string | null
         }
         Insert: {
           id?: number
@@ -128,6 +171,7 @@ export type Database = {
           amount_fiat?: number | null
           price?: number | null
           hash?: string | null
+          csv_upload_id?: string | null
         }
         Update: {
           id?: number
@@ -142,6 +186,7 @@ export type Database = {
           amount_fiat?: number | null
           price?: number | null
           hash?: string | null
+          csv_upload_id?: string | null
         }
         Relationships: []
       }

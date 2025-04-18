@@ -64,6 +64,7 @@ type SerializableImportPreviewProps = {
   transactions: ParsedTransaction[]
   validationIssues: ValidationIssue[]
   originalRows: any[]
+  csvUploadId: string | null
 }
 
 // Add utility function for capitalizing exchange names
@@ -78,6 +79,7 @@ export function ImportPreview({
   transactions, 
   validationIssues, 
   originalRows,
+  csvUploadId
 }: SerializableImportPreviewProps) {
   const router = useRouter()
   const [isImporting, setIsImporting] = useState(false)
@@ -191,7 +193,8 @@ export function ImportPreview({
       
       const result = await insertTransactions({
         orders: processedOrders,
-        transfers: processedTransfers
+        transfers: processedTransfers,
+        csvUploadId: csvUploadId || undefined
       });
       
       if (result.error) {

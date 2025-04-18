@@ -58,7 +58,7 @@ The calculation:
 
 ## Send/Receive Transactions
 
-Send and receive transactions are tracked separately from the core portfolio metrics:
+Deposit and Withdrawal transactions are tracked separately from the core portfolio metrics:
 
 ```typescript
 Net Transfers = Sum(Receive Amounts) - Sum(Send Amounts)

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import type { ChangeEvent, DragEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,22 +8,30 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
-import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle, Trash2 } from "lucide-react"
+import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle, Trash2, CheckCircle, X } from "lucide-react"
 import Papa from 'papaparse'
 import { ImportPreview } from "@/components/import/import-preview"
 import { insertTransactions } from '@/lib/supabase'
 import type { PostgrestError } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { FileIcon } from "lucide-react"
 import { CheckCircle2Icon } from "lucide-react"
 import { Table, TableHeader, TableBody, TableCell, TableRow, TableHead } from "@/components/ui/table"
-import { ArrowDownRight, ArrowUpRight } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, Download } from "lucide-react"
 import { useAuth } from "@/providers/supabase-auth-provider"
 import { useRouter } from 'next/navigation'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { 
+  uploadCSVFile, 
+  getCSVUploads, 
+  deleteCSVUpload,
+  updateCSVUploadStatus
+} from '@/lib/supabase'
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
 
 type OrderInsert = Database['public']['Tables']['orders']['Insert']
 type TransferInsert = Database['public']['Tables']['transfers']['Insert']
@@ -116,6 +124,7 @@ interface ImportPreviewProps {
   validationIssues: ValidationIssue[]
   originalRows: any[]
   closeAction: () => void
+  csvUploadId: string | null
 }
 
 interface StatusMessage {
@@ -540,123 +549,207 @@ export function ImportForm() {
     return issues
   }
 
-  const parseCSV = (file: File) => {
-    Papa.parse(file, {
-      complete: (results) => {
-        const data = results.data as any[]
-        if (!data || data.length === 0) {
-          setError('CSV file is empty or invalid')
-          return
-        }
-
-        // Filter out empty rows and rows with no data
-        const validRows = data.filter(row => {
-          // Check if row has any non-empty values
-          return row && 
-                 Object.values(row).some(value => 
-                   value !== null && 
-                   value !== undefined && 
-                   value.toString().trim() !== ''
-                 )
-        })
-
-        if (validRows.length === 0) {
-          setError('No valid data rows found in CSV')
-          return
-        }
-
-        // Normalize headers to ensure consistent casing
-        const normalizedData = validRows.map(row => {
-          const normalizedRow: any = {}
-          Object.entries(row).forEach(([key, value]) => {
-            // Convert header to lowercase for consistent matching
-            const normalizedKey = key.toLowerCase().trim()
-            // Handle special case for 'type' field
-            if (normalizedKey === 'type' && value) {
-              normalizedRow[normalizedKey] = String(value).trim().toLowerCase()
-            } else {
-              normalizedRow[normalizedKey] = value
-            }
-          })
-          return normalizedRow
-        })
-
-        setImportStatus(prev => ({
-          ...prev,
-          totalRows: normalizedData.length,
-          parsedRows: 0,
-          failedRows: 0,
-          failedRowDetails: []
-        }))
-
-        setOriginalRows(normalizedData)
-        const issues: ValidationIssue[] = []
-        const transactions: ParsedTransaction[] = []
-        let successfullyParsed = 0
-        let failed = 0
-        const failedDetails: Array<{ rowNumber: number, error: string }> = []
-
-        // Process each valid row
-        normalizedData.forEach((row, index) => {
-          try {
-            const rowIssues = validateTransaction(row, index)
-            const errorIssues = rowIssues.filter(issue => issue.severity === 'error')
-            const warningIssues = rowIssues.filter(issue => issue.severity === 'warning')
-            
-            if (errorIssues.length > 0) {
-              failed++
-              failedDetails.push({
-                rowNumber: index + 1,
-                error: errorIssues.map(i => i.issue).join(', ')
-              })
-              issues.push(...errorIssues)
-            } else {
-              const transformed = transformCSVToTransaction(row, userId)
-              transactions.push(transformed)
-              successfullyParsed++
-              // Still keep track of warnings
-              if (warningIssues.length > 0) {
-                issues.push(...warningIssues)
+  const parseCSV = async (file: File) => {
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      // Upload file to Supabase Storage and get CSV upload ID
+      const { data: csvUpload, error: uploadError } = await uploadCSVFile(file)
+      
+      if (uploadError) {
+        throw uploadError
+      }
+      
+      if (!csvUpload?.id) {
+        throw new Error('Failed to get CSV upload ID')
+      }
+      
+      // Update status to processing
+      await updateCSVUploadStatus(csvUpload.id, 'processing')
+      
+      // Read file contents
+      const fileContent = await file.text()
+      
+      // Store file content for display in the UI
+      setFileContent(fileContent)
+      
+      // Process CSV data using a promise to handle async
+      await new Promise<void>((resolve, reject) => {
+        Papa.parse(file, {
+          complete: async (results) => {
+            try {
+              const data = results.data as any[]
+              if (!data || data.length === 0) {
+                setError('CSV file is empty or invalid')
+                await updateCSVUploadStatus(csvUpload.id, 'error', {
+                  errorMessage: 'CSV file is empty or invalid'
+                })
+                setIsLoading(false)
+                resolve()
+                return
               }
+
+              // Filter out empty rows and rows with no data
+              const validRows = data.filter(row => {
+                // Check if row has any non-empty values
+                return row && 
+                       Object.values(row).some(value => 
+                         value !== null && 
+                         value !== undefined && 
+                         value.toString().trim() !== ''
+                       )
+              })
+
+              if (validRows.length === 0) {
+                setError('No valid data rows found in CSV')
+                await updateCSVUploadStatus(csvUpload.id, 'error', {
+                  errorMessage: 'No valid data rows found in CSV'
+                })
+                setIsLoading(false)
+                resolve()
+                return
+              }
+
+              // Normalize headers to ensure consistent casing
+              const normalizedData = validRows.map(row => {
+                const normalizedRow: any = {}
+                Object.entries(row).forEach(([key, value]) => {
+                  // Convert header to lowercase for consistent matching
+                  const normalizedKey = key.toLowerCase().trim()
+                  // Handle special case for 'type' field
+                  if (normalizedKey === 'type' && value) {
+                    normalizedRow[normalizedKey] = String(value).trim().toLowerCase()
+                  } else {
+                    normalizedRow[normalizedKey] = value
+                  }
+                })
+                return normalizedRow
+              })
+
+              setImportStatus(prev => ({
+                ...prev,
+                totalRows: normalizedData.length,
+                parsedRows: 0,
+                failedRows: 0,
+                failedRowDetails: []
+              }))
+
+              // Update CSV upload with row count
+              await updateCSVUploadStatus(csvUpload.id, 'processing', {
+                rowCount: normalizedData.length
+              })
+
+              setOriginalRows(normalizedData)
+              const issues: ValidationIssue[] = []
+              const transactions: ParsedTransaction[] = []
+              let successfullyParsed = 0
+              let failed = 0
+              const failedDetails: Array<{ rowNumber: number, error: string }> = []
+
+              // Process each valid row
+              normalizedData.forEach((row, index) => {
+                try {
+                  const rowIssues = validateTransaction(row, index)
+                  const errorIssues = rowIssues.filter(issue => issue.severity === 'error')
+                  const warningIssues = rowIssues.filter(issue => issue.severity === 'warning')
+                  
+                  if (errorIssues.length > 0) {
+                    failed++
+                    failedDetails.push({
+                      rowNumber: index + 1,
+                      error: errorIssues.map(i => i.issue).join(', ')
+                    })
+                    issues.push(...errorIssues)
+                  } else {
+                    const transformed = transformCSVToTransaction(row, userId)
+                    transactions.push(transformed)
+                    successfullyParsed++
+                    // Still keep track of warnings
+                    if (warningIssues.length > 0) {
+                      issues.push(...warningIssues)
+                    }
+                  }
+                } catch (err) {
+                  failed++
+                  failedDetails.push({
+                    rowNumber: index + 1,
+                    error: err instanceof Error ? err.message : 'Unknown error'
+                  })
+                }
+              })
+
+              // If there are validation errors, return them
+              if (failedDetails.length > 0) {
+                setError(failedDetails.map(detail => detail.error).join(', '))
+                setImportStatus(prev => ({
+                  ...prev,
+                  parsedRows: successfullyParsed,
+                  failedRows: failed,
+                  failedRowDetails: failedDetails
+                }))
+                
+                await updateCSVUploadStatus(csvUpload.id, 'error', {
+                  errorMessage: failedDetails.map(detail => detail.error).join(', ')
+                })
+                
+                // Update the validation issues state with both errors and warnings
+                const typedIssues: ValidationIssue[] = issues.map(issue => ({
+                  row: issue.row,
+                  field: issue.field,
+                  issue: issue.issue,
+                  suggestion: issue.suggestion,
+                  severity: issue.severity
+                }));
+                setValidationIssues(typedIssues);
+                
+                setIsLoading(false)
+                resolve()
+                return
+              }
+
+              // Store transactions in state for review
+              setParsedData(transactions);
+              setCsvUploadId(csvUpload.id);
+              
+              // Update the validation issues state with both errors and warnings
+              const typedIssues: ValidationIssue[] = issues.map(issue => ({
+                row: issue.row,
+                field: issue.field,
+                issue: issue.issue,
+                suggestion: issue.suggestion,
+                severity: issue.severity
+              }));
+              setValidationIssues(typedIssues);
+              
+              setIsLoading(false)
+              resolve()
+            } catch (error) {
+              setError(error instanceof Error ? error.message : 'Error processing CSV')
+              setIsLoading(false)
+              reject(error)
             }
-          } catch (err) {
-            failed++
-            failedDetails.push({
-              rowNumber: index + 1,
-              error: err instanceof Error ? err.message : 'Unknown error'
-            })
+          },
+          header: true,
+          skipEmptyLines: 'greedy', // Skip empty lines and lines with only whitespace
+          // Disable dynamic typing to prevent automatic conversions
+          dynamicTyping: false,
+          transform: (value) => {
+            if (!value) return value
+            return value.toString().trim()
+          },
+          error: (error) => {
+            setError(`Error parsing CSV: ${error.message}`)
+            setIsLoading(false)
+            reject(error)
           }
         })
-
-        setImportStatus(prev => ({
-          ...prev,
-          parsedRows: successfullyParsed,
-          failedRows: failed,
-          failedRowDetails: failedDetails
-        }))
-
-        // Update the validation issues state with both errors and warnings
-        const typedIssues: ValidationIssue[] = issues.map(issue => ({
-          row: issue.row,
-          field: issue.field,
-          issue: issue.issue,
-          suggestion: issue.suggestion,
-          severity: issue.severity
-        }));
-        setValidationIssues(typedIssues);
-
-        setParsedData(transactions)
-        setError(null)
-      },
-      header: true,
-      skipEmptyLines: 'greedy', // Skip empty lines and lines with only whitespace
-      // Disable dynamic typing to prevent automatic conversions
-      dynamicTyping: false,
-      transform: (value) => {
-        if (!value) return value
-        return value.toString().trim()
-      }
-    })
+      })
+    } catch (err) {
+      console.error('Error parsing CSV:', err)
+      setError(err instanceof Error ? err.message : 'Failed to parse CSV file')
+      setIsLoading(false)
+    }
   }
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -732,7 +825,7 @@ export function ImportForm() {
   }
 
   const handleUpload = async () => {
-    if (!file || !parsedData) return
+    if (!file || !parsedData || !csvUploadId) return
 
     setIsLoading(true)
     setError(null)
@@ -741,11 +834,15 @@ export function ImportForm() {
     try {
       setUploadProgress(30)
 
-      // Split transactions into orders and transfers
-      const { orders, transfers } = await previewTransactions(parsedData)
+      // Split transactions into orders and transfers, passing the csvUploadId
+      const { orders, transfers } = await previewTransactions(parsedData, csvUploadId)
 
-      // Insert transactions
-      const result = await insertTransactions({ orders, transfers })
+      // Insert transactions with CSV upload ID
+      const result = await insertTransactions({ 
+        orders, 
+        transfers,
+        csvUploadId 
+      })
       
       if (result.error) {
         throw new Error(result.error.message || 'Failed to upload transactions')
@@ -774,11 +871,21 @@ export function ImportForm() {
           setParsedData(null)
           setValidationIssues([])
           setUploadProgress(0)
+          setCsvUploadId(null)
+          setFileContent(null)
         }, 2000) // Give user time to see success message
       }
     } catch (err) {
       console.error('Upload error:', err)
       setError(err instanceof Error ? err.message : 'Failed to upload transactions')
+      
+      // Update CSV upload status to error
+      if (csvUploadId) {
+        await updateCSVUploadStatus(csvUploadId, 'error', {
+          errorMessage: err instanceof Error ? err.message : 'Failed to upload transactions'
+        })
+      }
+      
       setImportStatus(prev => ({
         ...prev,
         failedRows: parsedData.length,
@@ -858,99 +965,193 @@ export function ImportForm() {
   };
 
   const ManageCSVs = () => {
-    // Placeholder data - this would come from your database in production
-    const [uploadedFiles, setUploadedFiles] = useState<UploadedCSV[]>([
-      {
-        id: '1',
-        filename: 'transactions_2024.csv',
-        uploadDate: '2024-03-28',
-        size: 1024 * 15, // 15KB
-        status: 'success'
-      },
-      {
-        id: '2',
-        filename: 'coinbase_exports.csv',
-        uploadDate: '2024-03-27',
-        size: 1024 * 8, // 8KB
-        status: 'success'
+    const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [uploadedFiles, setUploadedFiles] = useState<any[]>([])
+    const [selectedFiles, setSelectedFiles] = useState<string[]>([])
+    const [isDeleting, setIsDeleting] = useState(false)
+    
+    // Fetch uploaded files on component mount
+    useEffect(() => {
+      fetchUploadedFiles()
+    }, [])
+    
+    // Function to fetch all uploaded files
+    const fetchUploadedFiles = async () => {
+      setIsLoading(true)
+      setError(null)
+      
+      try {
+        const { data, error } = await getCSVUploads()
+        
+        if (error) throw error
+        
+        setUploadedFiles(data || [])
+      } catch (err) {
+        console.error('Failed to fetch uploaded files:', err)
+        setError('Failed to load your uploaded CSV files. Please try again.')
+      } finally {
+        setIsLoading(false)
       }
-    ])
-
-    const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
-
-    const toggleFileSelection = (id: string) => {
-      const newSelection = new Set(selectedFiles)
-      if (newSelection.has(id)) {
-        newSelection.delete(id)
-      } else {
-        newSelection.add(id)
+    }
+    
+    // Function to handle file deletion
+    const handleDelete = async () => {
+      if (selectedFiles.length === 0) return
+      
+      setIsDeleting(true)
+      setError(null)
+      
+      try {
+        const deletePromises = selectedFiles.map(fileId => 
+          deleteCSVUpload(fileId)
+        )
+        
+        const results = await Promise.all(deletePromises)
+        const failures = results.filter(result => !result.success)
+        
+        if (failures.length > 0) {
+          console.error('Some files failed to delete:', failures)
+          setError(`Failed to delete ${failures.length} files. Please try again.`)
+        }
+        
+        // Refresh file list and clear selection
+        await fetchUploadedFiles()
+        setSelectedFiles([])
+      } catch (err) {
+        console.error('Failed to delete files:', err)
+        setError('Failed to delete selected files. Please try again.')
+      } finally {
+        setIsDeleting(false)
       }
-      setSelectedFiles(newSelection)
     }
-
-    const deleteFile = (id: string) => {
-      setUploadedFiles(files => files.filter(f => f.id !== id))
-      setSelectedFiles(selected => {
-        const newSelection = new Set(selected)
-        newSelection.delete(id)
-        return newSelection
-      })
+    
+    // Function to toggle file selection
+    const toggleFileSelection = (fileId: string) => {
+      setSelectedFiles(prev => 
+        prev.includes(fileId)
+          ? prev.filter(id => id !== fileId)
+          : [...prev, fileId]
+      )
     }
-
+    
+    // Function to format file size
     const formatFileSize = (bytes: number) => {
       if (bytes < 1024) return `${bytes} B`
-      const kb = bytes / 1024
-      if (kb < 1024) return `${kb.toFixed(2)} KB`
-      const mb = kb / 1024
-      return `${mb.toFixed(2)} MB`
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    }
+    
+    // Function to format date
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString)
+      return date.toLocaleString()
+    }
+    
+    // Function to get status color
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case 'completed': return 'text-green-600'
+        case 'pending': return 'text-yellow-600'
+        case 'processing': return 'text-blue-600'
+        case 'error': return 'text-red-600'
+        default: return 'text-gray-600'
+      }
     }
 
     return (
       <Card>
         <CardHeader>
           <CardTitle>Manage CSV Files</CardTitle>
-          <CardDescription>View and manage your uploaded CSV files</CardDescription>
+          <CardDescription>
+            View and manage your uploaded transaction CSV files
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {uploadedFiles.map(file => (
-              <div key={file.id} className="flex items-center p-4 bg-card border rounded-lg shadow-sm">
-                <div className="flex items-center flex-1 min-w-0">
-                  <Checkbox
-                    checked={selectedFiles.has(file.id)}
-                    onCheckedChange={() => toggleFileSelection(file.id)}
-                    className="mr-4"
-                  />
-                  <FileIcon className="h-8 w-8 text-blue-500 mr-4 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {file.filename}
-                      </p>
-                      <div className="flex items-center">
-                        <Badge variant="outline" className="mr-4">
-                          {formatFileSize(file.size)}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteFile(file.id)}
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="mt-1 flex items-center">
-                      <CheckCircle2Icon className="h-4 w-4 text-green-500 mr-2" />
-                      <span className="text-sm text-muted-foreground">
-                        Uploaded successfully on {new Date(file.uploadDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+            {/* Delete button */}
+            {selectedFiles.length > 0 && (
+              <div className="flex justify-end">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={isDeleting}
+                  onClick={handleDelete}
+                >
+                  {isDeleting ? 'Deleting...' : `Delete Selected (${selectedFiles.length})`}
+                </Button>
               </div>
-            ))}
+            )}
+            
+            {/* Error message */}
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            {/* File list */}
+            {isLoading && <div className="py-4 text-center">Loading...</div>}
+            
+            {!isLoading && uploadedFiles.length === 0 && (
+              <div className="py-4 text-center text-muted-foreground">
+                No CSV files uploaded yet
+              </div>
+            )}
+            
+            {!isLoading && uploadedFiles.length > 0 && (
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[40px]"></TableHead>
+                      <TableHead>Filename</TableHead>
+                      <TableHead>Upload Date</TableHead>
+                      <TableHead>Size</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Rows</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {uploadedFiles.map((file) => (
+                      <TableRow key={file.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedFiles.includes(file.id)}
+                            onCheckedChange={() => toggleFileSelection(file.id)}
+                          />
+                        </TableCell>
+                        <TableCell>{file.original_filename}</TableCell>
+                        <TableCell>{formatDate(file.created_at)}</TableCell>
+                        <TableCell>{formatFileSize(file.file_size)}</TableCell>
+                        <TableCell>
+                          <span className={getStatusColor(file.status)}>
+                            {file.status.charAt(0).toUpperCase() + file.status.slice(1)}
+                          </span>
+                          {file.status === 'error' && file.error_message && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <AlertCircle className="h-4 w-4 ml-1 inline text-red-600" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{file.error_message}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {file.imported_row_count !== null
+                            ? `${file.imported_row_count}${file.row_count ? ` / ${file.row_count}` : ''}`
+                            : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1301,20 +1502,61 @@ export function ImportForm() {
     );
   };
 
-  const previewTransactions = async (parsedTransactions: ParsedTransaction[]): Promise<{ orders: OrderInsert[], transfers: TransferInsert[] }> => {
+  const previewTransactions = async (
+    parsedTransactions: ParsedTransaction[],
+    csvUploadId: string
+  ): Promise<{ orders: OrderInsert[], transfers: TransferInsert[] }> => {
     const orders: OrderInsert[] = [];
     const transfers: TransferInsert[] = [];
 
     parsedTransactions.forEach((transaction) => {
       if ('buy_fiat_amount' in transaction || 'sell_btc_amount' in transaction) {
-        orders.push(transaction as OrderInsert);
+        orders.push({
+          ...transaction as OrderInsert,
+          csv_upload_id: csvUploadId
+        });
       } else {
-        transfers.push(transaction as TransferInsert);
+        transfers.push({
+          ...transaction as TransferInsert,
+          csv_upload_id: csvUploadId
+        });
       }
     });
 
     return { orders, transfers };
   };
+
+  // Add csvUploadId state
+  const [csvUploadId, setCsvUploadId] = useState<string | null>(null)
+  const [fileContent, setFileContent] = useState<string | null>(null)
+  const [step, setStep] = useState<number>(1) // 1: Upload, 2: Preview, 3: Success
+
+  // Add a success message component
+  const SuccessMessage = () => {
+    return (
+      <Card className="mt-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-green-600">Import Successful!</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center space-y-4">
+            <CheckCircle className="h-16 w-16 text-green-500" />
+            <p className="text-center text-lg">
+              Your transactions have been successfully imported.
+            </p>
+            <p className="text-center text-muted-foreground">
+              You can view them in your transactions list or upload more files.
+            </p>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <Button onClick={() => router.push('/transactions')}>
+            View Transactions
+          </Button>
+        </CardFooter>
+      </Card>
+    )
+  }
 
   return (
     <Tabs defaultValue="csv" className="w-full">
@@ -1373,6 +1615,7 @@ export function ImportForm() {
               transactions={parsedData} 
               validationIssues={validationIssues}
               originalRows={originalRows}
+              csvUploadId={csvUploadId}
             />
           </>
         )}
