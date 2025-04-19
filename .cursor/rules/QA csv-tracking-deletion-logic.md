@@ -106,9 +106,9 @@ This document outlines the design for managing user-uploaded CSV files and delet
 - [x] Create migration to add `csv_upload_id` column (FK, `ON DELETE CASCADE`, index) to `orders` and `transfers`.
 - [x] Update the CSV import workflow to populate `csv_upload_id`.
 - [x] Update the Manual Entry workflow to ensure `csv_upload_id` is **not** set (remains `NULL`).
-- [ ] Implement the backend API Route / Server Action for single transaction deletion.
-- [ ] Connect the `handleDeleteSelected` function in `transactions-table.tsx` to the new backend endpoint.
-- [ ] Verify/Implement RLS `DELETE` policies on `orders` and `transfers`.
+- [x] Implement the backend API Route / Server Action for single transaction deletion.
+- [x] Connect the `handleDeleteSelected` function in `transactions-table.tsx` to the new backend endpoint.
+- [x] Verify/Implement RLS `DELETE` policies on `orders` and `transfers`.
 - [x] Build the "Import History" UI for managing `csv_uploads` records.
 - [x] Implement the backend API Route / Server Action for deleting `csv_uploads` records.
 - [x] Connect the delete action in the "Import History" UI to this backend endpoint.

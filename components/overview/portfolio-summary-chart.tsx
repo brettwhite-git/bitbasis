@@ -267,7 +267,7 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
         backgroundColor: "rgba(247, 147, 26, 0.2)", // Semi-transparent Bitcoin Orange
         tension: 0.4,
         fill: true,
-        pointRadius: 5 // Hide points for smoother area look
+        pointRadius: 4 // Hide points for smoother area look
       },
       {
         label: "Cost Basis",
@@ -276,7 +276,7 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
         backgroundColor: "rgba(59, 130, 246, 0.2)", // Semi-transparent Blue
         tension: 0.4,
         fill: true,
-        pointRadius: 5 // Hide points for smoother area look
+        pointRadius: 4 // Hide points for smoother area look
       }
     ],
   }

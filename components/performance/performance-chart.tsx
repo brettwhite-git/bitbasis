@@ -471,8 +471,11 @@ function Chart() {
         data: filteredData.map(d => d?.portfolioValue ?? null), // Use null for gaps
         borderColor: "#F7931A", // Bitcoin Orange
         backgroundColor: "#F7931A",
-        tension: 0.1,
+        tension: 0.4,
         pointRadius: filteredData.length < 50 ? 4 : 0,
+        pointBackgroundColor: "rgba(247, 147, 26, 0.2)", // Semi-transparent Bitcoin Orange
+        pointBorderColor: "#F7931A",
+        pointBorderWidth: 1,
         spanGaps: true, // Connect lines over null data points
       },
       {
@@ -504,8 +507,11 @@ function Chart() {
         data: filteredData.map(d => d?.costBasis ?? null), // Use null for gaps
         borderColor: "#3B82F6", // Changed to Blue
         backgroundColor: "#3B82F6", // Changed to Blue
-        tension: 0.1,
+        tension: 0.4,
         pointRadius: filteredData.length < 50 ? 4 : 0,
+        pointBackgroundColor: "rgba(59, 130, 246, 0.2)", // Semi-transparent Blue
+        pointBorderColor: "#3B82F6",
+        pointBorderWidth: 1,
         spanGaps: true, // Connect lines over null data points
       }
     ],
