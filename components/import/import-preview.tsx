@@ -35,6 +35,10 @@ import {
 import type { Database } from '@/types/supabase'
 import { Button } from "@/components/ui/button"
 import { insertTransactions } from '@/lib/supabase'
+import { 
+  uploadCSVFile, 
+  updateCSVUploadStatus 
+} from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -64,7 +68,7 @@ type SerializableImportPreviewProps = {
   transactions: ParsedTransaction[]
   validationIssues: ValidationIssue[]
   originalRows: any[]
-  csvUploadId: string | null
+  file: File | null
 }
 
 // Add utility function for capitalizing exchange names
@@ -79,7 +83,7 @@ export function ImportPreview({
   transactions, 
   validationIssues, 
   originalRows,
-  csvUploadId
+  file
 }: SerializableImportPreviewProps) {
   const router = useRouter()
   const [isImporting, setIsImporting] = useState(false)
@@ -139,12 +143,34 @@ export function ImportPreview({
   };
 
   const handleImport = async () => {
+    if (!file) {
+      setImportError('No file available for upload.')
+      return
+    }
+
     setIsImporting(true)
     setImportError(null)
     setImportSuccess(false)
     
+    let currentCsvUploadId: string | null = null
+
     try {
-      // Process orders with correct field names
+      const { data: csvUpload, error: uploadError } = await uploadCSVFile(file)
+      if (uploadError || !csvUpload?.id) {
+        throw uploadError || new Error('Failed to upload file and create record.')
+      }
+      currentCsvUploadId = csvUpload.id
+
+      const { error: statusUpdateError } = await updateCSVUploadStatus(
+        currentCsvUploadId,
+        'processing',
+        { rowCount: originalRows.length }
+      )
+      if (statusUpdateError) {
+        console.error('Failed to update status to processing:', statusUpdateError)
+        throw new Error('Failed to update upload status after uploading.')
+      }
+
       const processedOrders = orders.map(order => {
         const baseOrder = {
           type: order.type,
@@ -176,7 +202,6 @@ export function ImportPreview({
         }
       });
 
-      // Process transfers
       const processedTransfers = transfers.map(transfer => ({
         type: transfer.type,
         date: transfer.date,
@@ -190,11 +215,10 @@ export function ImportPreview({
       }));
 
       console.log('Processed orders:', processedOrders);
-      
       const result = await insertTransactions({
         orders: processedOrders,
         transfers: processedTransfers,
-        csvUploadId: csvUploadId || undefined
+        csvUploadId: currentCsvUploadId
       });
       
       if (result.error) {
@@ -204,8 +228,17 @@ export function ImportPreview({
       await router.refresh();
       setImportSuccess(true);
     } catch (err) {
-      console.error('Import error:', err)
+      console.error('Import process error:', err)
       setImportError(err instanceof Error ? err.message : 'Failed to import transactions')
+      if (currentCsvUploadId) {
+        try {
+          await updateCSVUploadStatus(currentCsvUploadId, 'error', {
+            errorMessage: err instanceof Error ? err.message : 'Import process failed'
+          });
+        } catch (statusError) {
+          console.error('Failed to update status to error after import failure:', statusError)
+        }
+      }
     } finally {
       setIsImporting(false)
     }

@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Search, SendHorizontal, ArrowUpDown, ArrowDown, ArrowUp, X, Loader2, Trash2, ArrowDownToLine, ArrowUpFromLine, ExternalLink } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Search, SendHorizontal, ArrowUpDown, ArrowDown, ArrowUp, X, Loader2, Trash2, ArrowDownToLine, ArrowUpFromLine, ExternalLink, CheckCircle2 } from "lucide-react"
 import { getTransactions } from "@/lib/supabase"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import type { Database } from "@/types/supabase"
@@ -29,6 +29,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 
 // Define the structure returned by the updated getTransactions
 interface UnifiedTransaction {
@@ -81,77 +83,92 @@ export function TransactionsTable({
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [termFilter, setTermFilter] = useState<string>("all")
   const [exchangeFilter, setExchangeFilter] = useState<string>("all")
+  const [isDeleting, setIsDeleting] = useState(false) // State for delete loading
+  const [deleteError, setDeleteError] = useState<string | null>(null) // State for delete error
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Store pagination root in a ref to avoid synchronous unmounting issues
   const paginationRootRef = useRef<any>(null);
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      setIsLoading(true)
-      try {
-        const supabase = createClientComponentClient<Database>()
-        
-        // Fetch orders and transfers in parallel
-        const [ordersResult, transfersResult] = await Promise.all([
-          supabase
-            .from('orders')
-            .select('*')
-            .order('date', { ascending: false }),
-          supabase
-            .from('transfers')
-            .select('*')
-            .order('date', { ascending: false })
-        ])
+  // Define fetchTransactions in the component scope
+  const fetchTransactions = async () => {
+    setIsLoading(true)
+    setError(null) // Clear previous errors on fetch
+    setDeleteError(null) // Clear delete errors too
+    try {
+      const supabase = createClientComponentClient<Database>()
+      
+      // Fetch orders and transfers in parallel
+      const [ordersResult, transfersResult] = await Promise.all([
+        supabase
+          .from('orders')
+          .select('*')
+          .order('date', { ascending: false }),
+        supabase
+          .from('transfers')
+          .select('*')
+          .order('date', { ascending: false })
+      ])
 
-        if (ordersResult.error) throw ordersResult.error
-        if (transfersResult.error) throw transfersResult.error
+      if (ordersResult.error) throw ordersResult.error
+      if (transfersResult.error) throw transfersResult.error
 
-        // Map orders to unified format
-        const mappedOrders = (ordersResult.data || []).map(order => ({
-          id: `order-${order.id}`,
-          date: order.date,
-          type: order.type === 'buy' ? 'Buy' as const : 'Sell' as const,
-          asset: order.asset,
-          btc_amount: order.type === 'buy' ? order.received_btc_amount : order.sell_btc_amount,
-          usd_value: order.type === 'buy' ? order.buy_fiat_amount : order.received_fiat_amount,
-          fee_usd: order.service_fee,
-          price_at_tx: order.price,
-          exchange: order.exchange,
-          network_fee_btc: null, // Orders don't typically have network fees in BTC
-          txid: null // Orders typically don't have txids
-        }))
+      // Map orders to unified format
+      const mappedOrders = (ordersResult.data || []).map(order => ({
+        id: `order-${order.id}`,
+        date: order.date,
+        type: order.type === 'buy' ? 'Buy' as const : 'Sell' as const,
+        asset: order.asset,
+        btc_amount: order.type === 'buy' ? order.received_btc_amount : order.sell_btc_amount,
+        usd_value: order.type === 'buy' ? order.buy_fiat_amount : order.received_fiat_amount,
+        fee_usd: order.service_fee,
+        price_at_tx: order.price,
+        exchange: order.exchange,
+        network_fee_btc: null, // Orders don't typically have network fees in BTC
+        txid: null // Orders typically don't have txids
+      }))
 
-        // Map transfers to unified format
-        const mappedTransfers = (transfersResult.data || []).map(transfer => ({
-          id: `transfer-${transfer.id}`,
-          date: transfer.date,
-          type: transfer.type === 'withdrawal' ? 'Withdrawal' as const : 'Deposit' as const,
-          asset: transfer.asset,
-          btc_amount: transfer.amount_btc,
-          usd_value: transfer.amount_fiat,
-          fee_usd: transfer.fee_amount_btc ? transfer.fee_amount_btc * (transfer.price || 0) : null,
-          price_at_tx: transfer.price,
-          exchange: null,
-          network_fee_btc: transfer.fee_amount_btc,
-          txid: transfer.hash
-        }))
+      // Map transfers to unified format
+      const mappedTransfers = (transfersResult.data || []).map(transfer => ({
+        id: `transfer-${transfer.id}`,
+        date: transfer.date,
+        type: transfer.type === 'withdrawal' ? 'Withdrawal' as const : 'Deposit' as const,
+        asset: transfer.asset,
+        btc_amount: transfer.amount_btc,
+        usd_value: transfer.amount_fiat,
+        fee_usd: transfer.fee_amount_btc ? transfer.fee_amount_btc * (transfer.price || 0) : null,
+        price_at_tx: transfer.price,
+        exchange: null,
+        network_fee_btc: transfer.fee_amount_btc,
+        txid: transfer.hash
+      }))
 
-        // Combine and sort all transactions
-        const allTransactions = [...mappedOrders, ...mappedTransfers].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        )
+      // Combine and sort by date descending
+      const allTransactions = [...mappedOrders, ...mappedTransfers].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      )
 
-        setTransactions(allTransactions)
-      } catch (error) {
-        console.error('Error fetching transactions:', error)
-        setError('Failed to load transactions')
-      } finally {
-        setIsLoading(false)
-      }
+      setTransactions(allTransactions)
+
+      // Update transaction count container if provided
+      /* const countContainer = document.getElementById(transactionCountContainerId);
+      if (countContainer) {
+        countContainer.textContent = `${allTransactions.length} Total Transactions`;
+      } */
+
+    } catch (err: any) {
+      console.error('Error fetching transactions:', err)
+      setError(err.message || 'Failed to load transactions')
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
+    // Call fetchTransactions on initial mount
     fetchTransactions()
-  }, [])
+  }, []) // Keep the empty dependency array
 
   const formatCurrency = (amount: number | null) => {
     if (amount === null || amount === undefined) return '-'
@@ -380,10 +397,58 @@ export function TransactionsTable({
   }
 
   const handleDeleteSelected = async () => {
-    // For now, just remove from local state
-    setTransactions(prev => prev.filter(t => !selectedTransactions.has(t.id)))
-    setSelectedTransactions(new Set())
-    setDeleteDialogOpen(false)
+    if (selectedTransactions.size === 0) return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    const transactionIdsToDelete = Array.from(selectedTransactions);
+    const deletedCount = transactionIdsToDelete.length;
+
+    try {
+      const response = await fetch('/api/transactions/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ transactionIds: transactionIdsToDelete }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        // Handle partial success (207) or full failure
+        const errorMsg = result.error || result.message || 'Failed to delete transactions.';
+        console.error('Deletion error:', result);
+        setDeleteError(`${errorMsg}${result.errors ? ` Details: ${JSON.stringify(result.errors)}` : ''}`);
+        // Keep dialog open on error
+      } else {
+        // Success (200 or potentially 207 if we wanted to treat partial success differently)
+        console.log('Deletion successful:', result.message);
+        
+        // Set success message and open success dialog
+        setSuccessMessage(result.message);
+        setSuccessDialogOpen(true);
+        
+        // Clear selection and close delete confirmation dialog
+        setSelectedTransactions(new Set());
+        setDeleteDialogOpen(false);
+        
+        // Refetch data to update the table
+        try {
+          await fetchTransactions(); // Now this call should work
+        } catch (fetchError) {
+          console.error('Error refreshing transactions after delete:', fetchError);
+          // We'll still show success dialog, but log the error
+        }
+      }
+    } catch (error: any) {
+      console.error('Error calling delete API:', error);
+      setDeleteError(error.message || 'An unexpected error occurred.');
+      // Keep dialog open on error
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   // Effect to render pagination in the header container
@@ -391,11 +456,11 @@ export function TransactionsTable({
     const container = document.getElementById(paginationContainerId);
     if (container) {
       const paginationControls = (
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
               onClick={() => setCurrentPage(currentPage - 1)}
               disabled={currentPage === 1}
             >
@@ -406,11 +471,11 @@ export function TransactionsTable({
             </div>
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
               onClick={() => setCurrentPage(currentPage + 1)}
               disabled={currentPage === totalPages}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-6" />
             </Button>
           </div>
           <Button 
@@ -431,11 +496,24 @@ export function TransactionsTable({
       
       // Use ReactDOM to render the pagination controls
       if (!paginationRootRef.current) {
-        const { createRoot } = require('react-dom/client');
-        paginationRootRef.current = createRoot(container);
+         try {
+            // Dynamically import createRoot only on the client
+            const { createRoot } = require('react-dom/client');
+            paginationRootRef.current = createRoot(container);
+         } catch (e) {
+             console.error("Failed to create pagination root:", e); 
+             return; // Don't proceed if root creation failed
+         }
       }
       
-      paginationRootRef.current.render(paginationControls);
+      // Check if root still exists before rendering
+      if (paginationRootRef.current) {
+          try {
+            paginationRootRef.current.render(paginationControls);
+          } catch (e) {
+              console.error("Error rendering pagination controls:", e);
+          }
+      }
     }
     
     // Cleanup on component unmount, not on every render
@@ -450,18 +528,21 @@ export function TransactionsTable({
     return () => {
       // Safely unmount the root when component unmounts
       if (paginationRootRef.current) {
-        // Use setTimeout to defer unmounting until after rendering
+        // Use setTimeout to defer unmounting slightly
         setTimeout(() => {
           try {
-            paginationRootRef.current.unmount();
-            paginationRootRef.current = null;
+            // Check again inside timeout if it still exists
+            if (paginationRootRef.current) { 
+                paginationRootRef.current.unmount();
+                paginationRootRef.current = null;
+            }
           } catch (e) {
             console.error("Error unmounting pagination root:", e);
           }
         }, 0);
       }
     };
-  }, []);
+  }, []); // Empty dependency array ensures this runs only on unmount
 
   if (isLoading) {
     return <div className="flex justify-center items-center min-h-[400px]">Loading transactions...</div>
@@ -580,7 +661,7 @@ export function TransactionsTable({
             </Button>
           )}
         </div>
-        <div className="text-sm text-muted-foreground whitespace-nowrap ml-auto border rounded-md px-4 py-2 hover:bg-accent hover:text-accent-foreground transition-colors">
+        <div className="text-sm text-muted-foreground whitespace-nowrap ml-auto border rounded-md px-7 py-2 hover:bg-accent hover:text-accent-foreground transition-colors">
           {filteredTransactions.length === transactions.length 
             ? `${transactions.length} Total Transactions`
             : `${filteredTransactions.length} / ${transactions.length} Transactions`}
@@ -741,7 +822,12 @@ export function TransactionsTable({
         </Table>
       </div>
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog open={deleteDialogOpen} onOpenChange={(open) => { 
+          if (!isDeleting) { // Prevent closing while deleting 
+              setDeleteDialogOpen(open); 
+              if (!open) setDeleteError(null); // Clear error message when dialog is closed manually
+          }
+       }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Transactions</DialogTitle>
@@ -749,15 +835,48 @@ export function TransactionsTable({
               Are you sure you want to delete {selectedTransactions.size} selected transaction{selectedTransactions.size === 1 ? '' : 's'}?
               This action cannot be undone.
             </DialogDescription>
+             {/* Display delete error inside the dialog */}
+             {deleteError && (
+                <Alert variant="destructive" className="mt-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Deletion Failed</AlertTitle>
+                    <AlertDescription>{deleteError}</AlertDescription>
+                </Alert>
+             )}
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteSelected}>
-              Delete
+            <Button variant="destructive" onClick={handleDeleteSelected} disabled={isDeleting}>
+               {isDeleting ? (
+                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+               ) : (
+                   'Delete'
+               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
+        <DialogContent className="bg-green-100/80 backdrop-blur-sm border border-green-200 shadow-xl max-w-md">
+          <div className="flex flex-col items-center justify-center text-center py-4">
+            <div className="w-16 h-16 rounded-full bg-green-400/90 flex items-center justify-center mb-4 shadow-sm">
+              <CheckCircle2 className="h-10 w-10 text-white" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-green-800 mb-2">Success!</DialogTitle>
+            <DialogDescription className="text-green-700 mb-8 text-base">
+              {successMessage}
+            </DialogDescription>
+            <Button 
+              onClick={() => setSuccessDialogOpen(false)}
+              className="bg-green-500/90 hover:bg-green-600 text-white w-32 shadow-sm transition-all duration-200"
+            >
+              Continue
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

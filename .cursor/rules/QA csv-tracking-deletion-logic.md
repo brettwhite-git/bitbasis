@@ -38,14 +38,12 @@ This document outlines the design for managing user-uploaded CSV files and delet
 
 ### 2.2. Import Process Update
 - **CSV Import:**
-    - **Step 1 (Upload):** When a file is uploaded, first create a record in `csv_uploads` with status 'pending' and store the file in Supabase Storage. Get the `id` of the new `csv_uploads` record.
-    - **Step 2 (Parsing/Validation):** During the parsing and validation phase, pass the `csv_upload_id` along with the parsed transaction data. Update the `csv_uploads` record status to 'processing'.
-    - **Step 3 (Insertion):** Modify the `insertTransactions` function:
-        - Accept the `csv_upload_id` as an optional parameter.
-        - For every `order` and `transfer` object being inserted **from a CSV**, add the `csv_upload_id`.
-    - **Step 4 (Completion/Error):** After `insertTransactions` completes for a CSV import:
-        - **Success:** Update the corresponding `csv_uploads` record status to 'completed', set `imported_row_count`.
-        - **Failure:** Update the status to 'error', store the `error_message`.
+    - **Step 1 (Local Parsing):** File selected/dropped, parsed locally, validated.
+    - **Step 2 (Preview):** User reviews data in `ImportPreview`.
+    - **Step 3 (Confirmation & Upload):** User confirms import. File uploaded to Storage, `csv_uploads` record created (status: 'pending'), get `csvUploadId`.
+    - **Step 4 (Processing Status):** `csv_uploads` status updated to 'processing'.
+    - **Step 5 (Insertion):** `insertTransactions` called with data and `csvUploadId`. It adds the ID to each transaction and inserts.
+    - **Step 6 (Completion/Error):** `insertTransactions` updates `csv_uploads` status to 'completed' or 'error'.
 - **Manual Entry:**
     - Transactions added via the "Manual Entry" form (`components/import/import-form.tsx`) are processed and sent to `insertTransactions` **without** a `csv_upload_id`.
     - The `insertTransactions` function inserts these rows into `orders` and `transfers` with the `csv_upload_id` column set to `NULL`.
@@ -103,14 +101,14 @@ This document outlines the design for managing user-uploaded CSV files and delet
 
 ## Implementation Checklist
 
-- [ ] Create Supabase Storage bucket `csv_uploads` and configure policies.
-- [ ] Create `public.csv_uploads` table migration, add RLS policies and indexes.
-- [ ] Create migration to add `csv_upload_id` column (FK, `ON DELETE CASCADE`, index) to `orders` and `transfers`.
-- [ ] Update the CSV import workflow to populate `csv_upload_id`.
-- [ ] Update the Manual Entry workflow to ensure `csv_upload_id` is **not** set (remains `NULL`).
+- [x] Create Supabase Storage bucket `csv_uploads` and configure policies.
+- [x] Create `public.csv_uploads` table migration, add RLS policies and indexes.
+- [x] Create migration to add `csv_upload_id` column (FK, `ON DELETE CASCADE`, index) to `orders` and `transfers`.
+- [x] Update the CSV import workflow to populate `csv_upload_id`.
+- [x] Update the Manual Entry workflow to ensure `csv_upload_id` is **not** set (remains `NULL`).
 - [ ] Implement the backend API Route / Server Action for single transaction deletion.
 - [ ] Connect the `handleDeleteSelected` function in `transactions-table.tsx` to the new backend endpoint.
 - [ ] Verify/Implement RLS `DELETE` policies on `orders` and `transfers`.
-- [ ] Build the "Import History" UI for managing `csv_uploads` records.
-- [ ] Implement the backend API Route / Server Action for deleting `csv_uploads` records.
-- [ ] Connect the delete action in the "Import History" UI to this backend endpoint.
+- [x] Build the "Import History" UI for managing `csv_uploads` records.
+- [x] Implement the backend API Route / Server Action for deleting `csv_uploads` records.
+- [x] Connect the delete action in the "Import History" UI to this backend endpoint.

@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle, Trash2, CheckCircle, X } from "lucide-react"
 import Papa from 'papaparse'
+import type { ParseError, ParseResult } from 'papaparse'
 import { ImportPreview } from "@/components/import/import-preview"
 import { insertTransactions } from '@/lib/supabase'
 import type { PostgrestError } from '@supabase/supabase-js'
@@ -25,13 +26,13 @@ import { useAuth } from "@/providers/supabase-auth-provider"
 import { useRouter } from 'next/navigation'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { 
-  uploadCSVFile, 
   getCSVUploads, 
   deleteCSVUpload,
   updateCSVUploadStatus
 } from '@/lib/supabase'
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 
 type OrderInsert = Database['public']['Tables']['orders']['Insert']
 type TransferInsert = Database['public']['Tables']['transfers']['Insert']
@@ -377,6 +378,7 @@ export function ImportForm() {
   const [file, setFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isParsing, setIsParsing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [parsedData, setParsedData] = useState<ParsedTransaction[] | null>(null)
@@ -551,203 +553,136 @@ export function ImportForm() {
 
   const parseCSV = async (file: File) => {
     setIsLoading(true)
+    setIsParsing(true)
     setError(null)
-    
+    setParsedData(null)
+    setValidationIssues([])
+    setOriginalRows([])
+    setCsvUploadId(null)
+    setFileContent(null)
+    setFile(file)
+
     try {
-      // Upload file to Supabase Storage and get CSV upload ID
-      const { data: csvUpload, error: uploadError } = await uploadCSVFile(file)
-      
-      if (uploadError) {
-        throw uploadError
-      }
-      
-      if (!csvUpload?.id) {
-        throw new Error('Failed to get CSV upload ID')
-      }
-      
-      // Update status to processing
-      await updateCSVUploadStatus(csvUpload.id, 'processing')
-      
       // Read file contents
       const fileContent = await file.text()
-      
-      // Store file content for display in the UI
       setFileContent(fileContent)
-      
+
       // Process CSV data using a promise to handle async
       await new Promise<void>((resolve, reject) => {
-        Papa.parse(file, {
-          complete: async (results) => {
+        // Define the configuration object separately
+        const papaConfig = {
+          complete: async (results: ParseResult<Record<string, string | null | undefined>>) => {
             try {
-              const data = results.data as any[]
+              const data = results.data as any[] // Cast might still be needed or refine type
               if (!data || data.length === 0) {
                 setError('CSV file is empty or invalid')
-                await updateCSVUploadStatus(csvUpload.id, 'error', {
-                  errorMessage: 'CSV file is empty or invalid'
-                })
                 setIsLoading(false)
                 resolve()
                 return
               }
 
-              // Filter out empty rows and rows with no data
-              const validRows = data.filter(row => {
-                // Check if row has any non-empty values
-                return row && 
-                       Object.values(row).some(value => 
-                         value !== null && 
-                         value !== undefined && 
-                         value.toString().trim() !== ''
-                       )
-              })
+              // Filter out empty rows
+              const validRows = data.filter(row => 
+                row && Object.values(row).some(value => value !== null && value !== undefined && value.toString().trim() !== '')
+              );
 
               if (validRows.length === 0) {
                 setError('No valid data rows found in CSV')
-                await updateCSVUploadStatus(csvUpload.id, 'error', {
-                  errorMessage: 'No valid data rows found in CSV'
-                })
                 setIsLoading(false)
                 resolve()
                 return
               }
 
-              // Normalize headers to ensure consistent casing
+              // Normalize headers
               const normalizedData = validRows.map(row => {
-                const normalizedRow: any = {}
+                const normalizedRow: Record<string, any> = {};
                 Object.entries(row).forEach(([key, value]) => {
-                  // Convert header to lowercase for consistent matching
-                  const normalizedKey = key.toLowerCase().trim()
-                  // Handle special case for 'type' field
-                  if (normalizedKey === 'type' && value) {
-                    normalizedRow[normalizedKey] = String(value).trim().toLowerCase()
-                  } else {
-                    normalizedRow[normalizedKey] = value
-                  }
-                })
-                return normalizedRow
-              })
+                  const normalizedKey = key.toLowerCase().trim();
+                  normalizedRow[normalizedKey] = value;
+                });
+                // Assert that the resulting object conforms to CSVRow
+                return normalizedRow as CSVRow;
+              });
 
-              setImportStatus(prev => ({
-                ...prev,
-                totalRows: normalizedData.length,
-                parsedRows: 0,
-                failedRows: 0,
-                failedRowDetails: []
-              }))
-
-              // Update CSV upload with row count
-              await updateCSVUploadStatus(csvUpload.id, 'processing', {
-                rowCount: normalizedData.length
-              })
-
-              setOriginalRows(normalizedData)
-              const issues: ValidationIssue[] = []
-              const transactions: ParsedTransaction[] = []
-              let successfullyParsed = 0
-              let failed = 0
-              const failedDetails: Array<{ rowNumber: number, error: string }> = []
+              setImportStatus(prev => ({ ...prev, totalRows: normalizedData.length, parsedRows: 0, failedRows: 0, failedRowDetails: [] }));
+              setOriginalRows(normalizedData);
+              
+              const issues: ValidationIssue[] = [];
+              const transactions: ParsedTransaction[] = [];
+              let successfullyParsed = 0;
+              let failed = 0;
+              const failedDetails: Array<{ rowNumber: number, error: string }> = [];
 
               // Process each valid row
               normalizedData.forEach((row, index) => {
                 try {
-                  const rowIssues = validateTransaction(row, index)
-                  const errorIssues = rowIssues.filter(issue => issue.severity === 'error')
-                  const warningIssues = rowIssues.filter(issue => issue.severity === 'warning')
+                  const rowIssues = validateTransaction(row, index);
+                  const errorIssues = rowIssues.filter(issue => issue.severity === 'error');
+                  const warningIssues = rowIssues.filter(issue => issue.severity === 'warning');
                   
                   if (errorIssues.length > 0) {
-                    failed++
-                    failedDetails.push({
-                      rowNumber: index + 1,
-                      error: errorIssues.map(i => i.issue).join(', ')
-                    })
-                    issues.push(...errorIssues)
+                    failed++;
+                    failedDetails.push({ rowNumber: index + 1, error: errorIssues.map(i => i.issue).join(', ') });
+                    issues.push(...errorIssues);
                   } else {
-                    const transformed = transformCSVToTransaction(row, userId)
-                    transactions.push(transformed)
-                    successfullyParsed++
-                    // Still keep track of warnings
+                    const transformed = transformCSVToTransaction(row, userId);
+                    transactions.push(transformed);
+                    successfullyParsed++;
                     if (warningIssues.length > 0) {
-                      issues.push(...warningIssues)
+                      issues.push(...warningIssues);
                     }
                   }
                 } catch (err) {
-                  failed++
-                  failedDetails.push({
-                    rowNumber: index + 1,
-                    error: err instanceof Error ? err.message : 'Unknown error'
-                  })
+                  failed++;
+                  failedDetails.push({ rowNumber: index + 1, error: err instanceof Error ? err.message : 'Unknown error' });
                 }
-              })
+              });
 
-              // If there are validation errors, return them
               if (failedDetails.length > 0) {
-                setError(failedDetails.map(detail => detail.error).join(', '))
-                setImportStatus(prev => ({
-                  ...prev,
-                  parsedRows: successfullyParsed,
-                  failedRows: failed,
-                  failedRowDetails: failedDetails
-                }))
+                setError(failedDetails.map(detail => `Row ${detail.rowNumber}: ${detail.error}`).join('; \n')); // Improved error reporting
+                setImportStatus(prev => ({ ...prev, parsedRows: successfullyParsed, failedRows: failed, failedRowDetails: failedDetails }));
                 
-                await updateCSVUploadStatus(csvUpload.id, 'error', {
-                  errorMessage: failedDetails.map(detail => detail.error).join(', ')
-                })
-                
-                // Update the validation issues state with both errors and warnings
-                const typedIssues: ValidationIssue[] = issues.map(issue => ({
-                  row: issue.row,
-                  field: issue.field,
-                  issue: issue.issue,
-                  suggestion: issue.suggestion,
-                  severity: issue.severity
-                }));
+                const typedIssues: ValidationIssue[] = issues.map(issue => ({ ...issue }));
                 setValidationIssues(typedIssues);
-                
-                setIsLoading(false)
-                resolve()
-                return
+                setIsLoading(false);
+                resolve();
+                return;
               }
 
-              // Store transactions in state for review
               setParsedData(transactions);
-              setCsvUploadId(csvUpload.id);
-              
-              // Update the validation issues state with both errors and warnings
-              const typedIssues: ValidationIssue[] = issues.map(issue => ({
-                row: issue.row,
-                field: issue.field,
-                issue: issue.issue,
-                suggestion: issue.suggestion,
-                severity: issue.severity
-              }));
+              const typedIssues: ValidationIssue[] = issues.map(issue => ({ ...issue }));
               setValidationIssues(typedIssues);
-              
-              setIsLoading(false)
-              resolve()
-            } catch (error) {
-              setError(error instanceof Error ? error.message : 'Error processing CSV')
-              setIsLoading(false)
-              reject(error)
+              setIsLoading(false);
+              resolve();
+
+            } catch (error: any) {
+              setError(error instanceof Error ? error.message : 'Error processing CSV');
+              setIsLoading(false);
+              reject(error);
             }
           },
           header: true,
-          skipEmptyLines: 'greedy', // Skip empty lines and lines with only whitespace
-          // Disable dynamic typing to prevent automatic conversions
+          skipEmptyLines: true,
           dynamicTyping: false,
-          transform: (value) => {
-            if (!value) return value
-            return value.toString().trim()
+          transform: (value: string) => {
+            if (!value) return value;
+            return value.toString().trim();
           },
-          error: (error) => {
-            setError(`Error parsing CSV: ${error.message}`)
-            setIsLoading(false)
-            reject(error)
+          error: (error: ParseError) => {
+            setError(`Error parsing CSV: ${error.message}`);
+            setIsLoading(false);
+            reject(error);
           }
-        })
-      })
-    } catch (err) {
+        };
+
+        // Pass the config object to Papa.parse
+        Papa.parse(fileContent, papaConfig);
+      });
+    } catch (err: any) {
       console.error('Error parsing CSV:', err)
       setError(err instanceof Error ? err.message : 'Failed to parse CSV file')
+    } finally {
+      setIsParsing(false)
       setIsLoading(false)
     }
   }
@@ -1018,7 +953,7 @@ export function ImportForm() {
         // Refresh file list and clear selection
         await fetchUploadedFiles()
         setSelectedFiles([])
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to delete files:', err)
         setError('Failed to delete selected files. Please try again.')
       } finally {
@@ -1171,23 +1106,27 @@ export function ImportForm() {
       txid: ''
     };
     const [formData, setFormData] = useState<ManualTransactionFormData>(initialFormData);
-    // Add state for staged transactions
     const [stagedTransactions, setStagedTransactions] = useState<ManualTransactionFormData[]>([]);
-    const [isSubmitting, setIsSubmitting] = useState(false); // State for loading indicator
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
+    const currentUserId = useUserId();
+    const router = useRouter();
 
     // Function to add current form data to the staged list
     const handleAddToPreview = () => {
-      // Basic validation (add more specific validation as needed)
+      setSubmitError(null);
+      setSuccessDialogOpen(false);
+      // Basic validation
       if (!formData.date || !formData.btcAmount || !formData.price || !formData.usdAmount) {
-        // TODO: Show validation error message to the user
-        console.error("Validation failed: Missing required fields");
+        setSubmitError("Please fill in all required fields: Date, Amount (BTC), Price, Amount (USD).");
         return;
       }
+      // TODO: Add more specific validation based on type if needed
 
-      // Add a temporary ID for list key and removal
       const newTransaction = { ...formData, tempId: Date.now() }; 
       setStagedTransactions(prev => [...prev, newTransaction]);
-      // Reset the form (or maybe keep date/type?)
       setFormData(initialFormData);
     };
 
@@ -1199,33 +1138,114 @@ export function ImportForm() {
     // Function to clear the input form
     const handleClearForm = () => {
       setFormData(initialFormData);
+      setSubmitError(null);
     };
 
     // Function to submit all staged transactions
     const handleSubmitAll = async () => {
       if (stagedTransactions.length === 0) {
-        console.log("No transactions to submit.");
+        setSubmitError("No transactions added to preview yet.");
         return;
       }
       setIsSubmitting(true);
-      console.log("Submitting staged transactions:", stagedTransactions);
+      setSubmitError(null);
 
-      // TODO: Add actual submission logic here
-      // 1. Transform stagedTransactions to the required format for insertTransactions
-      //    (separate into orders and transfers, parse numbers, etc.)
-      // 2. Call insertTransactions({ orders, transfers })
-      // 3. Handle success: clear stagedTransactions, show success message, maybe refresh router?
-      // 4. Handle error: show error message to user
+      const manualOrdersToInsert: OrderInsert[] = [];
+      const manualTransfersToInsert: TransferInsert[] = [];
 
-      // Placeholder for async operation
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
+      try {
+        // Transform staged transactions
+        for (const tx of stagedTransactions) {
+          const date = new Date(tx.date).toISOString(); // Ensure ISO format
+          const btcAmount = parseFloat(tx.btcAmount);
+          const price = parseFloat(tx.price);
+          const usdAmount = parseFloat(tx.usdAmount);
+          const fees = tx.fees ? parseFloat(tx.fees) : null;
+          const networkFee = tx.network_fee ? parseFloat(tx.network_fee) : null;
 
-      // Example success flow:
-      console.log("Submission successful (placeholder)");
-      setStagedTransactions([]); // Clear list on success
-      // router.refresh(); // Optional: Refresh data if needed
+          // Basic NaN checks after parsing
+          if (isNaN(btcAmount) || isNaN(price) || isNaN(usdAmount)) {
+             throw new Error(`Invalid numeric value found in transaction dated ${tx.date}. Please check amounts and price.`);
+          }
+          if (tx.fees && fees !== null && isNaN(fees)) {
+             throw new Error(`Invalid Service Fee value found in transaction dated ${tx.date}.`);
+          }
+           if (tx.type === 'withdrawal' && tx.network_fee && networkFee !== null && isNaN(networkFee)) {
+             throw new Error(`Invalid Network Fee value found in transaction dated ${tx.date}.`);
+          }
 
-      setIsSubmitting(false);
+          if (tx.type === 'buy' || tx.type === 'sell') {
+            const order: OrderInsert = {
+              user_id: currentUserId,
+              date: date,
+              type: tx.type,
+              asset: 'BTC', // Assuming BTC only for now
+              price: price, // Price is required for orders
+              exchange: tx.exchange || null,
+              // Assign amounts based on type, ensuring null where appropriate
+              buy_fiat_amount: tx.type === 'buy' ? usdAmount : null,
+              buy_currency: tx.type === 'buy' ? 'USD' : null,
+              received_btc_amount: tx.type === 'buy' ? btcAmount : null,
+              received_currency: tx.type === 'buy' ? 'BTC' : null,
+              sell_btc_amount: tx.type === 'sell' ? btcAmount : null,
+              sell_btc_currency: tx.type === 'sell' ? 'BTC' : null,
+              received_fiat_amount: tx.type === 'sell' ? usdAmount : null,
+              received_fiat_currency: tx.type === 'sell' ? 'USD' : null,
+              service_fee: fees, // Already handles null
+              service_fee_currency: fees !== null ? 'USD' : null, // Set currency only if fee exists
+              // csv_upload_id is intentionally left out (will be NULL)
+            };
+            // Additional validation specific to orders
+            if (tx.type === 'buy' && (order.buy_fiat_amount === null || order.received_btc_amount === null)) {
+              throw new Error(`Buy transaction on ${tx.date} requires Amount (USD) and Amount (BTC).`);
+            }
+             if (tx.type === 'sell' && (order.sell_btc_amount === null || order.received_fiat_amount === null)) {
+              throw new Error(`Sell transaction on ${tx.date} requires Amount (BTC) and Amount (USD).`);
+            }
+            manualOrdersToInsert.push(order);
+          } else { // withdrawal or deposit
+            const transfer: TransferInsert = {
+              user_id: currentUserId,
+              date: date,
+              type: tx.type,
+              asset: 'BTC', // Assuming BTC only
+              amount_btc: btcAmount, // Required, already checked for NaN
+              fee_amount_btc: tx.type === 'withdrawal' ? (networkFee ?? null) : null, 
+              // Explicitly provide 0 if parsing results in NaN or value is empty/null
+              amount_fiat: parseFloat(tx.usdAmount) || 0, // Use || 0 to handle NaN
+              price: parseFloat(tx.price) || 0, // Use || 0 to handle NaN
+              hash: tx.txid || null,
+              // csv_upload_id is intentionally left out (will be NULL)
+            };
+            manualTransfersToInsert.push(transfer);
+          }
+        }
+
+        // Call insertTransactions without csvUploadId
+        const result = await insertTransactions({ 
+          orders: manualOrdersToInsert, 
+          transfers: manualTransfersToInsert 
+        });
+
+        if (result.error) {
+          throw new Error(result.error.message || 'Failed to save transactions to database.')
+        }
+
+        // Success - show success dialog
+        const transactionCount = manualOrdersToInsert.length + manualTransfersToInsert.length;
+        setSuccessMessage(`Successfully added ${manualOrdersToInsert.length} orders and ${manualTransfersToInsert.length} transfers.`);
+        setSuccessDialogOpen(true);
+        setStagedTransactions([]); // Clear list on success
+        setFormData(initialFormData); // Clear form
+        console.log("Manual transactions submitted successfully:", result.data);
+
+      } catch (err: any) {
+        console.error("Error submitting manual transactions:", err);
+        setSubmitError(err instanceof Error ? err.message : 'An unknown error occurred during submission.');
+        // Do not clear staged transactions on error
+      } finally {
+        setIsSubmitting(false);
+      }
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -1253,6 +1273,36 @@ export function ImportForm() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Display Submission Error */}
+          {submitError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Submission Error</AlertTitle>
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
+          
+          {/* Success Dialog */}
+          <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
+            <DialogContent className="bg-green-100/80 backdrop-blur-sm border border-green-200 shadow-xl max-w-md">
+              <div className="flex flex-col items-center justify-center text-center py-4">
+                <div className="w-16 h-16 rounded-full bg-green-400/90 flex items-center justify-center mb-4 shadow-sm">
+                  <CheckCircle2 className="h-10 w-10 text-white" />
+                </div>
+                <DialogTitle className="text-2xl font-bold text-green-800 mb-2">Success!</DialogTitle>
+                <DialogDescription className="text-green-700 mb-8 text-base">
+                  {successMessage}
+                </DialogDescription>
+                <Button 
+                  onClick={() => setSuccessDialogOpen(false)}
+                  className="bg-green-500/90 hover:bg-green-600 text-white w-32 shadow-sm transition-all duration-200"
+                >
+                  Continue
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
               <div className="space-y-2">
@@ -1567,7 +1617,15 @@ export function ImportForm() {
       </TabsList>
       
       <TabsContent value="csv">
-        {!parsedData && (
+        {isParsing && (
+          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 min-h-[400px] text-center border-border">
+             <Loader2 className="h-12 w-12 text-bitcoin-orange animate-spin mb-4" />
+             <h3 className="text-lg font-semibold">Parsing CSV...</h3>
+             <p className="mt-2 text-sm text-muted-foreground">Please wait while we process your file.</p>
+           </div>
+        )}
+        
+        {!isParsing && !parsedData && (
           <div
             className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 min-h-[400px] text-center ${
               isDragging ? "border-bitcoin-orange bg-bitcoin-orange/10" : "border-border"
@@ -1615,7 +1673,7 @@ export function ImportForm() {
               transactions={parsedData} 
               validationIssues={validationIssues}
               originalRows={originalRows}
-              csvUploadId={csvUploadId}
+              file={file}
             />
           </>
         )}
