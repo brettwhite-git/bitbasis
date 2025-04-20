@@ -78,14 +78,16 @@ const formatDateLabel = (date: Date, frequency: string, totalPeriods: number): s
 };
 
 export function BitcoinCalculator() {
-  const [calculatorMode, setCalculatorMode] = useState('satsGoal'); // 'satsGoal' or 'recurringBuy'
-  const [bitcoinUnit, setBitcoinUnit] = useState('bitcoin');
+  const [calculatorMode, setCalculatorMode] = useState<'satsGoal' | 'recurringBuy' | 'savingsGoal'>('satsGoal'); // 'satsGoal' or 'recurringBuy' or 'savingsGoal'
+  const [bitcoinUnit, setBitcoinUnit] = useState<'bitcoin' | 'satoshi'>('bitcoin');
   const [frequency, setFrequency] = useState('weekly');
   const [goalDuration, setGoalDuration] = useState('1_year');
-  const [satsGoal, setSatsGoal] = useState('0.1'); // 0.1 BTC default
-  const [btcPrice, setBtcPrice] = useState(85000); // Updated initial price
-  const [monthlyAmount, setMonthlyAmount] = useState('');
+  const [recurringBuyAmount, setRecurringBuyAmount] = useState('100'); // Default recurring buy amount
+  const [satsGoal, setSatsGoal] = useState('0.1'); // Underlying goal stored ALWAYS as BTC string
+  const [displayGoalValue, setDisplayGoalValue] = useState('0.1'); // Formatted value shown in the active input
+  const [btcPrice, setBtcPrice] = useState(85000);
   const [priceGrowth, setPriceGrowth] = useState('48'); // Default 48% (1 year CAGR)
+  const [monthlyAmount, setMonthlyAmount] = useState(''); // Kept for potential future use in 'recurringBuy'
   
   // Refs for cursor position
   const satsGoalInputRef = useRef<HTMLInputElement>(null);
@@ -108,98 +110,178 @@ export function BitcoinCalculator() {
     }, 0);
   }, [satsGoal, isUserEditing]);
 
-  // Generate chart data based on inputs (Refactored for Fixed Sats Goal)
+  // Generate chart data based on inputs
   const chartData = useMemo((): ChartDataPoint[] | undefined => {
-    if (calculatorMode !== 'satsGoal' || !satsGoal) return undefined; // Only run for satsGoal mode
-
-    const btcGoal = parseFloat(satsGoal.replace(/,/g, ''));
     const annualGrowthRate = parseFloat(priceGrowth) / 100;
-    if (isNaN(btcGoal) || isNaN(annualGrowthRate) || btcGoal <= 0) return undefined;
+    if (isNaN(annualGrowthRate)) return undefined;
 
     const { years: durationInYears } = getDurationDetails(goalDuration);
     const { periodsPerYear } = getFrequencyDetails(frequency);
     const totalPeriods = Math.round(durationInYears * periodsPerYear);
-
     if (totalPeriods <= 0) return undefined;
 
-    const totalSatsGoal = Math.round(btcGoal * 100000000);
-    const satsPerPeriod = Math.round(totalSatsGoal / totalPeriods);
-    if (satsPerPeriod <= 0) return undefined; // Avoid division by zero or nonsensical scenarios
-
-    // Calculate periodic growth rate from annual rate
     const periodicGrowthRate = Math.pow(1 + annualGrowthRate, 1 / periodsPerYear) - 1;
-
     const startDate = new Date();
     const result: ChartDataPoint[] = [];
     let currentPrice = btcPrice;
     let cumulativeSats = 0;
-    let cumulativeUSD = 0;
 
-    for (let i = 0; i < totalPeriods; i++) {
-      const periodDate = addPeriods(startDate, frequency, i);
+    // --- Calculations for Fixed Sats Goal Mode ---
+    if (calculatorMode === 'satsGoal') {
+      if (!satsGoal) return undefined;
+      const btcGoal = parseFloat(satsGoal.replace(/,/g, ''));
+      if (isNaN(btcGoal) || btcGoal <= 0) return undefined;
 
-      // Estimate price for the *start* of this period
-      // Price grows *after* the investment for the period is made
-      const estimatedPriceThisPeriod = currentPrice;
+      const totalSatsGoal = Math.round(btcGoal * 100000000);
+      const satsPerPeriod = Math.round(totalSatsGoal / totalPeriods);
+      if (satsPerPeriod <= 0 && totalSatsGoal > 0) return undefined;
 
-      // Calculate USD needed for this period's sats goal
-      const btcNeededThisPeriod = satsPerPeriod / 100000000;
-      const usdNeededThisPeriod = btcNeededThisPeriod * estimatedPriceThisPeriod;
+      for (let i = 0; i < totalPeriods; i++) {
+        const periodDate = addPeriods(startDate, frequency, i);
+        const estimatedPriceThisPeriod = currentPrice;
+        const btcNeededThisPeriod = satsPerPeriod / 100000000;
+        const usdNeededThisPeriod = btcNeededThisPeriod * estimatedPriceThisPeriod;
+        cumulativeSats += satsPerPeriod;
+        const finalSats = (i === totalPeriods - 1) ? totalSatsGoal : cumulativeSats;
 
-      cumulativeSats += satsPerPeriod;
-      cumulativeUSD += usdNeededThisPeriod;
+        result.push({
+          date: formatDateLabel(periodDate, frequency, totalPeriods),
+          accumulatedSats: finalSats,
+          periodicSats: satsPerPeriod,
+          estimatedBtcPrice: estimatedPriceThisPeriod,
+          usdValueThisPeriod: usdNeededThisPeriod,
+          cumulativeUsdValue: finalSats / 100000000 * estimatedPriceThisPeriod
+        });
+        currentPrice *= (1 + periodicGrowthRate);
+      }
 
-      // Ensure the last period exactly reaches the goal
-      const finalSats = (i === totalPeriods - 1) ? totalSatsGoal : cumulativeSats;
+      if (result.length > 0) {
+         const lastPoint = result[result.length - 1];
+         const finalPrice = currentPrice;
+         if (lastPoint) {
+           lastPoint.cumulativeUsdValue = totalSatsGoal / 100000000 * finalPrice;
+           const previousAccumulatedSats = result.length > 1 ? result[result.length - 2]?.accumulatedSats || 0 : 0;
+           const satsInLastPeriod = totalSatsGoal - previousAccumulatedSats;
+           lastPoint.periodicSats = satsInLastPeriod;
+           const priceForLastPeriodCalc = lastPoint.estimatedBtcPrice ?? finalPrice;
+           lastPoint.usdValueThisPeriod = (satsInLastPeriod / 100000000) * priceForLastPeriodCalc;
+         }
+      }
+      return result;
+    }
+    // --- Calculations for Fixed Recurring Buy Mode ---
+    else if (calculatorMode === 'recurringBuy') {
+      const recurringUSD = parseFloat(recurringBuyAmount);
+      if (isNaN(recurringUSD) || !recurringBuyAmount || recurringUSD <= 0) return undefined;
 
-      result.push({
-        date: formatDateLabel(periodDate, frequency, totalPeriods),
-        accumulatedSats: finalSats,
-        periodicSats: satsPerPeriod, // Constant sats added each period
-        estimatedBtcPrice: estimatedPriceThisPeriod,
-        usdValueThisPeriod: usdNeededThisPeriod,
-        cumulativeUsdValue: finalSats / 100000000 * estimatedPriceThisPeriod // Value at the end of the period
-      });
+      for (let i = 0; i < totalPeriods; i++) {
+        const periodDate = addPeriods(startDate, frequency, i);
+        const estimatedPriceThisPeriod = currentPrice;
+        const btcBoughtThisPeriod = recurringUSD / estimatedPriceThisPeriod;
+        const satsBoughtThisPeriod = Math.round(btcBoughtThisPeriod * 100000000);
+        cumulativeSats += satsBoughtThisPeriod;
 
-      // Update price for the *next* period
-      currentPrice *= (1 + periodicGrowthRate);
+        result.push({
+          date: formatDateLabel(periodDate, frequency, totalPeriods),
+          accumulatedSats: cumulativeSats,
+          periodicSats: satsBoughtThisPeriod,
+          estimatedBtcPrice: estimatedPriceThisPeriod,
+          usdValueThisPeriod: recurringUSD,
+          cumulativeUsdValue: cumulativeSats / 100000000 * estimatedPriceThisPeriod
+        });
+        currentPrice *= (1 + periodicGrowthRate);
+      }
+
+      if (result.length > 0) {
+         const lastPoint = result[result.length - 1];
+         const finalPrice = currentPrice;
+         if (lastPoint) {
+           lastPoint.cumulativeUsdValue = lastPoint.accumulatedSats / 100000000 * finalPrice;
+         }
+      }
+      return result;
     }
 
-     // Ensure the very last data point reflects the final target sats
-     if (result.length > 0) {
-        const lastPoint = result[result.length - 1];
-        // Recalculate final USD value based on final price estimate
-        const finalPrice = currentPrice; // Price after the last period's growth
-        if (lastPoint) {
-          lastPoint.cumulativeUsdValue = totalSatsGoal / 100000000 * finalPrice;
+    // Fallback if mode is somehow invalid (shouldn't happen)
+    return undefined;
+  }, [
+    calculatorMode,
+    satsGoal, // Dependency for satsGoal mode
+    recurringBuyAmount, // Dependency for recurringBuy mode
+    goalDuration,
+    btcPrice,
+    priceGrowth,
+    frequency
+  ]);
 
-          // Adjust last period's sats if needed due to rounding
-          const previousAccumulatedSats = result.length > 1 ? result[result.length - 2]?.accumulatedSats || 0 : 0;
-          const satsInLastPeriod = totalSatsGoal - previousAccumulatedSats;
-          lastPoint.periodicSats = satsInLastPeriod;
+  // Aggregate chart data for better visualization on long daily frequencies
+  const aggregatedChartData = useMemo((): ChartDataPoint[] | undefined => {
+    if (!chartData || !chartData.length) return undefined;
 
-          // Use fallback for potentially undefined estimated price on the last point
-          const priceForLastPeriodCalc = lastPoint.estimatedBtcPrice ?? finalPrice; 
-          lastPoint.usdValueThisPeriod = (satsInLastPeriod / 100000000) * priceForLastPeriodCalc;
+    const { years: durationInYears } = getDurationDetails(goalDuration);
+    const startDateForCalc = new Date(); // Base date for calculations
+
+    // Aggregate to weekly if daily frequency and duration > 6 months
+    if (frequency === 'daily' && durationInYears > 0.5) {
+      const weeklyData: ChartDataPoint[] = [];
+      let weekSats = 0;
+      let weekUsd = 0; // Use this to sum usdValueThisPeriod for the week
+      let lastPointOfWeek: ChartDataPoint | null = null;
+      let weekStartDateLabel = '';
+
+      chartData.forEach((point, index) => {
+        const isStartOfWeek = index % 7 === 0;
+        const periodDate = addPeriods(startDateForCalc, frequency, index);
+
+        if (isStartOfWeek) {
+          // Push previous week's data if it exists
+          if (lastPointOfWeek) {
+            weeklyData.push({
+              ...lastPointOfWeek, // Carries over accumulatedSats, cumulativeUsdValue, est. price from week end
+              date: weekStartDateLabel, // Label with the start date of the week
+              periodicSats: weekSats,
+              usdValueThisPeriod: weekUsd, // Sum of USD invested during the week
+            });
+          }
+          // Reset for new week
+          weekSats = 0;
+          weekUsd = 0;
+          weekStartDateLabel = formatDateLabel(periodDate, frequency, chartData.length); // Format start date
         }
-     }
 
+        // Accumulate stats for the current week
+        weekSats += point.periodicSats;
+        weekUsd += point.usdValueThisPeriod || 0; // Sum the USD value for the week
+        lastPointOfWeek = point; // Keep track of the last point of the week
 
-    return result;
-  }, [satsGoal, goalDuration, btcPrice, priceGrowth, frequency, calculatorMode]);
+        // Push the last week's data if it's the end of the loop
+        if (index === chartData.length - 1 && lastPointOfWeek) {
+           weeklyData.push({
+              ...lastPointOfWeek,
+              date: weekStartDateLabel,
+              periodicSats: weekSats,
+              usdValueThisPeriod: weekUsd,
+           });
+        }
+      });
+      return weeklyData;
+    }
 
-  const isValidSatsInput = (value: string): boolean => {
-    // Allow empty input and decimal points
-    if (value === '' || value === '.') return true;
-    
+    // Otherwise, return the original data (no aggregation needed)
+    return chartData;
+  }, [chartData, frequency, goalDuration]);
+
+  const isValidSatsInputValue = (value: string): boolean => {
+    // Allow empty input
+    if (value === '') return true;
     // Remove existing commas for validation
     const cleanValue = value.replace(/,/g, '');
-    
-    // Allow decimal numbers
-    return /^\d*\.?\d*$/.test(cleanValue);
+    // Allow only whole numbers (no decimals for sats)
+    return /^[0-9]+$/.test(cleanValue) && !cleanValue.includes('.');
   };
 
-  const handleSatsGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handler for the BTC input field
+  const handleBtcGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsUserEditing(true);
     
     // Save cursor position
@@ -209,14 +291,69 @@ export function BitcoinCalculator() {
     
     const value = e.target.value;
     
-    // Validate input
-    if (!isValidSatsInput(value)) {
-      return; // Reject invalid input
+    setDisplayGoalValue(value); // Update the display value directly
+  };
+
+  // Handler for the Sats input field
+  const handleSatsInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsUserEditing(true);
+    
+    // Save cursor position
+    if (satsGoalInputRef.current) {
+      cursorPositionRef.current = satsGoalInputRef.current.selectionStart;
     }
     
-    // Remove commas for storage
+    const value = e.target.value;
+    
+    // Validate input (allow only whole numbers)
+    if (!isValidSatsInputValue(value)) {
+        return; // Reject invalid input
+    }
+    
+    // Remove commas and convert to number
     const cleanValue = value.replace(/,/g, '');
-    setSatsGoal(cleanValue);
+    const satsNum = parseInt(cleanValue, 10);
+    
+    // Update display value
+    setDisplayGoalValue(formatNumber(cleanValue)); // Format with commas for display
+    
+    // Convert sats to BTC string for internal state, handle 0/NaN case
+    if (isNaN(satsNum) || satsNum === 0) {
+      setSatsGoal('0');
+    } else {
+      const btcValue = satsNum / 100000000;
+      // Format to avoid scientific notation and ensure sufficient precision
+      setSatsGoal(btcValue.toFixed(8));
+    }
+  };
+
+  // Update displayGoalValue whenever satsGoal (underlying BTC value) or bitcoinUnit changes
+  useEffect(() => {
+    if (isUserEditing) return; // Don't reformat while user is typing
+    
+    const btcNum = parseFloat(satsGoal); // Parse the underlying BTC value
+    if (isNaN(btcNum)) {
+        setDisplayGoalValue('0'); // Reset display if underlying is invalid
+        return;
+    }
+    
+    if (bitcoinUnit === 'satoshi') {
+      const satsValue = Math.round(btcNum * 100000000);
+      setDisplayGoalValue(formatNumber(satsValue)); // Format as Sats string
+    } else {
+      // Format as BTC string - use satsGoal directly if it's just a decimal point
+      setDisplayGoalValue(satsGoal === '.' ? '.' : formatNumber(satsGoal, { minimumFractionDigits: 1, maximumFractionDigits: 8 }));
+    }
+  }, [satsGoal, bitcoinUnit, isUserEditing]);
+
+  // Handler for the Recurring Buy Amount input field
+  const handleRecurringBuyAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Basic validation: allow digits, one decimal point, max 2 decimal places
+    const regex = /^\d*\.?\d{0,2}$/;
+    if (regex.test(value) || value === '') {
+      setRecurringBuyAmount(value);
+    }
   };
 
   const handlePriceGrowthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,8 +405,16 @@ export function BitcoinCalculator() {
   const btcToSats = (btc: string): string => {
     const btcNum = parseFloat(btc);
     if (isNaN(btcNum)) return '0';
-    // Use rounding for potentially large numbers to avoid precision issues before formatting
+    // Use rounding for conversion, then format
     return Math.round(btcNum * 100000000).toLocaleString();
+  };
+
+  // Convert Sats string (potentially with commas) to BTC string
+  const satsToBtc = (sats: string): string => {
+    const cleanSats = sats.replace(/,/g, '');
+    const satsNum = parseInt(cleanSats, 10);
+    if (isNaN(satsNum) || satsNum === 0) return formatBTC('0');
+    return formatBTC(satsNum / 100000000);
   };
 
   return (
@@ -280,17 +425,24 @@ export function BitcoinCalculator() {
         <div className="flex border-b border-border">
           <Button
             variant={calculatorMode === 'satsGoal' ? "default" : "ghost"}
-            onClick={() => setCalculatorMode('satsGoal')}
+            onClick={() => setCalculatorMode('satsGoal' as 'satsGoal' | 'recurringBuy' | 'savingsGoal')}
             className={`rounded-b-none ${calculatorMode === 'satsGoal' ? 'bg-bitcoin-orange text-black hover:bg-bitcoin-orange/90' : ''}`}
           >
             Fixed Sats Goal
           </Button>
           <Button
             variant={calculatorMode === 'recurringBuy' ? "default" : "ghost"}
-            onClick={() => setCalculatorMode('recurringBuy')}
+            onClick={() => setCalculatorMode('recurringBuy' as 'satsGoal' | 'recurringBuy' | 'savingsGoal')}
             className={`ml-1 rounded-b-none ${calculatorMode === 'recurringBuy' ? 'bg-bitcoin-orange text-black hover:bg-bitcoin-orange/90' : ''}`}
           >
             Fixed Recurring Buy
+          </Button>
+          <Button
+            variant={calculatorMode === 'savingsGoal' ? "default" : "ghost"}
+            onClick={() => setCalculatorMode('savingsGoal' as 'satsGoal' | 'recurringBuy' | 'savingsGoal')}
+            className={`ml-1 rounded-b-none ${calculatorMode === 'savingsGoal' ? 'bg-bitcoin-orange text-black hover:bg-bitcoin-orange/90' : ''}`}
+          >
+            Savings Goal
           </Button>
         </div>
 
@@ -301,7 +453,7 @@ export function BitcoinCalculator() {
             {/* Bitcoin Unit */}
             <div className="space-y-2">
               <Label>Bitcoin Unit</Label>
-              <RadioGroup value={bitcoinUnit} onValueChange={setBitcoinUnit} className="grid grid-cols-2 gap-2">
+              <RadioGroup value={bitcoinUnit} onValueChange={(value) => setBitcoinUnit(value as 'bitcoin' | 'satoshi')} className="grid grid-cols-2 gap-2">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="bitcoin" id="bitcoin" className="peer sr-only" />
                   <Label
@@ -354,33 +506,95 @@ export function BitcoinCalculator() {
               </RadioGroup>
             </div>
 
-            {/* BTC Goal */}
-            <div className="space-y-2">
-              <Label>BTC Goal</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                  <Input
-                    ref={satsGoalInputRef}
-                    type="text"
-                    placeholder="0.1"
-                    value={formatNumber(satsGoal, { minimumFractionDigits: 1, maximumFractionDigits: 8 })}
-                    onChange={handleSatsGoalChange}
-                    className="pr-16 bg-muted/50 border-muted"
-                    inputMode="decimal"
-                  />
-                  <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
-                    BTC
-                  </span>
-                </div>
-                <div className="relative">
-                  <div className="flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
-                    <span className="text-sm mr-2">=</span>
-                    <span className="flex-1 text-sm font-medium">{btcToSats(satsGoal)}</span>
-                    <span className="text-sm">sats</span>
-                  </div>
+            {/* BTC Goal Input Section - Only shown in 'satsGoal' mode */}
+            {calculatorMode === 'satsGoal' && (
+              <div className="space-y-2">
+                <Label>BTC Goal</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {bitcoinUnit === 'bitcoin' ? (
+                    <>
+                      {/* BTC Input Field */}
+                      <div className="relative">
+                        <Input
+                          ref={satsGoalInputRef}
+                          type="text"
+                          placeholder="0.1"
+                          value={displayGoalValue} // Show formatted BTC
+                          onChange={handleBtcGoalChange}
+                          className="pr-16 bg-muted/50 border-muted"
+                          inputMode="decimal"
+                        />
+                        <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
+                          BTC
+                        </span>
+                      </div>
+                      {/* Sats Display Field */}
+                      <div className="relative">
+                        <div className="flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background h-10">
+                          <span className="text-sm mr-2">=</span>
+                          <span className="flex-1 text-sm font-medium">{btcToSats(satsGoal)}</span>
+                          <span className="ml-1 text-sm text-muted-foreground">sats</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Sats Input Field */}
+                      <div className="relative">
+                         <Input
+                          ref={satsGoalInputRef}
+                          type="text"
+                          placeholder="10,000,000"
+                          value={displayGoalValue} // Show formatted Sats
+                          onChange={handleSatsInputChange}
+                          className="pr-16 bg-muted/50 border-muted"
+                          inputMode="numeric" // Use numeric for sats
+                        />
+                        <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
+                          sats
+                        </span>
+                      </div>
+                      {/* BTC Display Field */}
+                      <div className="relative">
+                        <div className="flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background h-10">
+                          <span className="text-sm mr-2">=</span>
+                          <span className="flex-1 text-sm font-medium">{formatBTC(satsGoal)}</span>
+                          <span className="ml-1 text-sm text-muted-foreground">BTC</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Recurring Buy Input Section - Only shown in 'recurringBuy' mode */}
+            {calculatorMode === 'recurringBuy' && (
+              <div className="space-y-2">
+                <Label>Recurring Buy Amount</Label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="100"
+                    value={recurringBuyAmount} // Display the raw state value
+                    onChange={handleRecurringBuyAmountChange}
+                    className="pl-8 pr-10 bg-muted/50 border-muted" // Padding for symbols
+                    inputMode="decimal"
+                  />
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-muted-foreground">
+                    $
+                  </span>
+                  <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
+                    USD
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Savings Goal Placeholder Section - Only shown in 'savingsGoal' mode */}
+            {calculatorMode === 'savingsGoal' && (
+              <div className="space-y-2 p-4 border border-dashed border-muted-foreground rounded-md"><Label className="text-muted-foreground">(Savings Goal Inputs TBD)</Label></div>
+            )}
 
             {/* Goal Date */}
             <div className="space-y-2">
@@ -486,9 +700,10 @@ export function BitcoinCalculator() {
                 <h3 className="text-lg font-semibold text-foreground">Satoshi Accumulation Forecast</h3>
               </div>
               <div className="px-4 py-6 flex-grow">
-                <CalculatorChart 
-                  chartData={chartData} 
+                <CalculatorChart
+                  chartData={chartData}
                   title=""
+                  bitcoinUnit={bitcoinUnit}
                 />
               </div>
             </div>
@@ -504,12 +719,12 @@ export function BitcoinCalculator() {
             <div className="w-full overflow-x-auto p-0">
               <table className="w-full text-sm table-fixed">
                 <thead>
-                  <tr className="border-b border-border">
-                    <th className="w-[14%] text-center py-2 px-3 font-medium">{getFrequencyDetails(frequency).label} Date</th>
-                    <th className="w-[14%] text-center py-2 px-3 font-medium">Sats Stacked</th>
-                    <th className="w-[14%] text-center py-2 px-3 font-medium">Est. Cost</th>
-                    <th className="w-[14%] text-center py-2 px-3 font-medium">Total Sats</th>
-                    <th className="w-[14%] text-center py-2 px-3 font-medium">Est. Total Cost</th>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="w-[14%] text-center py-2 px-3 font-medium">{getFrequencyDetails(frequency).label} Date</th> 
+                    <th className="w-[14%] text-center py-2 px-3 font-medium">{bitcoinUnit === 'satoshi' ? 'Sats' : 'BTC'} Stacked</th>
+                    <th className="w-[14%] text-center py-2 px-3 font-medium">{calculatorMode === 'satsGoal' ? 'Est. Cost' : 'Amount Invested'}</th>
+                    <th className="w-[14%] text-center py-2 px-3 font-medium">Total {bitcoinUnit === 'satoshi' ? 'Sats' : 'BTC'}</th>
+                    <th className="w-[14%] text-center py-2 px-3 font-medium">{calculatorMode === 'satsGoal' ? 'Est. Total Cost' : 'Total Invested'}</th>
                     <th className="w-[14%] text-center py-2 px-3 font-medium">Est. BTC Price</th>
                     <th className="w-[14%] text-center py-2 px-3 font-medium">Est. Total Value</th>
                   </tr>
@@ -517,23 +732,30 @@ export function BitcoinCalculator() {
                 <tbody>
                   {chartData && chartData.length > 0 ? (
                     chartData.map((point, index) => {
-                      // Calculate cumulative values up to this point
-                      const cumulativeCost = chartData.slice(0, index + 1).reduce((sum, p) => sum + (p.usdValueThisPeriod || 0), 0);
-
+                      const originalIndex = index;
                       // Determine if it's the first or last row on the current page
                       const isFirstRow = index === 0;
-                      const isLastRow = index === chartData.length - 1;
+                      const isLastRow = originalIndex === chartData.length - 1;
                       const rowTextColorClass = (isFirstRow || isLastRow) ? 'text-bitcoin-orange' : '';
 
+                      // *** Crucially, calculate cumulative cost based on the original chartData ***
+                      // Add fallback for chartData to satisfy linter
+                      const totalInvested = calculatorMode === 'recurringBuy'
+                        ? (originalIndex + 1) * parseFloat(recurringBuyAmount.replace(/,/g, '') || '0')
+                        : (chartData || []).slice(0, originalIndex + 1).reduce((sum, p) => sum + (p.usdValueThisPeriod || 0), 0);
+
                       return (
-                        <tr
-                          key={point.date + '-' + index}
-                          className={`border-b border-border/50 ${index % 2 === 0 ? 'bg-muted/50' : 'bg-transparent'} hover:bg-bitcoin-orange/50`}>
+                        <tr key={point.date + '-' + originalIndex} // Use original index for key
+                          className={`border-b border-border/50 ${originalIndex % 2 === 0 ? 'bg-muted/50' : 'bg-transparent'} hover:bg-bitcoin-orange/50`}>
                           <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{point.date}</td>
-                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatNumber(point.periodicSats)}</td>
-                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.usdValueThisPeriod)}</td>
-                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatNumber(point.accumulatedSats)}</td>
-                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(cumulativeCost)}</td>
+                          {/* Conditionally format Sats/BTC stacked */}
+                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{bitcoinUnit === 'satoshi' ? formatNumber(point.periodicSats) : formatBTC(point.periodicSats / 100000000)}</td>
+                          {/* Show Est. Cost (satsGoal) or Amount Invested (recurringBuy) */}
+                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.usdValueThisPeriod)}</td> 
+                          {/* Conditionally format Total Sats/BTC */}
+                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{bitcoinUnit === 'satoshi' ? formatNumber(point.accumulatedSats) : formatBTC(point.accumulatedSats / 100000000)}</td>
+                          {/* Show Est. Total Cost (satsGoal) or Total Invested (recurringBuy) */}
+                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(totalInvested)}</td>
                           <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.estimatedBtcPrice)}</td>
                           <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.cumulativeUsdValue)}</td>
                         </tr>

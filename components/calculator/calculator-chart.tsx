@@ -41,6 +41,7 @@ export interface ChartDataPoint {
 export interface CalculatorChartProps {
   chartData?: ChartDataPoint[];
   title?: string;
+  bitcoinUnit: 'bitcoin' | 'satoshi'; // Add the unit prop
 }
 
 // Mock data structure (used only if chartData is not provided)
@@ -84,7 +85,7 @@ const formatCurrency = (value: number | undefined | null): string => {
   return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 };
 
-export function CalculatorChart({ chartData, title }: CalculatorChartProps) {
+export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorChartProps) {
   // Define chartOptions INSIDE the component to access chartData prop
   const chartOptions: ChartOptions<'bar'> = {
     responsive: true,
@@ -93,7 +94,7 @@ export function CalculatorChart({ chartData, title }: CalculatorChartProps) {
       x: {
         stacked: true,
         grid: {
-          display: false,
+          display: false, // No vertical grid lines
         },
         ticks: {
           color: '#94A3B8', // text-slate-400
@@ -102,14 +103,20 @@ export function CalculatorChart({ chartData, title }: CalculatorChartProps) {
       y: {
         stacked: true,
         grid: {
-          color: '#1E293B', // slate-800
+          color: '#334155', // slate-700 (slightly lighter grid)
         },
         ticks: {
           color: '#94A3B8', // text-slate-400
           callback: function(value: any) {
-            // Convert sats to BTC for display
-            const btc = value / 100000000;
-            return btc.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 }) + ' BTC';
+            // Format based on selected unit
+            if (bitcoinUnit === 'satoshi') {
+              // Format as whole number Sats with commas
+              return formatNumber(value); 
+            } else {
+              // Convert sats value to BTC for display
+              const btc = Number(value) / 100000000;
+              return formatBTC(btc);
+            }
           },
         },
         position: 'left' as const,
@@ -175,7 +182,10 @@ export function CalculatorChart({ chartData, title }: CalculatorChartProps) {
               if (label.includes('Total Accumulated')) {
                 label += `${formatNumber(value)} sats (${formatBTC(btc)} BTC)`;
               } else if (label.includes('Sats Stacked')) {
-                label += `${formatNumber(value)} sats`; // Keep it simpler for periodic
+                // Show only the relevant unit for periodic stacking in tooltip
+                label += bitcoinUnit === 'satoshi' 
+                  ? `${formatNumber(value)} sats` 
+                  : `${formatBTC(btc)} BTC`; 
               } else {
                 label += formatNumber(value) + ' sats'; // Fallback
               }

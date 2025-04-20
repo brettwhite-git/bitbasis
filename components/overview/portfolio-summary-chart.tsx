@@ -282,7 +282,7 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
   }
 
   return (
-    <div className="h-[375px] w-full">
+    <div className="relative h-full w-full">
       <Line options={options} data={data} />
     </div>
   )

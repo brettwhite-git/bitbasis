@@ -23,6 +23,12 @@ import {
   CardFooter
 } from "@/components/ui/card"
 import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogTitle 
+} from "@/components/ui/dialog"
+import { 
   CheckCircle2, 
   AlertCircle, 
   ArrowDownRight, 
@@ -89,23 +95,8 @@ export function ImportPreview({
   const [isImporting, setIsImporting] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState(false)
-
-  // Update useEffect to use window.location
-  useEffect(() => {
-    let redirectTimeout: NodeJS.Timeout;
-    
-    if (importSuccess) {
-      redirectTimeout = setTimeout(() => {
-        window.location.href = '/dashboard/import';
-      }, 1500); // Give enough time for the success message to be visible
-    }
-
-    return () => {
-      if (redirectTimeout) {
-        clearTimeout(redirectTimeout);
-      }
-    };
-  }, [importSuccess]);
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
   // Update the orders and transfers filtering with type assertions
   const orders = transactions.filter((t): t is OrderInsert => isOrder(t));
@@ -151,6 +142,7 @@ export function ImportPreview({
     setIsImporting(true)
     setImportError(null)
     setImportSuccess(false)
+    setIsSuccessDialogOpen(false)
     
     let currentCsvUploadId: string | null = null
 
@@ -225,8 +217,17 @@ export function ImportPreview({
         throw new Error(result.error.message || 'Failed to import transactions')
       }
 
-      await router.refresh();
+      const importedOrdersCount = result.data?.orders?.length || 0
+      const importedTransfersCount = result.data?.transfers?.length || 0
+      
+      await updateCSVUploadStatus(currentCsvUploadId, 'completed', { 
+          importedRowCount: importedOrdersCount + importedTransfersCount 
+      });
+
+      setSuccessMessage(`Successfully imported ${importedOrdersCount} orders and ${importedTransfersCount} transfers from your CSV.`);
+      setIsSuccessDialogOpen(true); 
       setImportSuccess(true);
+
     } catch (err) {
       console.error('Import process error:', err)
       setImportError(err instanceof Error ? err.message : 'Failed to import transactions')
@@ -289,7 +290,29 @@ export function ImportPreview({
 
   return (
     <div className="space-y-4">
-      {/* Import Summary */}
+      <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
+        <DialogContent className="bg-green-100/80 backdrop-blur-sm border border-green-200 shadow-xl max-w-md">
+          <div className="flex flex-col items-center justify-center text-center py-4">
+            <div className="w-16 h-16 rounded-full bg-green-400/90 flex items-center justify-center mb-4 shadow-sm">
+              <CheckCircle2 className="h-10 w-10 text-white" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-green-800 mb-2">Success!</DialogTitle>
+            <DialogDescription className="text-green-700 mb-8 text-base">
+              {successMessage}
+            </DialogDescription>
+            <Button 
+              onClick={() => {
+                  setIsSuccessDialogOpen(false); 
+                  window.location.href = '/dashboard/import';
+              }}
+              className="bg-green-500/90 hover:bg-green-600 text-white w-32 shadow-sm transition-all duration-200"
+            >
+              Continue
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+          
       <Card>
         <CardHeader className="pb-4">
           <div className="flex justify-between items-start">
@@ -366,7 +389,7 @@ export function ImportPreview({
                 ) : importSuccess ? (
                   <>
                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Success!
+                    Success! 
                   </>
                 ) : (
                   'Confirm Import'
@@ -381,18 +404,10 @@ export function ImportPreview({
                 Cancel
               </Button>
             </div>
-            
-            {importSuccess && (
-              <div className="flex items-center text-green-500">
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                <span>Import successful! Redirecting...</span>
-              </div>
-            )}
           </div>
         </CardFooter>
       </Card>
 
-      {/* Orders Preview */}
       {orders.length > 0 && (
         <Card>
           <CardHeader>
@@ -449,7 +464,6 @@ export function ImportPreview({
         </Card>
       )}
 
-      {/* Transfers Preview */}
       {transfers.length > 0 && (
         <Card>
           <CardHeader>
@@ -502,7 +516,6 @@ export function ImportPreview({
         </Card>
       )}
 
-      {/* Validation Issues */}
       {validationIssues.length > 0 && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -552,4 +565,7 @@ const loadingDotsKeyframes = `
 
 const styleSheet = document.createElement('style')
 styleSheet.textContent = loadingDotsKeyframes
-document.head.appendChild(styleSheet) 
+if (!document.head.querySelector('#loading-dots-style')) {
+  styleSheet.id = 'loading-dots-style'
+  document.head.appendChild(styleSheet)
+} 

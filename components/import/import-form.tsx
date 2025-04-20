@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
-import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle, Trash2, CheckCircle, X } from "lucide-react"
+import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle, Trash2, CheckCircle, X, FileText, Download } from "lucide-react"
 import Papa from 'papaparse'
 import type { ParseError, ParseResult } from 'papaparse'
 import { ImportPreview } from "@/components/import/import-preview"
@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge"
 import { FileIcon } from "lucide-react"
 import { CheckCircle2Icon } from "lucide-react"
 import { Table, TableHeader, TableBody, TableCell, TableRow, TableHead } from "@/components/ui/table"
-import { ArrowDownRight, ArrowUpRight, Download } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight } from "lucide-react"
 import { useAuth } from "@/providers/supabase-auth-provider"
 import { useRouter } from 'next/navigation'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -905,6 +905,9 @@ export function ImportForm() {
     const [uploadedFiles, setUploadedFiles] = useState<any[]>([])
     const [selectedFiles, setSelectedFiles] = useState<string[]>([])
     const [isDeleting, setIsDeleting] = useState(false)
+    // Add state for success dialog
+    const [isDeleteSuccessDialogOpen, setIsDeleteSuccessDialogOpen] = useState(false)
+    const [deleteSuccessMessage, setDeleteSuccessMessage] = useState('')
     
     // Fetch uploaded files on component mount
     useEffect(() => {
@@ -944,10 +947,16 @@ export function ImportForm() {
         
         const results = await Promise.all(deletePromises)
         const failures = results.filter(result => !result.success)
+        const successes = results.length - failures.length
         
         if (failures.length > 0) {
           console.error('Some files failed to delete:', failures)
           setError(`Failed to delete ${failures.length} files. Please try again.`)
+          setIsDeleteSuccessDialogOpen(false) // Ensure dialog doesn't show on partial failure
+        } else if (successes > 0) { // Only show success if there were no failures and at least one success
+          setDeleteSuccessMessage(`Successfully deleted ${successes} CSV file(s).`)
+          setIsDeleteSuccessDialogOpen(true)
+          setError(null) // Clear any previous error
         }
         
         // Refresh file list and clear selection
@@ -996,17 +1005,38 @@ export function ImportForm() {
 
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Manage CSV Files</CardTitle>
-          <CardDescription>
-            View and manage your uploaded transaction CSV files
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Delete button */}
+        {/* Success Dialog for Deletion */}
+        <Dialog open={isDeleteSuccessDialogOpen} onOpenChange={setIsDeleteSuccessDialogOpen}>
+          <DialogContent className="bg-green-100/80 backdrop-blur-sm border border-green-200 shadow-xl max-w-md">
+            <div className="flex flex-col items-center justify-center text-center py-4">
+              <div className="w-16 h-16 rounded-full bg-green-400/90 flex items-center justify-center mb-4 shadow-sm">
+                <CheckCircle2 className="h-10 w-10 text-white" />
+              </div>
+              <DialogTitle className="text-2xl font-bold text-green-800 mb-2">Success!</DialogTitle>
+              <DialogDescription className="text-green-700 mb-8 text-base">
+                {deleteSuccessMessage}
+              </DialogDescription>
+              <Button 
+                onClick={() => setIsDeleteSuccessDialogOpen(false)} 
+                className="bg-green-500/90 hover:bg-green-600 text-white w-32 shadow-sm transition-all duration-200"
+              >
+                Continue
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle>Manage CSV Files</CardTitle>
+            <CardDescription>
+              View and manage your uploaded transaction CSV files
+            </CardDescription>
+          </div>
+          {/* Button container */}  
+          <div className="flex space-x-2">
+            {/* Delete button - Moved here */} 
             {selectedFiles.length > 0 && (
-              <div className="flex justify-end">
                 <Button
                   variant="destructive"
                   size="sm"
@@ -1015,10 +1045,12 @@ export function ImportForm() {
                 >
                   {isDeleting ? 'Deleting...' : `Delete Selected (${selectedFiles.length})`}
                 </Button>
-              </div>
             )}
-            
-            {/* Error message */}
+           </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Error message */} 
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -1058,7 +1090,12 @@ export function ImportForm() {
                             onCheckedChange={() => toggleFileSelection(file.id)}
                           />
                         </TableCell>
-                        <TableCell>{file.original_filename}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <FileIcon className="h-8 w-8 mr-2 text-blue-500" />
+                            {file.original_filename}
+                          </div>
+                        </TableCell>
                         <TableCell>{formatDate(file.created_at)}</TableCell>
                         <TableCell>{formatFileSize(file.file_size)}</TableCell>
                         <TableCell>
@@ -1609,16 +1646,37 @@ export function ImportForm() {
   }
 
   return (
-    <Tabs defaultValue="csv" className="w-full">
-      <TabsList className="w-full grid grid-cols-3 mb-4">
-        <TabsTrigger value="csv">CSV Upload</TabsTrigger>
-        <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-        <TabsTrigger value="manage">Manage CSVs</TabsTrigger>
+    <Tabs defaultValue="import-data" className="w-full">
+      <TabsList className="flex w-auto mb-4 bg-transparent p-0 h-auto justify-start gap-x-1 border-b border-border">
+        <TabsTrigger 
+          value="import-data"
+          className="data-[state=active]:bg-bitcoin-orange data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-none rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/50 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border"
+        >
+          Import Data
+        </TabsTrigger>
+        <TabsTrigger 
+          value="manual-entry"
+          className="data-[state=active]:bg-bitcoin-orange data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-none rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/50 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border"
+        >
+          Manual Entry
+        </TabsTrigger>
+        <TabsTrigger 
+          value="manage-csvs"
+          className="data-[state=active]:bg-bitcoin-orange data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-none rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/50 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border"
+        >
+          Manage CSVs
+        </TabsTrigger>
+        <TabsTrigger 
+          value="csv-template"
+          className="data-[state=active]:bg-bitcoin-orange data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-none rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/50 data-[state=inactive]:hover:text-accent-foreground justify-start data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border"
+        >
+          CSV Template
+        </TabsTrigger>
       </TabsList>
       
-      <TabsContent value="csv">
+      <TabsContent value="import-data">
         {isParsing && (
-          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 min-h-[400px] text-center border-border">
+          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 min-h-[700px] text-center border-border">
              <Loader2 className="h-12 w-12 text-bitcoin-orange animate-spin mb-4" />
              <h3 className="text-lg font-semibold">Parsing CSV...</h3>
              <p className="mt-2 text-sm text-muted-foreground">Please wait while we process your file.</p>
@@ -1627,7 +1685,7 @@ export function ImportForm() {
         
         {!isParsing && !parsedData && (
           <div
-            className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 min-h-[400px] text-center ${
+            className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 min-h-[700px] text-center ${
               isDragging ? "border-bitcoin-orange bg-bitcoin-orange/10" : "border-border"
             } cursor-pointer`}
             onDragOver={handleDragOver}
@@ -1658,7 +1716,7 @@ export function ImportForm() {
           </div>
         )}
 
-        {error && (
+        {error && !parsedData && (
           <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
@@ -1666,47 +1724,74 @@ export function ImportForm() {
           </Alert>
         )}
 
-        {parsedData && validationIssues.length === 0 && (
-          <>
-            <ImportStatusSummary />
-            <ImportPreview 
-              transactions={parsedData} 
-              validationIssues={validationIssues}
-              originalRows={originalRows}
-              file={file}
-            />
-          </>
-        )}
-
-        {validationIssues.length > 0 && (
-          <div className="mt-4">
-            <h4 className="text-lg font-semibold">Validation Issues</h4>
-            {validationIssues.map((issue, index) => (
-              <Alert
-                key={index}
-                variant={issue.severity === 'error' ? 'destructive' : 'default'}
-                className="mt-2"
-              >
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Row {issue.row}: {issue.field}</AlertTitle>
-                <AlertDescription>
-                  {issue.issue}
-                  {issue.suggestion && (
-                    <p className="mt-1 text-sm">Suggestion: {issue.suggestion}</p>
-                  )}
-                </AlertDescription>
-              </Alert>
-            ))}
-          </div>
-        )}
+        {parsedData && ( 
+           <ImportPreview 
+             transactions={parsedData} 
+             validationIssues={validationIssues}
+             originalRows={originalRows}
+             file={file}
+           />
+         )}
       </TabsContent>
       
-      <TabsContent value="manual">
+      <TabsContent value="manual-entry">
         <ManualEntryForm />
       </TabsContent>
 
-      <TabsContent value="manage">
+      <TabsContent value="manage-csvs">
         <ManageCSVs />
+      </TabsContent>
+      
+      <TabsContent value="csv-template">
+        <div className="space-y-6">
+        
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Orders Template Card */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-muted mb-4">
+                  <FileText className="h-6 w-6 text-bitcoin-orange" />
+                </div>
+                <CardTitle>Orders Template</CardTitle>
+                <CardDescription>
+                  Template for buy and sell orders. Includes fields for fiat amounts, BTC amounts, prices, exchange fees, and metadata.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Content if needed, or keep empty */}
+              </CardContent>
+              <CardFooter className="flex justify-center">
+                <Button variant="outline" className="w-full">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Orders Template
+                </Button>
+              </CardFooter>
+            </Card>
+
+            {/* Transfers Template Card */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-muted mb-4">
+                  <FileText className="h-6 w-6 text-bitcoin-orange" />
+                </div>
+                <CardTitle>Transfers Template</CardTitle>
+                <CardDescription>
+                  Template for deposits and withdrawals. Includes fields for BTC amounts, network fees, transaction hashes, and optional price data.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Content if needed, or keep empty */}
+              </CardContent>
+              <CardFooter className="flex justify-center">
+                <Button variant="outline" className="w-full">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Transfers Template
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
       </TabsContent>
     </Tabs>
   )

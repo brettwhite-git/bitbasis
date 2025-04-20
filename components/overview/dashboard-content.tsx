@@ -12,9 +12,12 @@ import { RecentTransactions } from "@/components/overview/recent-transactions"
 import { PortfolioSummaryChart } from "@/components/overview/portfolio-summary-chart"
 // import { BtcHeatmap } from "@/components/overview/btc-heatmap"
 // import FearGreedGauge from "@/components/overview/fear-greed-gauge"
-import FearGreedCircularChart from "@/components/overview/fear-greed-circular-chart"
+// import FearGreedCircularChart from "@/components/overview/fear-greed-circular-chart"
+import BuyPatternHistogram from "./buy-pattern-histogram"
+import FearGreedMultiGauge from "./fear-greed-multi-gauge"
 import { useState } from "react"
 import { formatCurrency, formatPercent } from "@/lib/utils"
+import { Progress } from "@/components/ui/progress"
 
 interface DashboardContentProps {
   metrics: {
@@ -37,6 +40,27 @@ interface DashboardContentProps {
     }
     hodlTime: number
   }
+}
+
+const SavingsGoalCard: React.FC<{ className?: string }> = ({ className }) => {
+  const savedAmount = 1250;
+  const goalAmount = 5000;
+  const progressPercentage = (savedAmount / goalAmount) * 100;
+  const timeLeft = "18 months";
+
+  return (
+    <Card className={className}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">Current Saved</CardTitle>
+        <Button variant="outline" size="sm" className="h-6 px-2 text-xs">Details</Button>
+      </CardHeader>
+      <CardContent>
+        <div className="text-lg font-bold text-bitcoin-orange">{formatCurrency(savedAmount)}</div>
+        <p className="text-xs text-muted-foreground pt-1">Time left: {timeLeft}</p>
+        <Progress value={progressPercentage} className="w-full h-2 mt-2" />
+      </CardContent>
+    </Card>
+  );
 }
 
 export function DashboardContent({ metrics, performance }: DashboardContentProps) {
@@ -105,7 +129,7 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
         </Card>
       </div>
       <div className="grid w-full gap-4 grid-cols-1 md:grid-cols-3">
-        <Card className="col-span-1 md:col-span-2">
+        <Card className="col-span-1 md:col-span-2 flex flex-col">
           <CardHeader className="flex flex-row items-start justify-between pb-2">
             <CardTitle className="text-left py-1.5">Portfolio Summary</CardTitle>
             <div className="flex items-center gap-2">
@@ -125,13 +149,17 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="pt-0 min-h-[350px]">
+          <CardContent className="pt-0 flex-grow">
             <PortfolioSummaryChart 
               timeframe={timeframe}
             />
           </CardContent>
         </Card>
-        <FearGreedCircularChart />
+        <div className="col-span-1 md:col-span-1 flex flex-col gap-4">
+          <SavingsGoalCard className="h-full" />
+          <BuyPatternHistogram className="h-full" />
+          <FearGreedMultiGauge className="h-full" />
+        </div>
       </div>
       <div className="w-full">
         <Card>
