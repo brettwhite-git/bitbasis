@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
 ## Core Features
 
@@ -19,10 +19,27 @@ alwaysApply: true
   - BTC Price Overlay
   - Time Range Filters (1M, 3M, 6M, 1Y, All)
 
-- **Recent Activity:**
-  - Last 5 Transactions
-  - Quick Stats
-  - Alert Notifications
+- **Market Indicators:**
+  - Bitcoin Current Price
+  - 24h Change
+  - Fear & Greed Index
+
+### Performance Analytics
+- **KPI Tiles:**
+  - ROI (Return on Investment)
+  - 30-Day Performance
+  - YTD (Year-to-Date) Performance
+  - All-Time High Portfolio Value
+
+- **Performance Chart:**
+  - Interactive line chart with date range selection
+  - Toggle between portfolio value and cost basis
+  - Benchmark against Bitcoin price
+
+- **Advanced Metrics:**
+  - Realized gains/losses calculation
+  - Entry and exit point analysis
+  - Historical performance summary
 
 ### Portfolio Analysis
 - **Holdings Breakdown:**
@@ -36,188 +53,88 @@ alwaysApply: true
   - Average Cost
   - Method Comparison View
 
-- **Performance Metrics:**
-  - 24h Change
-  - 30d Change
-  - YTD Performance
-  - All-Time High/Low
+- **Tax Considerations:**
+  - Short-term vs. long-term holdings
+  - Realized gain calculations
+  - Tax year filtering
 
 ### Transaction Management
 - **Transaction List:**
-  - Sortable Columns
-  - Date Range Filter
-  - Type Filter (Buy/Sell/Send/Receive)
-  - Export to CSV
+  - Comprehensive table of all transactions
+  - Sortable columns (date, amount, type, price)
+  - Type filtering (Buy, Sell, Withdrawal, Deposit)
+  - Search functionality
 
-- **Import Capabilities:**
-  - CSV File Upload
-  - Manual Entry Form
-  - Bulk Import Support
- 
-- **Data Validation:**
-  - Real-time Error Checking
-  - Format Verification
-  - Duplicate Detection
-  - Balance Verification
+- **Transaction Details:**
+  - Full transaction information
+  - Associated exchange and fees
+  - Edit capability for manual entries
+  - Deletion with confirmation dialog
 
-### Import Workflow
-1. **File Selection:**
-   - Drag & Drop Support
-   - File Size Check (≤ 10MB)
-   - Format Validation
-   - Initial Header Check
+- **CSV Export:**
+  - Export transaction history to CSV
+  - Customizable date ranges
+  - Format options for tax software compatibility
 
-2. **Data Preview:**
-   - First 5 Rows Display
-   - Column Mapping
-   - Error Highlighting
-   - Summary Statistics
+### CSV Import System
+- **File Selection and Upload:**
+  - Drag & drop interface
+  - File validation (size, format)
+  - Support for multiple exchange formats
+  - Smart format detection
 
-3. **Validation Process:**
-   - Header Verification
-   - Data Type Checking
-   - Business Rule Validation
-   - Error Reporting
+- **Data Preview:**
+  - Visual preview of CSV data
+  - Column mapping interface
+  - Validation indicators
+  - Error highlighting
 
-4. **Import Execution:**
-   - Progress Indication
-   - Error Handling
-   - Success Confirmation
-   - Rollback Capability
+- **Import Process:**
+  - Progress indication
+  - Validation summary
+  - Success confirmation
+  - Error handling with retry options
 
-5. **Post-Import:**
-   - Import Summary
-   - Updated Portfolio View
-   - Transaction List Refresh
-   - Error Resolution Options
+- **Upload History:**
+  - List of previous uploads
+  - Import date and status
+  - Option to delete uploads
+  - Transparent transaction tracking
 
-### Data Management
-- **Backup & Recovery:**
-  - Export All Data
-  - Transaction History
-  - Portfolio Snapshots
+### Cost Basis Calculator
+- **Transaction Simulation:**
+  - Add hypothetical transactions
+  - Model different buy/sell scenarios
+  - Real-time calculation updates
 
-- **Data Cleanup:**
-  - Delete Transactions
-  - Bulk Operations
-  - Filter-based Deletion
-  - Audit Trail
+- **Tax Strategy Testing:**
+  - Compare different accounting methods
+  - Short vs. long-term capital gains estimation
+  - Scenario comparison
 
-### Security Features
-- **User Authentication:**
-  - Email/Password Login
-  - Session Management
-  - Password Recovery
-  - Account Settings
+### Settings and Account Management
+- **User Preferences:**
+  - Dark/Light mode toggle
+  - Default view settings
+  - Default accounting method
 
-- **Data Protection:**
-  - Row Level Security
-  - Secure API Calls
-  - Rate Limiting
+- **Data Management:**
+  - Clear all transactions
+  - Delete specific uploads
+  - Full account deletion option
 
-### External Integrations
-- **Price Data:**
-  - Coinpaprika API Integration (for current price and ATH)
-  - Price History Cache (in Supabase `bitcoin_prices` table)
-  - Fallback Sources (consider adding logic if Coinpaprika fails)
+- **Security Features:**
+  - Password change
+  - Email verification
+  - Session management
 
-- **Payment Processing:**
-  - Stripe Integration
-  - Subscription Management
-  - Payment History
-  - Invoice Generation
+### Mobile Experience
+- **Responsive Design:**
+  - Fully functional on mobile devices
+  - Touch-friendly interface
+  - Optimized charts and tables
 
-### Dashboard Menu Features
-- **Overview:**
-  - Display portfolio value, total cost basis, unrealized gains, and average buy price.
-  - Include drill-down links to detailed views for each metric.
-- **Performance:**
-  - Show ROI over time, total fees paid, and filterable time periods (e.g., 1M, 1Y, All).
-  - Use Chart.js for responsive performance charts.
-- **Portfolio Details:**
-  - Pie chart showing the majority percentage of Bitcoin bought per year.
-  - Support data from 2009 (Bitcoin's inception) onward.
-- **Cost Basis Method Comparison:**
-  - Offer FIFO, LIFO, and average cost methods for comparison.
-  - Recalculate dynamically based on user selection.
-- **Recent Transactions:**
-  - Table with pagination, sortable columns (e.g., date, amount), and export option.
-
-  ### Performance Menu Features
-- **KPI Tiles:**
-  - ROI Tile 
-  - 30 Day Change Calcuation 
-  - YTD Change 
-  - All time high BTC price cached until new all time price is hit
-
-- **Performance over time chart**
-  - Portfolio Value 
-  - Cost Basis 
-  - Filter (1M, 3M, 6M, 1Y, All)
-    
-  ### Portfolio Menu 
-- **KPI Tiles:**
-  - Total Bitcoin 
-  - Total Fees Paid 
-  - First Purchase 
-
-- **BitCoin Accumulation by Year**
-  - Summary by pie graph 
-
-- **Cost Basis Method Comparison** 
-  - FIFO, LIFO, Average Cost
-  - KPI Tiles that filter depending on which is selected
-
-  ### Transactions Menu 
-- **Transaction History** 
-  - Search transactions 
-  - Have a filter by date range option
-  - Display rows of most recent transactions 
-  - Export all data out to CSV
-  - Create a repo of all recent uploads 
-  - Allow transaction deletion
-  - Allow bulk clear data for adjustable options
-
-### Import Data
-- **Import options** 
-  - Support multiple CSV formats:
-    - Custom formatted CSVs
-    - Manual transaction entry
-  
-  - CSV Requirements:
-    - Transaction Types: Buy, Sell, Send, Receive
-    - Currencies: USD and BTC only
-
-  - Import Process:
-    - File validation (size, format)
-    - Header validation
-    - Data transformation
-    - Preview before import
-    - Batch processing
-
-  - Error Handling:
-    - Clear validation messages
-    - Row-level error reporting
-    - Ability to fix and retry
-
-  - Success Feedback:
-    - Transaction count
-    - Summary of imported data
-    - Option to undo import
-
-
-### Accounting Settings
-- Allow users to manage subscriptions and cancel via Stripe API.
-- Minimize stored user info (e.g., only `id`, `email` in Supabase).
-- Sensitive data (e.g., billing info) maintained at Stripe level.
-
-
-### Navigation
-- **Sidebar:**
-  - Links to Overview, Performance, Portfolio Details, Settings.
-- **Drill-Down Links:**
-  - Embed clickable elements in Overview linking to detailed sections.
-
-
-
-  
+- **Quick Access:**
+  - Streamlined navigation
+  - Essential metrics at a glance
+  - Simplified data entry 

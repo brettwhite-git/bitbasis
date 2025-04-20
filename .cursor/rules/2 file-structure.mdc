@@ -1,17 +1,50 @@
 ---
 description: 
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
-
 ### File Structure
-- Utilize Next.js `app/` router (e.g., `app/dashboard/page.tsx`).
-- Place reusable components in `components/` (e.g., `components/PortfolioOverview.tsx`).
-- Centralize Supabase utilities in `lib/supabase.ts`.
-- Define API routes in `app/api/` (e.g., `app/api/stripe/cancel/route.ts`).
+- **App Routing (Next.js App Router):**
+  - `app/` - Main application pages using Next.js App Router with server components
+    - `page.tsx` - Landing page
+    - `layout.tsx` - Root layout with providers
+    - `dashboard/` - Dashboard pages (Overview, Performance, Portfolio, Transactions, etc.)
+    - `auth/` - Authentication pages (Login, Register, Reset Password)
+    - `api/` - API routes for backend functionality
+
+- **Components:**
+  - `components/ui/` - Reusable UI components (shadcn/ui)
+  - `components/dashboard/` - Dashboard-specific components
+  - `components/overview/` - Overview page components
+  - `components/performance/` - Performance page components
+  - `components/portfolio/` - Portfolio page components
+  - `components/transactions/` - Transaction page components
+  - `components/import/` - CSV import components
+  - `components/calculator/` - Calculator components
+  - `components/shared/` - Shared components used across multiple features
+  - `components/landing/` - Landing page components
+  - `components/auth/` - Authentication components
+
+- **Utilities and Services:**
+  - `lib/` - Utility functions and service classes
+    - `lib/supabase.ts` - Supabase client setup
+    - `lib/utils.ts` - General utility functions
+    - `lib/api.ts` - API utility functions
+  
+- **State Management:**
+  - `providers/` - React Context providers
+  - `hooks/` - Custom React hooks
+
+- **Types:**
+  - `types/` - TypeScript type definitions
+
+- **Database:**
+  - `supabase/migrations/` - SQL migrations for Supabase
+  - `supabase/functions/` - Supabase Edge Functions
 
 ### Code Style
-- Use TypeScript with strict typing (e.g., interfaces for Supabase tables, Chart.js props).
-- Apply Tailwind CSS for all styling (e.g., `className="bg-bitcoin-orange text-white"`).
-- Keep functions concise; leverage Cursor to refactor or suggest enhancements..
-
+- **TypeScript:** Strict typing with interfaces for all data structures
+- **Tailwind CSS:** Utility-first CSS for styling with custom theme
+- **Component Organization:** Modular components with clear separation of concerns
+- **Naming Conventions:** PascalCase for components, camelCase for functions/variables
+- **API Handling:** Centralized API functions with error handling 

@@ -56,12 +56,12 @@ export function DashboardSidebar() {
 
   return (
     <div
-      className={`hidden border-r border-border/40 md:block ${
-        isOpen ? "w-64" : "w-16"
+      className={`hidden border-r border-border/40 md:block sticky top-16 h-[calc(100vh-4rem)] ${
+        isOpen ? "w-64" : "w-20"
       } transition-all duration-300`}
     >
       <nav className="flex h-full flex-col py-4">
-        <ul className="flex flex-col items-center gap-2">
+        <ul className="flex flex-col items-center gap-3">
           {routes.map((route) => (
             <li key={route.href} className="w-full px-2">
               <Link

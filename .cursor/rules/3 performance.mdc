@@ -1,39 +1,59 @@
 ---
 description: 
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
-## Performance
-- **Mobile & Responsiveness Design:**
-  - Make sure project is dynamic across indsutry standard break points.
-  - Follow Tailwind CSS best practices 
+## Performance & Optimization
+- **Mobile & Responsive Design:**
+  - Fully responsive interface using Tailwind CSS breakpoints
+  - Mobile-first approach with touch-friendly UI elements
+  - Collapsible sidebar for mobile viewing
+  - Optimized data tables with horizontal scrolling on small screens
   
 - **SEO Optimization:**
-  - Include meta tags on all pages using Next.js `<Head>` or `generateMetadata`.
-  - Optimize for search engines and performance (e.g., aim for high Lighthouse scores).
-  - Prompt Cursor: "Add dynamic SEO tags to the dashboard page."
+  - Metadata configuration using Next.js metadata API
+  - Semantic HTML structure for better accessibility
+  - Performance optimized with Next.js App Router
+  - Server Components for improved initial load times
 
-- **Loading & Caching Strategy:**
-  - Fetch data server-side with Next.js server components for initial loads.
-  - Cache CoinGecko API data in Supabase (e.g., `bitcoin_prices` table) to reduce API calls.
-  - Use React Query or SWR for client-side caching and real-time updates.
+- **Data Loading & Caching Strategy:**
+  - Server Components for initial data fetching
+  - Optimistic UI updates for improved user experience
+  - Bitcoin price data cached in Supabase tables
+  - Interval-based price updates with efficient polling
 
-- **Row-Level Security (RLS):**
-  - Apply RLS to all Supabase tables (e.g., `transactions`) to restrict data to authenticated users.
-  - Test RLS by simulating multiple user logins.
+- **Database Security:**
+  - Row-Level Security (RLS) policies on all tables
+  - User-specific data access controls
+  - Secure authentication flow with Supabase Auth
+  - PostgreSQL functions with security definer
 
-- **Optimal Privacy:**
-  - Minimize stored user data; rely on Stripe for sensitive billing details.
+- **Privacy Implementation:**
+  - No third-party tracking or analytics
+  - Minimal personal data collection (email only)
+  - No exchange API integration required
+  - Client-side CSV processing
  
 - **Storage Optimization:**
-  - Store CSVs in Supabase Storage, compressing files if necessary.
-  - Set a max CSV size (e.g., 10MB per file); prompt users to split larger files.
+  - Efficient CSV storage in Supabase Storage
+  - File reference tracking in database
+  - Automatic cleanup of unused resources
+  - Size validation for uploaded files
 
-## Privacy
-- **Transparent Privacy Policy:**
-  - Provide a clear policy at `/privacy`, linked across the app.
-  - Emphasize no data selling and minimal data collection.
+## Privacy Features
+- **Clear Privacy Policy:**
+  - Transparent data usage explanation
+  - No data selling guarantee
+  - GDPR-compliant approach
   
-- **Safeguards Against User Data:**
-  - Store only essential data in Supabase (e.g., `user_id`, `email`).
-  - Use RLS to ensure users access only their own data.
+- **Data Protection:**
+  - Database-level security with RLS
+  - Encrypted storage for sensitive data
+  - Minimal data collection philosophy
+  - User data deletion capability
+
+- **Authentication Security:**
+  - Secure password handling
+  - Email verification requirement
+  - Session management with secure cookies
+  - Password reset functionality 

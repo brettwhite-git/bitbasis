@@ -15,13 +15,75 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CalculatorChart, ChartDataPoint } from "./calculator-chart"
 
+// Helper function to get duration details
+const getDurationDetails = (duration: string): { months: number, years: number, label: string } => {
+  switch (duration) {
+    case '1_month': return { months: 1, years: 1/12, label: '1 Month' };
+    case '6_month': return { months: 6, years: 0.5, label: '6 Months' };
+    case '3_year': return { months: 36, years: 3, label: '3 Years' };
+    case '5_year': return { months: 60, years: 5, label: '5 Years' };
+    case '10_year': return { months: 120, years: 10, label: '10 Years' };
+    case '1_year':
+    default: return { months: 12, years: 1, label: '1 Year' };
+  }
+};
+
+// Helper function to get frequency details
+const getFrequencyDetails = (frequency: string): { periodsPerYear: number, label: string } => {
+  switch (frequency) {
+    case 'daily': return { periodsPerYear: 365, label: 'Daily' };
+    case 'monthly': return { periodsPerYear: 12, label: 'Monthly' };
+    case 'yearly': return { periodsPerYear: 1, label: 'Yearly' };
+    case 'weekly':
+    default: return { periodsPerYear: 52, label: 'Weekly' };
+  }
+};
+
+// Helper to add periods to a date
+const addPeriods = (date: Date, frequency: string, count: number): Date => {
+  const newDate = new Date(date);
+  switch (frequency) {
+    case 'daily': newDate.setDate(date.getDate() + count); break;
+    case 'weekly': newDate.setDate(date.getDate() + count * 7); break;
+    case 'monthly': newDate.setMonth(date.getMonth() + count); break;
+    case 'yearly': newDate.setFullYear(date.getFullYear() + count); break;
+  }
+  return newDate;
+};
+
+// Helper to format date based on frequency (simplified for chart labels)
+const formatDateLabel = (date: Date, frequency: string, totalPeriods: number): string => {
+  // Always include year for clarity, adjust day presence based on frequency/duration
+  const options: Intl.DateTimeFormatOptions = { month: 'short' }; // Start with month only
+
+  // Always show day for daily frequency
+  if (frequency === 'daily') {
+    options.day = 'numeric';
+  } 
+  // Show day for weekly only if duration is <= 2 years
+  else if (frequency === 'weekly' && totalPeriods <= 52 * 2) {
+    options.day = 'numeric';
+  } else {
+    // Monthly/Yearly usually don't need the day part in labels
+  }
+
+  // Format month and potentially day
+  const monthDayPart = date.toLocaleDateString('en-US', options);
+
+  // Get 2-digit year and add apostrophe
+  const yearPart = `'${date.getFullYear().toString().slice(-2)}`;
+
+  // Combine parts
+  return `${monthDayPart}${options.day ? ',' : ''} ${yearPart}`; // Add comma only if day is present
+};
+
 export function BitcoinCalculator() {
   const [calculatorMode, setCalculatorMode] = useState('satsGoal'); // 'satsGoal' or 'recurringBuy'
   const [bitcoinUnit, setBitcoinUnit] = useState('bitcoin');
   const [frequency, setFrequency] = useState('weekly');
   const [goalDuration, setGoalDuration] = useState('1_year');
   const [satsGoal, setSatsGoal] = useState('0.1'); // 0.1 BTC default
-  const [btcPrice, setBtcPrice] = useState(83729); // Current BTC price in USD
+  const [btcPrice, setBtcPrice] = useState(85000); // Updated initial price
   const [monthlyAmount, setMonthlyAmount] = useState('');
   const [priceGrowth, setPriceGrowth] = useState('48'); // Default 48% (1 year CAGR)
   
@@ -30,28 +92,6 @@ export function BitcoinCalculator() {
   const cursorPositionRef = useRef<number | null>(null);
   const [isUserEditing, setIsUserEditing] = useState(false);
 
-  // Calculate monthly amount needed to reach BTC goal
-  useEffect(() => {
-    if (!satsGoal) return;
-    
-    const btcGoal = parseFloat(satsGoal.replace(/,/g, ''));
-    if (isNaN(btcGoal)) return;
-
-    // Get number of months based on duration
-    let months = 12;
-    if (goalDuration === '1_month') months = 1;
-    if (goalDuration === '6_month') months = 6;
-    if (goalDuration === '3_year') months = 36;
-    if (goalDuration === '5_year') months = 60;
-    if (goalDuration === '10_year') months = 120;
-    
-    // Calculate monthly dollar amount needed
-    const totalUSD = btcGoal * btcPrice;
-    const monthlyUSD = totalUSD / months;
-    
-    setMonthlyAmount(monthlyUSD.toFixed(2));
-  }, [satsGoal, goalDuration, btcPrice]);
-  
   // Restore cursor position after state update
   useEffect(() => {
     if (!isUserEditing || cursorPositionRef.current === null) {
@@ -68,52 +108,85 @@ export function BitcoinCalculator() {
     }, 0);
   }, [satsGoal, isUserEditing]);
 
-  // Generate chart data based on inputs
-  const chartData = useMemo(() => {
-    if (!satsGoal || !monthlyAmount) return undefined;
-    
+  // Generate chart data based on inputs (Refactored for Fixed Sats Goal)
+  const chartData = useMemo((): ChartDataPoint[] | undefined => {
+    if (calculatorMode !== 'satsGoal' || !satsGoal) return undefined; // Only run for satsGoal mode
+
     const btcGoal = parseFloat(satsGoal.replace(/,/g, ''));
-    const monthlyUSD = parseFloat(monthlyAmount);
-    if (isNaN(btcGoal) || isNaN(monthlyUSD)) return undefined;
-    
-    // Get number of months based on duration
-    let months = 12;
-    if (goalDuration === '1_month') months = 1;
-    if (goalDuration === '6_month') months = 6;
-    if (goalDuration === '3_year') months = 36;
-    if (goalDuration === '5_year') months = 60;
-    if (goalDuration === '10_year') months = 120;
-    
-    // Generate dates for the chart
+    const annualGrowthRate = parseFloat(priceGrowth) / 100;
+    if (isNaN(btcGoal) || isNaN(annualGrowthRate) || btcGoal <= 0) return undefined;
+
+    const { years: durationInYears } = getDurationDetails(goalDuration);
+    const { periodsPerYear } = getFrequencyDetails(frequency);
+    const totalPeriods = Math.round(durationInYears * periodsPerYear);
+
+    if (totalPeriods <= 0) return undefined;
+
+    const totalSatsGoal = Math.round(btcGoal * 100000000);
+    const satsPerPeriod = Math.round(totalSatsGoal / totalPeriods);
+    if (satsPerPeriod <= 0) return undefined; // Avoid division by zero or nonsensical scenarios
+
+    // Calculate periodic growth rate from annual rate
+    const periodicGrowthRate = Math.pow(1 + annualGrowthRate, 1 / periodsPerYear) - 1;
+
     const startDate = new Date();
     const result: ChartDataPoint[] = [];
-    
     let currentPrice = btcPrice;
-    let cumulativeBTC = 0;
-    
-    for (let i = 0; i < months; i++) {
-      const date = new Date(startDate);
-      date.setMonth(startDate.getMonth() + i);
-      
-      // Apply price growth based on selected rate
-      if (i > 0) {
-        const growthRate = parseFloat(priceGrowth) / 100 / 12; // Monthly growth rate
-        currentPrice *= (1 + growthRate);
-      }
-      
-      // Calculate how much BTC can be bought with monthly amount
-      const monthlyBTC = monthlyUSD / currentPrice;
-      cumulativeBTC += monthlyBTC;
-      
+    let cumulativeSats = 0;
+    let cumulativeUSD = 0;
+
+    for (let i = 0; i < totalPeriods; i++) {
+      const periodDate = addPeriods(startDate, frequency, i);
+
+      // Estimate price for the *start* of this period
+      // Price grows *after* the investment for the period is made
+      const estimatedPriceThisPeriod = currentPrice;
+
+      // Calculate USD needed for this period's sats goal
+      const btcNeededThisPeriod = satsPerPeriod / 100000000;
+      const usdNeededThisPeriod = btcNeededThisPeriod * estimatedPriceThisPeriod;
+
+      cumulativeSats += satsPerPeriod;
+      cumulativeUSD += usdNeededThisPeriod;
+
+      // Ensure the last period exactly reaches the goal
+      const finalSats = (i === totalPeriods - 1) ? totalSatsGoal : cumulativeSats;
+
       result.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-        accumulatedSats: Math.round(cumulativeBTC * 100000000), // Convert BTC to sats
-        periodicSats: Math.round(monthlyBTC * 100000000) // Convert BTC to sats
+        date: formatDateLabel(periodDate, frequency, totalPeriods),
+        accumulatedSats: finalSats,
+        periodicSats: satsPerPeriod, // Constant sats added each period
+        estimatedBtcPrice: estimatedPriceThisPeriod,
+        usdValueThisPeriod: usdNeededThisPeriod,
+        cumulativeUsdValue: finalSats / 100000000 * estimatedPriceThisPeriod // Value at the end of the period
       });
+
+      // Update price for the *next* period
+      currentPrice *= (1 + periodicGrowthRate);
     }
-    
+
+     // Ensure the very last data point reflects the final target sats
+     if (result.length > 0) {
+        const lastPoint = result[result.length - 1];
+        // Recalculate final USD value based on final price estimate
+        const finalPrice = currentPrice; // Price after the last period's growth
+        if (lastPoint) {
+          lastPoint.cumulativeUsdValue = totalSatsGoal / 100000000 * finalPrice;
+
+          // Adjust last period's sats if needed due to rounding
+          const previousAccumulatedSats = result.length > 1 ? result[result.length - 2]?.accumulatedSats || 0 : 0;
+          const satsInLastPeriod = totalSatsGoal - previousAccumulatedSats;
+          lastPoint.periodicSats = satsInLastPeriod;
+
+          // Use fallback for potentially undefined estimated price on the last point
+          const priceForLastPeriodCalc = lastPoint.estimatedBtcPrice ?? finalPrice; 
+          lastPoint.usdValueThisPeriod = (satsInLastPeriod / 100000000) * priceForLastPeriodCalc;
+        }
+     }
+
+
     return result;
-  }, [satsGoal, monthlyAmount, goalDuration, btcPrice, priceGrowth]);
+  }, [satsGoal, goalDuration, btcPrice, priceGrowth, frequency, calculatorMode]);
 
   const isValidSatsInput = (value: string): boolean => {
     // Allow empty input and decimal points
@@ -185,11 +258,18 @@ export function BitcoinCalculator() {
     return num.toLocaleString('en-US', options);
   };
 
+  // Format currency (USD)
+  const formatCurrency = (value: number | undefined | null): string => {
+    if (value === undefined || value === null || isNaN(value)) return '$0.00';
+    return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  };
+
   // Convert BTC to sats
   const btcToSats = (btc: string): string => {
     const btcNum = parseFloat(btc);
     if (isNaN(btcNum)) return '0';
-    return (btcNum * 100000000).toLocaleString();
+    // Use rounding for potentially large numbers to avoid precision issues before formatting
+    return Math.round(btcNum * 100000000).toLocaleString();
   };
 
   return (
@@ -265,9 +345,9 @@ export function BitcoinCalculator() {
                     <RadioGroupItem value={period} id={period} className="peer sr-only" />
                     <Label
                       htmlFor={period}
-                      className="flex-1 cursor-pointer rounded-md border-2 border-muted p-3 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 text-center capitalize"
+                      className="flex-1 cursor-pointer rounded-md border-2 border-muted p-3 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 text-center capitalize text-xs sm:text-sm"
                     >
-                      {period}
+                      {getFrequencyDetails(period).label}
                     </Label>
                   </div>
                 ))}
@@ -329,23 +409,19 @@ export function BitcoinCalculator() {
                     }
                     onChange={(e) => {
                       const value = parseInt(e.target.value);
-                      setGoalDuration(
+                      const newDuration =
                         value === 0 ? '1_month' :
                         value === 1 ? '6_month' :
                         value === 2 ? '1_year' :
                         value === 3 ? '3_year' :
-                        value === 4 ? '5_year' : '10_year'
-                      );
+                        value === 4 ? '5_year' : '10_year';
+                      setGoalDuration(newDuration);
                     }}
                     className="w-full accent-bitcoin-orange cursor-pointer h-2 rounded-lg appearance-none bg-muted"
                   />
                 </div>
                 <div className="text-center font-medium">
-                  {goalDuration === '1_month' ? '1 Month' :
-                   goalDuration === '6_month' ? '6 Months' :
-                   goalDuration === '1_year' ? '1 Year' :
-                   goalDuration === '3_year' ? '3 Years' :
-                   goalDuration === '5_year' ? '5 Years' : '10 Years'}
+                  {getDurationDetails(goalDuration).label}
                 </div>
               </div>
             </div>
@@ -413,7 +489,6 @@ export function BitcoinCalculator() {
                 <CalculatorChart 
                   chartData={chartData} 
                   title=""
-                  btcPrice={btcPrice}
                 />
               </div>
             </div>
@@ -430,42 +505,47 @@ export function BitcoinCalculator() {
               <table className="w-full text-sm table-fixed">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="w-1/7 text-center py-2 px-3 font-medium">Week</th>
-                    <th className="w-1/7 text-center py-2 px-3 font-medium">Sats Stacked</th>
-                    <th className="w-1/7 text-center py-2 px-3 font-medium">Fiat Gain</th>
-                    <th className="w-1/7 text-center py-2 px-3 font-medium">Total Exchanged</th>
-                    <th className="w-1/7 text-center py-2 px-3 font-medium">Total Sats</th>
-                    <th className="w-1/7 text-center py-2 px-3 font-medium">Total Fiat Gain</th>
-                    <th className="w-1/7 text-center py-2 px-3 font-medium">Total Fiat Value</th>
+                    <th className="w-[14%] text-center py-2 px-3 font-medium">{getFrequencyDetails(frequency).label} Date</th>
+                    <th className="w-[14%] text-center py-2 px-3 font-medium">Sats Stacked</th>
+                    <th className="w-[14%] text-center py-2 px-3 font-medium">Est. Cost</th>
+                    <th className="w-[14%] text-center py-2 px-3 font-medium">Total Sats</th>
+                    <th className="w-[14%] text-center py-2 px-3 font-medium">Est. Total Cost</th>
+                    <th className="w-[14%] text-center py-2 px-3 font-medium">Est. BTC Price</th>
+                    <th className="w-[14%] text-center py-2 px-3 font-medium">Est. Total Value</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {chartData && chartData.map((point, index) => {
-                    // Calculate values for table
-                    const monthlyInstallment = parseFloat(monthlyAmount);
-                    const periodAmount = monthlyInstallment / (12 / chartData.length);
-                    // Always apply price growth based on selected rate
-                    const currentPrice = btcPrice * Math.pow(1 + parseFloat(priceGrowth) / 100 / 12, index);
-                    
-                    const satStacked = point.periodicSats;
-                    const fiatGain = "$0.00"; // In this example, Fiat Gain is fixed
-                    const totalExchanged = periodAmount.toFixed(2);
-                    const totalSats = point.accumulatedSats;
-                    const totalFiatGain = "$0.00"; // In this example, Total Fiat Gain is fixed
-                    const totalFiatValue = (currentPrice * totalSats / 100000000).toFixed(2);
-                    
-                    return (
-                      <tr key={point.date} className="border-b border-border/50 hover:bg-muted/30">
-                        <td className="w-1/7 text-center py-2 px-3">{point.date}</td>
-                        <td className="w-1/7 text-center py-2 px-3">{formatNumber(satStacked)}</td>
-                        <td className="w-1/7 text-center py-2 px-3">{fiatGain}</td>
-                        <td className="w-1/7 text-center py-2 px-3">${totalExchanged}</td>
-                        <td className="w-1/7 text-center py-2 px-3">{formatNumber(totalSats)}</td>
-                        <td className="w-1/7 text-center py-2 px-3">{totalFiatGain}</td>
-                        <td className="w-1/7 text-center py-2 px-3">${totalFiatValue}</td>
-                      </tr>
-                    );
-                  })}
+                  {chartData && chartData.length > 0 ? (
+                    chartData.map((point, index) => {
+                      // Calculate cumulative values up to this point
+                      const cumulativeCost = chartData.slice(0, index + 1).reduce((sum, p) => sum + (p.usdValueThisPeriod || 0), 0);
+
+                      // Determine if it's the first or last row on the current page
+                      const isFirstRow = index === 0;
+                      const isLastRow = index === chartData.length - 1;
+                      const rowTextColorClass = (isFirstRow || isLastRow) ? 'text-bitcoin-orange' : '';
+
+                      return (
+                        <tr
+                          key={point.date + '-' + index}
+                          className={`border-b border-border/50 ${index % 2 === 0 ? 'bg-muted/50' : 'bg-transparent'} hover:bg-bitcoin-orange/50`}>
+                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{point.date}</td>
+                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatNumber(point.periodicSats)}</td>
+                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.usdValueThisPeriod)}</td>
+                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatNumber(point.accumulatedSats)}</td>
+                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(cumulativeCost)}</td>
+                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.estimatedBtcPrice)}</td>
+                          <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.cumulativeUsdValue)}</td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="text-center py-4 text-muted-foreground">
+                        Enter details above to see accumulation forecast.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
