@@ -151,7 +151,7 @@ const BuyPatternHistogram: React.FC<{ className?: string }> = ({ className }) =>
             {error}
           </div>
         ) : (
-          <div className="h-full w-full">
+          <div className="h-32 w-full">
             <Bar options={options} data={data} />
           </div>
         )}

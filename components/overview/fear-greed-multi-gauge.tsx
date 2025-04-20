@@ -69,14 +69,14 @@ const FearGreedMultiGauge: React.FC<{ className?: string }> = ({ className }) =>
           const { label: valueLabel } = getFearGreedStyle(value);
           return (
             <div key={label} className="text-center flex flex-col items-center">
-              <div className="text-xs text-muted-foreground uppercase mb-1">{label}</div>
+              <div className="text-xs text-muted-foreground uppercase mb-2">{label}</div>
               <div className="relative w-14 h-14"> {/* Container for gauge and text */}
                 <MiniGauge value={value} />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-base font-medium text-white">{value}</span>
                 </div>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">{valueLabel}</div>
+              <div className="text-xs text-muted-foreground mt-2">{valueLabel}</div>
             </div>
           );
         })}

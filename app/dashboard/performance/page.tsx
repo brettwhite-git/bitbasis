@@ -8,7 +8,7 @@ import { requireAuth } from "@/lib/server-auth"
 // import { TradingViewSection } from "@/components/performance/trading-view-section"
 import { BitcoinHoldingsWaterfall } from "@/components/performance/bitcoin-holdings-waterfall"
 import { HodlAgeDistribution } from "@/components/portfolio/hodl-age-distribution"
-import { BtcHeatmap } from "@/components/overview/btc-heatmap"
+import { BtcHeatmap } from "@/components/performance/btc-heatmap"
 
 export default async function PerformancePage() {
   const { supabase, user } = await requireAuth()
