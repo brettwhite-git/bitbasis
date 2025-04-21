@@ -63,7 +63,7 @@ export default async function PortfolioPage() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-bold tracking-tight text-white">Portfolio Details</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
@@ -99,12 +99,14 @@ export default async function PortfolioPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Short-Term Holdings</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Fees Paid</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-bitcoin-orange">{formatBTC(metrics.shortTermHoldings)}</div>
+            <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(metrics.totalFees)}</div>
             <p className="text-xs text-muted-foreground pt-2">
-              Value: {formatCurrency(metrics.shortTermHoldings * (metrics.currentValue / metrics.totalBtc))}
+              {metrics.totalCostBasis > 0 
+                ? `${((metrics.totalFees / metrics.totalCostBasis) * 100).toFixed(2)}% of total cost basis`
+                : 'No purchases yet'}
             </p>
           </CardContent>
         </Card>
@@ -121,14 +123,23 @@ export default async function PortfolioPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Fees Paid</CardTitle>
+            <CardTitle className="text-sm font-medium">Short-Term Holdings</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(metrics.totalFees)}</div>
+            <div className="text-2xl font-bold text-bitcoin-orange">{formatBTC(metrics.shortTermHoldings)}</div>
             <p className="text-xs text-muted-foreground pt-2">
-              {metrics.totalCostBasis > 0 
-                ? `${((metrics.totalFees / metrics.totalCostBasis) * 100).toFixed(2)}% of total cost basis`
-                : 'No purchases yet'}
+              Value: {formatCurrency(metrics.shortTermHoldings * (metrics.currentValue / metrics.totalBtc))}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Potential Tax Liability</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(metrics.potentialTaxLiabilityST + metrics.potentialTaxLiabilityLT)}</div>
+            <p className="text-xs text-muted-foreground pt-2">
+              ST: {formatCurrency(metrics.potentialTaxLiabilityST)}, LT: {formatCurrency(metrics.potentialTaxLiabilityLT)}
             </p>
           </CardContent>
         </Card>

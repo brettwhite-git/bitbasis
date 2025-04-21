@@ -13,6 +13,7 @@ import {
   ChartData,
   ChartOptions,
   Chart,
+  ChartDataset
 } from "chart.js"
 import { Chart as ReactChart } from "react-chartjs-2"
 
@@ -256,7 +257,7 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
         pointHoverRadius: 5,
         yAxisID: 'y1', // Use the right y-axis
         order: 1,
-      },
+      } as any, // Cast the line dataset to any
     ],
   } : mockData; // Fallback to mock data structure if chartData is empty/undefined
 

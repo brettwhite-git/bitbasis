@@ -10,7 +10,7 @@ export default function CalculatorPage() {
   return (
     <div className="w-full space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Bitcoin Calculator</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Investment Calculator</h1>
       </div>
       <BitcoinCalculator />
     </div>

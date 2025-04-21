@@ -26,6 +26,8 @@ interface ExtendedPortfolioMetrics extends PortfolioMetrics {
     totalReceived: number
     netTransfers: number
   }
+  potentialTaxLiabilityST: number
+  potentialTaxLiabilityLT: number
 }
 
 interface CostBasisMethodResult {
@@ -142,16 +144,17 @@ export async function getPortfolioMetrics(
   supabase: SupabaseClient<Database>
 ): Promise<ExtendedPortfolioMetrics> {
   try {
-    // Get all transactions from orders and transfers tables
+    // Get all transactions from orders and transfers tables AND price
     const [ordersResult, transfersResult, priceResult] = await Promise.all([
       supabase
         .from('orders')
-        .select('*')
+        // Fetch necessary columns for both core metrics and cost basis calculation
+        .select('id, date, type, received_btc_amount, buy_fiat_amount, service_fee, service_fee_currency, sell_btc_amount, received_fiat_amount, price') 
         .eq('user_id', userId)
         .order('date', { ascending: true }),
       supabase
         .from('transfers')
-        .select('*')
+        .select('*') // Keep '*' for transfers for now
         .eq('user_id', userId)
         .order('date', { ascending: true }),
       supabase
@@ -175,6 +178,12 @@ export async function getPortfolioMetrics(
     // Calculate core metrics using only buy/sell orders
     const coreMetrics = calculatePortfolioMetrics(orders, currentPrice)
 
+    // Calculate tax liability using Average Cost method for the overview
+    // Need to await the result as calculateCostBasis is async
+    const avgCostBasisResult = await calculateCostBasis(userId, 'Average Cost', orders, currentPrice);
+    const potentialTaxLiabilityST = avgCostBasisResult.potentialTaxLiabilityST;
+    const potentialTaxLiabilityLT = avgCostBasisResult.potentialTaxLiabilityLT;
+
     // Calculate transfer metrics
     const totalSent = transfers
       .filter(t => t.type === 'withdrawal')
@@ -194,67 +203,49 @@ export async function getPortfolioMetrics(
         totalSent,
         totalReceived,
         netTransfers
-      }
+      },
+      potentialTaxLiabilityST,
+      potentialTaxLiabilityLT
     }
   } catch (error) {
     console.error('Error in getPortfolioMetrics:', error)
-    throw error
+    // Return a default structure in case of error, matching the extended interface
+    return { 
+      totalBtc: 0,
+      totalCostBasis: 0,
+      totalFees: 0,
+      currentValue: 0,
+      unrealizedGain: 0,
+      unrealizedGainPercent: 0,
+      averageBuyPrice: 0,
+      totalTransactions: 0,
+      shortTermHoldings: 0,
+      longTermHoldings: 0,
+      sendReceiveMetrics: { totalSent: 0, totalReceived: 0, netTransfers: 0 },
+      potentialTaxLiabilityST: 0,
+      potentialTaxLiabilityLT: 0
+    }; 
+    // Alternatively re-throw: throw error;
   }
 }
 
 export async function calculateCostBasis(
   userId: string,
   method: 'FIFO' | 'LIFO' | 'Average Cost',
-  supabase: SupabaseClient<Database>
+  orders: any[],
+  currentPrice: number
 ): Promise<CostBasisMethodResult> {
   try {
-    // Get historical Bitcoin prices, including ATH data
-    const [latestPriceResult, athResult] = await Promise.all([
-      supabase
-        .from('bitcoin_prices')
-        .select('price_usd, last_updated')
-        .order('last_updated', { ascending: false })
-        .limit(1)
-        .single(),
-      supabase
-        .from('bitcoin_prices')
-        .select('ath_price, ath_date')
-        .not('ath_price', 'is', null)
-        .order('ath_price', { ascending: false })
-        .limit(1)
-        .single()
-    ])
+    // Validate inputs
+    if (!userId) throw new Error('User ID is required')
+    if (!method) throw new Error('Cost basis method is required')
+    if (!Array.isArray(orders)) throw new Error('Orders data must be an array')
+    if (typeof currentPrice !== 'number' || isNaN(currentPrice)) throw new Error('Valid current price is required')
 
-    if (latestPriceResult.error) throw latestPriceResult.error
-    if (!latestPriceResult.data) {
-      throw new Error('No Bitcoin price data available')
-    }
-
-    const priceData = {
-      ...latestPriceResult.data,
-      ath_price: athResult.data?.ath_price ?? 0,
-      ath_date: athResult.data?.ath_date ?? 'N/A'
-    }
-
-    const prices = [priceData]; // Adapt to calculation logic expecting an array
-    const currentPrice = priceData.price_usd;
-    const marketAthPrice = priceData.ath_price;
-    const marketAthDate = priceData.ath_date;
-
-    // Get only the orders transactions
-    const { data: orders, error: ordersError } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('user_id', userId)
-      .order('date', { ascending: true })
-
-    if (ordersError) throw ordersError
-    if (!orders) throw new Error('Failed to fetch orders')
-
-    // Calculate metrics based only on buy/sell orders
+    // Calculate running balance and totals from the provided orders
     let runningBalance = 0
-    let totalBtcBought = 0 // Only from buys
-    let totalSold = 0 // Only from sells
+    let totalBtcBought = 0
+    let totalSold = 0
     let totalShortTermBtcBought = 0
     let totalLongTermBtcBought = 0
     const oneYearAgoForProportion = new Date()
@@ -265,7 +256,6 @@ export async function calculateCostBasis(
         const amount = order.received_btc_amount
         totalBtcBought += amount
         runningBalance += amount
-        // Track for average cost tax proportion
         const acquisitionDate = new Date(order.date)
         if (acquisitionDate > oneYearAgoForProportion) {
           totalShortTermBtcBought += amount
@@ -278,23 +268,23 @@ export async function calculateCostBasis(
       }
     })
 
-    const remainingBtc = Math.max(0, runningBalance) // Ensure non-negative balance
+    const remainingBtc = Math.max(0, runningBalance)
 
-    // Shared Tax Rates
-    const shortTermTaxRate = 0.15 // User specified ST rate
-    const longTermTaxRate = 0.30  // User specified LT rate
+    // Shared Tax Rates (Consider making these configurable or constants)
+    const shortTermTaxRate = 0.15
+    const longTermTaxRate = 0.30
 
     // --- Average Cost Method --- 
     if (method === 'Average Cost') {
       let totalUsdSpent = 0
       let totalUsdReceived = 0
 
-      // Calculate totals only from orders
       orders.forEach(order => {
         if (order.type === 'buy') {
           if (order.buy_fiat_amount) {
             totalUsdSpent += order.buy_fiat_amount
           }
+          // Ensure service_fee and currency are checked correctly
           if (order.service_fee && order.service_fee_currency === 'USD') {
             totalUsdSpent += order.service_fee
           }
@@ -307,25 +297,26 @@ export async function calculateCostBasis(
 
       const averageCost = totalBtcBought > 0 ? totalUsdSpent / totalBtcBought : 0 
       const currentValue = remainingBtc * currentPrice
-      const realizedGains = totalUsdReceived - (totalSold * averageCost)
-      const unrealizedGain = currentValue - (remainingBtc * averageCost)
-      const unrealizedGainPercent = averageCost > 0 && (remainingBtc * averageCost) > 0 
-        ? (unrealizedGain / (remainingBtc * averageCost)) * 100 
+      const costBasisOfRemaining = remainingBtc * averageCost
+      const realizedGains = totalUsdReceived - (totalSold * averageCost) // Gain/loss from sales
+      const unrealizedGain = currentValue - costBasisOfRemaining // Gain/loss on remaining holdings
+      const unrealizedGainPercent = costBasisOfRemaining > 0 
+        ? (unrealizedGain / costBasisOfRemaining) * 100 
         : 0
 
-      // Calculate potential tax liability using proportions (Option 1)
+      // Calculate potential tax liability using proportions
       let potentialTaxLiabilityST = 0
       let potentialTaxLiabilityLT = 0
       if (unrealizedGain > 0 && totalBtcBought > 0) {
-        const shortTermProportion = totalShortTermBtcBought / totalBtcBought
-        const longTermProportion = totalLongTermBtcBought / totalBtcBought
+        const shortTermProportion = totalBtcBought > 0 ? totalShortTermBtcBought / totalBtcBought : 0
+        const longTermProportion = totalBtcBought > 0 ? totalLongTermBtcBought / totalBtcBought : 0
         potentialTaxLiabilityST = unrealizedGain * shortTermProportion * shortTermTaxRate
         potentialTaxLiabilityLT = unrealizedGain * longTermProportion * longTermTaxRate
       }
 
       return {
-        totalCostBasis: remainingBtc * averageCost,
-        averageCost,
+        totalCostBasis: costBasisOfRemaining, // Cost basis of *remaining* BTC
+        averageCost, // Average cost of *all* bought BTC
         unrealizedGain,
         unrealizedGainPercent,
         potentialTaxLiabilityST,
@@ -339,26 +330,31 @@ export async function calculateCostBasis(
     let btcHoldings: BTCHolding[] = []
     let realizedGains = 0
 
-    // Add ONLY buy transactions to holdings
+    // Populate holdings only from buy orders
     orders.forEach(order => {
-      if (order.type === 'buy' && order.received_btc_amount && order.buy_fiat_amount) {
+      if (order.type === 'buy' && order.received_btc_amount && order.buy_fiat_amount && order.price != null) { // Ensure price exists
+        // Calculate cost basis per buy, including fees
+        const fee = (order.service_fee && order.service_fee_currency === 'USD') ? order.service_fee : 0
+        const costBasisPerBuy = order.buy_fiat_amount + fee
+
         btcHoldings.push({
           date: order.date,
           amount: order.received_btc_amount,
-          costBasis: order.buy_fiat_amount + (order.service_fee || 0),
-          pricePerCoin: order.price
+          costBasis: costBasisPerBuy,
+          pricePerCoin: order.price // Store price per coin at purchase
         })
       }
     })
 
-    // Sort holdings based on method
-    btcHoldings.sort((a, b) => 
+    // Clone and sort holdings based on method for processing sells
+    let holdingsToProcess = [...btcHoldings] // Work on a copy
+    holdingsToProcess.sort((a, b) => 
       method === 'FIFO' 
         ? new Date(a.date).getTime() - new Date(b.date).getTime()
         : new Date(b.date).getTime() - new Date(a.date).getTime()
     )
 
-    // Process ONLY sell transactions
+    // Process only sell transactions against the sorted holdings
     orders.forEach(order => {
       if (order.type === 'sell' && order.sell_btc_amount && order.received_fiat_amount) {
         let remainingSellAmount = order.sell_btc_amount
@@ -367,50 +363,51 @@ export async function calculateCostBasis(
             ? order.received_fiat_amount / order.sell_btc_amount
             : 0
 
-        while (remainingSellAmount > 0 && btcHoldings.length > 0) {
-          const holding = btcHoldings[0]
-          if (!holding) break;
-          const sellAmount = Math.min(remainingSellAmount, holding.amount)
+        while (remainingSellAmount > 0 && holdingsToProcess.length > 0) {
+          const holding = method === 'FIFO' ? holdingsToProcess[0] : holdingsToProcess[holdingsToProcess.length - 1] // Get first for FIFO, last for LIFO
+          if (!holding) break // Should not happen if length > 0
+
+          const sellAmountFromHolding = Math.min(remainingSellAmount, holding.amount)
           
-          // Calculate gain/loss safely
-          const costBasisForPortion = holding.amount > 0 
-            ? (sellAmount / holding.amount) * holding.costBasis
-            : 0
-          const proceedsForPortion = sellAmount * sellPrice
+          // Calculate gain/loss for this portion
+          const costBasisForPortion = holding.costBasis * (sellAmountFromHolding / holding.amount) // Proportional cost basis
+          const proceedsForPortion = sellAmountFromHolding * sellPrice
           realizedGains += proceedsForPortion - costBasisForPortion
 
           // Update or remove the holding
-          if (sellAmount === holding.amount) {
-            btcHoldings.shift()
-          } else {
-            // Avoid division by zero if holding amount somehow becomes 0 before update
-            const remainingProportion = (holding.amount - sellAmount) > 0 ? (holding.amount - sellAmount) / holding.amount : 0;
-            holding.amount -= sellAmount
-            holding.costBasis *= remainingProportion
+          holding.amount -= sellAmountFromHolding
+          holding.costBasis -= costBasisForPortion
+
+          if (holding.amount <= 1e-9) { // Use tolerance for floating point comparison
+            if (method === 'FIFO') {
+              holdingsToProcess.shift() // Remove from beginning
+            } else {
+              holdingsToProcess.pop() // Remove from end
+            }
           }
 
-          remainingSellAmount -= sellAmount
+          remainingSellAmount -= sellAmountFromHolding
         }
       }
     })
 
-    // Calculate remaining cost basis and metrics for FIFO/LIFO
-    const totalCostBasis = btcHoldings.reduce((sum, h) => sum + h.costBasis, 0)
-    // Calculate average cost of *remaining* holdings safely
-    const averageCost = remainingBtc > 0 ? totalCostBasis / remainingBtc : 0 
+    // --- Calculate final metrics for FIFO/LIFO based on remaining holdings --- 
+    const remainingHoldings = holdingsToProcess
+    const totalCostBasis = remainingHoldings.reduce((sum, h) => sum + h.costBasis, 0)
+    const averageCost = remainingBtc > 0 ? totalCostBasis / remainingBtc : 0 // Avg cost of *remaining* holdings
     const currentValue = remainingBtc * currentPrice
     const unrealizedGain = currentValue - totalCostBasis
     const unrealizedGainPercent = totalCostBasis > 0 
         ? (unrealizedGain / totalCostBasis) * 100 
         : 0
     
-    // Calculate detailed potential tax liability for FIFO/LIFO using updated rates
+    // Calculate potential tax liability based on remaining holdings
     let potentialTaxLiabilityST = 0
     let potentialTaxLiabilityLT = 0
     const oneYearAgoForTax = new Date()
     oneYearAgoForTax.setFullYear(oneYearAgoForTax.getFullYear() - 1)
 
-    btcHoldings.forEach(holding => {
+    remainingHoldings.forEach(holding => {
       const holdingValue = holding.amount * currentPrice
       const holdingUnrealizedGain = holdingValue - holding.costBasis
       
@@ -426,18 +423,29 @@ export async function calculateCostBasis(
     })
 
     return {
-      totalCostBasis,
-      averageCost, // Avg cost of remaining holdings
+      totalCostBasis, // Total cost basis of *remaining* holdings
+      averageCost,    // Average cost of *remaining* holdings
+      realizedGains, // Calculated from sells
       unrealizedGain,
       unrealizedGainPercent,
       potentialTaxLiabilityST,
       potentialTaxLiabilityLT,
-      realizedGains,
       remainingBtc
     }
   } catch (error) {
-    console.error('Error calculating cost basis:', error)
-    throw error
+    console.error(`Error calculating ${method} cost basis:`, error)
+    // Return a default error state or re-throw
+    // Depending on how you want to handle errors upstream
+    return {
+      totalCostBasis: 0,
+      averageCost: 0,
+      realizedGains: 0,
+      unrealizedGain: 0,
+      unrealizedGainPercent: 0,
+      potentialTaxLiabilityST: 0,
+      potentialTaxLiabilityLT: 0,
+      remainingBtc: 0
+    } // Or throw error
   }
 }
 
@@ -465,15 +473,20 @@ export async function getPerformanceMetrics(
   supabase: SupabaseClient<Database>
 ): Promise<PerformanceMetrics> {
   try {
-    // Get historical Bitcoin prices, including ATH data
-    const [latestPriceResult, athResult] = await Promise.all([
+    // Fetch all necessary data in parallel
+    const [ordersResult, priceResult, athResult] = await Promise.all([
+      supabase
+        .from('orders')
+        .select('date, type, received_btc_amount, buy_fiat_amount, service_fee, service_fee_currency, sell_btc_amount, received_fiat_amount, price') // Select specific columns
+        .eq('user_id', userId)
+        .order('date', { ascending: true }),
       supabase
         .from('bitcoin_prices')
         .select('price_usd, last_updated')
         .order('last_updated', { ascending: false })
         .limit(1)
         .single(),
-      supabase
+      supabase // Fetch ATH price
         .from('bitcoin_prices')
         .select('ath_price, ath_date')
         .not('ath_price', 'is', null)
@@ -482,230 +495,230 @@ export async function getPerformanceMetrics(
         .single()
     ])
 
-    if (latestPriceResult.error) throw latestPriceResult.error
-    if (!latestPriceResult.data) {
-      throw new Error('No Bitcoin price data available')
-    }
-
-    const priceData = {
-      ...latestPriceResult.data,
-      ath_price: athResult.data?.ath_price ?? 0,
-      ath_date: athResult.data?.ath_date ?? 'N/A'
-    }
-
-    const prices = [priceData]; // Adapt to calculation logic expecting an array
-    const currentPrice = priceData.price_usd;
-    const marketAthPrice = priceData.ath_price;
-    const marketAthDate = priceData.ath_date;
-
-    // Get all transactions from orders and transfers tables
-    const [ordersResult, transfersResult] = await Promise.all([
-      supabase
-        .from('orders')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true }),
-      supabase
-        .from('transfers')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true })
-    ])
-
     if (ordersResult.error) throw ordersResult.error
-    if (transfersResult.error) throw transfersResult.error
+    if (priceResult.error) throw priceResult.error
+    if (athResult.error && athResult.error.code !== 'PGRST116') { // Ignore 'Not found' for ATH
+      throw athResult.error
+    }
 
     const orders = ordersResult.data || []
-    const transfers = transfersResult.data || []
+    if (!priceResult.data) throw new Error('No Bitcoin price data available')
+    const currentPrice = priceResult.data.price_usd
+    const lastUpdated = priceResult.data.last_updated
+    const marketAthPrice = athResult.data?.ath_price ?? 0
+    const marketAthDate = athResult.data?.ath_date ?? 'N/A'
 
-    // Calculate portfolio value at different points in time
-    const now = new Date()
-    const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-    const yearStart = new Date(now.getFullYear(), 0, 1)
-    // Define additional past dates
-    const threeMonthAgo = new Date(now)
-    threeMonthAgo.setMonth(now.getMonth() - 3)
-    const yearAgo = new Date(now)
-    yearAgo.setFullYear(now.getFullYear() - 1)
-    const threeYearAgo = new Date(now)
-    threeYearAgo.setFullYear(now.getFullYear() - 3)
-    const fiveYearAgo = new Date(now)
-    fiveYearAgo.setFullYear(now.getFullYear() - 5)
-
-    let totalInvestment = 0 // Keep track of investment for ROI
-
-    // Calculate portfolio value at each point in history
-    const calculateValueAtDate = (date: Date): { btc: number; usd: number; investment: number } => {
-      let btc = 0
-      let investment = 0
-
-      // Process orders up to the date
-      orders.forEach(order => {
-        if (new Date(order.date) <= date) {
-          if (order.type === 'buy') {
-            if (order.received_btc_amount) {
-              btc += order.received_btc_amount
-            }
-            if (order.buy_fiat_amount) {
-              investment += order.buy_fiat_amount
-            }
-            if (order.service_fee && order.service_fee_currency === 'USD') {
-              investment += order.service_fee
-            }
-          } else if (order.type === 'sell' && order.sell_btc_amount) {
-            btc -= order.sell_btc_amount
-          }
-        }
-      })
-
-      // Process transfers up to the date
-      transfers.forEach(transfer => {
-        if (new Date(transfer.date) <= date) {
-          if (transfer.type === 'deposit') {
-            btc += transfer.amount_btc
-          } else if (transfer.type === 'withdrawal') {
-            btc -= transfer.amount_btc
-          }
-        }
-      })
-
-      // Find the most recent price point at or before the target date
-      const priceRecordAtOrBefore = prices.find(p => new Date(p.last_updated) <= date);
-
-      let price = 0; // Default price
-
-      if (priceRecordAtOrBefore) {
-        // Ideal case: Found a price at or before the date
-        price = priceRecordAtOrBefore.price_usd;
-      } else {
-        // Fallback: No price at or before. Find the *closest* price *after* the date.
-        // Since prices are sorted descending (newest first), we look for the last element
-        // whose date is still greater than the target date.
-        const priceRecordJustAfter = prices.slice().reverse().find(p => new Date(p.last_updated) > date);
-        if (priceRecordJustAfter) {
-          // Use the price from the day immediately following the target date
-          price = priceRecordJustAfter.price_usd;
-        } 
-        // Else: No price found before OR after (date is likely before any data). Price remains 0.
+    if (orders.length === 0) {
+      // Handle case with no orders gracefully
+      return {
+        cumulative: {
+          total: { percent: 0, dollar: 0 },
+          day: { percent: 0, dollar: 0 },
+          week: { percent: 0, dollar: 0 },
+          month: { percent: null, dollar: null },
+          ytd: { percent: null, dollar: null },
+          threeMonth: { percent: null, dollar: null },
+          year: { percent: null, dollar: null },
+          threeYear: { percent: null, dollar: null },
+          fiveYear: { percent: null, dollar: null }
+        },
+        annualized: {
+          total: null, oneYear: null, twoYear: null, threeYear: null,
+          fourYear: null, fiveYear: null, sixYear: null, sevenYear: null, eightYear: null
+        },
+        allTimeHigh: { price: marketAthPrice, date: marketAthDate },
+        hodlTime: 0
       }
+    }
+
+    // Data structure to hold portfolio value over time
+    const portfolioHistory: { date: Date; btc: number; usdValue: number; investment: number }[] = []
+    let currentBtc = 0
+    let currentInvestment = 0 // Total USD spent on buys
+
+    // Calculate historical portfolio value and investment
+    orders.forEach(order => {
+      const orderDate = new Date(order.date)
+      let btcChange = 0
+      let investmentChange = 0
+
+      if (order.type === 'buy' && order.received_btc_amount) {
+        btcChange = order.received_btc_amount
+        // Investment includes buy amount + USD service fee
+        const fee = (order.service_fee && order.service_fee_currency === 'USD') ? order.service_fee : 0
+        investmentChange = (order.buy_fiat_amount || 0) + fee
+      } else if (order.type === 'sell' && order.sell_btc_amount) {
+        btcChange = -order.sell_btc_amount
+        // Sells reduce BTC but don't change the *initial* investment amount directly
+        // Realized gains handle the profit/loss aspect
+      }
+
+      currentBtc += btcChange
+      currentInvestment += investmentChange
       
-      const value = btc * price
+      // Use the price at the time of the transaction for historical value
+      const valueAtTx = currentBtc * (order.price || 0)
 
-      return { btc, usd: value, investment }
-    }
+      portfolioHistory.push({
+        date: orderDate,
+        btc: currentBtc,
+        usdValue: valueAtTx,
+        investment: currentInvestment
+      })
+    })
 
-    // Calculate current portfolio state
-    const current = calculateValueAtDate(now)
-    const dayAgoValue = calculateValueAtDate(dayAgo)
-    const weekAgoValue = calculateValueAtDate(weekAgo)
-    const monthAgoValue = calculateValueAtDate(monthAgo)
-    const yearStartValue = calculateValueAtDate(yearStart)
-    // Calculate values for additional past dates
-    const threeMonthAgoValue = calculateValueAtDate(threeMonthAgo)
-    const yearAgoValue = calculateValueAtDate(yearAgo)
-    const threeYearAgoValue = calculateValueAtDate(threeYearAgo)
-    const fiveYearAgoValue = calculateValueAtDate(fiveYearAgo)
+    // Add current state
+    const now = new Date()
+    const currentValue = currentBtc * currentPrice
+    portfolioHistory.push({
+      date: now,
+      btc: currentBtc,
+      usdValue: currentValue,
+      investment: currentInvestment
+    })
 
-    // Calculate ROI
-    const totalROIPercent = current.investment > 0 
-      ? ((current.usd - current.investment) / current.investment) * 100 
-      : 0
-
-    // Calculate returns for different periods
-    const calculatePeriodReturn = (current: number, previous: number) => 
-      previous > 0 ? ((current - previous) / previous) * 100 : 0
-
-    const performance: PerformanceMetrics = {
-      cumulative: {
-        total: {
-          percent: totalROIPercent,
-          dollar: current.usd - current.investment
-        },
-        day: {
-          percent: calculatePeriodReturn(current.usd, dayAgoValue.usd),
-          dollar: current.usd - dayAgoValue.usd
-        },
-        week: {
-          percent: calculatePeriodReturn(current.usd, weekAgoValue.usd),
-          dollar: current.usd - weekAgoValue.usd
-        },
-        month: {
-          percent: calculatePeriodReturn(current.usd, monthAgoValue.usd),
-          dollar: current.usd - monthAgoValue.usd
-        },
-        ytd: {
-          percent: calculatePeriodReturn(current.usd, yearStartValue.usd),
-          dollar: current.usd - yearStartValue.usd
-        },
-        threeMonth: {
-          percent: calculatePeriodReturn(current.usd, threeMonthAgoValue.usd),
-          dollar: current.usd - threeMonthAgoValue.usd
-        },
-        year: {
-          percent: calculatePeriodReturn(current.usd, yearAgoValue.usd),
-          dollar: current.usd - yearAgoValue.usd
-        },
-        threeYear: {
-          percent: calculatePeriodReturn(current.usd, threeYearAgoValue.usd),
-          dollar: current.usd - threeYearAgoValue.usd
-        },
-        fiveYear: {
-          percent: calculatePeriodReturn(current.usd, fiveYearAgoValue.usd),
-          dollar: current.usd - fiveYearAgoValue.usd
+    // Helper to find portfolio state at a specific date
+    const getValueAtDate = (targetDate: Date): { btc: number; usdValue: number; investment: number } => {
+      let closestPastState = portfolioHistory[0] // Start with the first transaction state
+      for (const entry of portfolioHistory) {
+        if (entry.date <= targetDate) {
+          closestPastState = entry
+        } else {
+          // Since history is sorted, we found the last state before or on the target date
+          break
         }
-      },
-      annualized: {
-        total: null,
-        oneYear: null,
-        twoYear: null,
-        threeYear: null,
-        fourYear: null,
-        fiveYear: null,
-        sixYear: null,
-        sevenYear: null,
-        eightYear: null
-      },
-      allTimeHigh: {
-        price: marketAthPrice,
-        date: marketAthDate && marketAthDate !== 'N/A' 
-          ? new Date(marketAthDate).toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
-            })
-          : 'Not Available'
-      },
-      hodlTime: calculateWeightedHodlTime(orders, now)
+      }
+      // Adjust the USD value using the *current* price for comparison periods
+      // except for the total calculation which should use the final actual value
+      return {
+        btc: closestPastState.btc,
+        // Use current price to value holdings at the *end* of the period for comparison
+        usdValue: closestPastState.btc * currentPrice, 
+        investment: closestPastState.investment
+      }
     }
 
-    // Calculate annualized returns
-    const calculateAnnualizedReturn = (current: number, previous: number, years: number) => {
-      if (previous <= 0 || years <= 0) return null;
-      return (Math.pow(current / previous, 1 / years) - 1) * 100;
-    };
+    // Calculate performance over different periods
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(today.getDate() - 1)
+    const lastWeek = new Date(today)
+    lastWeek.setDate(today.getDate() - 7)
+    const lastMonth = new Date(today)
+    lastMonth.setMonth(today.getMonth() - 1)
+    const startOfYear = new Date(today.getFullYear(), 0, 1)
+    const threeMonthsAgo = new Date(today)
+    threeMonthsAgo.setMonth(today.getMonth() - 3)
+    const oneYearAgo = new Date(today)
+    oneYearAgo.setFullYear(today.getFullYear() - 1)
+    const threeYearsAgo = new Date(today)
+    threeYearsAgo.setFullYear(today.getFullYear() - 3)
+    const fiveYearsAgo = new Date(today)
+    fiveYearsAgo.setFullYear(today.getFullYear() - 5)
 
-    // Update annualized returns calculations
-    performance.annualized = {
-      total: calculateAnnualizedReturn(
-        current.usd,
-        current.investment,
-        (now.getTime() - new Date(orders[0]?.date || now).getTime()) / (365 * 24 * 60 * 60 * 1000)
-      ),
-      oneYear: yearAgoValue.usd > 0 ? calculateAnnualizedReturn(current.usd, yearAgoValue.usd, 1) : null,
-      twoYear: calculateAnnualizedReturn(current.usd, calculateValueAtDate(new Date(now.setFullYear(now.getFullYear() - 2))).usd, 2),
-      threeYear: calculateAnnualizedReturn(current.usd, threeYearAgoValue.usd, 3),
-      fourYear: calculateAnnualizedReturn(current.usd, calculateValueAtDate(new Date(now.setFullYear(now.getFullYear() - 4))).usd, 4),
-      fiveYear: calculateAnnualizedReturn(current.usd, fiveYearAgoValue.usd, 5),
-      sixYear: calculateAnnualizedReturn(current.usd, calculateValueAtDate(new Date(now.setFullYear(now.getFullYear() - 6))).usd, 6),
-      sevenYear: calculateAnnualizedReturn(current.usd, calculateValueAtDate(new Date(now.setFullYear(now.getFullYear() - 7))).usd, 7),
-      eightYear: calculateAnnualizedReturn(current.usd, calculateValueAtDate(new Date(now.setFullYear(now.getFullYear() - 8))).usd, 8)
-    };
+    const valueNow = { usdValue: currentValue, investment: currentInvestment }
+    const valueYesterday = getValueAtDate(yesterday)
+    const valueLastWeek = getValueAtDate(lastWeek)
+    const valueLastMonth = getValueAtDate(lastMonth)
+    const valueStartOfYear = getValueAtDate(startOfYear)
+    const valueThreeMonthsAgo = getValueAtDate(threeMonthsAgo)
+    const valueOneYearAgo = getValueAtDate(oneYearAgo)
+    const valueThreeYearsAgo = getValueAtDate(threeYearsAgo)
+    const valueFiveYearsAgo = getValueAtDate(fiveYearsAgo)
 
-    return performance
+    // Helper for percentage calculation (Gain / Investment)
+    const calculateReturnPercent = (endValue: number, startValue: number, startInvestment: number) => {
+      // Use startInvestment as the denominator for ROI calculation
+      return startInvestment > 0 ? ((endValue - startValue) / startInvestment) * 100 : 0
+    }
+    // Helper for dollar calculation (End Value - Start Value)
+    const calculateReturnDollar = (endValue: number, startValue: number) => {
+      return endValue - startValue
+    }
+
+    const firstOrderDate = portfolioHistory[0]?.date
+    const totalInvestment = currentInvestment
+
+    // Cumulative Returns
+    const cumulative = {
+      total: {
+        percent: totalInvestment > 0 ? ((currentValue - totalInvestment) / totalInvestment) * 100 : 0,
+        dollar: currentValue - totalInvestment
+      },
+      day: {
+        percent: calculateReturnPercent(valueNow.usdValue, valueYesterday.usdValue, valueYesterday.investment),
+        dollar: calculateReturnDollar(valueNow.usdValue, valueYesterday.usdValue)
+      },
+      week: {
+        percent: calculateReturnPercent(valueNow.usdValue, valueLastWeek.usdValue, valueLastWeek.investment),
+        dollar: calculateReturnDollar(valueNow.usdValue, valueLastWeek.usdValue)
+      },
+      month: firstOrderDate && firstOrderDate <= lastMonth ? {
+        percent: calculateReturnPercent(valueNow.usdValue, valueLastMonth.usdValue, valueLastMonth.investment),
+        dollar: calculateReturnDollar(valueNow.usdValue, valueLastMonth.usdValue)
+      } : { percent: null, dollar: null },
+      ytd: firstOrderDate && firstOrderDate <= startOfYear ? {
+        percent: calculateReturnPercent(valueNow.usdValue, valueStartOfYear.usdValue, valueStartOfYear.investment),
+        dollar: calculateReturnDollar(valueNow.usdValue, valueStartOfYear.usdValue)
+      } : { percent: null, dollar: null },
+      threeMonth: firstOrderDate && firstOrderDate <= threeMonthsAgo ? {
+        percent: calculateReturnPercent(valueNow.usdValue, valueThreeMonthsAgo.usdValue, valueThreeMonthsAgo.investment),
+        dollar: calculateReturnDollar(valueNow.usdValue, valueThreeMonthsAgo.usdValue)
+      } : { percent: null, dollar: null },
+      year: firstOrderDate && firstOrderDate <= oneYearAgo ? {
+        percent: calculateReturnPercent(valueNow.usdValue, valueOneYearAgo.usdValue, valueOneYearAgo.investment),
+        dollar: calculateReturnDollar(valueNow.usdValue, valueOneYearAgo.usdValue)
+      } : { percent: null, dollar: null },
+      threeYear: firstOrderDate && firstOrderDate <= threeYearsAgo ? {
+        percent: calculateReturnPercent(valueNow.usdValue, valueThreeYearsAgo.usdValue, valueThreeYearsAgo.investment),
+        dollar: calculateReturnDollar(valueNow.usdValue, valueThreeYearsAgo.usdValue)
+      } : { percent: null, dollar: null },
+      fiveYear: firstOrderDate && firstOrderDate <= fiveYearsAgo ? {
+        percent: calculateReturnPercent(valueNow.usdValue, valueFiveYearsAgo.usdValue, valueFiveYearsAgo.investment),
+        dollar: calculateReturnDollar(valueNow.usdValue, valueFiveYearsAgo.usdValue)
+      } : { percent: null, dollar: null }
+    }
+
+    // Annualized Returns
+    const calculateAnnualizedReturn = (endValue: number, startValue: number, years: number) => {
+      if (startValue <= 0 || years <= 0) return null
+      // Using simple CAGR formula: (End Value / Start Value)^(1/Years) - 1
+      return (Math.pow(endValue / startValue, 1 / years) - 1) * 100
+    }
+
+    const annualized = {
+      total: null, // Requires start date/value if defined differently
+      oneYear: cumulative.year.percent, // 1-year cumulative is the same as annualized
+      twoYear: firstOrderDate && firstOrderDate <= new Date(today.getFullYear() - 2, today.getMonth(), today.getDate()) ? calculateAnnualizedReturn(valueNow.usdValue, getValueAtDate(new Date(today.getFullYear() - 2, today.getMonth(), today.getDate())).usdValue, 2) : null,
+      threeYear: firstOrderDate && firstOrderDate <= threeYearsAgo ? calculateAnnualizedReturn(valueNow.usdValue, valueThreeYearsAgo.usdValue, 3) : null,
+      fourYear: firstOrderDate && firstOrderDate <= new Date(today.getFullYear() - 4, today.getMonth(), today.getDate()) ? calculateAnnualizedReturn(valueNow.usdValue, getValueAtDate(new Date(today.getFullYear() - 4, today.getMonth(), today.getDate())).usdValue, 4) : null,
+      fiveYear: firstOrderDate && firstOrderDate <= fiveYearsAgo ? calculateAnnualizedReturn(valueNow.usdValue, valueFiveYearsAgo.usdValue, 5) : null,
+      sixYear: firstOrderDate && firstOrderDate <= new Date(today.getFullYear() - 6, today.getMonth(), today.getDate()) ? calculateAnnualizedReturn(valueNow.usdValue, getValueAtDate(new Date(today.getFullYear() - 6, today.getMonth(), today.getDate())).usdValue, 6) : null,
+      sevenYear: firstOrderDate && firstOrderDate <= new Date(today.getFullYear() - 7, today.getMonth(), today.getDate()) ? calculateAnnualizedReturn(valueNow.usdValue, getValueAtDate(new Date(today.getFullYear() - 7, today.getMonth(), today.getDate())).usdValue, 7) : null,
+      eightYear: firstOrderDate && firstOrderDate <= new Date(today.getFullYear() - 8, today.getMonth(), today.getDate()) ? calculateAnnualizedReturn(valueNow.usdValue, getValueAtDate(new Date(today.getFullYear() - 8, today.getMonth(), today.getDate())).usdValue, 8) : null
+    }
+
+    return {
+      cumulative,
+      annualized,
+      allTimeHigh: { price: marketAthPrice, date: marketAthDate },
+      hodlTime: calculateWeightedHodlTime(orders, today)
+    }
   } catch (error) {
     console.error('Error calculating performance metrics:', error)
-    throw error
+    // Return a default/error state
+    return {
+      cumulative: {
+        total: { percent: 0, dollar: 0 }, day: { percent: 0, dollar: 0 }, week: { percent: 0, dollar: 0 },
+        month: { percent: null, dollar: null }, ytd: { percent: null, dollar: null }, threeMonth: { percent: null, dollar: null },
+        year: { percent: null, dollar: null }, threeYear: { percent: null, dollar: null }, fiveYear: { percent: null, dollar: null }
+      },
+      annualized: {
+        total: null, oneYear: null, twoYear: null, threeYear: null,
+        fourYear: null, fiveYear: null, sixYear: null, sevenYear: null, eightYear: null
+      },
+      allTimeHigh: { price: 0, date: 'N/A' },
+      hodlTime: 0
+    }
   }
 } 

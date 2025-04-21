@@ -51,6 +51,9 @@ type CostBasisResult = {
   remainingBtc: number
 }
 
+// Define Order type based on schema if not already done globally
+type Order = Database['public']['Tables']['orders']['Row']
+
 type SortField = 'method' | 'totalBtc' | 'costBasis' | 'averageCost' | 'realizedGains' | 'unrealizedGain' | 'unrealizedGainPercent' | 'taxLiabilityST' | 'taxLiabilityLT'
 type SortConfig = { field: SortField, direction: 'asc' | 'desc' }
 
@@ -134,27 +137,50 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
         setLoading(true)
         setError(null)
 
-        // Get the current user
+        // 1. Get the current user
         const { data: { user }, error: userError } = await supabase.auth.getUser()
         
-        if (userError) {
-          console.error('Auth error:', userError)
-          throw new Error('Authentication failed')
+        if (userError || !user) {
+          console.error('Auth error or no user:', userError)
+          throw new Error(userError?.message || 'User not authenticated')
         }
 
-        if (!user) {
-          console.error('No user found')
-          throw new Error('User not authenticated')
-        }
+        // 2. Fetch necessary data in parallel
+        const [priceResult, ordersResult] = await Promise.all([
+          // Fetch latest price
+          supabase
+            .from('bitcoin_prices')
+            .select('price_usd')
+            .order('last_updated', { ascending: false })
+            .limit(1)
+            .single(),
+          // Fetch user orders with specific columns
+          supabase
+            .from('orders')
+            .select('id, date, type, received_btc_amount, buy_fiat_amount, service_fee, service_fee_currency, sell_btc_amount, received_fiat_amount, price')
+            .eq('user_id', user.id)
+            .order('date', { ascending: true })
+        ])
+        
+        // Check for errors
+        if (priceResult.error) throw priceResult.error
+        if (ordersResult.error) throw ordersResult.error
+        if (!priceResult.data) throw new Error('No Bitcoin price data available')
 
-        // Calculate results for each method using userId
-        const fifo = await calculateCostBasis(user.id, 'FIFO', supabase)
-        const lifo = await calculateCostBasis(user.id, 'LIFO', supabase)
-        const average = await calculateCostBasis(user.id, 'Average Cost', supabase)
+        const currentPrice = priceResult.data.price_usd
+        const orders = ordersResult.data || []
+
+        // 3. Calculate results for each method using the fetched data
+        // Note: calculateCostBasis might need adjustment if it's still async internally
+        // (It shouldn't be if data fetching was fully removed)
+        const fifo = await calculateCostBasis(user.id, 'FIFO', orders, currentPrice)
+        const lifo = await calculateCostBasis(user.id, 'LIFO', orders, currentPrice)
+        const average = await calculateCostBasis(user.id, 'Average Cost', orders, currentPrice)
 
         setFifoResults(fifo)
         setLifoResults(lifo)
         setAverageResults(average)
+
       } catch (err) {
         console.error('Error loading cost basis data:', err)
         setError(err instanceof Error ? err.message : 'An error occurred')
