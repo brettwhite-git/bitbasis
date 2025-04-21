@@ -393,15 +393,20 @@ function Chart() {
           ]).filter((v): v is number => v !== null && typeof v === 'number' && !isNaN(v)) // Filter base values
             .concat(validThreeMonthMA, validLongTermMA); // Concat pre-filtered MAs
 
-          if (allValues.length === 0) return -10; // Default slightly negative if no data
+          if (allValues.length === 0) return 0; // Start at 0 if no data
 
           const minValue = Math.min(...allValues);
           const maxValue = Math.max(...allValues);
           
-          // Calculate the nice scale and step
-          const range = Math.max(1, maxValue - minValue); // Ensure range is at least 1 to avoid division by zero
+          // If the actual minimum value in the data is non-negative, set the axis minimum to 0.
+          if (minValue >= 0) {
+            return 0;
+          }
+
+          // If the minimum value IS negative, calculate a 'nice' minimum below it.
+          const range = Math.max(1, maxValue - minValue);
           const roughStep = range / 6;
-          const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep || 1))); // Handle roughStep potentially being 0
+          const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep || 1)));
           const normalizedStep = roughStep / magnitude;
           let niceStep: number;
           if (normalizedStep < 1.5) niceStep = 1;
@@ -410,17 +415,10 @@ function Chart() {
           else niceStep = 10;
           niceStep *= magnitude;
 
+          // Calculate the minimum based on the data, rounded down to the nearest nice step
           let niceMin = Math.floor(minValue / niceStep) * niceStep;
           
-          // *** Ensure minimum is below zero if calculated min is >= 0 ***
-          if (niceMin >= 0) {
-            niceMin = -niceStep; // Set to one step below zero
-            // Optional: Add a check to ensure it's not excessively negative if minValue itself was very small positive
-            if (minValue >= 0 && niceMin < -maxValue * 0.2) { // Avoid huge negative dip if max value is small
-                niceMin = -Math.max(niceStep, maxValue * 0.1);
-            }
-          }
-
+          // Return the calculated nice minimum for negative data ranges
           return niceMin;
         },
         suggestedMax: function(context: any) {
@@ -451,7 +449,7 @@ function Chart() {
           maxTicksLimit: 8,
           includeBounds: true
         },
-        grace: '5%', // Keep grace for a little extra padding
+        grace: 0, // REMOVE bottom padding 
         beginAtZero: false // Ensure axis doesn't always start at zero
       },
     },
@@ -530,7 +528,7 @@ function Chart() {
   }
 
   return (
-    <div className="h-[500px] w-full">
+    <div className="h-[525px] w-full">
       <Line options={dynamicOptions} data={chartData} />
     </div>
   );

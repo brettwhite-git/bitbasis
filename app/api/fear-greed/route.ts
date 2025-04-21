@@ -102,7 +102,14 @@ async function fetchFearGreedIndex(): Promise<FearGreedIndexEntry[]> {
 export async function GET() {
   console.log('\n[API /fear-greed] ====== Route handler started ======');
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    // Use service_role to bypass RLS policies
+    const supabase = createRouteHandlerClient({ cookies }, {
+      options: {
+        db: { schema: 'public' },
+        auth: { persistSession: false },
+        global: { headers: { 'X-Supabase-Role': 'service_role' } }
+      }
+    })
 
     // Check if we have recent data (last 24 hours)
     const { data: cachedData, error: cacheError } = await supabase
