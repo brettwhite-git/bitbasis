@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Slider } from "@/components/ui/slider"
 import { CalculatorChart, ChartDataPoint } from "./calculator-chart"
 import { SavingsGoalCalculator } from "./savings-goal-calculator"
 
@@ -603,8 +604,8 @@ export function BitcoinCalculator() {
                 <div className="space-y-2">
                   <Label className="dark:text-gray-300">Goal Date</Label>
                   <div className="space-y-4">
-                    <div className="relative">
-                      <div className="flex justify-between text-xs text-muted-foreground dark:text-gray-400 px-1">
+                    <div className="relative pt-5">
+                      <div className="absolute top-0 left-0 right-0 flex justify-between text-xs text-muted-foreground dark:text-gray-400 px-1">
                         <span>1M</span>
                         <span>6M</span>
                         <span>1Y</span>
@@ -612,29 +613,28 @@ export function BitcoinCalculator() {
                         <span>5Y</span>
                         <span>10Y</span>
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="5"
-                        step="1"
-                        value={
+                      <Slider
+                        min={0}
+                        max={5}
+                        step={1}
+                        value={[
                           goalDuration === '1_month' ? 0 :
                           goalDuration === '6_month' ? 1 :
                           goalDuration === '1_year' ? 2 :
                           goalDuration === '3_year' ? 3 :
                           goalDuration === '5_year' ? 4 : 5
-                        }
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
+                        ]}
+                        onValueChange={(value) => {
+                          const index = value[0];
                           const newDuration =
-                            value === 0 ? '1_month' :
-                            value === 1 ? '6_month' :
-                            value === 2 ? '1_year' :
-                            value === 3 ? '3_year' :
-                            value === 4 ? '5_year' : '10_year';
+                            index === 0 ? '1_month' :
+                            index === 1 ? '6_month' :
+                            index === 2 ? '1_year' :
+                            index === 3 ? '3_year' :
+                            index === 4 ? '5_year' : '10_year';
                           setGoalDuration(newDuration);
                         }}
-                        className="w-full accent-bitcoin-orange cursor-pointer h-2 rounded-lg appearance-none bg-muted dark:bg-gray-700"
+                        className="w-full cursor-pointer h-2 rounded-lg appearance-none bg-muted dark:bg-gray-700"
                       />
                     </div>
                     <div className="text-center font-medium dark:text-gray-100">
@@ -645,23 +645,22 @@ export function BitcoinCalculator() {
                 <div className="space-y-2">
                   <Label className="dark:text-gray-300">Future Price Estimate</Label>
                   <div className="space-y-4">
-                    <div className="relative">
-                      <div className="flex justify-between text-xs text-muted-foreground dark:text-gray-400 px-1">
-                        <span>1Y</span>
-                        <span>2Y</span>
-                        <span>4Y</span>
-                        <span>5Y</span>
-                        <span>6Y</span>
-                        <span>8Y</span>
-                        <span>10Y</span>
-                        <span>12Y</span>
+                    <div className="relative pt-5">
+                      <div className="absolute top-0 left-0 right-0 flex justify-between text-xs text-muted-foreground dark:text-gray-400 px-1">
+                        <span>48%</span>
+                        <span>85%</span>
+                        <span>15%</span>
+                        <span>72%</span>
+                        <span>65%</span>
+                        <span>74%</span>
+                        <span>84%</span>
+                        <span>75%</span>
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="7"
-                        step="1"
-                        value={
+                      <Slider
+                        min={0}
+                        max={7}
+                        step={1}
+                        value={[
                           priceGrowth === '48' ? 0 :
                           priceGrowth === '85' ? 1 :
                           priceGrowth === '15' ? 2 :
@@ -669,20 +668,20 @@ export function BitcoinCalculator() {
                           priceGrowth === '65' ? 4 :
                           priceGrowth === '74' ? 5 :
                           priceGrowth === '84' ? 6 : 7
-                        }
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
+                        ]}
+                        onValueChange={(value) => {
+                          const index = value[0];
                           setPriceGrowth(
-                            value === 0 ? '48' :
-                            value === 1 ? '85' :
-                            value === 2 ? '15' :
-                            value === 3 ? '72' :
-                            value === 4 ? '65' :
-                            value === 5 ? '74' :
-                            value === 6 ? '84' : '75'
+                            index === 0 ? '48' :
+                            index === 1 ? '85' :
+                            index === 2 ? '15' :
+                            index === 3 ? '72' :
+                            index === 4 ? '65' :
+                            index === 5 ? '74' :
+                            index === 6 ? '84' : '75'
                           );
                         }}
-                        className="w-full accent-bitcoin-orange cursor-pointer h-2 rounded-lg appearance-none bg-muted dark:bg-gray-700"
+                        className="w-full cursor-pointer h-2 rounded-lg appearance-none bg-muted dark:bg-gray-700"
                       />
                     </div>
                     <div className="text-center font-medium dark:text-gray-100">
