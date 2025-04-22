@@ -55,7 +55,7 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
     borderColor: '#F7931A', // Bitcoin orange
     backgroundColor: (context: any) => { // Gradient fill for nominal
         const ctx = context.chart.ctx;
-        const gradient = ctx.createLinearGradient(0, 0, 0, 200); // Adjust gradient height
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300); // Adjust gradient height
         gradient.addColorStop(0, 'rgba(247, 147, 26, 0.5)'); // Orange semi-transparent
         gradient.addColorStop(1, 'rgba(247, 147, 26, 0)'); // Fades to transparent
         return gradient;
@@ -135,14 +135,14 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
         labels: {
             color: '#CBD5E1', // slate-300
             usePointStyle: true, // Use point style (circle) instead of box
-            padding: 20 // Add padding around legend items
+            padding: 30 // Add padding around legend items
         }
       },
       tooltip: {
         backgroundColor: '#1E293B', // slate-800
         titleColor: '#F1F5F9', // slate-100
         bodyColor: '#F1F5F9', // slate-100
-        padding: 12,
+        padding: 15,
         boxPadding: 4,
         usePointStyle: true, // Use point style in tooltips
         callbacks: {
