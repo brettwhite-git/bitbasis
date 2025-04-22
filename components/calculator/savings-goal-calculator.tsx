@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { ProjectionChart } from "./projection-chart";
+import { useSavingsGoalProgress } from '@/hooks/useSavingsGoalProgress';
 // import { Line } from 'react-chartjs-2'; // We'll add chart imports later
 // We'll need Chart.js core and scales too later
 
@@ -197,6 +198,21 @@ export function SavingsGoalCalculator() {
   const [savedGoalEstBtcDate, setSavedGoalEstBtcDate] = useState<Date | null>(null); // New state: Estimated date for the *saved* goal's BTC target
 
   const [activeGoal, setActiveGoal] = useState<SavedGoalData | null>(null);
+
+  // --- Log activeGoal right after setting/loading ---
+  useEffect(() => {
+    console.log("Active goal state in component:", activeGoal);
+  }, [activeGoal]);
+
+  // --- Call the new hook for progress calculation ---
+  const goalProgress = useSavingsGoalProgress(
+    activeGoal
+        ? {
+              startDate: activeGoal.startDate,
+              targetBtcAmount: activeGoal.savedProjection.targetBtcAmount,
+          }
+        : null
+);
 
   // Calculation logic
   useEffect(() => {
@@ -432,26 +448,8 @@ export function SavingsGoalCalculator() {
       }
   };
 
-  // --- Calculate Time Progress ---
-  const timeProgressPercent = useMemo(() => {
-      // Ensure activeGoal exists before accessing its properties
-      if (!activeGoal || !activeGoal.startDate || !activeGoal.estimatedTargetDateISO) return 0;
-      try {
-          const startDate = new Date(activeGoal.startDate).getTime();
-          const targetDate = new Date(activeGoal.estimatedTargetDateISO).getTime();
-          const now = new Date().getTime();
-
-          if (now >= targetDate) return 100;
-          if (now <= startDate || targetDate <= startDate) return 0;
-
-          const totalDuration = targetDate - startDate;
-          const elapsedDuration = now - startDate;
-          return Math.min(100, Math.max(0, (elapsedDuration / totalDuration) * 100));
-
-      } catch {
-          return 0; // Handle invalid dates
-      }
-  }, [activeGoal]);
+  // --- Calculate Time Progress --- // REMOVED
+  // const timeProgressPercent = useMemo(() => { ... }, [activeGoal]);
 
   // --- Format Currency ---
   const formatCurrency = (value: number) => {
@@ -508,18 +506,20 @@ export function SavingsGoalCalculator() {
                     {/* Add dark mode border class */}
                     <div className='w-32 h-32 rounded-full border-4 border-border dark:border-gray-600 flex items-center justify-center text-center'>
                          <div>
-                            <p className='text-3xl font-bold'>{timeProgressPercent.toFixed(0)}%</p>
-                            <p className='text-xs text-muted-foreground dark:text-gray-400'>Time Elapsed</p>
+                            {/* Update to use BTC progress */} 
+                            <p className='text-3xl font-bold'>{goalProgress.isLoading ? '...' : `${goalProgress.btcProgressPercent.toFixed(0)}%`}</p>
+                            {/* Update label */} 
+                            <p className='text-xs text-muted-foreground dark:text-gray-400'>{goalProgress.error ? 'Error' : 'BTC Progress'}</p>
                          </div>
                     </div>
                     {/* Progress Bar and Dates */} 
                     <div className="w-full px-4 mt-4 space-y-1">
-                        {/* TODO: Import Progress component from shadcn/ui */}
-                         {/* <Progress value={timeProgressPercent} className="h-2" /> */}
+                         {/* <Progress value={timeProgressPercent} className="h-2" /> */} 
                          <div className="w-full h-2 bg-muted rounded-full dark:bg-gray-700"> 
                             <div 
                                 className="h-2 bg-bitcoin-orange rounded-full"
-                                style={{ width: `${timeProgressPercent}%` }}
+                                // Update width to use BTC progress
+                                style={{ width: goalProgress.isLoading ? '0%' : `${goalProgress.btcProgressPercent}%` }}
                             ></div>
                          </div>
                          <div className="flex justify-between text-xs text-muted-foreground dark:text-gray-400">
