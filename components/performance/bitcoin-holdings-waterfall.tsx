@@ -244,7 +244,7 @@ export function BitcoinHoldingsWaterfall() {
   }
 
   return (
-    <Card className="h-full">
+    <Card className="h-full bg-[#0f172a] border-gray-800">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold">Bitcoin Accumulation Flow</CardTitle>
         <p className="text-sm text-muted-foreground">Waterfall chart showing how your BTC stack has grown by year</p>

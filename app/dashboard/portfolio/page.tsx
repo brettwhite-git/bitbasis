@@ -1,58 +1,19 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui"
-import { PerformanceReturns } from "@/components/portfolio/performance-returns"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui"
+import { PerformanceReturnsWrapper } from "@/components/portfolio/performance-returns-wrapper"
 import { getPortfolioMetrics, getPerformanceMetrics } from "@/lib/portfolio"
 import { formatCurrency, formatBTC } from "@/lib/utils"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Database } from "@/types/supabase"
 import { requireAuth } from "@/lib/server-auth"
-import SupabaseProvider from "@/components/providers/supabase-provider"
-
-// Add loading state component
-function LoadingCard() {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">
-          <Skeleton className="h-4 w-[100px]" />
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-8 w-[150px] mb-2" />
-        <Skeleton className="h-4 w-[120px]" />
-      </CardContent>
-    </Card>
-  )
-}
+import { TaxLiabilityCardWrapper } from "@/components/portfolio/tax-liability-card-wrapper"
 
 export default async function PortfolioPage() {
   const { supabase, user } = await requireAuth()
-
-  // Debug: Check if we can query transactions directly
-  // const { data: transactions, error: txError } = await supabase
-  //   .from('transactions')
-  //   .select('*')
-  //   .eq('user_id', user.id)
-  //   .order('date', { ascending: true })
-  //
-  // if (txError) {
-  //   console.error('Transaction query error:', txError)
-  //   throw new Error('Failed to fetch transactions')
-  // }
-  //
-  // // Debug log for transaction fees
-  // console.log('Transaction fee data:', transactions?.slice(0, 5).map(tx => ({
-  //   service_fee: tx.service_fee,
-  //   service_fee_currency: tx.service_fee_currency
-  // })))
 
   // Fetch portfolio metrics and performance metrics
   const [metrics, performance] = await Promise.all([
     getPortfolioMetrics(user.id, supabase),
     getPerformanceMetrics(user.id, supabase)
   ])
-
-  console.log('Portfolio metrics:', metrics)
-  console.log('Performance metrics:', performance)
 
   // Ensure positive values and proper formatting
   const totalBtc = Math.max(0, metrics.totalBtc)
@@ -132,21 +93,12 @@ export default async function PortfolioPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Potential Tax Liability</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(metrics.potentialTaxLiabilityST + metrics.potentialTaxLiabilityLT)}</div>
-            <p className="text-xs text-muted-foreground pt-2">
-              ST: {formatCurrency(metrics.potentialTaxLiabilityST)}, LT: {formatCurrency(metrics.potentialTaxLiabilityLT)}
-            </p>
-          </CardContent>
-        </Card>
+        <TaxLiabilityCardWrapper 
+          stLiability={metrics.potentialTaxLiabilityST} 
+          ltLiability={metrics.potentialTaxLiabilityLT}
+        />
       </div>
-      <SupabaseProvider>
-        <PerformanceReturns data={performance} />
-      </SupabaseProvider>
+      <PerformanceReturnsWrapper data={performance} />
     </div>
   )
 }

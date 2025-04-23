@@ -149,7 +149,7 @@ export function HodlAgeDistribution() {
   }
 
   return (
-    <Card className="h-full">
+    <Card className="h-full bg-[#0f172a] border-gray-800">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold">HODL Age Distribution</CardTitle>
         <p className="text-sm text-muted-foreground">Bitcoin holdings by time held</p>

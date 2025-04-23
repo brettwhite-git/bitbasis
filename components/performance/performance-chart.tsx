@@ -528,7 +528,7 @@ function Chart() {
   }
 
   return (
-    <div className="h-[525px] w-full">
+    <div className="h-[450px] w-full">
       <Line options={dynamicOptions} data={chartData} />
     </div>
   );

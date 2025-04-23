@@ -76,6 +76,10 @@ export interface PerformanceMetrics {
     date: string
   }
   hodlTime: number
+  currentPrice?: number
+  averageBuyPrice?: number
+  lowestBuyPrice?: number
+  highestBuyPrice?: number
 }
 
 // Remove standalone client initialization
@@ -271,8 +275,8 @@ export async function calculateCostBasis(
     const remainingBtc = Math.max(0, runningBalance)
 
     // Shared Tax Rates (Consider making these configurable or constants)
-    const shortTermTaxRate = 0.15
-    const longTermTaxRate = 0.30
+    const shortTermTaxRate = 0.37 // Updated placeholder ST rate
+    const longTermTaxRate = 0.20  // Updated placeholder LT rate
 
     // --- Average Cost Method --- 
     if (method === 'Average Cost') {
@@ -698,11 +702,38 @@ export async function getPerformanceMetrics(
       eightYear: firstOrderDate && firstOrderDate <= new Date(today.getFullYear() - 8, today.getMonth(), today.getDate()) ? calculateAnnualizedReturn(valueNow.usdValue, getValueAtDate(new Date(today.getFullYear() - 8, today.getMonth(), today.getDate())).usdValue, 8) : null
     }
 
+    // Calculate average, lowest, and highest buy prices from orders
+    const buyOrders = orders.filter(order => order.type === 'buy' && order.received_btc_amount && order.price);
+    
+    // Calculate average buy price as total cost basis / total BTC
+    const averageBuyPrice = totalInvestment > 0 && currentBtc > 0 
+      ? totalInvestment / currentBtc 
+      : 0;
+    
+    // Find lowest and highest buy prices
+    let lowestBuyPrice = Infinity;
+    let highestBuyPrice = 0;
+    
+    if (buyOrders.length > 0) {
+      buyOrders.forEach(order => {
+        if (order.price) {
+          lowestBuyPrice = Math.min(lowestBuyPrice, order.price);
+          highestBuyPrice = Math.max(highestBuyPrice, order.price);
+        }
+      });
+    } else {
+      lowestBuyPrice = 0;
+    }
+
     return {
       cumulative,
       annualized,
       allTimeHigh: { price: marketAthPrice, date: marketAthDate },
-      hodlTime: calculateWeightedHodlTime(orders, today)
+      hodlTime: calculateWeightedHodlTime(orders, today),
+      currentPrice,
+      averageBuyPrice,
+      lowestBuyPrice: lowestBuyPrice === Infinity ? 0 : lowestBuyPrice,
+      highestBuyPrice
     }
   } catch (error) {
     console.error('Error calculating performance metrics:', error)
@@ -718,7 +749,11 @@ export async function getPerformanceMetrics(
         fourYear: null, fiveYear: null, sixYear: null, sevenYear: null, eightYear: null
       },
       allTimeHigh: { price: 0, date: 'N/A' },
-      hodlTime: 0
+      hodlTime: 0,
+      currentPrice: 0,
+      averageBuyPrice: 0,
+      lowestBuyPrice: 0,
+      highestBuyPrice: 0
     }
   }
 } 
