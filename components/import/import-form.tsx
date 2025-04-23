@@ -1148,8 +1148,130 @@ export function ImportForm() {
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [successDialogOpen, setSuccessDialogOpen] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    
+    // Add state for previously imported transactions
+    const [importedTransactions, setImportedTransactions] = useState<any[]>([]);
+    const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+    const [transactionError, setTransactionError] = useState<string | null>(null);
+    const [pageSize, setPageSize] = useState<number>(10);
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [totalTransactions, setTotalTransactions] = useState<number>(0);
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    
     const currentUserId = useUserId();
     const router = useRouter();
+    
+    // Function to fetch previously imported transactions
+    const fetchImportedTransactions = async () => {
+      setIsLoadingTransactions(true);
+      setTransactionError(null);
+      
+      try {
+        // Call your API to fetch transactions - this is a placeholder
+        // You'll need to implement the actual API function in your /lib/supabase.ts file
+        // Example fetch call structure:
+        const response = await fetch('/api/transactions/manual', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            page: currentPage,
+            pageSize,
+            search: searchQuery,
+            userId: currentUserId
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch transactions');
+        }
+        
+        const data = await response.json();
+        setImportedTransactions(data.transactions || []);
+        setTotalTransactions(data.totalCount || 0);
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+        setTransactionError('Failed to load your transactions. Please try again.');
+      } finally {
+        setIsLoadingTransactions(false);
+      }
+    };
+    
+    // Fetch transactions when component mounts or when pagination/search changes
+    useEffect(() => {
+      fetchImportedTransactions();
+    }, [currentPage, pageSize, searchQuery]);
+    
+    // Refresh transactions after successful submission
+    useEffect(() => {
+      if (successDialogOpen) {
+        fetchImportedTransactions();
+      }
+    }, [successDialogOpen]);
+
+    // Function to handle page size change
+    const handlePageSizeChange = (value: string) => {
+      setPageSize(Number(value));
+      setCurrentPage(1); // Reset to first page when changing page size
+    };
+    
+    // Function to handle search input
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(e.target.value);
+      setCurrentPage(1); // Reset to first page when searching
+    };
+    
+    // Functions for pagination
+    const handleNextPage = () => {
+      if (currentPage * pageSize < totalTransactions) {
+        setCurrentPage(prev => prev + 1);
+      }
+    };
+    
+    const handlePreviousPage = () => {
+      if (currentPage > 1) {
+        setCurrentPage(prev => prev - 1);
+      }
+    };
+    
+    // Function to delete a transaction
+    const deleteTransaction = async (transactionId: string, transactionType: string) => {
+      if (!confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
+        return;
+      }
+      
+      setIsLoadingTransactions(true);
+      setTransactionError(null);
+      
+      try {
+        const response = await fetch('/api/transactions/manual/delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            transactionId,
+            transactionType,
+            userId: currentUserId
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to delete transaction');
+        }
+        
+        // Refresh the transaction list after successful deletion
+        fetchImportedTransactions();
+        
+      } catch (error) {
+        console.error('Error deleting transaction:', error);
+        setTransactionError(error instanceof Error ? error.message : 'Failed to delete transaction');
+      } finally {
+        setIsLoadingTransactions(false);
+      }
+    };
 
     // Function to add current form data to the staged list
     const handleAddToPreview = () => {
@@ -1340,142 +1462,147 @@ export function ImportForm() {
             </DialogContent>
           </Dialog>
           
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
-                <input
-                  id="date"
-                  name="date"
-                  type="datetime-local"
-                  value={formData.date}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="type">Type</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) => handleInputChange({ target: { name: 'type', value } } as any)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="buy">Buy</SelectItem>
-                    <SelectItem value="sell">Sell</SelectItem>
-                    <SelectItem value="withdrawal">Withdrawal</SelectItem>
-                    <SelectItem value="deposit">Deposit</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Exchange Input - Conditional */}
-              {(formData.type === 'buy' || formData.type === 'sell') && (
-                  <div className="space-y-2">
-                      <Label htmlFor="exchange">Exchange/Source</Label>
-                      <Input
-                          id="exchange"
-                          name="exchange"
-                          type="text"
-                          placeholder="Enter exchange or source"
-                          value={formData.exchange}
-                          onChange={handleInputChange}
-                      />
-                  </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="btcAmount">Amount (BTC)</Label>
-                <Input
-                  id="btcAmount"
-                  name="btcAmount"
-                  type="number"
-                  step="0.00000001"
-                  placeholder="0.00000000"
-                  value={formData.btcAmount}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              {/* USD Amount Input - Moved Here & Conditional */}
-              {(formData.type === 'buy' || formData.type === 'sell' || formData.type === 'withdrawal' || formData.type === 'deposit') && (
+          {/* Manual Transaction Entry Form Container */}
+          <div className="mb-8 p-4 rounded-lg border border-border bg-card/50">
+            <h3 className="text-lg font-semibold mb-4">Enter Transaction Details</h3>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="usdAmount">Amount (USD)</Label>
-                    <Input
-                        id="usdAmount"
-                        name="usdAmount"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={formData.usdAmount}
-                        onChange={handleInputChange}
-                        required
-                    />
+                  <Label htmlFor="date">Date</Label>
+                  <input
+                    id="date"
+                    name="date"
+                    type="datetime-local"
+                    value={formData.date}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
                 </div>
-              )}
-              {/* Network Fee Input - Conditional */}
-              {formData.type === 'withdrawal' && (
                 <div className="space-y-2">
-                  <Label htmlFor="network_fee">Network Fee (BTC)</Label>
+                  <Label htmlFor="type">Type</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value) => handleInputChange({ target: { name: 'type', value } } as any)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="buy">Buy</SelectItem>
+                      <SelectItem value="sell">Sell</SelectItem>
+                      <SelectItem value="withdrawal">Withdrawal</SelectItem>
+                      <SelectItem value="deposit">Deposit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Exchange Input - Conditional */}
+                {(formData.type === 'buy' || formData.type === 'sell') && (
+                    <div className="space-y-2">
+                        <Label htmlFor="exchange">Exchange/Source</Label>
+                        <Input
+                            id="exchange"
+                            name="exchange"
+                            type="text"
+                            placeholder="Enter exchange or source"
+                            value={formData.exchange}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="btcAmount">Amount (BTC)</Label>
                   <Input
-                    id="network_fee"
-                    name="network_fee"
+                    id="btcAmount"
+                    name="btcAmount"
                     type="number"
                     step="0.00000001"
                     placeholder="0.00000000"
-                    value={formData.network_fee}
+                    value={formData.btcAmount}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
-              )}
-              {/* Price Input - Always visible */}
-              <div className="space-y-2">
-                <Label htmlFor="price">Price per BTC (USD)</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              {/* Fees Input - Conditional */}
-              {(formData.type === 'buy' || formData.type === 'sell') && (
-                <div className="space-y-2">
-                    <Label htmlFor="fees">Service Fee (USD)</Label>
+                {/* USD Amount Input - Moved Here & Conditional */}
+                {(formData.type === 'buy' || formData.type === 'sell' || formData.type === 'withdrawal' || formData.type === 'deposit') && (
+                  <div className="space-y-2">
+                      <Label htmlFor="usdAmount">Amount (USD)</Label>
+                      <Input
+                          id="usdAmount"
+                          name="usdAmount"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={formData.usdAmount}
+                          onChange={handleInputChange}
+                          required
+                      />
+                  </div>
+                )}
+                {/* Network Fee Input - Conditional */}
+                {formData.type === 'withdrawal' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="network_fee">Network Fee (BTC)</Label>
                     <Input
-                        id="fees"
-                        name="fees"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={formData.fees}
-                        onChange={handleInputChange}
+                      id="network_fee"
+                      name="network_fee"
+                      type="number"
+                      step="0.00000001"
+                      placeholder="0.00000000"
+                      value={formData.network_fee}
+                      onChange={handleInputChange}
                     />
-                </div>
-              )}
-              {/* TXID Input - Conditional */}
-              {(formData.type === 'withdrawal' || formData.type === 'deposit') && (
+                  </div>
+                )}
+                {/* Price Input - Always visible */}
                 <div className="space-y-2">
-                  <Label htmlFor="txid">TXID</Label>
+                  <Label htmlFor="price">Price per BTC (USD)</Label>
                   <Input
-                    id="txid"
-                    name="txid"
-                    type="text"
-                    placeholder="Enter transaction ID"
-                    value={formData.txid}
+                    id="price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.price}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
-              )}
+                {/* Fees Input - Conditional */}
+                {(formData.type === 'buy' || formData.type === 'sell') && (
+                  <div className="space-y-2">
+                      <Label htmlFor="fees">Service Fee (USD)</Label>
+                      <Input
+                          id="fees"
+                          name="fees"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={formData.fees}
+                          onChange={handleInputChange}
+                      />
+                  </div>
+                )}
+                {/* TXID Input - Conditional */}
+                {(formData.type === 'withdrawal' || formData.type === 'deposit') && (
+                  <div className="space-y-2">
+                    <Label htmlFor="txid">TXID</Label>
+                    <Input
+                      id="txid"
+                      name="txid"
+                      type="text"
+                      placeholder="Enter transaction ID"
+                      value={formData.txid}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="mt-8">
+          {/* Transaction Preview Container */}
+          <div className="p-4 rounded-lg border border-border bg-card/50">
             <h3 className="text-lg font-semibold mb-4">Transaction Preview ({stagedTransactions.length})</h3>
             <Table>
               <TableHeader>
@@ -1564,26 +1691,193 @@ export function ImportForm() {
                 ))}
               </TableBody>
             </Table>
+            
+            {stagedTransactions.length > 0 && (
+               <div className="flex justify-end mt-6">
+                  <Button 
+                     onClick={handleSubmitAll} 
+                     disabled={isSubmitting}
+                     className="bg-green-600 hover:bg-green-700"
+                   >
+                     {isSubmitting ? (
+                        <>
+                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                           Submitting...
+                        </>
+                     ) : (
+                       `Submit ${stagedTransactions.length} Transaction(s)`
+                     )}
+                   </Button>
+               </div>
+            )}
           </div>
           
-          {stagedTransactions.length > 0 && (
-             <div className="flex justify-end mt-6">
+          {/* New Container for Manually Imported Transactions */}
+          <div className="mt-8 p-4 rounded-lg border border-border bg-card/50">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Previously Imported Transactions</h3>
+              <div className="flex items-center gap-2">
+                <Select defaultValue={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-[80px]">
+                    <SelectValue placeholder="Per page" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  placeholder="Search..."
+                  className="w-[200px]"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                />
+              </div>
+            </div>
+            
+            {transactionError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{transactionError}</AlertDescription>
+              </Alert>
+            )}
+            
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-center">Date</TableHead>
+                  <TableHead className="text-center">Type</TableHead>
+                  <TableHead className="text-center">Amount (BTC)</TableHead>
+                  <TableHead className="text-center">Price (USD)</TableHead>
+                  <TableHead className="text-center">Amount (USD)</TableHead>
+                  <TableHead className="text-center">Fees</TableHead>
+                  <TableHead className="text-center">Exchange</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoadingTransactions ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      <div className="flex flex-col items-center justify-center">
+                        <Loader2 className="h-8 w-8 text-bitcoin-orange animate-spin mb-2" />
+                        <p className="text-muted-foreground">Loading transactions...</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : importedTransactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                      <div className="flex flex-col items-center justify-center">
+                        <p className="mb-2">No transactions found</p>
+                        <p className="text-sm text-muted-foreground mb-4">Your manually entered transactions will appear here after submission</p>
+                        <Button variant="outline" size="sm" onClick={fetchImportedTransactions}>
+                          Refresh
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  importedTransactions.map((tx) => (
+                    <TableRow key={tx.id}>
+                      <TableCell className="text-center">{new Date(tx.date).toLocaleString()}</TableCell>
+                      <TableCell className="flex justify-center items-center">
+                        <Badge
+                          variant={
+                            tx.type === "buy" ? "default" :
+                            tx.type === "sell" ? "destructive" :
+                            tx.type === "deposit" ? "secondary" :
+                            "outline"
+                          }
+                          className={`w-[100px] flex items-center justify-center ${
+                            tx.type === "buy" 
+                              ? "bg-bitcoin-orange" 
+                              : tx.type === "sell" ? "bg-red-500" :
+                              tx.type === "deposit" ? "bg-green-500" :
+                              "border-gray-500"
+                          }`}
+                        >
+                          {tx.type === "buy" || tx.type === "deposit" ? (
+                            <ArrowDownRight className="mr-2 h-4 w-4" />
+                          ) : (
+                            <ArrowUpRight className="mr-2 h-4 w-4" />
+                          )}
+                          {tx.type.toUpperCase()}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {tx.type === 'buy' 
+                          ? tx.received_btc_amount 
+                          : tx.type === 'sell' 
+                            ? tx.sell_btc_amount 
+                            : tx.amount_btc}
+                        {' BTC'}
+                      </TableCell>
+                      <TableCell className="text-center">${tx.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-center">
+                        ${tx.type === 'buy' 
+                          ? tx.buy_fiat_amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
+                          : tx.type === 'sell' 
+                            ? tx.received_fiat_amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
+                            : tx.amount_fiat?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {tx.type === 'withdrawal' 
+                          ? (tx.fee_amount_btc ? tx.fee_amount_btc + ' BTC' : '-')
+                          : (tx.service_fee ? '$' + tx.service_fee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-')}
+                      </TableCell>
+                      <TableCell className="text-center">{tx.exchange || '-'}</TableCell>
+                      <TableCell className="text-center">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-destructive hover:text-destructive/80 h-8 w-8"
+                          onClick={() => deleteTransaction(tx.id, tx.type)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+            
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-muted-foreground">
+                Showing <span className="font-medium">
+                  {importedTransactions.length > 0 
+                    ? (currentPage - 1) * pageSize + 1 
+                    : 0}
+                </span> to <span className="font-medium">
+                  {importedTransactions.length > 0 
+                    ? Math.min(currentPage * pageSize, totalTransactions) 
+                    : 0}
+                </span> of <span className="font-medium">{totalTransactions}</span> transactions
+              </div>
+              <div className="flex items-center space-x-2">
                 <Button 
-                   onClick={handleSubmitAll} 
-                   disabled={isSubmitting}
-                   className="bg-green-600 hover:bg-green-700"
-                 >
-                   {isSubmitting ? (
-                      <>
-                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                         Submitting...
-                      </>
-                   ) : (
-                     `Submit ${stagedTransactions.length} Transaction(s)`
-                   )}
-                 </Button>
-             </div>
-          )}
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1 || isLoadingTransactions}
+                >
+                  Previous
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleNextPage}
+                  disabled={currentPage * pageSize >= totalTransactions || isLoadingTransactions}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
