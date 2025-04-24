@@ -10,35 +10,49 @@ interface KPICardsProps {
 }
 
 export function KPICards({ performance }: KPICardsProps) {
-  // Calculate maximum drawdown
-  const calculateMaxDrawdown = () => {
-    // In a real implementation, we would need historical portfolio values
-    // For now, we'll use a simplified calculation based on the all-time high
+  // Calculate drawdown from ATH (current)
+  const calculateDrawdownFromATH = () => {
     if (performance.allTimeHigh.price > 0) {
-      // Get the current portfolio value from the performance metrics
       const currentValue = performance.cumulative.total.dollar
       const peakValue = performance.allTimeHigh.price
       
-      // Calculate the drawdown percentage
       const drawdown = ((peakValue - currentValue) / peakValue) * 100
-      return Math.max(0, drawdown) // Ensure we don't return negative values
+      return Math.max(0, drawdown)
     }
     return 0
   }
 
-  const maxDrawdown = calculateMaxDrawdown()
+  const drawdownFromATH = calculateDrawdownFromATH()
+  const maxDrawdown = performance.maxDrawdown.percent
+
+  // Calculate days since all-time high
+  const calculateDaysSinceATH = () => {
+    if (performance.allTimeHigh.date) {
+      const athDate = new Date(performance.allTimeHigh.date);
+      const today = new Date();
+      // Set time to 00:00:00 to compare dates only
+      athDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      const diffTime = Math.abs(today.getTime() - athDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+      return diffDays;
+    }
+    return 0; // Return 0 if no date is available
+  }
+
+  const daysSinceATH = calculateDaysSinceATH()
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      {/* Bitcoin ATH */}
+      {/* Days Since ATH */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Bitcoin ATH</CardTitle>
+          <CardTitle className="text-sm font-medium">Days Since ATH</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(performance.allTimeHigh.price)}</div>
+          <div className="text-2xl font-bold">{daysSinceATH}</div>
           <p className="text-xs text-muted-foreground pt-2">
-            {performance.allTimeHigh.date}
+            Since {performance.allTimeHigh.date}
           </p>
         </CardContent>
       </Card>
@@ -118,7 +132,7 @@ export function KPICards({ performance }: KPICardsProps) {
         <CardContent>
           <div className="text-2xl font-bold">{formatPercent(maxDrawdown)}</div>
           <p className="text-xs text-muted-foreground pt-2">
-            Peak to Trough
+            {performance.maxDrawdown.fromDate !== 'N/A' ? `${performance.maxDrawdown.fromDate} to ${performance.maxDrawdown.toDate}` : 'Peak to Trough'}
           </p>
         </CardContent>
       </Card>

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui"
 import { PerformanceChart, PerformanceFilters, PerformanceContainer } from "@/components/performance/performance-chart"
 import { getPerformanceMetrics } from "@/lib/portfolio"
-import { formatCurrency, formatPercent } from "@/lib/utils"
+import { formatCurrency, formatPercent, formatDateLong } from "@/lib/utils"
 import type { Database } from "@/types/supabase"
 import { requireAuth } from "@/lib/server-auth"
 import { BitcoinHoldingsWaterfall } from "@/components/performance/bitcoin-holdings-waterfall"
@@ -16,19 +16,35 @@ export default async function PerformancePage() {
   // Fetch performance metrics
   const performance = await getPerformanceMetrics(user.id, supabase)
   
-  // Calculate maximum drawdown
-  const calculateMaxDrawdown = () => {
-    if (performance.allTimeHigh.price > 0) {
-      const currentValue = performance.cumulative.total.dollar
-      const peakValue = performance.allTimeHigh.price
-      
-      const drawdown = ((peakValue - currentValue) / peakValue) * 100
+  // Calculate drawdown from ATH (current)
+  const calculateDrawdownFromATH = () => {
+    if (performance.allTimeHigh.price > 0 && performance.currentPrice) {
+      // Calculate percentage drop from market ATH to current price
+      const drawdown = ((performance.allTimeHigh.price - performance.currentPrice) / performance.allTimeHigh.price) * 100
       return Math.max(0, drawdown)
     }
     return 0
   }
 
-  const maxDrawdown = calculateMaxDrawdown()
+  const drawdownFromATH = calculateDrawdownFromATH()
+  const maxDrawdown = performance.maxDrawdown.percent
+
+  // Calculate days since all-time high
+  const calculateDaysSinceATH = () => {
+    if (performance.allTimeHigh.date) {
+      const athDate = new Date(performance.allTimeHigh.date);
+      const today = new Date();
+      // Set time to 00:00:00 to compare dates only
+      athDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      const diffTime = Math.abs(today.getTime() - athDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+      return diffDays;
+    }
+    return 0; // Return 0 if no date is available
+  }
+
+  const daysSinceATH = calculateDaysSinceATH()
 
   return (
     <div className="w-full space-y-6">
@@ -48,19 +64,8 @@ export default async function PerformancePage() {
           {/* KPI cards with reduced height */}
           <Card className="bg-[#0f172a] border-gray-800">
             <CardContent className="p-6">
-              {/* Top row of KPIs */}
+              {/* Top row: Total Return, 30-Day Return, YTD Return */}
               <div className="grid grid-cols-3 gap-8 pb-4">
-                {/* Bitcoin ATH */}
-                <div className="flex flex-col">
-                  <div className="text-sm font-medium text-gray-400">Bitcoin ATH</div>
-                  <div>
-                    <div className="text-2xl font-bold text-white">{formatCurrency(performance.allTimeHigh.price)}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {performance.allTimeHigh.date}
-                    </div>
-                  </div>
-                </div>
-
                 {/* Total Return */}
                 <div className="flex flex-col">
                   <div className="flex justify-between items-center">
@@ -73,6 +78,22 @@ export default async function PerformancePage() {
                     <div className="text-2xl font-bold text-bitcoin-orange">{formatPercent(performance.cumulative.total.percent)}</div>
                     <div className="text-xs text-gray-500 mt-1">
                       {formatCurrency(performance.cumulative.total.dollar)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 30-Day Return */}
+                <div className="flex flex-col">
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm font-medium text-gray-400">30-Day Return</div>
+                    <div className={performance.cumulative.month.percent && performance.cumulative.month.percent >= 0 ? "text-green-500" : "text-red-500"}>
+                      {performance.cumulative.month.percent && performance.cumulative.month.percent >= 0 ? <ArrowUpIcon className="h-4 w-4" /> : <ArrowDownIcon className="h-4 w-4" />}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-bitcoin-orange">{formatPercent(performance.cumulative.month.percent ?? 0)}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {formatCurrency(performance.cumulative.month.dollar ?? 0)}
                     </div>
                   </div>
                 </div>
@@ -97,36 +118,31 @@ export default async function PerformancePage() {
               {/* Divider */}
               <div className="border-t border-gray-800 my-2"></div>
 
-              {/* Bottom row of KPIs */}
+              {/* Bottom row: Days Since ATH, Drawdown from ATH %, Max Drawdown */}
               <div className="grid grid-cols-3 gap-8 pt-4">
-                {/* 30-Day Return */}
+                {/* Days Since ATH */}
                 <div className="flex flex-col">
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm font-medium text-gray-400">30-Day Return</div>
-                    <div className={performance.cumulative.month.percent && performance.cumulative.month.percent >= 0 ? "text-green-500" : "text-red-500"}>
-                      {performance.cumulative.month.percent && performance.cumulative.month.percent >= 0 ? <ArrowUpIcon className="h-4 w-4" /> : <ArrowDownIcon className="h-4 w-4" />}
-                    </div>
-                  </div>
+                  <div className="text-sm font-medium text-gray-400">Days Since ATH</div>
                   <div>
-                    <div className="text-2xl font-bold text-bitcoin-orange">{formatPercent(performance.cumulative.month.percent ?? 0)}</div>
+                    <div className="text-2xl font-bold text-red-500">{daysSinceATH}</div>
                     <div className="text-xs text-gray-500 mt-1">
-                      {formatCurrency(performance.cumulative.month.dollar ?? 0)}
+                      Since {formatDateLong(performance.allTimeHigh.date)}
                     </div>
                   </div>
                 </div>
 
-                {/* CAGR */}
+                {/* Drawdown from ATH % */}
                 <div className="flex flex-col">
                   <div className="flex justify-between items-center">
-                    <div className="text-sm font-medium text-gray-400">CAGR</div>
-                    <div className={performance.annualized.total && performance.annualized.total >= 0 ? "text-green-500" : "text-red-500"}>
-                      {performance.annualized.total && performance.annualized.total >= 0 ? <ArrowUpIcon className="h-4 w-4" /> : <ArrowDownIcon className="h-4 w-4" />}
+                    <div className="text-sm font-medium text-gray-400">Drawdown from ATH</div>
+                    <div className="text-red-500">
+                      <ArrowDownIcon className="h-4 w-4" />
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-bitcoin-orange">{formatPercent(performance.annualized.total ?? 0)}</div>
+                    <div className="text-2xl font-bold text-red-500">{formatPercent(drawdownFromATH)}</div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Compound Annual Growth Rate
+                      From Market ATH
                     </div>
                   </div>
                 </div>
@@ -142,7 +158,7 @@ export default async function PerformancePage() {
                   <div>
                     <div className="text-2xl font-bold text-red-500">{formatPercent(maxDrawdown)}</div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Peak to Trough
+                      {performance.maxDrawdown.fromDate !== 'N/A' ? `${formatDateLong(performance.maxDrawdown.fromDate)} to ${formatDateLong(performance.maxDrawdown.toDate)}` : 'Peak to Trough'}
                     </div>
                   </div>
                 </div>

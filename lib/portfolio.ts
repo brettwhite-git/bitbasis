@@ -75,6 +75,13 @@ export interface PerformanceMetrics {
     price: number
     date: string
   }
+  maxDrawdown: {
+    percent: number
+    fromDate: string
+    toDate: string
+    portfolioATH: number
+    portfolioLow: number
+  }
   hodlTime: number
   currentPrice?: number
   averageBuyPrice?: number
@@ -531,6 +538,7 @@ export async function getPerformanceMetrics(
           fourYear: null, fiveYear: null, sixYear: null, sevenYear: null, eightYear: null
         },
         allTimeHigh: { price: marketAthPrice, date: marketAthDate },
+        maxDrawdown: { percent: 0, fromDate: 'N/A', toDate: 'N/A', portfolioATH: 0, portfolioLow: 0 },
         hodlTime: 0
       }
     }
@@ -725,10 +733,55 @@ export async function getPerformanceMetrics(
       lowestBuyPrice = 0;
     }
 
+    // Calculate max drawdown
+    let maxDrawdownPercent = 0
+    let maxDrawdownFromDate = ''
+    let maxDrawdownToDate = ''
+    let maxDrawdownPortfolioATH = 0
+    let maxDrawdownPortfolioLow = Infinity
+
+    let runningPeak = -Infinity
+    let peakDate = ''
+    let currentTrough = Infinity
+
+    // Iterate through portfolio history to find max drawdown
+    portfolioHistory.forEach((entry, index) => {
+      const portfolioValue = entry.usdValue
+
+      // If this is a new peak, reset our tracking
+      if (portfolioValue > runningPeak) {
+        runningPeak = portfolioValue
+        peakDate = entry.date.toISOString().split('T')[0]
+        currentTrough = portfolioValue // Reset trough tracking for this peak
+      }
+
+      // If this is a new trough after our peak, check if it's our max drawdown
+      if (portfolioValue < currentTrough) {
+        currentTrough = portfolioValue
+        const currentDrawdown = ((runningPeak - currentTrough) / runningPeak) * 100
+
+        // Update max drawdown if this is the largest we've seen
+        if (currentDrawdown > maxDrawdownPercent) {
+          maxDrawdownPercent = currentDrawdown
+          maxDrawdownFromDate = peakDate
+          maxDrawdownToDate = entry.date.toISOString().split('T')[0]
+          maxDrawdownPortfolioATH = runningPeak
+          maxDrawdownPortfolioLow = currentTrough
+        }
+      }
+    })
+
     return {
       cumulative,
       annualized,
       allTimeHigh: { price: marketAthPrice, date: marketAthDate },
+      maxDrawdown: {
+        percent: maxDrawdownPercent,
+        fromDate: maxDrawdownFromDate,
+        toDate: maxDrawdownToDate,
+        portfolioATH: maxDrawdownPortfolioATH,
+        portfolioLow: maxDrawdownPortfolioLow
+      },
       hodlTime: calculateWeightedHodlTime(orders, today),
       currentPrice,
       averageBuyPrice,
@@ -749,6 +802,13 @@ export async function getPerformanceMetrics(
         fourYear: null, fiveYear: null, sixYear: null, sevenYear: null, eightYear: null
       },
       allTimeHigh: { price: 0, date: 'N/A' },
+      maxDrawdown: {
+        percent: 0,
+        fromDate: 'N/A',
+        toDate: 'N/A',
+        portfolioATH: 0,
+        portfolioLow: 0
+      },
       hodlTime: 0,
       currentPrice: 0,
       averageBuyPrice: 0,
