@@ -3,7 +3,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui"
 import { formatCurrency, formatPercent } from "@/lib/utils"
 import type { PerformanceMetrics } from "@/lib/portfolio"
-import { ArrowDownIcon, ArrowUpIcon, TrophyIcon } from "lucide-react"
+import { 
+  ArrowDownIcon, 
+  ArrowUpIcon, 
+  TrophyIcon, 
+  DollarSignIcon, 
+  ScaleIcon,
+  Bitcoin 
+} from "lucide-react"
 
 interface BuyPriceReferencesProps {
   performance: PerformanceMetrics
@@ -56,13 +63,16 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
      
         
         {/* Divider after performance summary */}
-        <div className="border-t border-gray-800 my-4"></div>
+        <div className="border-t border-gray-800 mt-32 mb-4"></div>
         
-        <div className="space-y-12 mb-auto">
+        <div className="space-y-14 mb-auto">
           {/* Current Price */}
           <div>
             <div className="flex justify-between items-center mb-4">
-              <span className="text-base font-medium">Current Price</span>
+              <div className="flex items-center gap-2">
+                <DollarSignIcon className="h-4 w-4 text-blue-500" />
+                <span className="text-base font-medium">Current Price</span>
+              </div>
               <span className="text-2xl font-bold">{formatCurrency(currentPrice)}</span>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-1.5">
@@ -90,14 +100,11 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
           <div>
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
-                <ArrowDownIcon className="h-4 w-4 text-gray-400" />
+                <ArrowDownIcon className="h-4 w-4 text-green-500" />
                 <span className="text-base font-medium">Your Lowest Buy</span>
               </div>
               <div className="text-right">
                 <span className="text-2xl font-bold">{formatCurrency(lowestBuyPrice)}</span>
-                <div className="text-sm font-medium text-green-500">
-                  {formatPercent(lowestBuyDiff)}
-                </div>
               </div>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-1.5">
@@ -109,14 +116,11 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
           <div>
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
-                <span className="inline-block h-4 w-4">⚖️</span>
+                <ScaleIcon className="h-4 w-4 text-amber-500" />
                 <span className="text-base font-medium">Your Average Buy</span>
               </div>
               <div className="text-right">
                 <span className="text-2xl font-bold">{formatCurrency(averageBuyPrice)}</span>
-                <div className="text-sm font-medium text-green-500">
-                  {formatPercent(avgBuyDiff)}
-                </div>
               </div>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-1.5">
@@ -128,14 +132,11 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
           <div>
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
-                <ArrowUpIcon className="h-4 w-4 text-gray-400" />
+                <ArrowUpIcon className="h-4 w-4 text-red-500" />
                 <span className="text-base font-medium">Your Highest Buy</span>
               </div>
               <div className="text-right">
                 <span className="text-2xl font-bold">{formatCurrency(highestBuyPrice)}</span>
-                <div className="text-sm font-medium text-red-500">
-                  {formatPercent(highestBuyDiff)}
-                </div>
               </div>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-1.5">

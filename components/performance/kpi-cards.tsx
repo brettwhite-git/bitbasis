@@ -131,9 +131,6 @@ export function KPICards({ performance }: KPICardsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatPercent(maxDrawdown)}</div>
-          <p className="text-xs text-muted-foreground pt-2">
-            {performance.maxDrawdown.fromDate !== 'N/A' ? `${performance.maxDrawdown.fromDate} to ${performance.maxDrawdown.toDate}` : 'Peak to Trough'}
-          </p>
         </CardContent>
       </Card>
     </div>

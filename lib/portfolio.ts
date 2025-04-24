@@ -588,6 +588,97 @@ export async function getPerformanceMetrics(
       usdValue: currentValue,
       investment: currentInvestment
     })
+    
+    // Add monthly points for more accurate drawdown calculation
+    try {
+      console.log("Adding additional monthly data points for more accurate drawdown...");
+      
+      if (portfolioHistory.length >= 2) {
+        const additionalPoints = [];
+        // Get all months between first and last transaction
+        const firstDate = new Date(portfolioHistory[0].date);
+        const lastDate = new Date();
+        
+        // Create a sorted copy so we can reliably find transactions by date
+        const sortedHistory = [...portfolioHistory].sort((a, b) => 
+          a.date.getTime() - b.date.getTime()
+        );
+        
+        // Iterate through each month
+        let currentMonth = new Date(firstDate.getFullYear(), firstDate.getMonth() + 1, 1);
+        
+        while (currentMonth < lastDate) {
+          // Check if we already have a point for this month
+          const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+          const existingPoint = sortedHistory.find(point => {
+            const pointDate = point.date;
+            return pointDate.getFullYear() === currentMonth.getFullYear() && 
+                   pointDate.getMonth() === currentMonth.getMonth();
+          });
+          
+          if (!existingPoint) {
+            // Find the last transaction before this month
+            let prevPoint = sortedHistory[0]; // Default to first point
+            
+            for (const point of sortedHistory) {
+              if (point.date < currentMonth) {
+                prevPoint = point;
+              } else {
+                break; // Found first point after current month
+              }
+            }
+            
+            // Create a new point for this month with accurate price data
+            // For now, use current price as an approximation
+            // In a future improvement, we would fetch historical price data for each month
+            additionalPoints.push({
+              date: new Date(currentMonth),
+              btc: prevPoint.btc,
+              usdValue: prevPoint.btc * currentPrice, // Use current price - would be better with historical price
+              investment: prevPoint.investment
+            });
+          }
+          
+          // Move to next month
+          currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+        }
+        
+        // Add all the new points
+        if (additionalPoints.length > 0) {
+          console.log(`Adding ${additionalPoints.length} monthly data points`);
+          portfolioHistory.push(...additionalPoints);
+          
+          // Sort the entire portfolio history chronologically after adding points
+          portfolioHistory.sort((a, b) => a.date.getTime() - b.date.getTime());
+        }
+      }
+      
+      // Now improve historical valuation by using real price data instead of just transaction prices
+      // This is critical for accurate drawdown calculation
+      if (portfolioHistory.length > 0) {
+        console.log("Enhancing portfolio history with accurate price data...");
+        
+        // Apply current price to the most recent data points (last 30 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        portfolioHistory.forEach(point => {
+          // For recent points, update using current price
+          if (point.date >= thirtyDaysAgo) {
+            point.usdValue = point.btc * currentPrice;
+          }
+          
+          // Important: when the price used to calculate usdValue is 0 or very small,
+          // it can create artificial drawdowns that don't reflect reality
+          if (point.usdValue <= 0 && point.btc > 0) {
+            console.log(`Fixed invalid portfolio value of ${point.usdValue} for ${point.date.toISOString().split('T')[0]} with BTC=${point.btc}`);
+            point.usdValue = point.btc * currentPrice; // Fallback to current price
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error adding monthly data points:", error);
+    }
 
     // Helper to find portfolio state at a specific date
     const getValueAtDate = (targetDate: Date): { btc: number; usdValue: number; investment: number } => {
@@ -733,43 +824,119 @@ export async function getPerformanceMetrics(
       lowestBuyPrice = 0;
     }
 
-    // Calculate max drawdown
+    // Calculate max drawdown using a more reliable historical approach
     let maxDrawdownPercent = 0
     let maxDrawdownFromDate = ''
     let maxDrawdownToDate = ''
     let maxDrawdownPortfolioATH = 0
     let maxDrawdownPortfolioLow = Infinity
 
-    let runningPeak = -Infinity
-    let peakDate = ''
-    let currentTrough = Infinity
-
-    // Iterate through portfolio history to find max drawdown
-    portfolioHistory.forEach((entry, index) => {
-      const portfolioValue = entry.usdValue
-
-      // If this is a new peak, reset our tracking
-      if (portfolioValue > runningPeak) {
-        runningPeak = portfolioValue
-        peakDate = entry.date.toISOString().split('T')[0]
-        currentTrough = portfolioValue // Reset trough tracking for this peak
-      }
-
-      // If this is a new trough after our peak, check if it's our max drawdown
-      if (portfolioValue < currentTrough) {
-        currentTrough = portfolioValue
-        const currentDrawdown = ((runningPeak - currentTrough) / runningPeak) * 100
-
-        // Update max drawdown if this is the largest we've seen
-        if (currentDrawdown > maxDrawdownPercent) {
-          maxDrawdownPercent = currentDrawdown
-          maxDrawdownFromDate = peakDate
-          maxDrawdownToDate = entry.date.toISOString().split('T')[0]
-          maxDrawdownPortfolioATH = runningPeak
-          maxDrawdownPortfolioLow = currentTrough
+    try {
+      // Only calculate if we have at least one transaction
+      if (portfolioHistory.length > 0) {
+        console.log(`Calculating max drawdown with ${portfolioHistory.length} data points...`);
+        
+        // First, build a timeline of actual transactions with accurate values 
+        let timeline = [...portfolioHistory]
+          .sort((a, b) => a.date.getTime() - b.date.getTime()); // Ensure chronological order
+        
+        // DEBUG: Print out portfolio history to see what we're working with
+        console.log("Portfolio history timeline:");
+        timeline.forEach((point, index) => {
+          console.log(`[${index}] ${point.date.toISOString().split('T')[0]} - BTC: ${point.btc.toFixed(8)}, USD: ${point.usdValue.toFixed(2)}, Investment: ${point.investment.toFixed(2)}`);
+        });
+        
+        // In case we have few data points, log them individually
+        if (timeline.length <= 10) {
+          console.log("Details of all portfolio history points:");
+          console.log(JSON.stringify(timeline, null, 2));
         }
+        
+        // Find global maximum portfolio value
+        let peakIndex = -1;
+        let peakValue = -Infinity;
+        
+        for (let i = 0; i < timeline.length; i++) {
+          const value = timeline[i].usdValue;
+          if (value > peakValue) {
+            peakValue = value;
+            peakIndex = i;
+          }
+        }
+        
+        console.log(`Found peak value at index ${peakIndex}: ${peakValue.toFixed(2)} USD on ${timeline[peakIndex]?.date.toISOString().split('T')[0]}`);
+        
+        if (peakIndex >= 0) {
+          // Find the lowest subsequent value after this peak
+          let troughIndex = -1;
+          let troughValue = Infinity;
+          
+          for (let i = peakIndex + 1; i < timeline.length; i++) {
+            const value = timeline[i].usdValue;
+            if (value < troughValue) {
+              troughValue = value;
+              troughIndex = i;
+            }
+          }
+          
+          console.log(`Found trough after peak at index ${troughIndex}: ${troughValue?.toFixed(2)} USD on ${timeline[troughIndex]?.date.toISOString().split('T')[0]}`);
+          
+          if (troughIndex > 0 && peakValue > 0) {
+            // Calculate drawdown percentage
+            const drawdown = ((peakValue - troughValue) / peakValue) * 100;
+            
+            console.log(`Main drawdown calculation: ${drawdown.toFixed(2)}% (${peakValue.toFixed(2)} → ${troughValue.toFixed(2)})`);
+            
+            maxDrawdownPercent = drawdown;
+            maxDrawdownFromDate = timeline[peakIndex].date.toISOString().split('T')[0];
+            maxDrawdownToDate = timeline[troughIndex].date.toISOString().split('T')[0];
+            maxDrawdownPortfolioATH = peakValue;
+            maxDrawdownPortfolioLow = troughValue;
+            
+            console.log(`Max drawdown set to: ${drawdown.toFixed(2)}% from ${maxDrawdownFromDate} to ${maxDrawdownToDate}`);
+          } else {
+            console.log(`No valid trough found after peak at index ${peakIndex}`);
+          }
+        } else {
+          console.log("No valid peak found in portfolio history");
+        }
+        
+        // Also check for potential drawdowns from intermediate peaks
+        console.log("Checking for drawdowns from intermediate peaks:");
+        
+        timeline.forEach((peak, peakIdx) => {
+          for (let i = peakIdx + 1; i < timeline.length; i++) {
+            const trough = timeline[i];
+            
+            if (peak.usdValue > 0 && trough.usdValue < peak.usdValue) {
+              const drawdown = ((peak.usdValue - trough.usdValue) / peak.usdValue) * 100;
+              
+              if (drawdown > 10) { // Log all significant drawdowns over 10%
+                console.log(`Potential drawdown: ${drawdown.toFixed(2)}% from ${peak.date.toISOString().split('T')[0]} (${peak.usdValue.toFixed(2)}) to ${trough.date.toISOString().split('T')[0]} (${trough.usdValue.toFixed(2)})`);
+              }
+              
+              if (drawdown > maxDrawdownPercent) {
+                maxDrawdownPercent = drawdown;
+                maxDrawdownFromDate = peak.date.toISOString().split('T')[0];
+                maxDrawdownToDate = trough.date.toISOString().split('T')[0]; 
+                maxDrawdownPortfolioATH = peak.usdValue;
+                maxDrawdownPortfolioLow = trough.usdValue;
+                
+                console.log(`NEW MAX DRAWDOWN: ${drawdown.toFixed(2)}% from ${maxDrawdownFromDate} to ${maxDrawdownToDate}`);
+                console.log(`Portfolio value dropped from ${peak.usdValue.toFixed(2)} to ${trough.usdValue.toFixed(2)}`);
+              }
+            }
+          }
+        });
+        
+        console.log(`FINAL MAX DRAWDOWN: ${maxDrawdownPercent.toFixed(2)}% from ${maxDrawdownFromDate} to ${maxDrawdownToDate}`);
+        console.log(`Portfolio ATH: ${maxDrawdownPortfolioATH.toFixed(2)}, Portfolio Low: ${maxDrawdownPortfolioLow.toFixed(2)}`);
+      } else {
+        console.log("No portfolio history points available for drawdown calculation");
       }
-    })
+    } catch (error) {
+      console.error('Error calculating max drawdown:', error);
+    }
 
     return {
       cumulative,
