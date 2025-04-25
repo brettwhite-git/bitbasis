@@ -9,7 +9,15 @@ import {
   TrophyIcon, 
   DollarSignIcon, 
   ScaleIcon,
-  Bitcoin 
+  Bitcoin,
+  TrendingUpIcon,
+  PercentIcon,
+  PiggyBankIcon,
+  CircleArrowRightIcon,
+  CircleFadingArrowUp,
+  CircleArrowUpIcon,
+  CircleArrowDownIcon,
+  CircleDashedIcon
 } from "lucide-react"
 
 interface BuyPriceReferencesProps {
@@ -31,52 +39,69 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
   const lowestBuyDiff = lowestBuyPrice > 0 ? ((currentPrice - lowestBuyPrice) / lowestBuyPrice) * 100 : 0
   const avgBuyDiff = averageBuyPrice > 0 ? ((currentPrice - averageBuyPrice) / averageBuyPrice) * 100 : 0
   const highestBuyDiff = highestBuyPrice > 0 ? ((currentPrice - highestBuyPrice) / highestBuyPrice) * 100 : 0
-  // We're not using athDiff anymore
+  
+  // Mock data for investment insights (these should be calculated from real data)
+  const threeMonthAvgPrice = 75000 // Mock 3-month average purchase price
+  const priceComparisonPercent = ((currentPrice - threeMonthAvgPrice) / threeMonthAvgPrice) * 100
+  const dcaVsLumpSum = 8.7 // Mock DCA vs lump sum performance over 6 months
+  const longTermTaxPercent = 68 // Percentage of holdings held > 1 year
+  
+  // Determine buying recommendation based on current price vs 3-month average
+  const getBuyingRecommendation = () => {
+    if (priceComparisonPercent <= -10) {
+      return "Spot price is significantly below your recent buys - consider increasing position"
+    } else if (priceComparisonPercent < 0) {
+      return "Spot price is below your recent average - potential buying opportunity"
+    } else if (priceComparisonPercent <= 10) {
+      return "Spot price is close to your recent buying average"
+    } else {
+      return "Spot price is higher than your recent buys - consider waiting for a dip"
+    }
+  }
 
   return (
     <Card className="h-full flex flex-col bg-[#0f172a] border-gray-800">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xl font-bold">Buy Price References</CardTitle>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-bold text-white">Investment Insights</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col">
-        {/* Buy Opportunity Status */}
-        <div className="mb-4 pt-4">
-          <div className="flex justify-center items-center">
-            {currentPrice > 0 && averageBuyPrice > 0 && (
-              currentPrice < averageBuyPrice ? (
-                <span className="text-sm font-medium px-4 py-2 bg-green-500/20 text-green-400 rounded-full">
-                  Current price is below your average cost basis
-                </span>
-              ) : currentPrice < highestBuyPrice ? (
-                <span className="text-sm font-medium px-4 py-2 bg-amber-500/20 text-amber-400 rounded-full">
-                  Current price is within your historical buy range
-                </span>
-              ) : (
-                <span className="text-sm font-medium px-4 py-2 bg-blue-500/20 text-blue-400 rounded-full">
-                  Current price is above your typical buying range
-                </span>
-              )
-            )}
+        
+        {/* Investment Insights */}
+        <div className="space-y-4 mb-8">
+          {/* Buying Recommendation */}
+          <div className="border-l-[3px] border-bitcoin-orange pl-3 py-1">
+            <p className="text-sm font-medium text-bitcoin-orange">Price Comparison</p>
+            <p className="text-xs text-gray-300">{getBuyingRecommendation()}</p>
+          </div>
+          
+          {/* DCA Performance */}
+          <div className="border-l-[3px] border-bitcoin-orange pl-3 py-1">
+            <p className="text-sm font-medium text-bitcoin-orange">DCA Strategy Performance</p>
+            <p className="text-xs text-gray-300">Your 6-month DCA approach has outperformed lump-sum by {dcaVsLumpSum}%</p>
+          </div>
+          
+          {/* Tax Optimization */}
+          <div className="border-l-[3px] border-bitcoin-orange pl-3 py-1">
+            <p className="text-sm font-medium text-bitcoin-orange">Tax Efficiency</p>
+            <p className="text-xs text-gray-300">{longTermTaxPercent}% of your holdings qualify for lower long-term capital gains rates</p>
           </div>
         </div>
         
-     
-        
-        {/* Divider after performance summary */}
-        <div className="border-t border-gray-800 mt-32 mb-4"></div>
+        {/* Divider after investment insights */}
+        <div className="border-t border-gray-800 mb-6"></div>
         
         <div className="space-y-14 mb-auto">
           {/* Current Price */}
           <div>
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
-                <DollarSignIcon className="h-4 w-4 text-blue-500" />
+                <CircleArrowRightIcon className="h-4 w-4 text-bitcoin-orange" />
                 <span className="text-base font-medium">Current Price</span>
               </div>
-              <span className="text-2xl font-bold">{formatCurrency(currentPrice)}</span>
+              <span className="text-xl font-bold">{formatCurrency(currentPrice)}</span>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '75%' }}></div>
+              <div className="bg-gradient-to-r from-[#F7931A] to-[#fa8c0b] h-1.5 rounded-full" style={{ width: '75%' }}></div>
             </div>
           </div>
           
@@ -84,31 +109,47 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
           <div>
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
-                <TrophyIcon className="h-4 w-4 text-yellow-500" />
+                <CircleFadingArrowUp className="h-4 w-4 text-bitcoin-orange" />
                 <span className="text-base font-medium">BTC All-Time High</span>
               </div>
               <div className="text-right">
-                <span className="text-2xl font-bold">{formatCurrency(athPrice)}</span>
+                <span className="text-xl font-bold">{formatCurrency(athPrice)}</span>
               </div>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-yellow-500 h-1.5 rounded-full" style={{ width: '100%' }}></div>
+              <div className="bg-gradient-to-r from-[#F7931A] to-[#fa8c0b] h-1.5 rounded-full" style={{ width: '100%' }}></div>
             </div>
           </div>
           
-          {/* Lowest Buy Price */}
+          {/* Highest Buy Price - moved up before Lowest Buy */}
           <div>
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
-                <ArrowDownIcon className="h-4 w-4 text-green-500" />
-                <span className="text-base font-medium">Your Lowest Buy</span>
+                <CircleArrowUpIcon className="h-4 w-4 text-bitcoin-orange" />
+                <span className="text-base font-medium">Your Highest Buy</span>
               </div>
               <div className="text-right">
-                <span className="text-2xl font-bold">{formatCurrency(lowestBuyPrice)}</span>
+                <span className="text-xl font-bold">{formatCurrency(highestBuyPrice)}</span>
               </div>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-green-500 h-1.5 rounded-full" style={{ width: '20%' }}></div>
+              <div className="bg-gradient-to-r from-[#F7931A] to-[#fa8c0b] h-1.5 rounded-full" style={{ width: '100%' }}></div>
+            </div>
+          </div>
+          
+          {/* Lowest Buy Price - moved down below Highest Buy */}
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <CircleArrowDownIcon className="h-4 w-4 text-bitcoin-orange" />
+                <span className="text-base font-medium">Your Lowest Buy</span>
+              </div>
+              <div className="text-right">
+                <span className="text-xl font-bold">{formatCurrency(lowestBuyPrice)}</span>
+              </div>
+            </div>
+            <div className="w-full bg-gray-800 rounded-full h-1.5">
+              <div className="bg-gradient-to-r from-[#F7931A] to-[#fa8c0b] h-1.5 rounded-full" style={{ width: '20%' }}></div>
             </div>
           </div>
           
@@ -116,34 +157,19 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
           <div>
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
-                <ScaleIcon className="h-4 w-4 text-amber-500" />
+                <CircleDashedIcon className="h-4 w-4 text-bitcoin-orange" />
                 <span className="text-base font-medium">Your Average Buy</span>
               </div>
               <div className="text-right">
-                <span className="text-2xl font-bold">{formatCurrency(averageBuyPrice)}</span>
+                <span className="text-xl font-bold">{formatCurrency(averageBuyPrice)}</span>
               </div>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: '45%' }}></div>
-            </div>
-          </div>
-          
-          {/* Highest Buy Price */}
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2">
-                <ArrowUpIcon className="h-4 w-4 text-red-500" />
-                <span className="text-base font-medium">Your Highest Buy</span>
-              </div>
-              <div className="text-right">
-                <span className="text-2xl font-bold">{formatCurrency(highestBuyPrice)}</span>
-              </div>
-            </div>
-            <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-red-500 h-1.5 rounded-full" style={{ width: '100%' }}></div>
+              <div className="bg-gradient-to-r from-[#F7931A] to-[#fa8c0b] h-1.5 rounded-full" style={{ width: '45%' }}></div>
             </div>
           </div>
         </div>
+        
       </CardContent>
     </Card>
   )
