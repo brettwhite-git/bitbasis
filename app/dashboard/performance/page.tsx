@@ -50,7 +50,7 @@ export default async function PerformancePage() {
   return (
     <div className="w-full space-y-6">
       <div className="w-full">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Performance</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-white">Performance Overview</h1>
       </div>
       
       <Tabs defaultValue="performance" className="w-full">
@@ -59,13 +59,13 @@ export default async function PerformancePage() {
             value="performance"
             className="data-[state=active]:bg-bitcoin-orange data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-none rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/50 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-gray-800"
           >
-            Performance
+            Personal Insights
           </TabsTrigger>
           <TabsTrigger 
             value="distribution"
             className="data-[state=active]:bg-bitcoin-orange data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-none rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/50 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-gray-800"
           >
-            Distribution
+            HODL Distribution
           </TabsTrigger>
         </TabsList>
         

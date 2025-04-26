@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "update-spot-price": {
+      "schedule": "*/10 * * * *",
+      "description": "Updates BTC price every 10 minutes"
+    },
+    "update-btc-ath": {
+      "schedule": "0 0 * * *",
+      "description": "Checks for new ATH daily at midnight UTC"
+    },
+    "update-fear-greed": {
+      "schedule": "0 1 * * *",
+      "description": "Updates Fear & Greed Index daily at 1 AM UTC"
+    }
+  }
+} 

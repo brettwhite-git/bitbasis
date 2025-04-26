@@ -1,0 +1,8 @@
+export { HeroSection } from './Hero'
+export { BenefitsSection } from './Benefits'
+export { FeaturesSection } from './Features'
+export { TestimonialsSection } from './Testimonials'
+export { DataSourcesSection } from './DataSources'
+export { PricingSection } from './Pricing'
+export { FAQSection } from './FAQ'
+export { Footer } from './Footer' 

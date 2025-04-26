@@ -49,7 +49,7 @@ export function DashboardContent({ metrics, performance }: DashboardContentProps
   return (
     <div className="w-full space-y-4">
       <div className="flex items-center justify-between w-full">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-white">Overview Dashboard</h1>
       </div>
       <div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <Card>

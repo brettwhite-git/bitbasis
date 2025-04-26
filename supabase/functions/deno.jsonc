@@ -1,0 +1,16 @@
+{
+  "tasks": {
+    "start": "deno run --allow-net --allow-env --watch index.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.ns", "dom"],
+    "types": ["https://deno.land/x/supabase_edge_functions/types.ts"]
+  },
+  "importMap": "./import_map.json",
+  "fmt": {
+    "options": {
+      "singleQuote": true,
+      "semi": false
+    }
+  }
+} 
