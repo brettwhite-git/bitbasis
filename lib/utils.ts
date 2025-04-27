@@ -64,3 +64,71 @@ export function formatDateLong(dateString: string | Date | null | undefined): st
     return "Error";
   }
 }
+
+// Helper function to format date as YYYY-MM-DD
+const formatDate = (date: Date | null | undefined): string => {
+  if (!date) {
+    console.error('formatDate called with null or undefined date');
+    // Return a default or handle appropriately
+    return new Date().toISOString().split('T')[0]!;
+  }
+  try {
+    return date.toISOString().split('T')[0]!;
+  } catch (e) {
+      console.error('Error formatting date:', date, e);
+      // Handle cases where date might not be a valid Date object after all
+      return new Date().toISOString().split('T')[0]!;
+  }
+};
+
+// Define the expected structure for the fear_greed_index table row (used by findClosestDateEntry)
+interface FearGreedIndexEntry {
+  id?: number; // Optional, based on component usage
+  date: string;
+  value: number;
+  classification?: string; // Optional
+  last_updated?: string; // Optional
+  created_at?: string; // Optional
+}
+
+// Helper function to find the closest date entry within a window
+const findClosestDateEntry = (
+  entries: FearGreedIndexEntry[] | null | undefined,
+  targetDate: string,
+  windowDays: number = 2
+): FearGreedIndexEntry | undefined => {
+    if (!entries || entries.length === 0) {
+        return undefined;
+    }
+
+  const target = new Date(targetDate);
+  // Add time to avoid timezone issues causing off-by-one day comparisons
+  target.setUTCHours(12, 0, 0, 0);
+
+  let closestEntry: FearGreedIndexEntry | undefined;
+  let minDiff = Infinity;
+
+  entries.forEach(entry => {
+    if (!entry || !entry.date) return; // Skip invalid entries
+
+    try {
+        const entryDate = new Date(entry.date);
+        // Add time to avoid timezone issues causing off-by-one day comparisons
+        entryDate.setUTCHours(12, 0, 0, 0);
+
+        const diffTime = Math.abs(target.getTime() - entryDate.getTime());
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); // Use Math.round for better accuracy
+
+        if (diffDays <= windowDays && diffDays < minDiff) {
+        minDiff = diffDays;
+        closestEntry = entry;
+        }
+    } catch (e) {
+        console.error("Error processing date for entry:", entry, e);
+    }
+  });
+
+  return closestEntry;
+};
+
+export { formatDate, findClosestDateEntry }; // Export the new functions

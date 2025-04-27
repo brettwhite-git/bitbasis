@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'; // Correct Supabase client import
+import { formatDate, findClosestDateEntry } from '@/lib/utils'; // Updated import path
 
 // Define types for the fear & greed data
 interface FearGreedData {
@@ -9,6 +11,16 @@ interface FearGreedData {
   yesterday: number;
   '7d': number;  // week ago
   '1m': number;  // month ago
+}
+
+// Define the expected structure for the fear_greed_index table row (consistent with API route)
+interface FearGreedIndexEntry {
+  id: number; // Assuming an id column exists
+  date: string;
+  value: number;
+  classification: string;
+  last_updated: string; // Or Date
+  created_at: string; // Or Date
 }
 
 // Helper function to get color and label based on value
@@ -69,39 +81,83 @@ const FearGreedMultiGauge: React.FC<{ className?: string }> = ({ className }) =>
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const supabase = createClientComponentClient(); // Use the correct function
 
   useEffect(() => {
     const fetchFearGreedData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/fear-greed');
-        
-        if (!response.ok) {
-          throw new Error(`API responded with status ${response.status}`);
+        setError(null); // Reset error on new fetch attempt
+
+        // --- Calculate Dates ---
+        const today = new Date();
+        const yesterdayDate = new Date(today);
+        yesterdayDate.setDate(today.getDate() - 1);
+        const weekAgoDate = new Date(today);
+        weekAgoDate.setDate(today.getDate() - 7);
+        const monthAgoDate = new Date(today);
+        monthAgoDate.setDate(today.getDate() - 30);
+
+        // Calculate date range for query - fetch last ~35 days to ensure we have data for targets
+        const endDate = formatDate(today);
+        const startDate = formatDate(new Date(today.getTime() - 35 * 24 * 60 * 60 * 1000)); // ~35 days ago
+
+        console.log('[FearGreedMultiGauge] Fetching data from Supabase between', startDate, 'and', endDate);
+
+        // Fetch relevant data from Supabase
+        const { data: historicalData, error: supabaseError } = await supabase
+          .from('fear_greed_index')
+          .select('*')
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', { ascending: false })
+          .limit(35); // Limit to a reasonable number of recent entries
+
+        if (supabaseError) {
+          console.error('[FearGreedMultiGauge] Supabase query error:', supabaseError);
+          throw new Error(`Failed to fetch data: ${supabaseError.message}`);
         }
-        
-        const data = await response.json();
-        
-        // Map API response to component data structure
+
+        if (!historicalData || historicalData.length === 0) {
+            console.warn('[FearGreedMultiGauge] No data returned from Supabase for the date range.');
+            // Keep default values or set to a specific 'unavailable' state
+            setError('No recent data available');
+            // Optionally keep defaults:
+             setFearGreedData({ today: 50, yesterday: 50, '7d': 50, '1m': 50 });
+            return; // Exit early if no data
+        }
+
+        console.log(`[FearGreedMultiGauge] Received ${historicalData.length} entries from Supabase.`);
+
+        // Find the closest entries for today, yesterday, 7d ago, 30d ago
+        // Use a small window (e.g., 1 day for today/yesterday, 2 days for older dates)
+        const todayEntry = findClosestDateEntry(historicalData, formatDate(today), 1);
+        const yesterdayEntry = findClosestDateEntry(historicalData, formatDate(yesterdayDate), 1);
+        const weekAgoEntry = findClosestDateEntry(historicalData, formatDate(weekAgoDate), 2);
+        const monthAgoEntry = findClosestDateEntry(historicalData, formatDate(monthAgoDate), 2);
+
+        // Map Supabase response to component data structure, using defaults if entry not found
         const formattedData: FearGreedData = {
-          today: data.value || 50,
-          yesterday: data.historical?.yesterday?.value || 50,
-          '7d': data.historical?.week_ago?.value || 50,
-          '1m': data.historical?.month_ago?.value || 50,
+          today: todayEntry?.value ?? 50,
+          yesterday: yesterdayEntry?.value ?? 50,
+          '7d': weekAgoEntry?.value ?? 50,
+          '1m': monthAgoEntry?.value ?? 50,
         };
-        
+
+        console.log('[FearGreedMultiGauge] Formatted Data:', formattedData);
         setFearGreedData(formattedData);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching fear & greed data:', err);
-        setError('Failed to load data');
+
+      } catch (err: any) {
+        console.error('[FearGreedMultiGauge] Error fetching fear & greed data:', err);
+        setError(err.message || 'Failed to load data');
+        // Keep existing/default data on error
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchFearGreedData();
-  }, []); // Empty dependency array means it runs once on mount
+  }, [supabase]); // Add supabase client to dependency array
 
   return (
     <Card className={className}>
