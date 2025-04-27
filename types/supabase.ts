@@ -214,33 +214,54 @@ export type Database = {
         }
         Relationships: []
       }
-      historical_prices: {
+      spot_price: {
         Row: {
           id: number
-          asset: string
-          date: string
-          price_usd: number
-          volume_24h: number | null
-          market_cap: number | null
           created_at: string
+          updated_at: string
+          price_usd: number
+          source: string | null
         }
         Insert: {
           id?: number
-          asset: string
-          date: string
-          price_usd: number
-          volume_24h?: number | null
-          market_cap?: number | null
           created_at?: string
+          updated_at?: string
+          price_usd: number
+          source?: string | null
         }
         Update: {
           id?: number
-          asset?: string
-          date?: string
-          price_usd?: number
-          volume_24h?: number | null
-          market_cap?: number | null
           created_at?: string
+          updated_at?: string
+          price_usd?: number
+          source?: string | null
+        }
+        Relationships: []
+      }
+      ath: {
+        Row: {
+          id: number
+          created_at: string
+          updated_at: string
+          price_usd: number
+          ath_date: string
+          source: string | null
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          updated_at?: string
+          price_usd: number
+          ath_date: string
+          source?: string | null
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          updated_at?: string
+          price_usd?: number
+          ath_date?: string
+          source?: string | null
         }
         Relationships: []
       }
