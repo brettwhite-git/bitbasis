@@ -16,7 +16,7 @@ export function HeroSection() {
         <div className="max-w-3xl mx-auto animate-fade-in-up duration-500">
           <div className="space-y-4">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-tight">
-              Private cost basis tracking for <span className="text-transparent bg-clip-text bg-gradient-to-r from-bitcoin-orange to-[#D4A76A]">long-term Bitcoin holders</span>
+              Privacy focused cost basis tracking for <span className="text-transparent bg-clip-text bg-gradient-to-r from-bitcoin-orange to-[#D4A76A]">long-term Bitcoin holders</span>
             </h1>
           </div>
           

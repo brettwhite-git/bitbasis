@@ -5,29 +5,6 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const COINPAPRIKA_API_URL = 'https://api.coinpaprika.com/v1/tickers/btc-bitcoin'
 
-// Function to log updates and errors
-async function logMessage(
-  supabase: SupabaseClient, 
-  service: string, 
-  status: string, 
-  message: string
-): Promise<void> {
-  try {
-    await supabase
-      .from('price_update_logs')
-      .insert({
-        started_at: new Date().toISOString(),
-        completed_at: new Date().toISOString(),
-        success: status === 'success' || status === 'info',
-        error_message: status === 'error' ? message : null,
-        response_status: status === 'success' ? 200 : (status === 'error' ? 500 : 200),
-        response_content: message
-      })
-  } catch (error: any) {
-    console.error('Error logging message:', error.message)
-  }
-}
-
 // Main handler function
 Deno.serve(async (req: Request) => {
   try {
@@ -74,12 +51,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Log the successful update
-    await logMessage(
-      supabase,
-      'spot_price_update',
-      'success',
-      `Updated BTC spot price to ${price} USD`
-    )
+    console.log(`Updated BTC spot price to ${price} USD`)
 
     // Clean up old records (keep only the most recent 100)
     const { count } = await supabase
@@ -112,24 +84,6 @@ Deno.serve(async (req: Request) => {
   } catch (error: any) {
     console.error('Error updating spot price:', error.message)
     
-    // Try to log the error to the database if possible
-    try {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-      
-      if (supabaseUrl && supabaseServiceKey) {
-        const supabase = createClient(supabaseUrl, supabaseServiceKey)
-        await logMessage(
-          supabase,
-          'spot_price_update',
-          'error',
-          `Error updating BTC spot price: ${error.message}`
-        )
-      }
-    } catch (logError: any) {
-      console.error('Failed to log error:', logError.message)
-    }
-
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       { 

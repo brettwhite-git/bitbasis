@@ -6,29 +6,6 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 // Alternative Fear & Greed Index API (free tier)
 const FEAR_GREED_API_URL = 'https://api.alternative.me/fng/'
 
-// Function to log updates and errors
-async function logMessage(
-  supabase: SupabaseClient, 
-  service: string, 
-  status: string, 
-  message: string
-): Promise<void> {
-  try {
-    await supabase
-      .from('price_update_logs')
-      .insert({
-        started_at: new Date().toISOString(),
-        completed_at: new Date().toISOString(),
-        success: status === 'success' || status === 'info',
-        error_message: status === 'error' ? message : null,
-        response_status: status === 'success' ? 200 : (status === 'error' ? 500 : 200),
-        response_content: message
-      })
-  } catch (error: any) {
-    console.error('Error logging message:', error.message)
-  }
-}
-
 // Function to determine classification based on the index value
 function getClassification(value: number): string {
   if (value <= 25) return 'Extreme Fear'
@@ -135,12 +112,7 @@ Deno.serve(async (req: Request) => {
     }
     
     // Log the successful update
-    await logMessage(
-      supabase,
-      'fear_greed_update',
-      'success',
-      `Updated Fear & Greed Index to ${indexValue} (${classification})`
-    )
+    console.log(`Updated Fear & Greed Index to ${indexValue} (${classification})`)
     
     return new Response(
       JSON.stringify(result),
@@ -152,24 +124,6 @@ Deno.serve(async (req: Request) => {
   } catch (error: any) {
     console.error('Error updating Fear & Greed Index:', error.message)
     
-    // Try to log the error to the database if possible
-    try {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-      
-      if (supabaseUrl && supabaseServiceKey) {
-        const supabase = createClient(supabaseUrl, supabaseServiceKey)
-        await logMessage(
-          supabase,
-          'fear_greed_update',
-          'error',
-          `Error updating Fear & Greed Index: ${error.message}`
-        )
-      }
-    } catch (logError: any) {
-      console.error('Failed to log error:', logError.message)
-    }
-
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       { 
