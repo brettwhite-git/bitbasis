@@ -16,6 +16,7 @@ import {
   ChartDataset
 } from "chart.js"
 import { Chart as ReactChart } from "react-chartjs-2"
+import { COLORS } from "./color-constants"
 
 // Register ChartJS components
 ChartJS.register(
@@ -52,14 +53,14 @@ const mockData = {
     {
       label: 'Accumulated Sats',
       data: [100000, 300000, 500000, 700000, 900000, 1100000, 1300000, 1500000, 1700000, 1900000, 2100000, 2300000, 2500000],
-      backgroundColor: '#F7931A', // Bitcoin orange
+      backgroundColor: COLORS.bitcoinOrange, // Bitcoin orange
       type: 'bar' as const,
       stack: 'Stack 0',
     },
     {
       label: 'Sats Stacked',
       data: [50000, 100000, 150000, 200000, 250000, 300000, 350000, 400000, 450000, 500000, 550000, 600000, 650000],
-      backgroundColor: '#6366F1', // Indigo-500 for slight adjustment
+      backgroundColor: COLORS.secondary, // Secondary color from theme
       type: 'bar' as const,
       stack: 'Stack 0',
     },
@@ -98,16 +99,16 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
           display: false, // No vertical grid lines
         },
         ticks: {
-          color: '#94A3B8', // text-slate-400
+          color: COLORS.chartText, // Use chart text color
         },
       },
       y: {
         stacked: true,
         grid: {
-          color: '#334155', // slate-700 (slightly lighter grid)
+          color: COLORS.chartGrid, // Use chart grid color
         },
         ticks: {
-          color: '#94A3B8', // text-slate-400
+          color: COLORS.chartText, // Use chart text color
           callback: function(value: any) {
             // Format based on selected unit
             if (bitcoinUnit === 'satoshi') {
@@ -125,9 +126,9 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
       y1: {
         position: 'right' as const,
         display: true, // Ensure axis is displayed
-        grid: { drawOnChartArea: false, color: '#1E293B' }, // Draw grid lines behind bars if needed
+        grid: { drawOnChartArea: false, color: COLORS.background }, // Draw grid lines behind bars
         ticks: {
-          color: '#94A3B8', // text-slate-400
+          color: COLORS.chartText, // Use chart text color
           callback: function(value: any) {
             // Format the tick value as currency
             if (typeof value === 'number') {
@@ -146,7 +147,7 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
         position: 'top' as const,
         align: 'center' as const,
         labels: {
-          color: '#94A3B8', // text-slate-400
+          color: COLORS.chartText, // Use chart text color
           padding: 20,
           generateLabels: function(chart: any) {
             const originalLabels = ChartJS.defaults.plugins.legend.labels.generateLabels(chart);
@@ -163,9 +164,9 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
         }
       },
       tooltip: {
-        backgroundColor: '#1E293B', // slate-800
-        titleColor: '#F1F5F9', // slate-100
-        bodyColor: '#F1F5F9', // slate-100
+        backgroundColor: COLORS.background, // Use background color from theme
+        titleColor: COLORS.foreground, // Use foreground color from theme
+        bodyColor: COLORS.foreground, // Use foreground color from theme
         padding: 12,
         callbacks: {
           label: function(context: any) {
@@ -232,7 +233,7 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
       {
         label: 'Total Accumulated',
         data: chartData.map(point => point.accumulatedSats),
-        backgroundColor: '#F7931A', // Bitcoin orange
+        backgroundColor: COLORS.bitcoinOrange, // Bitcoin orange from theme
         type: 'bar' as const,
         stack: 'Stack 0',
         order: 2,
@@ -240,7 +241,7 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
       {
         label: 'Sats Stacked This Period',
         data: chartData.map(point => point.periodicSats),
-        backgroundColor: '#6366F1', // Indigo-500
+        backgroundColor: COLORS.secondary, // Secondary color from theme
         type: 'bar' as const,
         stack: 'Stack 0', // Stack with accumulated sats
         order: 3, // Render behind the line
@@ -250,7 +251,7 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
         label: 'USD Value',
         data: chartData.map(point => point.cumulativeUsdValue || 0),
         type: 'line' as const,
-        borderColor: '#10B981', // Green color for USD
+        borderColor: COLORS.success, // Success color from theme
         borderWidth: 2,
         backgroundColor: 'transparent',
         pointRadius: 3,

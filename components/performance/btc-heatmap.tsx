@@ -135,19 +135,19 @@ export function BtcHeatmap() {
             {
               from: 1,
               to: 1,
-              color: '#F7931A', // Bitcoin orange for buys
+              color: '#F7931A', // Bitcoin orange 
               name: 'Buys'
             },
             {
               from: -1,
               to: -1,
-              color: '#E53E3E', // Red for sells
+              color: '#E53E3E', // Error red
               name: 'Sells'
             },
             {
               from: 0,
               to: 0,
-              color: '#2D3748', // Lighter grey for no activity
+              color: '#2D3748', // Muted color
               name: 'No Activity'
             }
           ]
@@ -159,13 +159,13 @@ export function BtcHeatmap() {
     },
     stroke: {
       width: 1.3,
-      colors: ['#1A202C']
+      colors: ['#1A202C'] // Background color as hex
     },
     title: {
       text: '',
       align: 'center',
       style: {
-        color: '#FFFFFF',
+        color: '#FFFFFF', // Foreground color as hex
         fontWeight: 600,
       }
     },
@@ -174,7 +174,7 @@ export function BtcHeatmap() {
       horizontalAlign: 'center',
       offsetY: 10,
       labels: {
-        colors: '#FFFFFF'
+        colors: '#FFFFFF' // Foreground color as hex
       },
       markers: {
         size: 8
@@ -186,7 +186,7 @@ export function BtcHeatmap() {
     xaxis: {
       labels: {
         style: {
-          colors: Array(12).fill('#FFFFFF')
+          colors: Array(12).fill('#FFFFFF') // Foreground color as hex
         }
       },
       tooltip: {
@@ -196,7 +196,7 @@ export function BtcHeatmap() {
     yaxis: {
       labels: {
         style: {
-          colors: Array(heatmapData.length).fill('#FFFFFF')
+          colors: Array(heatmapData.length).fill('#FFFFFF') // Foreground color as hex
         }
       }
     },
@@ -217,7 +217,7 @@ export function BtcHeatmap() {
               <div class="text-white">Buys:</div>
               <div style="color: #F7931A">${buys}</div>
               <div class="text-white">Sells:</div>
-              <div class="text-red-400">${sells}</div>
+              <div style="color: #E53E3E">${sells}</div>
             </div>
           </div>
         `;
@@ -228,14 +228,14 @@ export function BtcHeatmap() {
   // Return loading state if no data yet
   if (heatmapData.length === 0) {
     return (
-      <div className="h-[375px] w-full flex items-center justify-center text-white">
+      <div className="h-[375px] w-full flex items-center justify-center text-foreground">
         <p>Loading transaction data...</p>
       </div>
     )
   }
 
   return (
-    <div className="h-[375px] w-full text-white">
+    <div className="h-[375px] w-full text-foreground">
       {typeof window !== 'undefined' && (
         <ReactApexChart
           options={options}

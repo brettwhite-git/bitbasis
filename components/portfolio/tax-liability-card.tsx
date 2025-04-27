@@ -29,7 +29,7 @@ interface TaxLiabilityCardProps {
 
 export function TaxLiabilityCard({ stLiability, ltLiability }: TaxLiabilityCardProps) {
   const { supabase } = useSupabase()
-  const [method, setMethod] = useState<TaxMethod>("Average Cost")
+  const [method, setMethod] = useState<TaxMethod>("FIFO")
   const [loading, setLoading] = useState(false)
   const [taxLiabilities, setTaxLiabilities] = useState({
     "Average Cost": { st: stLiability, lt: ltLiability },

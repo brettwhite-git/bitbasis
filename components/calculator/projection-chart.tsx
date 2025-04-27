@@ -16,6 +16,7 @@ import {
   ChartData,
   DatasetChartOptions
 } from 'chart.js';
+import { COLORS } from './color-constants';
 
 ChartJS.register(
   CategoryScale,
@@ -52,13 +53,12 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
   const nominalDataset = {
     label: 'Nominal Value',
     data: data.map(d => d.nominalValue),
-    borderColor: '#F7931A', // Bitcoin orange
-    backgroundColor: (context: any) => { // Gradient fill for nominal
-        const ctx = context.chart.ctx;
-        const gradient = ctx.createLinearGradient(0, 0, 0, 300); // Adjust gradient height
-        gradient.addColorStop(0, 'rgba(247, 147, 26, 0.5)'); // Orange semi-transparent
-        gradient.addColorStop(1, 'rgba(247, 147, 26, 0)'); // Fades to transparent
-        return gradient;
+    borderColor: COLORS.bitcoinOrange, // Bitcoin orange from theme
+    backgroundColor: (context: any) => { 
+      if (!context || !context.chart || !context.chart.ctx) {
+        return COLORS.withOpacity(COLORS.bitcoinOrange, 0.2);
+      }
+      return COLORS.getGradient(context.chart.ctx, COLORS.bitcoinOrange);
     },
     tension: 0.1,
     fill: true, // Fill nominal value area
@@ -71,8 +71,8 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
   const adjustedDataset = {
     label: 'Inflation-Adjusted',
     data: data.map(d => d.adjustedValue),
-    borderColor: '#4ADE80', // A contrasting green color (e.g., Tailwind's green-400)
-    backgroundColor: 'rgba(74, 222, 128, 0.1)', // Lighter green for potential fill (optional)
+    borderColor: COLORS.success, // Success color from theme
+    backgroundColor: COLORS.withOpacity(COLORS.success, 0.1), // Light success color for fill
     tension: 0.1,
     fill: false, // Do not fill adjusted value area by default to avoid clutter
     pointRadius: 3,
@@ -97,26 +97,20 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
       x: {
         grid: {
           display: false, // Keep X grid lines hidden
-          // color: '#334155', // slate-700 (if you want to show them)
-          // borderColor: '#334155', // slate-700
         },
         ticks: {
-          color: '#94A3B8', // text-slate-400
+          color: COLORS.chartText, // Use chart text color
           maxRotation: 0,
           autoSkip: true,
           maxTicksLimit: data.length > 15 ? 10 : data.length+1 // Show more ticks for shorter periods
         }
       },
       y: {
-        // type: 'linear', // Ensure linear scale
-        // display: true,
-        // position: 'left',
         grid: {
-          color: '#334155', // slate-700
-          // borderColor: '#334155', // slate-700
+          color: COLORS.chartGrid, // Use chart grid color
         },
         ticks: {
-          color: '#94A3B8', // text-slate-400
+          color: COLORS.chartText, // Use chart text color
           callback: function(value: string | number) { // Type correction
             // Format ticks as compact currency (e.g., $10k, $1M)
             const numValue = Number(value);
@@ -133,15 +127,15 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
         display: true, // Show legend now
         position: 'bottom', // Position legend at the bottom
         labels: {
-            color: '#CBD5E1', // slate-300
+            color: COLORS.foreground, // Use foreground color from theme
             usePointStyle: true, // Use point style (circle) instead of box
             padding: 30 // Add padding around legend items
         }
       },
       tooltip: {
-        backgroundColor: '#1E293B', // slate-800
-        titleColor: '#F1F5F9', // slate-100
-        bodyColor: '#F1F5F9', // slate-100
+        backgroundColor: COLORS.background, // Use background color from theme
+        titleColor: COLORS.foreground, // Use foreground color from theme
+        bodyColor: COLORS.foreground, // Use foreground color from theme
         padding: 15,
         boxPadding: 4,
         usePointStyle: true, // Use point style in tooltips

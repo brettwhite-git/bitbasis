@@ -60,9 +60,9 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
   }
 
   return (
-    <Card className="h-full flex flex-col bg-[#0f172a] border-gray-800">
+    <Card className="h-full flex flex-col bg-card border-border">
       <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-bold text-white">Investment Insights</CardTitle>
+        <CardTitle className="text-xl font-bold text-foreground">Investment Insights</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col">
         
@@ -71,24 +71,24 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
           {/* Buying Recommendation */}
           <div className="border-l-[3px] border-bitcoin-orange pl-3 py-1">
             <p className="text-sm font-medium text-bitcoin-orange">Price Comparison</p>
-            <p className="text-xs text-gray-300">{getBuyingRecommendation()}</p>
+            <p className="text-xs text-foreground">{getBuyingRecommendation()}</p>
           </div>
           
           {/* DCA Performance */}
           <div className="border-l-[3px] border-bitcoin-orange pl-3 py-1">
             <p className="text-sm font-medium text-bitcoin-orange">DCA Strategy Performance</p>
-            <p className="text-xs text-gray-300">Your 6-month DCA approach has outperformed lump-sum by {dcaVsLumpSum}%</p>
+            <p className="text-xs text-foreground">Your 6-month DCA approach has outperformed lump-sum by {dcaVsLumpSum}%</p>
           </div>
           
           {/* Tax Optimization */}
           <div className="border-l-[3px] border-bitcoin-orange pl-3 py-1">
             <p className="text-sm font-medium text-bitcoin-orange">Tax Efficiency</p>
-            <p className="text-xs text-gray-300">{longTermTaxPercent}% of your holdings qualify for lower long-term capital gains rates</p>
+            <p className="text-xs text-foreground">{longTermTaxPercent}% of your holdings qualify for lower long-term capital gains rates</p>
           </div>
         </div>
         
         {/* Divider after investment insights */}
-        <div className="border-t border-gray-800 mb-6"></div>
+        <div className="border-t border-border mb-6"></div>
         
         <div className="space-y-14 mb-auto">
           {/* Current Price */}
@@ -100,8 +100,8 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
               </div>
               <span className="text-xl font-bold">{formatCurrency(currentPrice)}</span>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-gradient-to-r from-[#F7931A] to-[#fa8c0b] h-1.5 rounded-full" style={{ width: '75%' }}></div>
+            <div className="w-full bg-muted rounded-full h-1.5">
+              <div className="bg-gradient-to-r from-bitcoin-orange to-bitcoin-orange h-1.5 rounded-full" style={{ width: '75%' }}></div>
             </div>
           </div>
           
@@ -116,8 +116,8 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
                 <span className="text-xl font-bold">{formatCurrency(athPrice)}</span>
               </div>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-gradient-to-r from-[#F7931A] to-[#fa8c0b] h-1.5 rounded-full" style={{ width: '100%' }}></div>
+            <div className="w-full bg-muted rounded-full h-1.5">
+              <div className="bg-gradient-to-r from-bitcoin-orange to-bitcoin-orange h-1.5 rounded-full" style={{ width: '100%' }}></div>
             </div>
           </div>
           
@@ -132,8 +132,8 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
                 <span className="text-xl font-bold">{formatCurrency(highestBuyPrice)}</span>
               </div>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-gradient-to-r from-[#F7931A] to-[#fa8c0b] h-1.5 rounded-full" style={{ width: '100%' }}></div>
+            <div className="w-full bg-muted rounded-full h-1.5">
+              <div className="bg-gradient-to-r from-bitcoin-orange to-bitcoin-orange h-1.5 rounded-full" style={{ width: '100%' }}></div>
             </div>
           </div>
           
@@ -148,8 +148,8 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
                 <span className="text-xl font-bold">{formatCurrency(lowestBuyPrice)}</span>
               </div>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-gradient-to-r from-[#F7931A] to-[#fa8c0b] h-1.5 rounded-full" style={{ width: '20%' }}></div>
+            <div className="w-full bg-muted rounded-full h-1.5">
+              <div className="bg-gradient-to-r from-bitcoin-orange to-bitcoin-orange h-1.5 rounded-full" style={{ width: '20%' }}></div>
             </div>
           </div>
           
@@ -164,8 +164,8 @@ export function BuyPriceReferences({ performance }: BuyPriceReferencesProps) {
                 <span className="text-xl font-bold">{formatCurrency(averageBuyPrice)}</span>
               </div>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-gradient-to-r from-[#F7931A] to-[#fa8c0b] h-1.5 rounded-full" style={{ width: '45%' }}></div>
+            <div className="w-full bg-muted rounded-full h-1.5">
+              <div className="bg-gradient-to-r from-bitcoin-orange to-bitcoin-orange h-1.5 rounded-full" style={{ width: '45%' }}></div>
             </div>
           </div>
         </div>

@@ -92,8 +92,8 @@ function convertToWaterfallData(yearlyHoldings: YearlyHolding[]): WaterfallDataP
 
 // Generate colors based on whether yearly BTC amount is positive or negative
 function generateColors(yearlyData: YearlyHolding[]): string[] {
-  // Define constant colors
-  const BITCOIN_ORANGE = '#F7931A';
+  // Define constant colors using hex values instead of CSS variables
+  const BITCOIN_ORANGE = '#F7931A'; 
   const NEGATIVE_RED = '#E53E3E';
   
   // Assign orange for positive accumulation, red for negative
@@ -120,8 +120,8 @@ const options: ChartOptions<"bar"> = {
       display: false,
     },
     tooltip: {
-      titleColor: "#ffffff",
-      bodyColor: "#ffffff",
+      titleColor: "#FFFFFF",
+      bodyColor: "#FFFFFF",
       callbacks: {
         label: function(context: any) {
           if (!context.raw) return [];
@@ -152,12 +152,12 @@ const options: ChartOptions<"bar"> = {
         display: false,
       },
       ticks: {
-        color: "#9ca3af",
+        color: "#9CA3AF",
       },
       title: {
         display: false,
         text: 'Year',
-        color: '#9ca3af',
+        color: '#9CA3AF',
         padding: {top: 10, bottom: 0}
       }
     },
@@ -166,7 +166,7 @@ const options: ChartOptions<"bar"> = {
         color: "#374151",
       },
       ticks: {
-        color: "#9ca3af",
+        color: "#9CA3AF",
         callback: function(value) {
           if (typeof value !== 'number') return '';
           return `${value.toFixed(4)}`;
@@ -175,7 +175,7 @@ const options: ChartOptions<"bar"> = {
       title: {
         display: true,
         text: 'Bitcoin Amount (BTC)',
-        color: '#9ca3af',
+        color: '#9CA3AF',
         padding: 10
       }
     },
@@ -235,7 +235,7 @@ export function BitcoinHoldingsWaterfall() {
         // For floating bars, data needs to be [start, end] pairs
         data: waterfallData.map(d => [d.start, d.end]),
         backgroundColor: generateColors(yearlyHoldings),
-        borderColor: '#1F2937',
+        borderColor: 'hsl(var(--border))',
         borderWidth: 1,
         barPercentage: 0.8,  // Makes bars slightly narrower
         categoryPercentage: 0.9 // Increases spacing between categories
@@ -244,21 +244,22 @@ export function BitcoinHoldingsWaterfall() {
   }
 
   return (
-    <Card className="h-full bg-[#0f172a] border-gray-800">
+    <Card className="h-full bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold">Bitcoin Accumulation Flow</CardTitle>
         <p className="text-sm text-muted-foreground">Waterfall chart showing how your BTC stack has grown by year</p>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="h-[375px] flex items-center justify-center text-white">Loading Chart...</div>
+          <div className="h-[350px] flex items-center justify-center text-foreground">Loading waterfall chart...</div>
         ) : error ? (
-          <div className="h-[375px] flex items-center justify-center text-red-500">{error}</div>
-        ) : yearlyHoldings.length === 0 ? (
-          <div className="h-[375px] flex items-center justify-center text-gray-500">No data available to display.</div>
+          <div className="h-[350px] flex items-center justify-center text-error">{error}</div>
         ) : (
-          <div className="h-[375px] w-full">
-            <Bar options={options} data={data} />
+          <div className="h-[350px] w-full">
+            <Bar 
+              options={options} 
+              data={data} 
+            />
           </div>
         )}
       </CardContent>

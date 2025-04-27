@@ -60,7 +60,7 @@ export interface PerformanceMetrics {
     threeYear: { percent: number | null; dollar: number | null }
     fiveYear: { percent: number | null; dollar: number | null }
   }
-  annualized: {
+  compoundGrowth: {
     total: number | null
     oneYear: number | null
     twoYear: number | null
@@ -532,7 +532,7 @@ export async function getPerformanceMetrics(
           threeYear: { percent: null, dollar: null },
           fiveYear: { percent: null, dollar: null }
         },
-        annualized: {
+        compoundGrowth: {
           total: null, oneYear: null, twoYear: null, threeYear: null,
           fourYear: null, fiveYear: null, sixYear: null, sevenYear: null, eightYear: null
         },
@@ -781,24 +781,108 @@ export async function getPerformanceMetrics(
       } : { percent: null, dollar: null }
     }
 
-    // Annualized Returns
+    // Compound Growth Rate calculation (previously Annualized Returns)
     const calculateAnnualizedReturn = (endValue: number, startValue: number, years: number) => {
       if (startValue <= 0 || years <= 0) return null
-      // Using simple CAGR formula: (End Value / Start Value)^(1/Years) - 1
+      // Using standard CAGR formula: (End Value / Start Value)^(1/Years) - 1
       return (Math.pow(endValue / startValue, 1 / years) - 1) * 100
     }
 
-    const annualized = {
-      total: null, // Requires start date/value if defined differently
+    // For compound growth rate, we want to compare current value with initial investment over the period
+    // rather than just the portfolio value at fixed dates
+    const getInitialInvestmentForPeriod = (yearsAgo: number): { value: number, date: Date | null } => {
+      // Find the cutoff date for this period
+      const cutoffDate = new Date(today)
+      cutoffDate.setFullYear(today.getFullYear() - yearsAgo)
+      
+      // We need to find the portfolio value closest to but not after the cutoff date
+      // This represents what the portfolio was worth at the beginning of the period
+      let closestPoint = null;
+      let smallestDiff = Infinity;
+      
+      // Find the point closest to the cutoff date without going over
+      for (const point of portfolioHistory) {
+        if (!point) continue; // Skip undefined points
+        
+        // Skip points that are after the cutoff
+        if (point.date > cutoffDate) continue;
+        
+        const timeDiff = Math.abs(cutoffDate.getTime() - point.date.getTime());
+        if (timeDiff < smallestDiff) {
+          smallestDiff = timeDiff;
+          closestPoint = point;
+        }
+      }
+      
+      // For debugging
+      if (closestPoint) {
+        console.log(`For ${yearsAgo}-year period, found starting point: ${closestPoint.date.toISOString().split('T')[0]}, value: ${closestPoint.usdValue.toFixed(2)}`);
+      } else {
+        console.log(`No valid starting point found for ${yearsAgo}-year period`);
+      }
+      
+      // If no valid point found, return null
+      if (!closestPoint) return { value: 0, date: null };
+      
+      return { 
+        value: closestPoint.usdValue,
+        date: closestPoint.date
+      };
+    };
+
+    // Calculate real years between dates (more precise than using integers)
+    const calculateYearsBetween = (startDate: Date | null | undefined, endDate: Date): number => {
+      if (!startDate) return 0; // Return 0 if we don't have a valid start date
+      
+      const millisecondsPerYear = 1000 * 60 * 60 * 24 * 365.25;  // Account for leap years
+      const years = (endDate.getTime() - startDate.getTime()) / millisecondsPerYear;
+      
+      return Math.max(0.01, years); // Ensure we don't return negative or extremely small values
+    };
+
+    // Initialize compoundGrowth with all null values
+    const compoundGrowth = {
+      total: null as number | null, 
       oneYear: cumulative.year.percent, // 1-year cumulative is the same as annualized
-      twoYear: firstOrderDate && firstOrderDate <= new Date(today.getFullYear() - 2, today.getMonth(), today.getDate()) ? calculateAnnualizedReturn(valueNow.usdValue, getValueAtDate(new Date(today.getFullYear() - 2, today.getMonth(), today.getDate())).usdValue, 2) : null,
-      threeYear: firstOrderDate && firstOrderDate <= threeYearsAgo ? calculateAnnualizedReturn(valueNow.usdValue, valueThreeYearsAgo.usdValue, 3) : null,
-      fourYear: firstOrderDate && firstOrderDate <= new Date(today.getFullYear() - 4, today.getMonth(), today.getDate()) ? calculateAnnualizedReturn(valueNow.usdValue, getValueAtDate(new Date(today.getFullYear() - 4, today.getMonth(), today.getDate())).usdValue, 4) : null,
-      fiveYear: firstOrderDate && firstOrderDate <= fiveYearsAgo ? calculateAnnualizedReturn(valueNow.usdValue, valueFiveYearsAgo.usdValue, 5) : null,
-      sixYear: firstOrderDate && firstOrderDate <= new Date(today.getFullYear() - 6, today.getMonth(), today.getDate()) ? calculateAnnualizedReturn(valueNow.usdValue, getValueAtDate(new Date(today.getFullYear() - 6, today.getMonth(), today.getDate())).usdValue, 6) : null,
-      sevenYear: firstOrderDate && firstOrderDate <= new Date(today.getFullYear() - 7, today.getMonth(), today.getDate()) ? calculateAnnualizedReturn(valueNow.usdValue, getValueAtDate(new Date(today.getFullYear() - 7, today.getMonth(), today.getDate())).usdValue, 7) : null,
-      eightYear: firstOrderDate && firstOrderDate <= new Date(today.getFullYear() - 8, today.getMonth(), today.getDate()) ? calculateAnnualizedReturn(valueNow.usdValue, getValueAtDate(new Date(today.getFullYear() - 8, today.getMonth(), today.getDate())).usdValue, 8) : null
+      twoYear: null as number | null,
+      threeYear: null as number | null,
+      fourYear: null as number | null,
+      fiveYear: null as number | null,
+      sixYear: null as number | null,
+      sevenYear: null as number | null,
+      eightYear: null as number | null
+    };
+
+    // Calculate total CAGR from first transaction to today
+    if (portfolioHistory.length > 0 && portfolioHistory[0]) {
+      const firstPoint = portfolioHistory[0];
+      const yearsSinceFirstTx = calculateYearsBetween(firstPoint.date, today);
+      
+      if (yearsSinceFirstTx >= 0.5 && firstPoint.usdValue > 0) { // At least 6 months of data
+        compoundGrowth.total = calculateAnnualizedReturn(
+          currentValue,
+          firstPoint.usdValue,
+          yearsSinceFirstTx
+        );
+      }
     }
+
+    // Calculate each period's CAGR using the precise timeframe
+    ;[2, 3, 4, 5, 6, 7, 8].forEach(years => {
+      const periodKey = `${years}Year` as keyof typeof compoundGrowth;
+      const initialInvestment = getInitialInvestmentForPeriod(years);
+      
+      if (initialInvestment.date && initialInvestment.value > 0) {
+        const actualYears = calculateYearsBetween(initialInvestment.date, today);
+        if (actualYears >= 0.9) { // Require at least ~11 months of data
+          compoundGrowth[periodKey] = calculateAnnualizedReturn(
+            currentValue,
+            initialInvestment.value,
+            actualYears
+          );
+        }
+      }
+    });
 
     // Calculate average, lowest, and highest buy prices from orders
     const buyOrders = orders.filter(order => order.type === 'buy' && order.received_btc_amount && order.price);
@@ -939,7 +1023,7 @@ export async function getPerformanceMetrics(
 
     return {
       cumulative,
-      annualized,
+      compoundGrowth,
       allTimeHigh: { price: marketAthPrice, date: marketAthDate },
       maxDrawdown: {
         percent: maxDrawdownPercent,
@@ -963,7 +1047,7 @@ export async function getPerformanceMetrics(
         month: { percent: null, dollar: null }, ytd: { percent: null, dollar: null }, threeMonth: { percent: null, dollar: null },
         year: { percent: null, dollar: null }, threeYear: { percent: null, dollar: null }, fiveYear: { percent: null, dollar: null }
       },
-      annualized: {
+      compoundGrowth: {
         total: null, oneYear: null, twoYear: null, threeYear: null,
         fourYear: null, fiveYear: null, sixYear: null, sevenYear: null, eightYear: null
       },

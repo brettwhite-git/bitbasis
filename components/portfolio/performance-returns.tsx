@@ -27,7 +27,7 @@ interface PerformanceData {
     threeYear: { percent: number | null; dollar: number | null }
     fiveYear: { percent: number | null; dollar: number | null }
   }
-  annualized: {
+  compoundGrowth: {
     total: number | null
     oneYear: number | null
     twoYear: number | null
@@ -377,10 +377,10 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
           </div>
         </div>
 
-        {/* Annualized Returns Table */}
+        {/* Compound Growth Rate Table (previously Annualized Returns) */}
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
           <div className="p-6">
-            <h3 className="text-sm font-medium mb-4">Annualized returns</h3>
+            <h3 className="text-sm font-medium mb-4">Compound growth rate</h3>
             <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -397,42 +397,77 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
               </TableHeader>
               <TableBody>
                 <TableRow>
-                  <TableCell className="font-medium text-center w-[10.625%]">You</TableCell>
-                  <TableCell className={`text-center w-[10.625%] ${data.annualized.oneYear && data.annualized.oneYear >= 0 ? "text-green-500" : data.annualized.oneYear ? "text-red-500" : ""}`}>
-                    {data.annualized.oneYear ? formatPercent(data.annualized.oneYear) : "-"}
+                  <TableCell className="font-medium text-center w-[10.625%]">
+                    Your Portfolio
+                    <TooltipProvider delayDuration={0}>
+                      <Tooltip>
+                        <TooltipTrigger className="cursor-default">
+                          <Info className="ml-1 h-4 w-4 text-bitcoin-orange inline-block" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Calculated based on your actual portfolio history during this period.</p>
+                          <p>Empty values appear when your portfolio doesn't have sufficient history.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </TableCell>
-                  <TableCell className={`text-center w-[10.625%] ${data.annualized.twoYear && data.annualized.twoYear >= 0 ? "text-green-500" : data.annualized.twoYear ? "text-red-500" : ""}`}>
-                    {data.annualized.twoYear ? formatPercent(data.annualized.twoYear) : "-"}
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">
+                    {data.compoundGrowth.oneYear ? formatPercent(data.compoundGrowth.oneYear) : "-"}
                   </TableCell>
-                  <TableCell className={`text-center w-[10.625%] ${data.annualized.threeYear && data.annualized.threeYear >= 0 ? "text-green-500" : data.annualized.threeYear ? "text-red-500" : ""}`}>
-                    {data.annualized.threeYear ? formatPercent(data.annualized.threeYear) : "-"}
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">
+                    {data.compoundGrowth.twoYear ? formatPercent(data.compoundGrowth.twoYear) : "-"}
                   </TableCell>
-                  <TableCell className={`text-center w-[10.625%] ${data.annualized.fourYear && data.annualized.fourYear >= 0 ? "text-green-500" : data.annualized.fourYear ? "text-red-500" : ""}`}>
-                    {data.annualized.fourYear ? formatPercent(data.annualized.fourYear) : "-"}
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">
+                    {data.compoundGrowth.threeYear ? formatPercent(data.compoundGrowth.threeYear) : "-"}
                   </TableCell>
-                  <TableCell className={`text-center w-[10.625%] ${data.annualized.fiveYear && data.annualized.fiveYear >= 0 ? "text-green-500" : data.annualized.fiveYear ? "text-red-500" : ""}`}>
-                    {data.annualized.fiveYear ? formatPercent(data.annualized.fiveYear) : "-"}
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">
+                    {data.compoundGrowth.fourYear ? formatPercent(data.compoundGrowth.fourYear) : "-"}
                   </TableCell>
-                  <TableCell className={`text-center w-[10.625%] ${data.annualized.sixYear && data.annualized.sixYear >= 0 ? "text-green-500" : data.annualized.sixYear ? "text-red-500" : ""}`}>
-                    {data.annualized.sixYear ? formatPercent(data.annualized.sixYear) : "-"}
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">
+                    {data.compoundGrowth.fiveYear ? formatPercent(data.compoundGrowth.fiveYear) : "-"}
                   </TableCell>
-                  <TableCell className={`text-center w-[10.625%] ${data.annualized.sevenYear && data.annualized.sevenYear >= 0 ? "text-green-500" : data.annualized.sevenYear ? "text-red-500" : ""}`}>
-                    {data.annualized.sevenYear ? formatPercent(data.annualized.sevenYear) : "-"}
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">
+                    {data.compoundGrowth.sixYear ? formatPercent(data.compoundGrowth.sixYear) : "-"}
                   </TableCell>
-                  <TableCell className={`text-center w-[10.625%] ${data.annualized.eightYear && data.annualized.eightYear >= 0 ? "text-green-500" : data.annualized.eightYear ? "text-red-500" : ""}`}>
-                    {data.annualized.eightYear ? formatPercent(data.annualized.eightYear) : "-"}
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">
+                    {data.compoundGrowth.sevenYear ? formatPercent(data.compoundGrowth.sevenYear) : "-"}
+                  </TableCell>
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">
+                    {data.compoundGrowth.eightYear ? formatPercent(data.compoundGrowth.eightYear) : "-"}
                   </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-center w-[10.625%]">Bitcoin</TableCell>
-                  <TableCell className={`text-center w-[10.625%] text-green-500`}>120.98%</TableCell>
-                  <TableCell className={`text-center w-[10.625%] text-green-500`}>155.41%</TableCell>
-                  <TableCell className={`text-center w-[10.625%] text-red-500`}>-64.27%</TableCell>
-                  <TableCell className={`text-center w-[10.625%] text-green-500`}>59.71%</TableCell>
-                  <TableCell className={`text-center w-[10.625%] text-green-500`}>303.09%</TableCell>
-                  <TableCell className={`text-center w-[10.625%] text-green-500`}>92%</TableCell>
-                  <TableCell className={`text-center w-[10.625%] text-red-500`}>-73.48%</TableCell>
-                  <TableCell className={`text-center w-[10.625%] text-green-500`}>1,369.03%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">+48%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">+79%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">+34%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">+15%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">+63%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">+62%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">+39%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-bitcoin-orange">+70%</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium text-center w-[10.625%]">Gold</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+42%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+29%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+21%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+17%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+14%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+17%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+14%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+13%</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium text-center w-[10.625%]">S&P 500</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+8%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+15%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+10%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+7%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+14%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+11%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+11%</TableCell>
+                  <TableCell className="text-center w-[10.625%] text-green-500">+11%</TableCell>
                 </TableRow>
               </TableBody>
             </Table>

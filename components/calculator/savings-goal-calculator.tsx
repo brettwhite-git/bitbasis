@@ -479,16 +479,14 @@ export function SavingsGoalCalculator() {
   };
 
   return (
-    // Add dark mode classes to the main container
-    <div className="rounded-lg border bg-card text-card-foreground dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 shadow-sm p-6 space-y-8"> 
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-8"> 
 
       {/* === Section A: Saved Goal Tracker (Conditional) === */}
       {activeGoal && (
-        // Add dark mode classes for this section
-        <div className="p-6 bg-muted/30 dark:bg-gray-800/50 rounded-lg border border-border dark:border-gray-700 space-y-4 relative"> 
+        <div className="p-6 bg-muted/30 rounded-lg border border-border space-y-4 relative"> 
             <div className='flex justify-between items-start'>
                 <h2 className="text-xl font-semibold text-bitcoin-orange">{activeGoal.goalName}</h2>
-                <Button variant="ghost" size="sm" onClick={handleDeleteGoal} className='text-xs text-muted-foreground dark:text-gray-400 hover:text-destructive dark:hover:text-red-500'>
+                <Button variant="ghost" size="sm" onClick={handleDeleteGoal} className='text-xs text-muted-foreground hover:text-destructive'>
                     Delete Goal
                 </Button>
             </div>
@@ -503,59 +501,47 @@ export function SavingsGoalCalculator() {
                          </p>
                     )}
                     {/* Circular Progress Gauge Placeholder */}
-                    {/* Add dark mode border class */}
-                    <div className='w-32 h-32 rounded-full border-4 border-border dark:border-gray-600 flex items-center justify-center text-center'>
+                    <div className='w-32 h-32 rounded-full border-4 border-border flex items-center justify-center text-center'>
                          <div>
                             {/* Update to use BTC progress */} 
                             <p className='text-3xl font-bold'>{goalProgress.isLoading ? '...' : `${goalProgress.btcProgressPercent.toFixed(0)}%`}</p>
                             {/* Update label */} 
-                            <p className='text-xs text-muted-foreground dark:text-gray-400'>{goalProgress.error ? 'Error' : 'BTC Progress'}</p>
+                            <p className='text-xs text-muted-foreground'>{goalProgress.error ? 'Error' : 'BTC Progress'}</p>
                          </div>
                     </div>
                     {/* Progress Bar and Dates */} 
                     <div className="w-full px-4 mt-4 space-y-1">
-                         {/* <Progress value={timeProgressPercent} className="h-2" /> */} 
-                         <div className="w-full h-2 bg-muted rounded-full dark:bg-gray-700"> 
+                         <div className="w-full h-2 bg-muted rounded-full"> 
                             <div 
                                 className="h-2 bg-bitcoin-orange rounded-full"
-                                // Update width to use BTC progress
                                 style={{ width: goalProgress.isLoading ? '0%' : `${goalProgress.btcProgressPercent}%` }}
                             ></div>
                          </div>
-                         <div className="flex justify-between text-xs text-muted-foreground dark:text-gray-400">
+                         <div className="flex justify-between text-xs text-muted-foreground">
                              <span>Start: {formatSavedDate(activeGoal.startDate)}</span>
-                             {/* Display saved date directly */} 
                              <span>End: {activeGoal.estimatedTargetDateISO ? formatSavedDate(activeGoal.estimatedTargetDateISO) : 'N/A'}</span>
                          </div>
                     </div>
                 </div>
                 <div className='md:col-span-2 grid grid-cols-4 gap-4'>
-                     {/* Add dark mode classes to KPI boxes */}
-                     <div className="p-3 bg-card dark:bg-gray-700/50 rounded-lg border border-border/50 dark:border-gray-600 text-center flex flex-col justify-center">
-                        <Label className="text-xs text-muted-foreground dark:text-gray-400">Projected Value</Label>
-                        {/* Use value from saved goal data */}
+                     <div className="p-3 bg-card rounded-lg border border-border/50 text-center flex flex-col justify-center">
+                        <Label className="text-xs text-muted-foreground">Projected Value</Label>
                         <p className="text-xl font-semibold">${formatCurrency(activeGoal.projectedValueAtTarget ?? 0)}</p> 
-                        {/* Display saved adjusted value if available - Note: We are showing nominal value here */}
-                        {/* Adjusted value isn't explicitly saved, display nominal again or remove */}
-                        {/* <p className="text-xs text-muted-foreground dark:text-gray-400">
-                            ${formatCurrency(activeGoal.projectedValueAtTarget)} (inflation adj.)
-                        </p> */} 
                     </div>
-                     <div className="p-3 bg-card dark:bg-gray-700/50 rounded-lg border border-border/50 dark:border-gray-600 text-center flex flex-col justify-center">
-                        <Label className="text-xs text-muted-foreground dark:text-gray-400">Est. Time to Target BTC</Label>
+                     <div className="p-3 bg-card rounded-lg border border-border/50 text-center flex flex-col justify-center">
+                        <Label className="text-xs text-muted-foreground">Est. Time to Target BTC</Label>
                          {activeGoal.estimatedTargetDateISO ? (
                             <p className="text-xl font-semibold">{formatSavedDate(activeGoal.estimatedTargetDateISO)}</p>
                          ) : (
                             <p className="text-xl font-semibold">{"N/A"}</p>
                          )}
                     </div>
-                    <div className="p-3 bg-card dark:bg-gray-700/50 rounded-lg border border-border/50 dark:border-gray-600 text-center flex flex-col justify-center">
-                        <Label className="text-xs text-muted-foreground dark:text-gray-400">Projected ROI</Label>
-                        {/* Use value from saved goal data */}
+                    <div className="p-3 bg-card rounded-lg border border-border/50 text-center flex flex-col justify-center">
+                        <Label className="text-xs text-muted-foreground">Projected ROI</Label>
                         <p className="text-xl font-semibold">{(activeGoal.roiAtTarget ?? 0).toFixed(1)}%</p> 
                     </div>
-                     <div className="p-3 bg-card dark:bg-gray-700/50 rounded-lg border border-border/50 dark:border-gray-600 text-center flex flex-col justify-center">
-                        <Label className="text-xs text-muted-foreground dark:text-gray-400">Saved Contribution</Label>
+                     <div className="p-3 bg-card rounded-lg border border-border/50 text-center flex flex-col justify-center">
+                        <Label className="text-xs text-muted-foreground">Saved Contribution</Label>
                         <p className="text-xl font-semibold">
                             ${activeGoal.savedProjection.contributionAmountUSD.toLocaleString()} {activeGoal.savedProjection.contributionFrequency}
                         </p>
@@ -566,20 +552,17 @@ export function SavingsGoalCalculator() {
       )}
 
       {/* === Section B: Interactive Calculator & Goal Setter === */}
-      {/* Add dark mode border */}
-      <div className="pt-6 border-t border-border dark:border-gray-700">
-        {/* Removed button from here */}
+      <div className="pt-6 border-t border-border">
         <h2 className="text-xl font-semibold mb-4">
             {activeGoal ? "Update Your Projection / Goal" : "Calculate Savings Projection"}
         </h2>
-        {/* Changed grid layout: 5 columns total, 2 for inputs, 3 for outputs/chart */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
            {/* Left Column: Inputs - Wrapped in a styled container */}
-           <div className="md:col-span-2 space-y-4 p-6 rounded-lg border bg-muted/20 dark:bg-gray-800/30 dark:border-gray-700">
+           <div className="md:col-span-2 space-y-4 p-6 rounded-lg border bg-muted/20">
              {/* Put Input Title and Clear Button in a flex container */}
              <div className="flex justify-between items-center mb-4">
                  <h3 className="text-lg font-medium">Inputs</h3>
-                 <Button variant="ghost" size="sm" onClick={handleClearInputs} className="text-xs text-muted-foreground dark:text-gray-300 hover:text-primary dark:hover:text-gray-200">
+                 <Button variant="ghost" size="sm" onClick={handleClearInputs} className="text-xs text-muted-foreground hover:text-primary">
                       Clear Inputs
                  </Button>
              </div>
@@ -758,77 +741,93 @@ export function SavingsGoalCalculator() {
                 </div>
             </div>
 
-            {/* Save Button */}
-            <Button onClick={handleSaveGoal} className="w-full bg-bitcoin-orange text-black hover:bg-bitcoin-orange/90 mt-4">
-               {activeGoal ? "Update Saved Goal" : "Save as Savings Goal"}
+            {/* Save Button at the Bottom */}
+            <Button 
+              onClick={handleSaveGoal} 
+              className="w-full mt-4"
+              variant="default"
+            >
+              {activeGoal ? 'Update Saved Goal' : 'Save Goal'}
             </Button>
           </div>
 
           {/* Right Column: Dynamic Outputs & Chart - Wrapped in a styled container */}
-          <div className="md:col-span-3 space-y-4 p-6 rounded-lg border bg-muted/20 dark:bg-gray-800/30 dark:border-gray-700">
-             <h3 className="text-lg font-medium mb-4">Projection Results</h3> {/* Fixed: class -> className */}
-             {/* Dynamic Output KPIs - Add dark mode classes */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                 {/* Combined Projected Value (Nominal and Adjusted) */}
-
-                 <div className="p-4 bg-muted/30 dark:bg-gray-800/50 rounded-lg border border-border dark:border-gray-700">
-                      <Label className="text-sm text-muted-foreground dark:text-gray-400">Est. Time to {targetBtcAmount} BTC</Label>
-                      {/* This now reads interactive state, which is correct */}
-                      {estimatedBtcTargetDate ? (
-                          <p className="text-lg font-semibold">
-                               {estimatedBtcTargetDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                          </p>
-                      ) : (
-                          <p className="text-lg font-semibold">{targetUsdValue ? "N/A" : "Set Target"}</p>
-                      )}
-                       <p className='text-sm text-muted-foreground dark:text-gray-400'>
-                          Target: {targetUsdValue ? `$${formatCurrency(targetUsdValue)}` : 'N/A'}
-                      </p>
-                  </div>
-                  <div className="p-4 bg-muted/30 dark:bg-gray-800/50 rounded-lg border border-border dark:border-gray-700">
-                      <Label className="text-sm text-muted-foreground dark:text-gray-400">Projected Value</Label>
-                      {/* Display nominal and adjusted - Reads interactive state, correct */}
-                      <p className="text-2xl font-semibold">${formatCurrency(projectedValueUSD)}</p>
-                      <p className="text-sm text-muted-foreground dark:text-gray-400">
-                          ${formatCurrency(projectedValueAdjustedUSD)} <span className='text-xs'>(inflation adj.)</span>
-                      </p>
-                  </div>
-           
-                  <div className="p-4 bg-muted/30 dark:bg-gray-800/50 rounded-lg border border-border dark:border-gray-700">
-                      <Label className="text-sm text-muted-foreground dark:text-gray-400">Return on Investment</Label>
-                      <p className="text-2xl font-semibold">{roiPercent.toFixed(1)}%</p>
-                       <p className="text-sm text-muted-foreground dark:text-gray-400">
-                          Total invested: ${formatCurrency(totalPrincipal)}
-                      </p>
-                  </div>
-               </div>
-              {/* Dynamic Projected Growth Chart Container - Add dark mode classes */}
-              <div className="space-y-6 pt-2"> {/* Added some top padding */}
-                   <div className="h-64 lg:h-96 w-full bg-muted/30 dark:bg-gray-800/50 rounded-md border border-border dark:border-gray-700 p-4">
-                      {projectionData.length > 1 ? (
-                          // Pass both data series and the toggle state to the chart
-                          <ProjectionChart
-                              data={projectionData}
-                              showInflationAdjusted={showInflationAdjusted}
-                          />
-                      ) : (
-                          <div className="flex items-center justify-center h-full">
-                              <p className="text-muted-foreground dark:text-gray-400 text-center">Chart will appear here.</p>
-                          </div>
-                      )}
-                      </div>
-                   {/* Inflation Adjusted Checkbox */}
-                   <div className="flex items-center space-x-2 pt-2">
-                       <Checkbox
-                           id="showInflationAdjusted"
-                           checked={showInflationAdjusted}
-                           onCheckedChange={(checked) => setShowInflationAdjusted(!!checked)} // Handle boolean conversion
-                       />
-                       <Label htmlFor="showInflationAdjusted" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                           Show inflation-adjusted value in chart
-                       </Label>
-                   </div>
-              </div>
+          <div className="md:col-span-3 space-y-4 p-6 rounded-lg border bg-muted/20">
+             <h3 className="text-lg font-medium mb-4">Projection Results</h3>
+             
+             {/* Dynamic Output KPIs */}
+             <div className="grid grid-cols-3 gap-4 mb-6">
+                 <div className="p-4 rounded-lg border border-border/50 bg-card text-center flex flex-col items-center justify-center">
+                     <Label className="text-xs text-muted-foreground">Est. Time to 0.1 BTC</Label>
+                     <div className="mt-1">
+                         {estimatedBtcTargetDate ? (
+                             <>
+                                 <p className="text-lg font-medium mb-0">
+                                     {estimatedBtcTargetDate.toLocaleDateString('en-US', { 
+                                         month: 'short', 
+                                         year: 'numeric' 
+                                     })}
+                                 </p>
+                                 <p className="text-xs text-muted-foreground">
+                                     Target: ${targetUsdValue ? formatCurrency(targetUsdValue) : 'N/A'}
+                                 </p>
+                             </>
+                         ) : (
+                             <p className="text-lg text-muted-foreground">Not reachable</p>
+                         )}
+                     </div>
+                 </div>
+                 
+                 <div className="p-4 rounded-lg border border-border/50 bg-card text-center flex flex-col items-center justify-center">
+                     <Label className="text-xs text-muted-foreground">Projected Value</Label>
+                     <div className="mt-1">
+                         <p className="text-lg font-medium mb-0">
+                             ${formatCurrency(projectedValueUSD)}
+                         </p>
+                         <p className="text-xs text-muted-foreground">
+                             ${formatCurrency(projectedValueAdjustedUSD)} (inflation adj.)
+                         </p>
+                     </div>
+                 </div>
+                 
+                 <div className="p-4 rounded-lg border border-border/50 bg-card text-center flex flex-col items-center justify-center">
+                     <Label className="text-xs text-muted-foreground">Return on Investment</Label>
+                     <div className="mt-1">
+                         <p className="text-lg font-medium mb-0">
+                             {roiPercent.toFixed(1)}%
+                         </p>
+                         <p className="text-xs text-muted-foreground">
+                             Total invested: ${formatCurrency(totalPrincipal)}
+                         </p>
+                     </div>
+                 </div>
+             </div>
+             
+             {/* Dynamic Projected Growth Chart Container */}
+             <div className="rounded-lg border border-border/50 bg-card p-4 h-[28rem]">
+                 {projectionData.length > 0 ? (
+                     <ProjectionChart 
+                         data={projectionData} 
+                         showInflationAdjusted={showInflationAdjusted}
+                     />
+                 ) : (
+                     <div className="h-full flex items-center justify-center">
+                         <p className="text-muted-foreground">Adjust inputs to see projection chart</p>
+                     </div>
+                 )}
+             </div>
+             
+             {/* Chart Options */}
+             <div className="flex items-center space-x-2">
+               <Checkbox 
+                 id="showInflation" 
+                 checked={showInflationAdjusted}
+                 onCheckedChange={(checked) => setShowInflationAdjusted(checked === true)}
+               />
+               <Label htmlFor="showInflation" className="text-sm cursor-pointer">
+                 Show inflation-adjusted value in chart
+               </Label>
+             </div>
           </div>
         </div>
       </div>

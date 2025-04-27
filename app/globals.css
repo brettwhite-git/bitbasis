@@ -13,8 +13,8 @@
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
+    --primary: 33 98% 54%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
@@ -30,7 +30,11 @@
 
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --ring: 33 98% 54%;
+
+    --bitcoin-orange: 33 98% 54%;
+    --success: 142 76% 45%;
+    --error: 0 84% 60%;
 
     --radius: 0.5rem;
   }
@@ -53,5 +57,43 @@ html {
 /* Add scroll margin to section headings to account for fixed header */
 section[id] {
   scroll-margin-top: 5rem; /* Adjust this value based on your header height + desired padding */
+}
+
+/* Settings component custom styling */
+@layer components {
+  /* Card styling for settings */
+  .settings-card {
+    @apply dark:bg-slate-800/90 border-gray-700 rounded-lg;
+  }
+
+  /* Card footer with border for settings */
+  .settings-card-footer {
+    @apply border-t border-gray-700 px-6 py-4;
+  }
+
+  /* Input styling for settings */
+  .settings-input {
+    @apply dark:bg-slate-700 dark:text-gray-300 dark:border-gray-600;
+  }
+
+  /* Label styling for settings */
+  .settings-label {
+    @apply text-white dark:text-gray-300;
+  }
+
+  /* Description text for settings */
+  .settings-description {
+    @apply text-sm text-muted-foreground dark:text-gray-400;
+  }
+
+  /* Delete section styling */
+  .settings-delete-card {
+    @apply dark:bg-slate-800/90 border-red-600/50 dark:border-red-500/40 rounded-lg;
+  }
+
+  /* Delete footer styling */
+  .settings-delete-footer {
+    @apply border-t border-red-500/30 dark:border-red-500/30 px-6 py-4;
+  }
 }
 

@@ -85,7 +85,7 @@ const options: ChartOptions<"bar"> = {
         color: "#374151",
       },
       ticks: {
-        color: "#9ca3af",
+        color: "#9CA3AF",
         callback: function(value) {
           return `${value.toFixed(4)} BTC`
         },
@@ -96,7 +96,7 @@ const options: ChartOptions<"bar"> = {
         display: false,
       },
       ticks: {
-        color: "#9ca3af",
+        color: "#9CA3AF",
       },
     },
   },
@@ -141,7 +141,7 @@ export function HodlAgeDistribution() {
     datasets: [
       {
         data: hodlData.map(d => d.btcAmount),
-        backgroundColor: '#F7931A', // Bitcoin Orange
+        backgroundColor: '#F7931A', // Bitcoin Orange as hex
         borderColor: '#1F2937',
         borderWidth: 1,
       },
@@ -149,18 +149,18 @@ export function HodlAgeDistribution() {
   }
 
   return (
-    <Card className="h-full bg-[#0f172a] border-gray-800">
+    <Card className="h-full bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold">HODL Age Distribution</CardTitle>
         <p className="text-sm text-muted-foreground">Bitcoin holdings by time held</p>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="h-[350px] flex items-center justify-center text-white">Loading Chart...</div>
+          <div className="h-[350px] flex items-center justify-center text-foreground">Loading Chart...</div>
         ) : error ? (
-          <div className="h-[350px] flex items-center justify-center text-red-500">{error}</div>
+          <div className="h-[350px] flex items-center justify-center text-error">{error}</div>
         ) : hodlData.length === 0 ? (
-          <div className="h-[350px] flex items-center justify-center text-gray-500">No data available to display.</div>
+          <div className="h-[350px] flex items-center justify-center text-muted-foreground">No data available to display.</div>
         ) : (
           <div className="h-[350px] w-full">
             <Bar options={options} data={data} />

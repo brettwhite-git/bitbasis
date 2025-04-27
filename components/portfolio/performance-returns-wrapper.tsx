@@ -15,7 +15,7 @@ interface PerformanceData {
     threeYear: { percent: number | null; dollar: number | null }
     fiveYear: { percent: number | null; dollar: number | null }
   }
-  annualized: {
+  compoundGrowth: {
     total: number | null
     oneYear: number | null
     twoYear: number | null

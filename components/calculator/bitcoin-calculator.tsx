@@ -420,32 +420,44 @@ export function BitcoinCalculator() {
   };
 
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm dark:bg-gray-900 dark:border-gray-700">
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
       <div className="p-6 space-y-6">
   
         {/* Top Tabs - Reordered and Renamed */}
-        <div className="flex border-b border-border dark:border-gray-700">
+        <div className="flex border-b border-border">
           {/* Savings Goal Tab (Moved First) */}
           <Button
-            variant={calculatorMode === 'savingsGoal' ? "default" : "ghost"}
+            variant="ghost"
             onClick={() => setCalculatorMode('savingsGoal')}
-            className={`rounded-b-none ${calculatorMode === 'savingsGoal' ? 'bg-bitcoin-orange text-black hover:bg-bitcoin-orange/90' : 'dark:text-gray-300 dark:hover:bg-gray-700'}`}
+            className={`rounded-b-none border-b-2 ${
+              calculatorMode === 'savingsGoal' 
+                ? 'border-bitcoin-orange text-bitcoin-orange' 
+                : 'border-transparent hover:border-border hover:bg-transparent'
+            }`}
           >
             Savings Goal
           </Button>
           {/* Fixed Goal Tab (Renamed) */}
           <Button
-            variant={calculatorMode === 'satsGoal' ? "default" : "ghost"}
+            variant="ghost"
             onClick={() => setCalculatorMode('satsGoal')}
-            className={`ml-1 rounded-b-none ${calculatorMode === 'satsGoal' ? 'bg-bitcoin-orange text-black hover:bg-bitcoin-orange/90' : 'dark:text-gray-300 dark:hover:bg-gray-700'}`}
+            className={`ml-1 rounded-b-none border-b-2 ${
+              calculatorMode === 'satsGoal' 
+                ? 'border-bitcoin-orange text-bitcoin-orange' 
+                : 'border-transparent hover:border-border hover:bg-transparent'
+            }`}
           >
             Fixed Goal
           </Button>
           {/* Recurring Goal Tab (Renamed) */}
           <Button
-            variant={calculatorMode === 'recurringBuy' ? "default" : "ghost"}
+            variant="ghost"
             onClick={() => setCalculatorMode('recurringBuy')}
-            className={`ml-1 rounded-b-none ${calculatorMode === 'recurringBuy' ? 'bg-bitcoin-orange text-black hover:bg-bitcoin-orange/90' : 'dark:text-gray-300 dark:hover:bg-gray-700'}`}
+            className={`ml-1 rounded-b-none border-b-2 ${
+              calculatorMode === 'recurringBuy' 
+                ? 'border-bitcoin-orange text-bitcoin-orange' 
+                : 'border-transparent hover:border-border hover:bg-transparent'
+            }`}
           >
             Recurring Goal
           </Button>
@@ -460,16 +472,16 @@ export function BitcoinCalculator() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Input Section (Left) */}
             <div className="md:col-span-1">
-              <div className="h-full p-4 rounded-md border border-border bg-muted/30 dark:bg-gray-800/50 dark:border-gray-700 space-y-4 flex flex-col">
+              <div className="h-full p-4 rounded-md border border-border bg-muted/30 space-y-4 flex flex-col">
                 {/* Bitcoin Unit */}
                 <div className="space-y-2">
-                  <Label className="dark:text-gray-300">Bitcoin Unit</Label>
+                  <Label>Bitcoin Unit</Label>
                   <RadioGroup value={bitcoinUnit} onValueChange={(value) => setBitcoinUnit(value as 'bitcoin' | 'satoshi')} className="grid grid-cols-2 gap-2">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="bitcoin" id="bitcoin" className="peer sr-only" />
                       <Label
                         htmlFor="bitcoin"
-                        className="flex-1 cursor-pointer rounded-md border-2 border-muted dark:border-gray-600 p-3 hover:bg-muted dark:hover:bg-gray-700 dark:text-gray-200 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 dark:peer-data-[state=checked]:bg-bitcoin-orange/20 dark:peer-data-[state=checked]:text-bitcoin-orange"
+                        className="flex-1 cursor-pointer rounded-md border-2 border-muted p-3 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange"
                       >
                         Bitcoin
                       </Label>
@@ -478,7 +490,7 @@ export function BitcoinCalculator() {
                       <RadioGroupItem value="satoshi" id="satoshi" className="peer sr-only" />
                       <Label
                         htmlFor="satoshi"
-                        className="flex-1 cursor-pointer rounded-md border-2 border-muted dark:border-gray-600 p-3 hover:bg-muted dark:hover:bg-gray-700 dark:text-gray-200 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 dark:peer-data-[state=checked]:bg-bitcoin-orange/20 dark:peer-data-[state=checked]:text-bitcoin-orange"
+                        className="flex-1 cursor-pointer rounded-md border-2 border-muted p-3 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange"
                       >
                         Satoshi
                       </Label>
@@ -488,12 +500,12 @@ export function BitcoinCalculator() {
 
                 {/* Fiat Currency */}
                 <div className="space-y-2">
-                  <Label className="dark:text-gray-300">Fiat Currency</Label>
+                  <Label>Fiat Currency</Label>
                   <Select defaultValue="USD">
-                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+                    <SelectTrigger className="bg-background border-input">
                       <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200">
+                    <SelectContent>
                       <SelectItem value="USD">USD ($)</SelectItem>
                     </SelectContent>
                   </Select>
@@ -501,14 +513,14 @@ export function BitcoinCalculator() {
 
                 {/* Buying Frequency */}
                 <div className="space-y-2">
-                  <Label className="dark:text-gray-300">Buying Frequency</Label>
+                  <Label>Buying Frequency</Label>
                   <RadioGroup value={frequency} onValueChange={setFrequency} className="grid grid-cols-4 gap-2">
                     {["daily", "weekly", "monthly", "yearly"].map((period) => (
                       <div key={period} className="flex items-center space-x-2">
                         <RadioGroupItem value={period} id={period} className="peer sr-only" />
                         <Label
                           htmlFor={period}
-                          className="flex-1 cursor-pointer rounded-md border-2 border-muted dark:border-gray-600 p-3 hover:bg-muted dark:hover:bg-gray-700 dark:text-gray-200 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 dark:peer-data-[state=checked]:bg-bitcoin-orange/20 dark:peer-data-[state=checked]:text-bitcoin-orange text-center capitalize text-xs sm:text-sm"
+                          className="flex-1 cursor-pointer rounded-md border-2 border-muted p-3 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center capitalize text-xs sm:text-sm"
                         >
                           {getFrequencyDetails(period).label}
                         </Label>
@@ -520,7 +532,7 @@ export function BitcoinCalculator() {
                 {/* Mode-specific inputs */}
                 {calculatorMode === 'satsGoal' && (
                   <div className="space-y-2">
-                    <Label className="dark:text-gray-300">BTC Goal</Label>
+                    <Label>BTC Goal</Label>
                     <div className="grid grid-cols-2 gap-3">
                       {bitcoinUnit === 'bitcoin' ? (
                         <>
@@ -532,19 +544,19 @@ export function BitcoinCalculator() {
                               placeholder="0.1"
                               value={displayGoalValue} // Show formatted BTC
                               onChange={handleBtcGoalChange}
-                              className="pr-16 bg-muted/50 dark:bg-gray-700/50 border-muted dark:border-gray-600 dark:text-gray-200"
+                              className="pr-16 bg-muted/50 border-input"
                               inputMode="decimal"
                             />
-                            <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground dark:text-gray-400">
+                            <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
                               BTC
                             </span>
                           </div>
                           {/* Sats Display Field */}
                           <div className="relative">
-                            <div className="flex items-center rounded-md border border-input bg-background dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm ring-offset-background h-10">
-                              <span className="text-sm mr-2 dark:text-gray-400">=</span>
-                              <span className="flex-1 text-sm font-medium dark:text-gray-100">{btcToSats(satsGoal)}</span>
-                              <span className="ml-1 text-sm text-muted-foreground dark:text-gray-400">sats</span>
+                            <div className="flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background h-10">
+                              <span className="text-sm mr-2 text-muted-foreground">=</span>
+                              <span className="flex-1 text-sm font-medium">{btcToSats(satsGoal)}</span>
+                              <span className="ml-1 text-sm text-muted-foreground">sats</span>
                             </div>
                           </div>
                         </>
@@ -558,19 +570,19 @@ export function BitcoinCalculator() {
                               placeholder="10,000,000"
                               value={displayGoalValue} // Show formatted Sats
                               onChange={handleSatsInputChange}
-                              className="pr-16 bg-muted/50 dark:bg-gray-700/50 border-muted dark:border-gray-600 dark:text-gray-200"
+                              className="pr-16 bg-muted/50 border-input"
                               inputMode="numeric" // Use numeric for sats
                             />
-                            <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground dark:text-gray-400">
+                            <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
                               sats
                             </span>
                           </div>
                           {/* BTC Display Field */}
                           <div className="relative">
-                            <div className="flex items-center rounded-md border border-input bg-background dark:bg-gray-800 dark:border-gray-600 px-3 py-2 text-sm ring-offset-background h-10">
-                              <span className="text-sm mr-2 dark:text-gray-400">=</span>
-                              <span className="flex-1 text-sm font-medium dark:text-gray-100">{formatBTC(satsGoal)}</span>
-                              <span className="ml-1 text-sm text-muted-foreground dark:text-gray-400">BTC</span>
+                            <div className="flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background h-10">
+                              <span className="text-sm mr-2 text-muted-foreground">=</span>
+                              <span className="flex-1 text-sm font-medium">{formatBTC(satsGoal)}</span>
+                              <span className="ml-1 text-sm text-muted-foreground">BTC</span>
                             </div>
                           </div>
                         </>
@@ -580,20 +592,20 @@ export function BitcoinCalculator() {
                 )}
                 {calculatorMode === 'recurringBuy' && (
                   <div className="space-y-2">
-                    <Label className="dark:text-gray-300">Recurring Buy Amount</Label>
+                    <Label>Recurring Buy Amount</Label>
                     <div className="relative">
                       <Input
                         type="text"
                         placeholder="100"
                         value={recurringBuyAmount} // Display the raw state value
                         onChange={handleRecurringBuyAmountChange}
-                        className="pl-8 pr-10 bg-muted/50 dark:bg-gray-700/50 border-muted dark:border-gray-600 dark:text-gray-200" // Padding for symbols
+                        className="pl-8 pr-10 bg-muted/50 border-input" // Padding for symbols
                         inputMode="decimal"
                       />
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-muted-foreground dark:text-gray-400">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-muted-foreground">
                         $
                       </span>
-                      <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground dark:text-gray-400">
+                      <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
                         USD
                       </span>
                     </div>
@@ -602,10 +614,10 @@ export function BitcoinCalculator() {
 
                 {/* Goal Date & Future Price Estimate - Common for these two modes */}
                 <div className="space-y-2">
-                  <Label className="dark:text-gray-300">Goal Date</Label>
+                  <Label>Goal Date</Label>
                   <div className="space-y-4">
                     <div className="relative pt-5">
-                      <div className="absolute top-0 left-0 right-0 flex justify-between text-xs text-muted-foreground dark:text-gray-400 px-1">
+                      <div className="absolute top-0 left-0 right-0 flex justify-between text-xs text-muted-foreground px-1">
                         <span>1M</span>
                         <span>6M</span>
                         <span>1Y</span>
@@ -694,9 +706,9 @@ export function BitcoinCalculator() {
 
             {/* Right Section (Chart for non-Savings Goal modes) */}
             <div className="md:col-span-2 space-y-4">
-              <div className="h-full w-full bg-muted/30 dark:bg-gray-800/50 dark:border-gray-700 rounded-md border border-border overflow-hidden flex flex-col">
-                <div className="bg-gradient-to-r from-bitcoin-orange/20 to-transparent px-4 py-3 border-b border-border dark:border-gray-700">
-                  <h3 className="text-lg font-semibold text-foreground dark:text-gray-100">Satoshi Accumulation Forecast</h3>
+              <div className="h-full w-full rounded-md border border-border bg-background overflow-hidden flex flex-col">
+                <div className="px-4 py-3 border-b border-border">
+                  <h3 className="text-lg font-semibold text-foreground">Satoshi Accumulation Forecast</h3>
                 </div>
                 <div className="px-4 py-6 flex-grow">
                   <CalculatorChart
@@ -713,14 +725,14 @@ export function BitcoinCalculator() {
         {/* Full Width Table Section (for non-Savings Goal modes) */}
         {calculatorMode !== 'savingsGoal' && (
           <div className="mt-10 w-full">
-            <div className="w-full bg-muted/30 dark:bg-gray-800/50 dark:border-gray-700 rounded-md border border-border overflow-hidden">
-              <div className="bg-gradient-to-r from-bitcoin-orange/20 to-transparent px-4 py-3 border-b border-border dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-foreground dark:text-gray-100">Accumulation Details</h3>
+            <div className="w-full rounded-md border border-border bg-background overflow-hidden">
+              <div className="px-4 py-3 border-b border-border">
+                <h3 className="text-lg font-semibold text-foreground">Accumulation Details</h3>
               </div>
               <div className="w-full overflow-x-auto p-0">
                 <table className="w-full text-sm table-fixed">
-                  <thead className="dark:text-gray-300">
-                    <tr className="border-b border-border dark:border-gray-700 bg-muted/30 dark:bg-gray-800">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/10">
                       <th className="w-[14%] text-center py-2 px-3 font-medium">{getFrequencyDetails(frequency).label} Date</th> 
                       <th className="w-[14%] text-center py-2 px-3 font-medium">{bitcoinUnit === 'satoshi' ? 'Sats' : 'BTC'} Stacked</th>
                       <th className="w-[14%] text-center py-2 px-3 font-medium">{calculatorMode === 'satsGoal' ? 'Est. Cost' : 'Amount Invested'}</th>
@@ -730,20 +742,20 @@ export function BitcoinCalculator() {
                       <th className="w-[14%] text-center py-2 px-3 font-medium">Est. Total Value</th>
                     </tr>
                   </thead>
-                  <tbody className="dark:text-gray-200">
+                  <tbody>
                     {chartData && chartData.length > 0 ? (
                       chartData.map((point, index) => {
                         const originalIndex = index;
                         const isFirstRow = index === 0;
                         const isLastRow = originalIndex === chartData.length - 1;
-                        const rowTextColorClass = (isFirstRow || isLastRow) ? 'text-bitcoin-orange' : '';
+                        const rowTextColorClass = (isFirstRow || isLastRow) ? 'font-medium' : '';
                         const totalInvested = calculatorMode === 'recurringBuy'
                           ? (originalIndex + 1) * parseFloat(recurringBuyAmount.replace(/,/g, '') || '0')
                           : (chartData || []).slice(0, originalIndex + 1).reduce((sum, p) => sum + (p.usdValueThisPeriod || 0), 0);
 
                         return (
                           <tr key={point.date + '-' + originalIndex}
-                            className={`border-b border-border/50 dark:border-gray-700/50 ${originalIndex % 2 === 0 ? 'bg-muted/50 dark:bg-gray-800/30' : 'bg-transparent dark:bg-gray-900/30'} hover:bg-bitcoin-orange/50 dark:hover:bg-bitcoin-orange/20`}>
+                            className={`border-b border-border ${originalIndex % 2 === 0 ? 'bg-muted/5' : 'bg-transparent'} hover:bg-muted/10`}>
                             <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{point.date}</td>
                             <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{bitcoinUnit === 'satoshi' ? formatNumber(point.periodicSats) : formatBTC(point.periodicSats / 100000000)}</td>
                             <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.usdValueThisPeriod)}</td> 

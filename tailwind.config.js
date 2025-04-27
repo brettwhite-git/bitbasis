@@ -22,7 +22,9 @@ module.exports = {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        "bitcoin-orange": "#F7931A",
+        "bitcoin-orange": "hsl(var(--bitcoin-orange))",
+        success: "hsl(var(--success))",
+        error: "hsl(var(--error))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

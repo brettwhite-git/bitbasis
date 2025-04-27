@@ -20,10 +20,10 @@ export function PrivacySettings() {
   return (
     <div className="grid gap-6">
       {/* Data Privacy Section */}
-      <Card className="dark:bg-gray-800/50 border-gray-700 rounded-lg">
+      <Card className="rounded-lg">
         <CardHeader>
-          <CardTitle className="text-lg text-white">Data Privacy</CardTitle>
-          <CardDescription className="dark:text-gray-400">
+          <CardTitle className="text-lg">Data Privacy</CardTitle>
+          <CardDescription>
             Control how your data is stored and used.
           </CardDescription>
         </CardHeader>
@@ -32,44 +32,43 @@ export function PrivacySettings() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="encrypt-notes" className="dark:text-gray-200">
+                <Label htmlFor="encrypt-notes">
                   Encrypt Transaction Notes
                 </Label>
-                <p className="text-sm text-muted-foreground dark:text-gray-400">Encrypt your transaction notes with end-to-end encryption.</p>
+                <p className="text-sm text-muted-foreground">Encrypt your transaction notes with end-to-end encryption.</p>
               </div>
-              {/* Add data-state attribute for orange styling when checked */}
-              <Switch id="encrypt-notes" defaultChecked className="data-[state=checked]:bg-orange-500" />
+              <Switch id="encrypt-notes" defaultChecked />
             </div>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="store-csv" className="dark:text-gray-200">
+                <Label htmlFor="store-csv">
                   Store Original CSV Files
                 </Label>
-                <p className="text-sm text-muted-foreground dark:text-gray-400">Keep your original CSV files in your account for reference.</p>
+                <p className="text-sm text-muted-foreground">Keep your original CSV files in your account for reference.</p>
               </div>
-              <Switch id="store-csv" defaultChecked className="data-[state=checked]:bg-orange-500" />
+              <Switch id="store-csv" defaultChecked />
             </div>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="analytics" className="dark:text-gray-200">
+                <Label htmlFor="analytics">
                   Usage Analytics
                 </Label>
-                <p className="text-sm text-muted-foreground dark:text-gray-400">Allow anonymous usage data to help improve BitBasis.</p>
+                <p className="text-sm text-muted-foreground">Allow anonymous usage data to help improve BitBasis.</p>
               </div>
-              <Switch id="analytics" className="data-[state=checked]:bg-orange-500" />
+              <Switch id="analytics" />
             </div>
           </div>
 
           {/* Privacy Commitment Alert */}
-          <Alert className="dark:bg-slate-800 border-orange-500/50 dark:border-orange-500/40">
-             <ShieldCheck className="h-4 w-4 text-orange-400 dark:text-orange-400" />
-             <AlertTitle className="text-white dark:text-gray-100">Privacy Commitment</AlertTitle>
-             <AlertDescription className="text-muted-foreground dark:text-gray-400">
+          <Alert className="border-primary/50">
+             <ShieldCheck className="h-4 w-4 text-primary" />
+             <AlertTitle>Privacy Commitment</AlertTitle>
+             <AlertDescription className="text-muted-foreground">
                BitBasis is committed to protecting your privacy. We never sell your data or share it with third parties
                without your explicit consent. Read our{" "}
-               <a href="/privacy" className="font-medium text-orange-500 hover:underline dark:text-orange-400">
+               <a href="/privacy" className="font-medium text-primary hover:underline">
                  Privacy Policy
                </a>{" "}
                for more information.
@@ -79,15 +78,15 @@ export function PrivacySettings() {
       </Card>
 
       {/* Export Data Section */}
-      <Card className="dark:bg-gray-800/50 border-gray-700 rounded-lg">
+      <Card className="rounded-lg">
         <CardHeader>
-          <CardTitle className="text-lg text-white">Export Your Data</CardTitle>
-          <CardDescription className="dark:text-gray-400">
+          <CardTitle className="text-lg">Export Your Data</CardTitle>
+          <CardDescription>
             Download all your data in a portable format.
           </CardDescription>
         </CardHeader>
-        <CardFooter className="border-t border-gray-700 px-6 py-4">
-          <Button variant="outline" className="w-full border-orange-500 text-orange-500 hover:bg-orange-500/10 hover:text-orange-600 dark:border-orange-500 dark:text-orange-500 dark:hover:bg-orange-500/10 dark:hover:text-orange-400">
+        <CardFooter className="border-t pt-4">
+          <Button variant="orange-outline" className="w-full">
             Export All Data
           </Button>
         </CardFooter>
@@ -95,7 +94,7 @@ export function PrivacySettings() {
 
       {/* Save Button - Placed outside cards for global save */}
       <div className="flex justify-end">
-          <Button className="w-full md:w-auto bg-orange-500 hover:bg-orange-600 text-white dark:bg-orange-500 dark:hover:bg-orange-600">
+          <Button className="w-full md:w-auto">
             Save Settings
           </Button>
       </div>
