@@ -169,9 +169,9 @@ export async function getPortfolioMetrics(
         .eq('user_id', userId)
         .order('date', { ascending: true }),
       supabase
-        .from('bitcoin_prices')
-        .select('price_usd')
-        .order('last_updated', { ascending: false })
+        .from('spot_price')
+        .select('price_usd, updated_at')
+        .order('updated_at', { ascending: false })
         .limit(1)
         .single()
     ])
@@ -492,16 +492,15 @@ export async function getPerformanceMetrics(
         .eq('user_id', userId)
         .order('date', { ascending: true }),
       supabase
-        .from('bitcoin_prices')
-        .select('price_usd, last_updated')
-        .order('last_updated', { ascending: false })
+        .from('spot_price')
+        .select('price_usd, updated_at')
+        .order('updated_at', { ascending: false })
         .limit(1)
         .single(),
       supabase // Fetch ATH price
-        .from('bitcoin_prices')
-        .select('ath_price, ath_date')
-        .not('ath_price', 'is', null)
-        .order('ath_price', { ascending: false })
+        .from('ath')
+        .select('price_usd, ath_date')
+        .order('price_usd', { ascending: false })
         .limit(1)
         .single()
     ])
@@ -515,8 +514,8 @@ export async function getPerformanceMetrics(
     const orders = ordersResult.data || []
     if (!priceResult.data) throw new Error('No Bitcoin price data available')
     const currentPrice = priceResult.data.price_usd
-    const lastUpdated = priceResult.data.last_updated
-    const marketAthPrice = athResult.data?.ath_price ?? 0
+    const lastUpdated = priceResult.data.updated_at
+    const marketAthPrice = athResult.data?.price_usd ?? 0
     const marketAthDate = athResult.data?.ath_date ?? 'N/A'
 
     if (orders.length === 0) {

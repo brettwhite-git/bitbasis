@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/providers/supabase-auth-provider'; // Use custom auth provider
-import type { Database } from '@/lib/database.types'; // Use the generated types
+import type { Database } from '@/lib/test.database.types'; // Use the generated types
 
 // Define the structure for the input goal data (subset of SavedGoalData)
 interface SavingsGoalInput {

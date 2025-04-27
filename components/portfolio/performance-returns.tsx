@@ -149,9 +149,9 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
         const [priceResult, ordersResult] = await Promise.all([
           // Fetch latest price
           supabase
-            .from('bitcoin_prices')
+            .from('spot_price')
             .select('price_usd')
-            .order('last_updated', { ascending: false })
+            .order('updated_at', { ascending: false })
             .limit(1)
             .single(),
           // Fetch user orders with specific columns

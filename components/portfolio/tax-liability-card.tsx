@@ -54,9 +54,9 @@ export function TaxLiabilityCard({ stLiability, ltLiability }: TaxLiabilityCardP
         const [priceResult, ordersResult] = await Promise.all([
           // Latest price
           supabase
-            .from('bitcoin_prices')
+            .from('spot_price')
             .select('price_usd')
-            .order('last_updated', { ascending: false })
+            .order('updated_at', { ascending: false })
             .limit(1)
             .single(),
           // User orders
