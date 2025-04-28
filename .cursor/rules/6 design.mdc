@@ -66,11 +66,6 @@ alwaysApply: true
 - `hash` : Transaction hash 
 
 
-### Bitcoin History Table
-**Historical Table and Hourly Update Cron Job**
-- `historical_prices`: `timestamp`, `date`, `price_usd`, `created_at`
-
-
 ## Bitcoing All Time Table
 **Bitciong ATH Table**
 - `date`, `ath_date`, `price`
@@ -84,7 +79,7 @@ alwaysApply: true
 
 ### Fear & Greed Index Table
 **Fear & Greed Index Table**
-  - Using Coinmaarketcap api 
+  - Using Alternative.me / Coinmaarketcap api 
   - Capture daily index number
   - Be able to GET `yesterday`, `7d ago`, `1m ago` values fromt table from query. 
 

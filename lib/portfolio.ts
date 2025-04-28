@@ -187,7 +187,7 @@ export async function getPortfolioMetrics(
     const currentPrice = priceResult.data.price_usd
 
     // Calculate core metrics using only buy/sell orders
-    const coreMetrics = calculatePortfolioMetrics(orders, currentPrice)
+    const coreMetrics = calculatePortfolioMetrics(orders as any, currentPrice)
 
     // Calculate tax liability using Average Cost method for the overview
     // Need to await the result as calculateCostBasis is async
@@ -595,7 +595,38 @@ export async function getPerformanceMetrics(
       if (portfolioHistory.length >= 2) {
         const additionalPoints = [];
         // Get all months between first and last transaction
-        const firstDate = new Date(portfolioHistory[0].date);
+        const firstPoint = portfolioHistory[0];
+        if (!firstPoint) {
+          console.log("No first point in portfolio history");
+          // Return default rather than undefined to match expected return type
+          return {
+            cumulative: {
+              total: { percent: 0, dollar: 0 },
+              day: { percent: 0, dollar: 0 },
+              week: { percent: 0, dollar: 0 },
+              month: { percent: null, dollar: null },
+              ytd: { percent: null, dollar: null },
+              threeMonth: { percent: null, dollar: null },
+              year: { percent: null, dollar: null },
+              threeYear: { percent: null, dollar: null },
+              fiveYear: { percent: null, dollar: null }
+            },
+            compoundGrowth: {
+              total: null, oneYear: null, twoYear: null, threeYear: null,
+              fourYear: null, fiveYear: null, sixYear: null, sevenYear: null, eightYear: null
+            },
+            allTimeHigh: { price: marketAthPrice, date: marketAthDate },
+            maxDrawdown: {
+              percent: 0,
+              fromDate: 'N/A',
+              toDate: 'N/A',
+              portfolioATH: 0,
+              portfolioLow: 0
+            },
+            hodlTime: 0
+          };
+        }
+        const firstDate = new Date(firstPoint.date);
         const lastDate = new Date();
         
         // Create a sorted copy so we can reliably find transactions by date
@@ -630,12 +661,14 @@ export async function getPerformanceMetrics(
             // Create a new point for this month with accurate price data
             // For now, use current price as an approximation
             // In a future improvement, we would fetch historical price data for each month
-            additionalPoints.push({
-              date: new Date(currentMonth),
-              btc: prevPoint.btc,
-              usdValue: prevPoint.btc * currentPrice, // Use current price - would be better with historical price
-              investment: prevPoint.investment
-            });
+            if (prevPoint) {
+              additionalPoints.push({
+                date: new Date(currentMonth),
+                btc: prevPoint.btc,
+                usdValue: prevPoint.btc * currentPrice, // Use current price - would be better with historical price
+                investment: prevPoint.investment
+              });
+            }
           }
           
           // Move to next month
@@ -681,15 +714,24 @@ export async function getPerformanceMetrics(
 
     // Helper to find portfolio state at a specific date
     const getValueAtDate = (targetDate: Date): { btc: number; usdValue: number; investment: number } => {
-      let closestPastState = portfolioHistory[0] // Start with the first transaction state
+      if (portfolioHistory.length === 0) {
+        return { btc: 0, usdValue: 0, investment: 0 };
+      }
+      
+      let closestPastState = portfolioHistory[0]; // Start with the first transaction state
+      if (!closestPastState) {
+        return { btc: 0, usdValue: 0, investment: 0 };
+      }
+      
       for (const entry of portfolioHistory) {
         if (entry.date <= targetDate) {
-          closestPastState = entry
+          closestPastState = entry;
         } else {
           // Since history is sorted, we found the last state before or on the target date
-          break
+          break;
         }
       }
+      
       // Adjust the USD value using the *current* price for comparison periods
       // except for the total calculation which should use the final actual value
       return {
@@ -909,8 +951,8 @@ export async function getPerformanceMetrics(
 
     // Calculate max drawdown using a more reliable historical approach
     let maxDrawdownPercent = 0
-    let maxDrawdownFromDate = ''
-    let maxDrawdownToDate = ''
+    let maxDrawdownFromDate = 'N/A'
+    let maxDrawdownToDate = 'N/A'
     let maxDrawdownPortfolioATH = 0
     let maxDrawdownPortfolioLow = Infinity
 
@@ -940,7 +982,10 @@ export async function getPerformanceMetrics(
         let peakValue = -Infinity;
         
         for (let i = 0; i < timeline.length; i++) {
-          const value = timeline[i].usdValue;
+          const point = timeline[i];
+          if (!point) continue;
+          
+          const value = point.usdValue;
           if (value > peakValue) {
             peakValue = value;
             peakIndex = i;
@@ -955,7 +1000,10 @@ export async function getPerformanceMetrics(
           let troughValue = Infinity;
           
           for (let i = peakIndex + 1; i < timeline.length; i++) {
-            const value = timeline[i].usdValue;
+            const point = timeline[i];
+            if (!point) continue;
+            
+            const value = point.usdValue;
             if (value < troughValue) {
               troughValue = value;
               troughIndex = i;
@@ -971,12 +1019,19 @@ export async function getPerformanceMetrics(
             console.log(`Main drawdown calculation: ${drawdown.toFixed(2)}% (${peakValue.toFixed(2)} → ${troughValue.toFixed(2)})`);
             
             maxDrawdownPercent = drawdown;
-            maxDrawdownFromDate = timeline[peakIndex].date.toISOString().split('T')[0];
-            maxDrawdownToDate = timeline[troughIndex].date.toISOString().split('T')[0];
-            maxDrawdownPortfolioATH = peakValue;
-            maxDrawdownPortfolioLow = troughValue;
+            const peakPoint = timeline[peakIndex];
+            const troughPoint = timeline[troughIndex];
             
-            console.log(`Max drawdown set to: ${drawdown.toFixed(2)}% from ${maxDrawdownFromDate} to ${maxDrawdownToDate}`);
+            if (peakPoint && troughPoint) {
+              const peakDateStr = peakPoint.date.toISOString().split('T')[0] || 'N/A';
+              const troughDateStr = troughPoint.date.toISOString().split('T')[0] || 'N/A';
+              maxDrawdownFromDate = peakDateStr;
+              maxDrawdownToDate = troughDateStr;
+              maxDrawdownPortfolioATH = peakValue;
+              maxDrawdownPortfolioLow = troughValue;
+              
+              console.log(`Max drawdown set to: ${drawdown.toFixed(2)}% from ${maxDrawdownFromDate} to ${maxDrawdownToDate}`);
+            }
           } else {
             console.log(`No valid trough found after peak at index ${peakIndex}`);
           }
@@ -984,12 +1039,15 @@ export async function getPerformanceMetrics(
           console.log("No valid peak found in portfolio history");
         }
         
-        // Also check for potential drawdowns from intermediate peaks
+        // Also check for drawdowns from intermediate peaks
         console.log("Checking for drawdowns from intermediate peaks:");
         
         timeline.forEach((peak, peakIdx) => {
+          if (!peak) return;
+          
           for (let i = peakIdx + 1; i < timeline.length; i++) {
             const trough = timeline[i];
+            if (!trough) continue;
             
             if (peak.usdValue > 0 && trough.usdValue < peak.usdValue) {
               const drawdown = ((peak.usdValue - trough.usdValue) / peak.usdValue) * 100;
@@ -1000,8 +1058,11 @@ export async function getPerformanceMetrics(
               
               if (drawdown > maxDrawdownPercent) {
                 maxDrawdownPercent = drawdown;
-                maxDrawdownFromDate = peak.date.toISOString().split('T')[0];
-                maxDrawdownToDate = trough.date.toISOString().split('T')[0]; 
+                // Use defined strings for the dates to fix type issues
+                const peakDate = peak.date?.toISOString().split('T')[0] || 'N/A';
+                const troughDate = trough.date?.toISOString().split('T')[0] || 'N/A';
+                maxDrawdownFromDate = peakDate;
+                maxDrawdownToDate = troughDate;
                 maxDrawdownPortfolioATH = peak.usdValue;
                 maxDrawdownPortfolioLow = trough.usdValue;
                 
