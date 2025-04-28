@@ -92,54 +92,64 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
   const chartOptions: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: {
+        top: 20,
+        bottom: 10,
+        left: 5,
+        right: 15
+      }
+    },
     scales: {
       x: {
         stacked: true,
         grid: {
-          display: false, // No vertical grid lines
+          display: false,
         },
         ticks: {
-          color: COLORS.chartText, // Use chart text color
+          color: COLORS.chartText,
+          maxRotation: 45,
+          minRotation: 45,
+          autoSkip: true,
+          maxTicksLimit: chartData && chartData.length > 40 ? 20 : 30,
         },
       },
       y: {
         stacked: true,
         grid: {
-          color: COLORS.chartGrid, // Use chart grid color
+          color: COLORS.chartGrid,
         },
         ticks: {
-          color: COLORS.chartText, // Use chart text color
+          color: COLORS.chartText,
           callback: function(value: any) {
-            // Format based on selected unit
             if (bitcoinUnit === 'satoshi') {
-              // Format as whole number Sats with commas
-              return formatNumber(value); 
+              return formatNumber(value);
             } else {
-              // Convert sats value to BTC for display
               const btc = Number(value) / 100000000;
               return formatBTC(btc);
             }
           },
+          padding: 10,
         },
         position: 'left' as const,
       },
       y1: {
         position: 'right' as const,
-        display: true, // Ensure axis is displayed
-        grid: { drawOnChartArea: false, color: COLORS.background }, // Draw grid lines behind bars
+        display: true,
+        grid: { drawOnChartArea: false, color: COLORS.background },
         ticks: {
-          color: COLORS.chartText, // Use chart text color
+          color: COLORS.chartText,
           callback: function(value: any) {
-            // Format the tick value as currency
             if (typeof value === 'number') {
-              return formatCurrency(value); // Use the helper function
+              return formatCurrency(value);
             }
-            return value; // Fallback
+            return value;
           },
+          padding: 10,
         },
         max: chartData && chartData.length > 0
-           ? Math.max(...chartData.map(point => point.cumulativeUsdValue || 0)) * 1.1 // Use actual max value + 10% padding
-           : 5000, // Default max if no data
+          ? Math.max(...chartData.map(point => point.cumulativeUsdValue || 0)) * 1.1
+          : 5000,
       },
     },
     plugins: {
@@ -147,26 +157,26 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
         position: 'top' as const,
         align: 'center' as const,
         labels: {
-          color: COLORS.chartText, // Use chart text color
+          color: COLORS.chartText,
           padding: 20,
+          boxWidth: 15,
+          boxHeight: 15,
           generateLabels: function(chart: any) {
             const originalLabels = ChartJS.defaults.plugins.legend.labels.generateLabels(chart);
-            // Reorder labels to put USD Value last
             return originalLabels.sort((a, b) => {
               if (a.text.includes('USD')) return 1;
               if (b.text.includes('USD')) return -1;
-              // Keep original order for Total Accumulated and Sats Stacked
               if (a.text.includes('Accumulated')) return -1;
               if (b.text.includes('Accumulated')) return 1;
-              return 0; // Should not happen with current labels
+              return 0;
             });
           }
         }
       },
       tooltip: {
-        backgroundColor: COLORS.background, // Use background color from theme
-        titleColor: COLORS.foreground, // Use foreground color from theme
-        bodyColor: COLORS.foreground, // Use foreground color from theme
+        backgroundColor: COLORS.background,
+        titleColor: COLORS.foreground,
+        bodyColor: COLORS.foreground,
         padding: 12,
         callbacks: {
           label: function(context: any) {
@@ -175,29 +185,24 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
               label += ': ';
             }
             if (context.dataset.yAxisID === 'y1') {
-              label += '$0.00' // Default if needed
+              label += formatCurrency(context.parsed.y);
             } else {
-              // Convert sats to BTC for tooltip
               const value = context.parsed.y;
               const btc = value / 100000000;
-              // Check if it's the accumulated or periodic sats based on label
               if (label.includes('Total Accumulated')) {
                 label += `${formatNumber(value)} sats (${formatBTC(btc)} BTC)`;
               } else if (label.includes('Sats Stacked')) {
-                // Show only the relevant unit for periodic stacking in tooltip
                 label += bitcoinUnit === 'satoshi' 
                   ? `${formatNumber(value)} sats` 
-                  : `${formatBTC(btc)} BTC`; 
+                  : `${formatBTC(btc)} BTC`;
               } else {
-                label += formatNumber(value) + ' sats'; // Fallback
+                label += formatNumber(value) + ' sats';
               }
             }
             return label;
           },
           footer: function(tooltipItems: any) {
-            // Find the data point index from the first tooltip item
             const pointIndex = tooltipItems[0]?.dataIndex;
-            // IMPORTANT: Access chartData from the component's props scope
             if (pointIndex === undefined || !chartData || !chartData[pointIndex]) {
               return 'Total: N/A';
             }
@@ -213,7 +218,6 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
             ];
           },
           title: (tooltipItems: any) => {
-            // Add estimated price to title
             const pointIndex = tooltipItems[0]?.dataIndex;
             if (pointIndex !== undefined && chartData && chartData[pointIndex]) {
               const point = chartData[pointIndex];
@@ -224,16 +228,15 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
         },
       },
     },
-  }
+  };
 
-  // Use provided data or fall back to mock data
   const chartConfig: ChartData<'bar'> = chartData && chartData.length > 0 ? {
     labels: chartData.map(point => point.date),
     datasets: [
       {
         label: 'Total Accumulated',
         data: chartData.map(point => point.accumulatedSats),
-        backgroundColor: COLORS.bitcoinOrange, // Bitcoin orange from theme
+        backgroundColor: COLORS.bitcoinOrange,
         type: 'bar' as const,
         stack: 'Stack 0',
         order: 2,
@@ -241,31 +244,30 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
       {
         label: 'Sats Stacked This Period',
         data: chartData.map(point => point.periodicSats),
-        backgroundColor: COLORS.secondary, // Secondary color from theme
+        backgroundColor: COLORS.secondary,
         type: 'bar' as const,
-        stack: 'Stack 0', // Stack with accumulated sats
-        order: 3, // Render behind the line
+        stack: 'Stack 0',
+        order: 3,
       },
-      // Add a line dataset for USD value
       {
         label: 'USD Value',
         data: chartData.map(point => point.cumulativeUsdValue || 0),
         type: 'line' as const,
-        borderColor: COLORS.success, // Success color from theme
+        borderColor: COLORS.success,
         borderWidth: 2,
         backgroundColor: 'transparent',
-        pointRadius: 3,
+        pointRadius: chartData.length > 30 ? 1.5 : 3,
         pointHoverRadius: 5,
-        yAxisID: 'y1', // Use the right y-axis
+        yAxisID: 'y1',
         order: 1,
-      } as any, // Cast the line dataset to any
+      } as any,
     ],
-  } : mockData; // Fallback to mock data structure if chartData is empty/undefined
+  } : mockData;
 
   return (
-    <div className="h-full w-full">
+    <div className="relative h-[500px] w-full">
       {title && <h3 className="text-lg font-medium mb-2">{title}</h3>}
       <ReactChart type="bar" options={chartOptions} data={chartConfig} />
     </div>
-  )
+  );
 } 

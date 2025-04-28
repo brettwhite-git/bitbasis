@@ -64,3 +64,73 @@ export function formatDateLong(dateString: string | Date | null | undefined): st
     return "Error";
   }
 }
+
+/**
+ * Calculates and formats the time remaining between two dates.
+ * 
+ * @param targetDate - The target/end date (can be string, Date object, or null/undefined)
+ * @param startDate - The start date (defaults to current date)
+ * @param format - The output format: 'short' for basic text, 'long' for detailed text with "left" suffix
+ * @returns Formatted string representing time remaining
+ */
+export function calculateTimeRemaining(
+  targetDate: string | Date | null | undefined, 
+  startDate: Date = new Date(),
+  format: 'short' | 'long' = 'long'
+): string {
+  // Handle invalid input cases
+  if (!targetDate) return format === 'short' ? 'N/A' : '';
+  
+  try {
+    const endDate = new Date(targetDate);
+    
+    // Check for invalid date
+    if (isNaN(endDate.getTime()) || isNaN(startDate.getTime())) {
+      return format === 'short' ? 'N/A' : '';
+    }
+    
+    // Check if target date is in the past
+    if (endDate < startDate) {
+      return format === 'short' ? 'Complete' : 'Goal complete';
+    }
+    
+    // Calculate difference in milliseconds
+    const diffMs = endDate.getTime() - startDate.getTime();
+    
+    // Convert to days, months, years
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    // For days less than a month
+    if (diffDays < 30) {
+      const suffix = format === 'long' ? ' left' : '';
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''}${suffix}`;
+    }
+    
+    // For months less than a year
+    const diffMonths = Math.floor(diffDays / 30);
+    if (diffMonths < 12) {
+      const suffix = format === 'long' ? ' left' : '';
+      return `${diffMonths} month${diffMonths !== 1 ? 's' : ''}${suffix}`;
+    }
+    
+    // For years and months
+    const years = Math.floor(diffMonths / 12);
+    const remainingMonths = diffMonths % 12;
+    
+    // If exact years with no remaining months
+    if (remainingMonths === 0) {
+      const suffix = format === 'long' ? ' left' : '';
+      return `${years} year${years !== 1 ? 's' : ''}${suffix}`;
+    }
+    
+    // Years and months format
+    if (format === 'short') {
+      return `${years}y ${remainingMonths}m`;
+    } else {
+      return `${years} year${years !== 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''} left`;
+    }
+  } catch (error) {
+    console.error("Error calculating time remaining:", error);
+    return format === 'short' ? 'Error' : '';
+  }
+}

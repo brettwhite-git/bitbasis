@@ -10,6 +10,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { ProjectionChart } from "./projection-chart";
 import { useSavingsGoalProgress } from '@/hooks/useSavingsGoalProgress';
+import { calculateTimeRemaining } from '@/lib/utils';
+import { CheckCircle, Circle, LoaderCircle } from "lucide-react";
 // import { Line } from 'react-chartjs-2'; // We'll add chart imports later
 // We'll need Chart.js core and scales too later
 
@@ -483,71 +485,107 @@ export function SavingsGoalCalculator() {
 
       {/* === Section A: Saved Goal Tracker (Conditional) === */}
       {activeGoal && (
-        <div className="p-6 bg-muted/30 rounded-lg border border-border space-y-4 relative"> 
-            <div className='flex justify-between items-start'>
-                <h2 className="text-xl font-semibold text-bitcoin-orange">{activeGoal.goalName}</h2>
-                <Button variant="ghost" size="sm" onClick={handleDeleteGoal} className='text-xs text-muted-foreground hover:text-destructive'>
-                    Delete Goal
-                </Button>
-            </div>
-
-             {/* Placeholder for Gauge and KPIs */}
-             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                <div className='md:col-span-1 flex flex-col items-center justify-center p-4'>
-                    {/* Moved Target Amount Display Above Gauge */}
-                    {activeGoal.savedProjection.targetBtcAmount && (
-                         <p className='mb-2 text-sm text-center font-medium'>
-                             Target: {activeGoal.savedProjection.targetBtcAmount} BTC
-                         </p>
-                    )}
-                    {/* Circular Progress Gauge Placeholder */}
-                    <div className='w-32 h-32 rounded-full border-4 border-border flex items-center justify-center text-center'>
-                         <div>
-                            {/* Update to use BTC progress */} 
-                            <p className='text-3xl font-bold'>{goalProgress.isLoading ? '...' : `${goalProgress.btcProgressPercent.toFixed(0)}%`}</p>
-                            {/* Update label */} 
-                            <p className='text-xs text-muted-foreground'>{goalProgress.error ? 'Error' : 'BTC Progress'}</p>
-                         </div>
+        <div className="p-6 bg-black rounded-lg border border-border relative"> 
+            {/* Delete Button - Absolute positioned */}
+            <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleDeleteGoal} 
+                className="absolute top-6 right-6 text-xs text-muted-foreground hover:text-destructive"
+            >
+                Delete
+            </Button>
+            
+            <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
+                {/* Left Container: Progress Tracking */}
+                <div className="md:w-5/12 flex flex-col justify-between">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h2 className="text-xl font-semibold text-foreground">{activeGoal.goalName}</h2>
+                            <p className="text-2xl font-bold text-bitcoin-orange mt-2">
+                              {goalProgress.isLoading 
+                                ? "Loading..." 
+                                : `$${formatCurrency(goalProgress.accumulatedBtcSinceStart * activeGoal.savedProjection.currentBtcPriceUSD)}`}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-3">
+                                Target: {activeGoal.savedProjection.targetBtcAmount} BTC
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                ${activeGoal.savedProjection.contributionAmountUSD.toLocaleString()} {activeGoal.savedProjection.contributionFrequency.charAt(0).toUpperCase() + 
+                                activeGoal.savedProjection.contributionFrequency.slice(1)}
+                            </p>
+                        </div>
+                        <div className="text-right flex flex-col pt-5">
+                            <p className="text-xl font-bold text-bitcoin-orange mb-1 flex justify-end items-center">
+                              {goalProgress.isLoading ? '...' : (
+                                <>
+                                  <span>{((goalProgress.accumulatedBtcSinceStart * 100000000) / 1000000).toFixed(1)}M</span>
+                                  <span className="mx-1">/</span>
+                                  <span>{((activeGoal.savedProjection.targetBtcAmount * 100000000) / 1000000).toFixed(1)}M</span>
+                                  <span className="text-sm ml-1">sats</span>
+                                </>
+                              )}
+                            </p>
+                            <div className="flex items-center justify-end">
+                                <p className="text-2xl font-bold mr-2">
+                                    {goalProgress.isLoading ? '...' : `${goalProgress.btcProgressPercent.toFixed(0)}%`}
+                                </p>
+                                {goalProgress.isLoading ? (
+                                    <LoaderCircle className="animate-spin text-muted-foreground h-5 w-5" />
+                                ) : goalProgress.btcProgressPercent >= 100 ? (
+                                    <CheckCircle className="text-bitcoin-orange h-6 w-6" />
+                                ) : (
+                                    <LoaderCircle className="text-bitcoin-orange h-5 w-5" />
+                                )}
+                            </div>
+                            {activeGoal.estimatedTargetDateISO && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    {calculateTimeRemaining(activeGoal.estimatedTargetDateISO, new Date(), 'long')}
+                                </p>
+                            )}
+                        </div>
                     </div>
-                    {/* Progress Bar and Dates */} 
-                    <div className="w-full px-4 mt-4 space-y-1">
-                         <div className="w-full h-2 bg-muted rounded-full"> 
+                    
+                    <div className="mt-2">
+                        <div className="w-full h-3 bg-muted/30 rounded-full overflow-hidden"> 
                             <div 
-                                className="h-2 bg-bitcoin-orange rounded-full"
+                                className="h-3 bg-bitcoin-orange rounded-full transition-all duration-700"
                                 style={{ width: goalProgress.isLoading ? '0%' : `${goalProgress.btcProgressPercent}%` }}
                             ></div>
-                         </div>
-                         <div className="flex justify-between text-xs text-muted-foreground">
-                             <span>Start: {formatSavedDate(activeGoal.startDate)}</span>
-                             <span>End: {activeGoal.estimatedTargetDateISO ? formatSavedDate(activeGoal.estimatedTargetDateISO) : 'N/A'}</span>
-                         </div>
+                        </div>
+                        <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                            <span>Start: {formatSavedDate(activeGoal.startDate)}</span>
+                            <span>Est. Completion: {activeGoal.estimatedTargetDateISO ? formatSavedDate(activeGoal.estimatedTargetDateISO) : 'N/A'}</span>
+                        </div>
                     </div>
                 </div>
-                <div className='md:col-span-2 grid grid-cols-4 gap-4'>
-                     <div className="p-3 bg-card rounded-lg border border-border/50 text-center flex flex-col justify-center">
-                        <Label className="text-xs text-muted-foreground">Projected Value</Label>
-                        <p className="text-xl font-semibold">${formatCurrency(activeGoal.projectedValueAtTarget ?? 0)}</p> 
-                    </div>
-                     <div className="p-3 bg-card rounded-lg border border-border/50 text-center flex flex-col justify-center">
-                        <Label className="text-xs text-muted-foreground">Est. Time to Target BTC</Label>
-                         {activeGoal.estimatedTargetDateISO ? (
-                            <p className="text-xl font-semibold">{formatSavedDate(activeGoal.estimatedTargetDateISO)}</p>
-                         ) : (
-                            <p className="text-xl font-semibold">{"N/A"}</p>
-                         )}
-                    </div>
-                    <div className="p-3 bg-card rounded-lg border border-border/50 text-center flex flex-col justify-center">
-                        <Label className="text-xs text-muted-foreground">Projected ROI</Label>
-                        <p className="text-xl font-semibold">{(activeGoal.roiAtTarget ?? 0).toFixed(1)}%</p> 
-                    </div>
-                     <div className="p-3 bg-card rounded-lg border border-border/50 text-center flex flex-col justify-center">
-                        <Label className="text-xs text-muted-foreground">Saved Contribution</Label>
-                        <p className="text-xl font-semibold">
-                            ${activeGoal.savedProjection.contributionAmountUSD.toLocaleString()} {activeGoal.savedProjection.contributionFrequency}
-                        </p>
+                
+                {/* Right Container: KPIs */}
+                <div className="md:w-7/12 bg-muted/20 rounded-lg p-4 flex items-center">
+                    <div className="grid grid-cols-3 w-full">
+                        {/* KPI: Projected Value */}
+                        <div className="text-center">
+                            <div className="text-xs text-muted-foreground mb-1">Projected Value</div>
+                            <div className="text-xl font-semibold">${formatCurrency(activeGoal.projectedValueAtTarget ?? 0)}</div>
+                        </div>
+                        
+                        {/* KPI: Contribution */}
+                        <div className="text-center">
+                            <div className="text-xs text-muted-foreground mb-1">
+                                {activeGoal.savedProjection.contributionFrequency.charAt(0).toUpperCase() + 
+                                activeGoal.savedProjection.contributionFrequency.slice(1)} Contribution
+                            </div>
+                            <div className="text-xl font-semibold">${activeGoal.savedProjection.contributionAmountUSD.toLocaleString()}</div>
+                        </div>
+                        
+                        {/* KPI: ROI */}
+                        <div className="text-center">
+                            <div className="text-xs text-muted-foreground mb-1">ROI</div>
+                            <div className="text-xl font-semibold">{(activeGoal.roiAtTarget ?? 0).toFixed(1)}%</div>
+                        </div>
                     </div>
                 </div>
-             </div>
+            </div>
         </div>
       )}
 
@@ -834,3 +872,4 @@ export function SavingsGoalCalculator() {
     </div>
   );
 }
+

@@ -13,10 +13,10 @@ interface FearGreedData {
 
 // Helper function to get color and label based on value
 const getFearGreedStyle = (value: number): { colorClass: string; label: string } => {
-  if (value <= 24) return { colorClass: 'stroke-red-500', label: 'Extreme Fear' };
-  if (value <= 49) return { colorClass: 'stroke-orange-500', label: 'Fear' };
-  if (value === 50) return { colorClass: 'stroke-yellow-500', label: 'Neutral' };
-  if (value <= 74) return { colorClass: 'stroke-lime-500', label: 'Greed' };
+  if (value <= 25) return { colorClass: 'stroke-red-500', label: 'Extreme Fear' };
+  if (value <= 45) return { colorClass: 'stroke-orange-500', label: 'Fear' };
+  if (value <= 54) return { colorClass: 'stroke-yellow-500', label: 'Neutral' };
+  if (value <= 75) return { colorClass: 'stroke-lime-500', label: 'Greed' };
   return { colorClass: 'stroke-green-500', label: 'Extreme Greed' };
 };
 

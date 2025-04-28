@@ -209,12 +209,12 @@ function ChartFilters() {
 
   return (
     <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-[300px]">
-      <TabsList className="grid w-full grid-cols-5">
-        <TabsTrigger value="1Y">1Y</TabsTrigger>
-        <TabsTrigger value="2Y">2Y</TabsTrigger>
-        <TabsTrigger value="3Y">3Y</TabsTrigger>
-        <TabsTrigger value="5Y">5Y</TabsTrigger>
-        <TabsTrigger value="ALL">ALL</TabsTrigger>
+      <TabsList variant="compact" className="grid-cols-5">
+        <TabsTrigger value="1Y" variant="compact">1Y</TabsTrigger>
+        <TabsTrigger value="2Y" variant="compact">2Y</TabsTrigger>
+        <TabsTrigger value="3Y" variant="compact">3Y</TabsTrigger>
+        <TabsTrigger value="5Y" variant="compact">5Y</TabsTrigger>
+        <TabsTrigger value="ALL" variant="compact">ALL</TabsTrigger>
       </TabsList>
     </Tabs>
   )
