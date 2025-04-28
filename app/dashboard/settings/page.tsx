@@ -36,15 +36,15 @@ export default function SettingsPage() {
           <h1 className="text-3xl font-semibold text-foreground">Settings</h1>
         </div>
         <div className="mx-auto grid w-full max-w-6xl items-start gap-6 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
-          <nav className="grid gap-4 text-sm text-muted-foreground">
+          <nav className="grid gap-4 text-sm">
             {menuItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveSection(item.id as SettingsSection)}
-                className={`text-left px-3 py-2 rounded-md transition-colors ${
+                className={`text-left px-4 py-2 rounded-md transition-colors ${
                   activeSection === item.id 
-                    ? 'font-semibold text-primary bg-muted dark:bg-gray-800' // Active state background kept gray for contrast
-                    : 'text-muted-foreground hover:text-primary dark:hover:text-primary dark:hover:bg-gray-800/50' // Default and hover state
+                    ? 'border border-primary text-primary bg-background shadow-sm' // Active state matches orange-outline button
+                    : 'text-muted-foreground hover:text-primary hover:border hover:border-primary/70 hover:bg-primary/5' // Default with similar hover effect
                 }`}
               >
                 {item.label}

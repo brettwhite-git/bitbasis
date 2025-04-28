@@ -130,7 +130,7 @@ export function SavingsGoalWidget({ className }: SavingsGoalWidgetProps) {
         {/* Header Section with Current Value and Progress */}
         <div className="flex justify-between items-start">
           <div>
-            <div className="text-2xl font-bold text-bitcoin-orange">
+            <div className="text-xl font-bold text-bitcoin-orange">
               <span>{currentSaved}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-3">

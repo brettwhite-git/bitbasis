@@ -1,0 +1,17 @@
+{
+  "tailwind": {
+    "prefix": "@tailwind",
+    "body": ["@tailwind $1;"],
+    "scope": "css"
+  },
+  "apply": {
+    "prefix": "@apply",
+    "body": ["@apply $1;"],
+    "scope": "css"
+  },
+  "layer": {
+    "prefix": "@layer",
+    "body": ["@layer $1 {", "\t$2", "}"],
+    "scope": "css"
+  }
+} 

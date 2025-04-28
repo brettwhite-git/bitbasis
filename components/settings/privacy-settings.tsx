@@ -94,7 +94,7 @@ export function PrivacySettings() {
 
       {/* Save Button - Placed outside cards for global save */}
       <div className="flex justify-end">
-          <Button className="w-full md:w-auto">
+          <Button variant="orange-outline" className="w-full md:w-auto">
             Save Settings
           </Button>
       </div>

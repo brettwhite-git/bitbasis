@@ -502,7 +502,7 @@ export function SavingsGoalCalculator() {
                     <div className="flex justify-between items-start">
                         <div>
                             <h2 className="text-xl font-semibold text-foreground">{activeGoal.goalName}</h2>
-                            <p className="text-2xl font-bold text-bitcoin-orange mt-2">
+                            <p className="text-xl font-bold text-bitcoin-orange mt-2">
                               {goalProgress.isLoading 
                                 ? "Loading..." 
                                 : `$${formatCurrency(goalProgress.accumulatedBtcSinceStart * activeGoal.savedProjection.currentBtcPriceUSD)}`}
@@ -527,7 +527,7 @@ export function SavingsGoalCalculator() {
                               )}
                             </p>
                             <div className="flex items-center justify-end">
-                                <p className="text-2xl font-bold mr-2">
+                                <p className="text-xl font-bold mr-2">
                                     {goalProgress.isLoading ? '...' : `${goalProgress.btcProgressPercent.toFixed(0)}%`}
                                 </p>
                                 {goalProgress.isLoading ? (
@@ -547,7 +547,7 @@ export function SavingsGoalCalculator() {
                     </div>
                     
                     <div className="mt-2">
-                        <div className="w-full h-3 bg-muted/30 rounded-full overflow-hidden"> 
+                        <div className="w-full h-3 bg-muted/70 rounded-full overflow-hidden"> 
                             <div 
                                 className="h-3 bg-bitcoin-orange rounded-full transition-all duration-700"
                                 style={{ width: goalProgress.isLoading ? '0%' : `${goalProgress.btcProgressPercent}%` }}

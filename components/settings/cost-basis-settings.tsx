@@ -65,7 +65,7 @@ export function CostBasisSettings() {
         </AlertDescription>
       </Alert>
 
-      <Button className="w-full">Save Settings</Button>
+      <Button variant="orange-outline" className="w-full">Save Settings</Button>
     </div>
   )
 }

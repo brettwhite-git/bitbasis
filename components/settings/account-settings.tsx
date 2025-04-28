@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { CheckCircle } from "lucide-react"
 
 export function AccountSettings() {
   // TODO: Replace static data with actual user data
@@ -28,7 +29,12 @@ export function AccountSettings() {
         <CardHeader>
           <div className="flex items-center justify-between">
              <CardTitle className="text-lg">Email Address</CardTitle>
-             {isVerified && <Badge className="bg-green-600 text-white">Verified</Badge>}
+             {isVerified && (
+               <Badge className="bg-green-600 text-white flex items-center gap-1 px-2">
+                 <CheckCircle className="h-3.5 w-3.5" />
+                 Verified
+               </Badge>
+             )}
            </div>
            <CardDescription>
              Your email address is used for login and notifications.
@@ -62,7 +68,7 @@ export function AccountSettings() {
           </div>
         </CardContent>
         <CardFooter className="border-t pt-4">
-          <Button variant="default">
+          <Button variant="orange-outline">
             Update Password
           </Button>
         </CardFooter>
