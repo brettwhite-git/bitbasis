@@ -30,11 +30,12 @@ import {
 } from "@/components/ui/dialog"
 import { 
   CheckCircle2, 
-  AlertCircle, 
-  ArrowDownRight, 
-  ArrowUpRight, 
-  SendHorizontal, 
-  Download,
+  AlertCircle,
+  CircleArrowRight,
+  CircleArrowLeft,
+  CircleArrowDown,
+  CircleArrowUp,
+  ExternalLink,
   X,
   Loader2
 } from "lucide-react"
@@ -85,6 +86,21 @@ function capitalizeExchange(exchange: string | null): string {
     .join(' ');
 }
 
+// Create a unified transaction type for display
+interface UnifiedDisplayTransaction {
+  id: string;
+  date: string;
+  type: 'buy' | 'sell' | 'withdrawal' | 'deposit';
+  asset: string;
+  btc_amount: number | null;
+  usd_value: number | null;
+  fee_usd: number | null;
+  price_at_tx: number | null;
+  exchange: string | null;
+  network_fee_btc: number | null;
+  txid: string | null;
+}
+
 export function ImportPreview({ 
   transactions, 
   validationIssues, 
@@ -101,6 +117,42 @@ export function ImportPreview({
   // Update the orders and transfers filtering with type assertions
   const orders = transactions.filter((t): t is OrderInsert => isOrder(t));
   const transfers = transactions.filter((t): t is TransferInsert => isTransfer(t));
+
+  // Map all transactions to a unified format for display
+  const unifiedTransactions: UnifiedDisplayTransaction[] = [
+    // Map orders
+    ...orders.map((order, index) => ({
+      id: `order-preview-${index}`,
+      date: order.date,
+      type: order.type,
+      asset: order.asset,
+      btc_amount: order.type === 'buy' ? order.received_btc_amount : order.sell_btc_amount,
+      usd_value: order.type === 'buy' ? order.buy_fiat_amount : order.received_fiat_amount,
+      fee_usd: order.service_fee,
+      price_at_tx: order.price,
+      exchange: order.exchange,
+      network_fee_btc: null,
+      txid: null,
+    })),
+    
+    // Map transfers
+    ...transfers.map((transfer, index) => ({
+      id: `transfer-preview-${index}`,
+      date: transfer.date,
+      type: transfer.type,
+      asset: transfer.asset,
+      btc_amount: transfer.amount_btc,
+      usd_value: transfer.amount_fiat,
+      fee_usd: transfer.fee_amount_btc ? transfer.fee_amount_btc * (transfer.price || 0) : null,
+      price_at_tx: transfer.price,
+      exchange: null,
+      network_fee_btc: transfer.fee_amount_btc,
+      txid: transfer.hash,
+    }))
+  ];
+
+  // Sort by date descending
+  unifiedTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   // Calculate summary statistics
   const dateRange = transactions.length > 0 ? {
@@ -252,13 +304,13 @@ export function ImportPreview({
   const getTransactionIcon = (type: string) => {
     switch (type.toLowerCase()) {
       case 'buy':
-        return <ArrowDownRight className="mr-1 h-3 w-3" />
+        return <CircleArrowRight className="mr-1 h-4 w-4" />
       case 'sell':
-        return <ArrowUpRight className="mr-1 h-3 w-3" />
+        return <CircleArrowLeft className="mr-1 h-4 w-4" />
       case 'deposit':
-        return <SendHorizontal className="mr-1 h-3 w-3" />
+        return <CircleArrowDown className="mr-1 h-4 w-4" />
       case 'withdrawal':
-        return <SendHorizontal className="mr-1 h-3 w-3 rotate-180" />
+        return <CircleArrowUp className="mr-1 h-4 w-4" />
       default:
         return null
     }
@@ -287,6 +339,24 @@ export function ImportPreview({
       currency: 'USD',
     }).format(num)
   }
+
+  const getTransactionTypeStyles = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'buy':
+        return "bg-gradient-to-r from-bitcoin-orange/90 to-bitcoin-orange/70 border-bitcoin-orange/40 text-white";
+      case 'sell':
+        return "bg-gradient-to-r from-red-500/90 to-red-400/70 border-red-500/40 text-white";
+      case 'deposit':
+        return "bg-gradient-to-r from-green-500/90 to-green-400/70 border-green-500/40 text-white";
+      case 'withdrawal':
+        return "bg-gradient-to-r from-blue-500/90 to-blue-400/70 border-blue-500/40 text-white";
+      default:
+        return "bg-gray-200 text-gray-800";
+    }
+  };
+
+  // Determine whether any transaction has a TXID for showing/hiding the column
+  const hasAnyTxid = unifiedTransactions.some(t => t.txid);
 
   return (
     <div className="space-y-4">
@@ -408,110 +478,85 @@ export function ImportPreview({
         </CardFooter>
       </Card>
 
-      {orders.length > 0 && (
+      {unifiedTransactions.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Orders Preview</CardTitle>
+            <CardTitle>Transactions Preview</CardTitle>
             <CardDescription>
-              Showing first {Math.min(5, orders.length)} of {orders.length} orders
+              Showing {Math.min(10, unifiedTransactions.length)} of {unifiedTransactions.length} transactions
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-center">Date</TableHead>
-                  <TableHead className="text-center">Type</TableHead>
-                  <TableHead className="text-center">BTC Amount</TableHead>
-                  <TableHead className="text-center">Amount (USD)</TableHead>
-                  <TableHead className="text-center">Price (USD/BTC)</TableHead>
-                  <TableHead className="text-center">Fees (USD)</TableHead>
-                  <TableHead className="text-center">Exchange</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.slice(0, 5).map((order, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-center">{formatDate(order.date)}</TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex justify-center">
-                        <Badge
-                          className={`w-[100px] flex items-center justify-center text-white ${
-                            order.type === "buy" 
-                              ? "bg-bitcoin-orange" 
-                              : "bg-red-500"
-                          }`}
-                        >
-                          {getTransactionIcon(order.type)}
-                          {order.type.toUpperCase()}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {formatNumber(order.type === 'buy' ? order.received_btc_amount : order.sell_btc_amount, 8)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {formatCurrency(order.type === 'buy' ? order.buy_fiat_amount : order.received_fiat_amount)}
-                    </TableCell>
-                    <TableCell className="text-center">{formatCurrency(order.price)}</TableCell>
-                    <TableCell className="text-center">{formatCurrency(order.service_fee)}</TableCell>
-                    <TableCell className="text-center">{capitalizeExchange(order.exchange ?? null)}</TableCell>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-center">Date</TableHead>
+                    <TableHead className="text-center">Type</TableHead>
+                    <TableHead className="text-center">Amount (BTC)</TableHead>
+                    <TableHead className="text-center">Amount (USD)</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">Price (USD/BTC)</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">Fees (USD)</TableHead>
+                    <TableHead className="text-center hidden lg:table-cell">Exchange</TableHead>
+                    <TableHead className="text-center hidden lg:table-cell">Fees (BTC)</TableHead>
+                    {hasAnyTxid && <TableHead className="text-center hidden lg:table-cell">TXID</TableHead>}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {transfers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Transfers Preview</CardTitle>
-            <CardDescription>
-              Showing first {Math.min(5, transfers.length)} of {transfers.length} transfers
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-center">Date</TableHead>
-                  <TableHead className="text-center">Type</TableHead>
-                  <TableHead className="text-center">BTC Amount</TableHead>
-                  <TableHead className="text-center">Network Fee (BTC)</TableHead>
-                  <TableHead className="text-center">Amount (USD)</TableHead>
-                  <TableHead className="text-center">Price (USD/BTC)</TableHead>
-                  <TableHead className="text-center">Hash</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transfers.slice(0, 5).map((transfer, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-center">{formatDate(transfer.date)}</TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex justify-center">
-                        <Badge
-                          className="w-[100px] flex items-center justify-center text-white bg-blue-500"
-                        >
-                          {getTransactionIcon(transfer.type)}
-                          {transfer.type.toUpperCase()}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">{formatNumber(transfer.amount_btc, 8)}</TableCell>
-                    <TableCell className="text-center">{formatNumber(transfer.fee_amount_btc, 8)}</TableCell>
-                    <TableCell className="text-center">{formatCurrency(transfer.amount_fiat)}</TableCell>
-                    <TableCell className="text-center">{formatCurrency(transfer.price)}</TableCell>
-                    <TableCell className="text-center">
-                      <span className="font-mono text-xs truncate max-w-[100px] inline-block">
-                        {transfer.hash}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {unifiedTransactions.slice(0, 10).map((transaction, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-center">{formatDate(transaction.date)}</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center">
+                          <Badge
+                            variant="outline"
+                            className={`w-[125px] inline-flex items-center justify-center rounded-full border shadow-sm transition-none ${getTransactionTypeStyles(transaction.type)}`}
+                          >
+                            {getTransactionIcon(transaction.type)}
+                            {transaction.type.toUpperCase()}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {formatNumber(transaction.btc_amount, 8)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {formatCurrency(transaction.usd_value)}
+                      </TableCell>
+                      <TableCell className="text-center hidden md:table-cell">
+                        {formatCurrency(transaction.price_at_tx)}
+                      </TableCell>
+                      <TableCell className="text-center hidden md:table-cell">
+                        {formatCurrency(transaction.fee_usd)}
+                      </TableCell>
+                      <TableCell className="text-center hidden lg:table-cell">
+                        {capitalizeExchange(transaction.exchange)}
+                      </TableCell>
+                      <TableCell className="text-center hidden lg:table-cell">
+                        {formatNumber(transaction.network_fee_btc, 8)}
+                      </TableCell>
+                      {hasAnyTxid && (
+                        <TableCell className="text-center hidden lg:table-cell">
+                          {transaction.txid ? (
+                            <a 
+                              href={`https://mempool.space/tx/${transaction.txid}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center text-blue-500 hover:text-blue-700"
+                              title="View transaction on Mempool.space"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}

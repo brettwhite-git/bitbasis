@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownRight, ArrowUpRight, ArrowDownToLine, ArrowUpFromLine, ExternalLink } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, ArrowDownToLine, ArrowUpFromLine, ExternalLink, CircleArrowUp, CircleArrowDown, CircleArrowLeft, CircleArrowRight } from "lucide-react"
 import { getTransactions } from "@/lib/supabase"
 import { formatCurrency, formatBTC } from "@/lib/utils"
 import type { Database } from "@/types/supabase"
@@ -109,26 +109,27 @@ export function RecentTransactions() {
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge
-                    className={`w-[125px] inline-flex items-center justify-center text-white ${
+                    variant="outline"
+                    className={`w-[125px] inline-flex items-center justify-center rounded-full border shadow-sm transition-none ${
                       // Make case-insensitive check like the main transactions table
                       transaction.type?.toLowerCase() === "buy" 
-                        ? "bg-bitcoin-orange hover:bg-bitcoin-orange/90" // Orange for Buy
+                        ? "bg-gradient-to-r from-bitcoin-orange/90 to-bitcoin-orange/70 border-bitcoin-orange/40 text-white" 
                         : transaction.type?.toLowerCase() === "sell"
-                        ? "bg-red-500 hover:bg-red-500/90" // Red for Sell
+                        ? "bg-gradient-to-r from-red-500/90 to-red-400/70 border-red-500/40 text-white"
                         : transaction.type?.toLowerCase() === "deposit"
-                        ? "bg-green-500 hover:bg-green-500/90" // Green for Deposit
-                        : "bg-blue-500 hover:bg-blue-500/90" // Blue for Withdrawal
+                        ? "bg-gradient-to-r from-green-500/90 to-green-400/70 border-green-500/40 text-white"
+                        : "bg-gradient-to-r from-blue-500/90 to-blue-400/70 border-blue-500/40 text-white"
                     }`}
                   >
                     {/* Also make case-insensitive checks for icons */}
                     {transaction.type?.toLowerCase() === "buy" ? (
-                      <ArrowDownRight className="mr-1 h-4 w-4" /> // Correct icon for Buy
+                      <CircleArrowRight className="mr-1 h-4 w-4" />
                     ) : transaction.type?.toLowerCase() === "sell" ? (
-                      <ArrowUpRight className="mr-1 h-4 w-4" />
+                      <CircleArrowLeft className="mr-1 h-4 w-4" />
                     ) : transaction.type?.toLowerCase() === "deposit" ? (
-                      <ArrowDownToLine className="mr-1 h-4 w-4" />
+                      <CircleArrowDown className="mr-1 h-4 w-4" />
                     ) : (
-                      <ArrowUpFromLine className="mr-1 h-4 w-4" /> // Icon for Withdrawal
+                      <CircleArrowUp className="mr-1 h-4 w-4" />
                     )}
                     {/* Still display the type in uppercase */}
                     {transaction.type.toUpperCase()}

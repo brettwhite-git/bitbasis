@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
-import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle, Trash2, CheckCircle, X, FileText, Download } from "lucide-react"
+import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle, Trash2, CheckCircle, X, FileText, Download, CircleArrowRight, CircleArrowLeft, CircleArrowDown, CircleArrowUp, ExternalLink, Bitcoin, ArrowLeftRight } from "lucide-react"
 import Papa from 'papaparse'
 import type { ParseError, ParseResult } from 'papaparse'
 import { ImportPreview } from "@/components/import/import-preview"
@@ -1604,93 +1604,100 @@ export function ImportForm() {
           {/* Transaction Preview Container */}
           <div className="p-4 rounded-lg border border-border bg-card/50">
             <h3 className="text-lg font-semibold mb-4">Transaction Preview ({stagedTransactions.length})</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-center">Date</TableHead>
-                  <TableHead className="text-center">Type</TableHead>
-                  <TableHead className="text-center">Amount (BTC)</TableHead>
-                  <TableHead className="text-center">Price (USD)</TableHead>
-                  <TableHead className="text-center">Amount (USD)</TableHead>
-                  <TableHead className="text-center">Fees</TableHead>
-                  {/* Network Fee Header - Moved Here */}
-                  {stagedTransactions.some(tx => tx.type === 'withdrawal') && (
-                    <TableHead className="text-center">Network Fee</TableHead>
-                  )}
-                  <TableHead className="text-center">Exchange</TableHead>
-                  {/* TXID Header */}
-                  {stagedTransactions.some(tx => tx.type === 'withdrawal' || tx.type === 'deposit') && (
-                    <TableHead className="text-center">TXID</TableHead>
-                  )}
-                  <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stagedTransactions.length === 0 && (
-                   <TableRow>
-                     <TableCell colSpan={10} className="text-center text-muted-foreground py-4">
-                       No transactions added to preview yet.
-                     </TableCell>
-                   </TableRow>
-                )}
-                {stagedTransactions.map((tx) => (
-                  <TableRow key={tx.tempId}>
-                    <TableCell className="text-center">{new Date(tx.date).toLocaleString()}</TableCell>
-                    <TableCell className="flex justify-center items-center">
-                      <Badge
-                        variant={
-                          tx.type === "buy" ? "default" :
-                          tx.type === "sell" ? "destructive" :
-                          tx.type === "deposit" ? "secondary" :
-                          "outline"
-                        }
-                        className={`w-[100px] flex items-center justify-center ${
-                          tx.type === "buy" 
-                            ? "bg-bitcoin-orange" 
-                            : tx.type === "sell" ? "bg-red-500" :
-                            tx.type === "deposit" ? "bg-green-500" :
-                            "border-gray-500"
-                        }`}
-                      >
-                        {tx.type === "buy" || tx.type === "deposit" ? (
-                          <ArrowDownRight className="mr-2 h-4 w-4" />
-                        ) : (
-                          <ArrowUpRight className="mr-2 h-4 w-4" />
-                        )}
-                        {tx.type.toUpperCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">{tx.btcAmount || '0.00000000'} BTC</TableCell>
-                    <TableCell className="text-center">${tx.price || '0.00'}</TableCell>
-                    <TableCell className="text-center">${tx.usdAmount || '0.00'}</TableCell>
-                    <TableCell className="text-center">${tx.fees || '0.00'}</TableCell>
-                    {/* Network Fee Cell - Moved Here */}
-                    {stagedTransactions.some(t => t.type === 'withdrawal') && (
-                        <TableCell className="text-center">
-                           {tx.type === 'withdrawal' ? (tx.network_fee || '0.00000000') + ' BTC' : '-'}
-                        </TableCell>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-center">Date</TableHead>
+                    <TableHead className="text-center">Type</TableHead>
+                    <TableHead className="text-center">Amount (BTC)</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">Price (USD/BTC)</TableHead>
+                    <TableHead className="text-center">Amount (USD)</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">Fees (USD)</TableHead>
+                    <TableHead className="text-center hidden lg:table-cell">Exchange</TableHead>
+                    <TableHead className="text-center hidden lg:table-cell">Fees (BTC)</TableHead>
+                    {stagedTransactions.some(tx => tx.type === 'withdrawal' || tx.type === 'deposit') && (
+                      <TableHead className="text-center hidden lg:table-cell">TXID</TableHead>
                     )}
-                    <TableCell className="text-center">{tx.exchange || '-'}</TableCell>
-                    {/* TXID Cell */}
-                     {stagedTransactions.some(t => t.type === 'withdrawal' || t.type === 'deposit') && (
-                        <TableCell className="text-center">
-                           {(tx.type === 'withdrawal' || tx.type === 'deposit') ? tx.txid || '-' : '-'}
-                        </TableCell>
-                    )}
-                    <TableCell className="text-center">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-destructive hover:text-destructive/80 h-8 w-8"
-                        onClick={() => handleRemoveFromPreview(tx.tempId!)}
-                       >
-                         <Trash2 className="h-4 w-4" />
-                       </Button>
-                    </TableCell>
+                    <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {stagedTransactions.length === 0 && (
+                     <TableRow>
+                       <TableCell colSpan={10} className="text-center text-muted-foreground py-4">
+                         No transactions added to preview yet.
+                       </TableCell>
+                     </TableRow>
+                  )}
+                  {stagedTransactions.map((tx) => (
+                    <TableRow key={tx.tempId}>
+                      <TableCell className="text-center">{new Date(tx.date).toLocaleString()}</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center">
+                          <Badge
+                            variant="outline"
+                            className={`w-[125px] inline-flex items-center justify-center rounded-full border shadow-sm transition-none ${
+                              tx.type === "buy" 
+                                ? "bg-gradient-to-r from-bitcoin-orange/90 to-bitcoin-orange/70 border-bitcoin-orange/40 text-white" 
+                                : tx.type === "sell"
+                                ? "bg-gradient-to-r from-red-500/90 to-red-400/70 border-red-500/40 text-white"
+                                : tx.type === "deposit"
+                                ? "bg-gradient-to-r from-green-500/90 to-green-400/70 border-green-500/40 text-white"
+                                : "bg-gradient-to-r from-blue-500/90 to-blue-400/70 border-blue-500/40 text-white"
+                            }`}
+                          >
+                            {tx.type === "buy" ? (
+                              <CircleArrowRight className="mr-1 h-4 w-4" />
+                            ) : tx.type === "sell" ? (
+                              <CircleArrowLeft className="mr-1 h-4 w-4" />
+                            ) : tx.type === "deposit" ? (
+                              <CircleArrowDown className="mr-1 h-4 w-4" />
+                            ) : (
+                              <CircleArrowUp className="mr-1 h-4 w-4" />
+                            )}
+                            {tx.type.toUpperCase()}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">{tx.btcAmount || '0.00000000'}</TableCell>
+                      <TableCell className="text-center hidden md:table-cell">${tx.price || '0.00'}</TableCell>
+                      <TableCell className="text-center">${tx.usdAmount || '0.00'}</TableCell>
+                      <TableCell className="text-center hidden md:table-cell">${tx.fees || '0.00'}</TableCell>
+                      <TableCell className="text-center hidden lg:table-cell">{tx.exchange || '-'}</TableCell>
+                      <TableCell className="text-center hidden lg:table-cell">
+                        {tx.type === 'withdrawal' ? (tx.network_fee || '0.00000000') : '-'}
+                      </TableCell>
+                      {stagedTransactions.some(t => t.type === 'withdrawal' || t.type === 'deposit') && (
+                        <TableCell className="text-center hidden lg:table-cell">
+                          {(tx.type === 'withdrawal' || tx.type === 'deposit') && tx.txid ? (
+                            <a 
+                              href={`https://mempool.space/tx/${tx.txid}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center text-blue-500 hover:text-blue-700"
+                              title="View transaction on Mempool.space"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          ) : '-'}
+                        </TableCell>
+                      )}
+                      <TableCell className="text-center">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-destructive hover:text-destructive/80 h-8 w-8"
+                          onClick={() => handleRemoveFromPreview(tx.tempId!)}
+                         >
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
             
             {stagedTransactions.length > 0 && (
                <div className="flex justify-end mt-6">
@@ -1715,7 +1722,7 @@ export function ImportForm() {
           {/* New Container for Manually Imported Transactions */}
           <div className="mt-8 p-4 rounded-lg border border-border bg-card/50">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Previously Imported Transactions</h3>
+              <h3 className="text-lg font-semibold">Previously Imported</h3>
               <div className="flex items-center gap-2">
                 <Select defaultValue={pageSize.toString()} onValueChange={handlePageSizeChange}>
                   <SelectTrigger className="w-[80px]">
@@ -1745,106 +1752,126 @@ export function ImportForm() {
               </Alert>
             )}
             
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-center">Date</TableHead>
-                  <TableHead className="text-center">Type</TableHead>
-                  <TableHead className="text-center">Amount (BTC)</TableHead>
-                  <TableHead className="text-center">Price (USD)</TableHead>
-                  <TableHead className="text-center">Amount (USD)</TableHead>
-                  <TableHead className="text-center">Fees</TableHead>
-                  <TableHead className="text-center">Exchange</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoadingTransactions ? (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      <div className="flex flex-col items-center justify-center">
-                        <Loader2 className="h-8 w-8 text-bitcoin-orange animate-spin mb-2" />
-                        <p className="text-muted-foreground">Loading transactions...</p>
-                      </div>
-                    </TableCell>
+                    <TableHead className="text-center">Date</TableHead>
+                    <TableHead className="text-center">Type</TableHead>
+                    <TableHead className="text-center">Amount (BTC)</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">Price (USD/BTC)</TableHead>
+                    <TableHead className="text-center">Amount (USD)</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">Fees</TableHead>
+                    <TableHead className="text-center hidden lg:table-cell">Exchange</TableHead>
+                    <TableHead className="text-center hidden lg:table-cell">TXID</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
-                ) : importedTransactions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                      <div className="flex flex-col items-center justify-center">
-                        <p className="mb-2">No transactions found</p>
-                        <p className="text-sm text-muted-foreground mb-4">Your manually entered transactions will appear here after submission</p>
-                        <Button variant="outline" size="sm" onClick={fetchImportedTransactions}>
-                          Refresh
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  importedTransactions.map((tx) => (
-                    <TableRow key={tx.id}>
-                      <TableCell className="text-center">{new Date(tx.date).toLocaleString()}</TableCell>
-                      <TableCell className="flex justify-center items-center">
-                        <Badge
-                          variant={
-                            tx.type === "buy" ? "default" :
-                            tx.type === "sell" ? "destructive" :
-                            tx.type === "deposit" ? "secondary" :
-                            "outline"
-                          }
-                          className={`w-[100px] flex items-center justify-center ${
-                            tx.type === "buy" 
-                              ? "bg-bitcoin-orange" 
-                              : tx.type === "sell" ? "bg-red-500" :
-                              tx.type === "deposit" ? "bg-green-500" :
-                              "border-gray-500"
-                          }`}
-                        >
-                          {tx.type === "buy" || tx.type === "deposit" ? (
-                            <ArrowDownRight className="mr-2 h-4 w-4" />
-                          ) : (
-                            <ArrowUpRight className="mr-2 h-4 w-4" />
-                          )}
-                          {tx.type.toUpperCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {tx.type === 'buy' 
-                          ? tx.received_btc_amount 
-                          : tx.type === 'sell' 
-                            ? tx.sell_btc_amount 
-                            : tx.amount_btc}
-                        {' BTC'}
-                      </TableCell>
-                      <TableCell className="text-center">${tx.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                      <TableCell className="text-center">
-                        ${tx.type === 'buy' 
-                          ? tx.buy_fiat_amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
-                          : tx.type === 'sell' 
-                            ? tx.received_fiat_amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
-                            : tx.amount_fiat?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {tx.type === 'withdrawal' 
-                          ? (tx.fee_amount_btc ? tx.fee_amount_btc + ' BTC' : '-')
-                          : (tx.service_fee ? '$' + tx.service_fee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-')}
-                      </TableCell>
-                      <TableCell className="text-center">{tx.exchange || '-'}</TableCell>
-                      <TableCell className="text-center">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="text-destructive hover:text-destructive/80 h-8 w-8"
-                          onClick={() => deleteTransaction(tx.id, tx.type)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                </TableHeader>
+                <TableBody>
+                  {isLoadingTransactions ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8">
+                        <div className="flex flex-col items-center justify-center">
+                          <Loader2 className="h-8 w-8 text-bitcoin-orange animate-spin mb-2" />
+                          <p className="text-muted-foreground">Loading transactions...</p>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : importedTransactions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                        <div className="flex flex-col items-center justify-center">
+                          <p className="mb-2">No transactions found</p>
+                          <p className="text-sm text-muted-foreground mb-4">Your manually entered transactions will appear here after submission</p>
+                          <Button variant="outline" size="sm" onClick={fetchImportedTransactions}>
+                            Refresh
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    importedTransactions.map((tx) => (
+                      <TableRow key={tx.id}>
+                        <TableCell className="text-center">{new Date(tx.date).toLocaleString()}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center">
+                            <Badge
+                              variant="outline"
+                              className={`w-[125px] inline-flex items-center justify-center rounded-full border shadow-sm transition-none ${
+                                tx.type === "buy" 
+                                  ? "bg-gradient-to-r from-bitcoin-orange/90 to-bitcoin-orange/70 border-bitcoin-orange/40 text-white" 
+                                  : tx.type === "sell"
+                                  ? "bg-gradient-to-r from-red-500/90 to-red-400/70 border-red-500/40 text-white"
+                                  : tx.type === "deposit"
+                                  ? "bg-gradient-to-r from-green-500/90 to-green-400/70 border-green-500/40 text-white"
+                                  : "bg-gradient-to-r from-blue-500/90 to-blue-400/70 border-blue-500/40 text-white"
+                              }`}
+                            >
+                              {tx.type === "buy" ? (
+                                <CircleArrowRight className="mr-1 h-4 w-4" />
+                              ) : tx.type === "sell" ? (
+                                <CircleArrowLeft className="mr-1 h-4 w-4" />
+                              ) : tx.type === "deposit" ? (
+                                <CircleArrowDown className="mr-1 h-4 w-4" />
+                              ) : (
+                                <CircleArrowUp className="mr-1 h-4 w-4" />
+                              )}
+                              {tx.type.toUpperCase()}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {tx.type === 'buy' 
+                            ? tx.received_btc_amount 
+                            : tx.type === 'sell' 
+                              ? tx.sell_btc_amount 
+                              : tx.amount_btc}
+                        </TableCell>
+                        <TableCell className="text-center hidden md:table-cell">${tx.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                        <TableCell className="text-center">
+                          ${tx.type === 'buy' 
+                            ? tx.buy_fiat_amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
+                            : tx.type === 'sell' 
+                              ? tx.received_fiat_amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
+                              : tx.amount_fiat?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                        </TableCell>
+                        <TableCell className="text-center hidden md:table-cell">
+                          {tx.type === 'withdrawal' 
+                            ? (tx.fee_amount_btc ? tx.fee_amount_btc + ' BTC' : '-')
+                            : (tx.service_fee ? '$' + tx.service_fee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-')}
+                        </TableCell>
+                        <TableCell className="text-center hidden lg:table-cell">{tx.exchange || '-'}</TableCell>
+                        <TableCell className="text-center hidden lg:table-cell">
+                          {tx.hash ? (
+                            <a 
+                              href={`https://mempool.space/tx/${tx.hash}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center text-blue-500 hover:text-blue-700"
+                              title="View transaction on Mempool.space"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-destructive hover:text-destructive/80 h-8 w-8"
+                            onClick={() => deleteTransaction(tx.id, tx.type)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
             
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-muted-foreground">
@@ -2038,25 +2065,28 @@ export function ImportForm() {
       
       <TabsContent value="csv-template">
         <div className="space-y-6">
-        
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Orders Template Card */}
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-col items-center text-center">
                 <div className="flex items-center justify-center h-12 w-12 rounded-full bg-muted mb-4">
-                  <FileText className="h-6 w-6 text-bitcoin-orange" />
+                  <Bitcoin className="h-6 w-6 text-bitcoin-orange" />
                 </div>
                 <CardTitle>Orders Template</CardTitle>
                 <CardDescription>
-                  Template for buy and sell orders. Includes fields for fiat amounts, BTC amounts, prices, exchange fees, and metadata.
+                  <ul className="list-none text-center mt-2 space-y-1">
+                    <li>• Buy and sell transaction records</li>
+                    <li>• Fiat amounts and BTC amounts tracking</li>
+                    <li>• Price per BTC and exchange information</li>
+                    <li>• Service fees and transaction metadata</li>
+                  </ul>
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pb-0 pt-0">
                 {/* Content if needed, or keep empty */}
               </CardContent>
-              <CardFooter className="flex justify-center">
-                <Button variant="outline" className="w-full">
+              <CardFooter className="flex justify-center pt-2">
+                <Button variant="outline" className="px-6">
                   <Download className="mr-2 h-4 w-4" />
                   Download Orders Template
                 </Button>
@@ -2065,20 +2095,25 @@ export function ImportForm() {
 
             {/* Transfers Template Card */}
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-col items-center text-center">
                 <div className="flex items-center justify-center h-12 w-12 rounded-full bg-muted mb-4">
-                  <FileText className="h-6 w-6 text-bitcoin-orange" />
+                  <ArrowLeftRight className="h-6 w-6 text-bitcoin-orange" />
                 </div>
                 <CardTitle>Transfers Template</CardTitle>
                 <CardDescription>
-                  Template for deposits and withdrawals. Includes fields for BTC amounts, network fees, transaction hashes, and optional price data.
+                  <ul className="list-none text-center mt-2 space-y-1">
+                    <li>• Deposit and withdrawal transactions</li>
+                    <li>• BTC amounts and network fees tracking</li>
+                    <li>• Transaction hash for blockchain records</li>
+                    <li>• Optional price data at time of transfer</li>
+                  </ul>
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pb-0 pt-0">
                 {/* Content if needed, or keep empty */}
               </CardContent>
-              <CardFooter className="flex justify-center">
-                <Button variant="outline" className="w-full">
+              <CardFooter className="flex justify-center pt-2">
+                <Button variant="outline" className="px-6">
                   <Download className="mr-2 h-4 w-4" />
                   Download Transfers Template
                 </Button>

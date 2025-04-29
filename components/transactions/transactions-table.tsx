@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Search, SendHorizontal, ArrowUpDown, ArrowDown, ArrowUp, X, Loader2, Trash2, ArrowDownToLine, ArrowUpFromLine, ExternalLink, CheckCircle2 } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Search, SendHorizontal, ArrowUpDown, ArrowDown, ArrowUp, X, Loader2, Trash2, ArrowDownToLine, ArrowUpFromLine, ExternalLink, CheckCircle2, CircleArrowDown, CircleArrowUp, CircleArrowLeft, CircleArrowRight } from "lucide-react"
 import { getTransactions } from "@/lib/supabase"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import type { Database } from "@/types/supabase"
@@ -747,24 +747,25 @@ export function TransactionsTable({
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge
-                    className={`w-[125px] inline-flex items-center justify-center text-white ${
+                    variant="outline"
+                    className={`w-[125px] inline-flex items-center justify-center rounded-full border shadow-sm transition-none ${
                       transaction.type?.toLowerCase() === "buy" 
-                        ? "bg-bitcoin-orange" 
+                        ? "bg-gradient-to-r from-bitcoin-orange/90 to-bitcoin-orange/70 border-bitcoin-orange/40 text-white" 
                         : transaction.type?.toLowerCase() === "sell"
-                        ? "bg-red-500"
+                        ? "bg-gradient-to-r from-red-500/90 to-red-400/70 border-red-500/40 text-white"
                         : transaction.type?.toLowerCase() === "deposit"
-                        ? "bg-green-500"
-                        : "bg-blue-500"
+                        ? "bg-gradient-to-r from-green-500/90 to-green-400/70 border-green-500/40 text-white"
+                        : "bg-gradient-to-r from-blue-500/90 to-blue-400/70 border-blue-500/40 text-white"
                     }`}
                   >
                     {transaction.type?.toLowerCase() === "buy" ? (
-                      <ArrowDownRight className="mr-1 h-4 w-4" />
+                      <CircleArrowRight className="mr-1 h-4 w-4" />
                     ) : transaction.type?.toLowerCase() === "sell" ? (
-                      <ArrowUpRight className="mr-1 h-4 w-4" />
+                      <CircleArrowLeft className="mr-1 h-4 w-4" />
                     ) : transaction.type?.toLowerCase() === "deposit" ? (
-                      <ArrowDownToLine className="mr-1 h-4 w-4" />
+                      <CircleArrowDown className="mr-1 h-4 w-4" />
                     ) : (
-                      <ArrowUpFromLine className="mr-1 h-4 w-4" />
+                      <CircleArrowUp className="mr-1 h-4 w-4" />
                     )}
                     {transaction.type.toUpperCase()}
                   </Badge>
