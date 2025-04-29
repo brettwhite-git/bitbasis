@@ -23,6 +23,8 @@ interface PerformanceData {
     month: { percent: number | null; dollar: number | null }
     ytd: { percent: number | null; dollar: number | null }
     threeMonth: { percent: number | null; dollar: number | null }
+    twoYear: { percent: number | null; dollar: number | null }
+    fourYear: { percent: number | null; dollar: number | null }
     year: { percent: number | null; dollar: number | null }
     threeYear: { percent: number | null; dollar: number | null }
     fiveYear: { percent: number | null; dollar: number | null }
@@ -302,44 +304,60 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
         {/* Cumulative Returns Table */}
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
           <div className="p-6">
-            <h3 className="text-sm font-medium mb-4">Cumulative returns</h3>
+            <h3 className="text-sm font-medium mb-4">
+              Cumulative Returns
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger className="cursor-default">
+                    <Info className="ml-2 h-4 w-4 text-bitcoin-orange inline-block" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Shows the total return of your portfolio over different time periods.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </h3>
             <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="text-center w-[10.625%]"></TableHead>
-                  <TableHead className="text-center w-[10.625%]">24-Hour</TableHead>
-                  <TableHead className="text-center w-[10.625%]">1-Week</TableHead>
                   <TableHead className="text-center w-[10.625%]">1-Month</TableHead>
-                  <TableHead className="text-center w-[10.625%]">YTD</TableHead>
                   <TableHead className="text-center w-[10.625%]">3-Month</TableHead>
+                  <TableHead className="text-center w-[10.625%]">YTD</TableHead>
                   <TableHead className="text-center w-[10.625%]">1-Year</TableHead>
+                  <TableHead className="text-center w-[10.625%]">2-Year</TableHead>
                   <TableHead className="text-center w-[10.625%]">3-Year</TableHead>
+                  <TableHead className="text-center w-[10.625%]">4-Year</TableHead>
                   <TableHead className="text-center w-[10.625%]">5-Year</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow>
                   <TableCell className="font-medium text-center w-[10.625%]">Percent</TableCell>
-                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.day.percent >= 0 ? "text-green-500" : "text-red-500"}`}>
-                    {formatPercent(data.cumulative.day.percent)}
-                  </TableCell>
-                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.week.percent >= 0 ? "text-green-500" : "text-red-500"}`}>
-                    {formatPercent(data.cumulative.week.percent)}
-                  </TableCell>
                   <TableCell className="text-center w-[10.625%]">
                     {data.cumulative.month.percent ? formatPercent(data.cumulative.month.percent) : "-"}
-                  </TableCell>
-                  <TableCell className="text-center w-[10.625%]">
-                    {data.cumulative.ytd.percent ? formatPercent(data.cumulative.ytd.percent) : "-"}
                   </TableCell>
                   <TableCell className="text-center w-[10.625%]">
                     {data.cumulative.threeMonth.percent ? formatPercent(data.cumulative.threeMonth.percent) : "-"}
                   </TableCell>
                   <TableCell className="text-center w-[10.625%]">
+                    {data.cumulative.ytd.percent ? formatPercent(data.cumulative.ytd.percent) : "-"}
+                  </TableCell>
+                  <TableCell className="text-center w-[10.625%]">
                     {data.cumulative.year.percent ? formatPercent(data.cumulative.year.percent) : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.twoYear?.percent && data.cumulative.twoYear.percent >= 0 ? "text-green-500" : data.cumulative.twoYear?.percent ? "text-red-500" : ""}`}>
+                    {data.cumulative.twoYear?.percent !== null && data.cumulative.twoYear?.percent !== undefined 
+                      ? formatPercent(data.cumulative.twoYear.percent) 
+                      : "-"}
                   </TableCell>
                   <TableCell className="text-center w-[10.625%]">
                     {data.cumulative.threeYear.percent ? formatPercent(data.cumulative.threeYear.percent) : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.fourYear?.percent && data.cumulative.fourYear.percent >= 0 ? "text-green-500" : data.cumulative.fourYear?.percent ? "text-red-500" : ""}`}>
+                    {data.cumulative.fourYear?.percent !== null && data.cumulative.fourYear?.percent !== undefined 
+                      ? formatPercent(data.cumulative.fourYear.percent) 
+                      : "-"}
                   </TableCell>
                   <TableCell className="text-center w-[10.625%]">
                     {data.cumulative.fiveYear.percent ? formatPercent(data.cumulative.fiveYear.percent) : "-"}
@@ -347,26 +365,30 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-center w-[10.625%]">Dollar</TableCell>
-                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.day.dollar >= 0 ? "text-green-500" : "text-red-500"}`}>
-                    {formatCurrency(data.cumulative.day.dollar)}
-                  </TableCell>
-                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.week.dollar >= 0 ? "text-green-500" : "text-red-500"}`}>
-                    {formatCurrency(data.cumulative.week.dollar)}
-                  </TableCell>
                   <TableCell className="text-center w-[10.625%]">
                     {data.cumulative.month.dollar ? formatCurrency(data.cumulative.month.dollar) : "-"}
-                  </TableCell>
-                  <TableCell className="text-center w-[10.625%]">
-                    {data.cumulative.ytd.dollar ? formatCurrency(data.cumulative.ytd.dollar) : "-"}
                   </TableCell>
                   <TableCell className="text-center w-[10.625%]">
                     {data.cumulative.threeMonth.dollar ? formatCurrency(data.cumulative.threeMonth.dollar) : "-"}
                   </TableCell>
                   <TableCell className="text-center w-[10.625%]">
+                    {data.cumulative.ytd.dollar ? formatCurrency(data.cumulative.ytd.dollar) : "-"}
+                  </TableCell>
+                  <TableCell className="text-center w-[10.625%]">
                     {data.cumulative.year.dollar ? formatCurrency(data.cumulative.year.dollar) : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.twoYear?.dollar && data.cumulative.twoYear.dollar >= 0 ? "text-green-500" : data.cumulative.twoYear?.dollar ? "text-red-500" : ""}`}>
+                    {data.cumulative.twoYear?.dollar !== null && data.cumulative.twoYear?.dollar !== undefined 
+                      ? formatCurrency(data.cumulative.twoYear.dollar) 
+                      : "-"}
                   </TableCell>
                   <TableCell className="text-center w-[10.625%]">
                     {data.cumulative.threeYear.dollar ? formatCurrency(data.cumulative.threeYear.dollar) : "-"}
+                  </TableCell>
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.fourYear?.dollar && data.cumulative.fourYear.dollar >= 0 ? "text-green-500" : data.cumulative.fourYear?.dollar ? "text-red-500" : ""}`}>
+                    {data.cumulative.fourYear?.dollar !== null && data.cumulative.fourYear?.dollar !== undefined 
+                      ? formatCurrency(data.cumulative.fourYear.dollar) 
+                      : "-"}
                   </TableCell>
                   <TableCell className="text-center w-[10.625%]">
                     {data.cumulative.fiveYear.dollar ? formatCurrency(data.cumulative.fiveYear.dollar) : "-"}
@@ -380,7 +402,19 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
         {/* Compound Growth Rate Table (previously Annualized Returns) */}
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
           <div className="p-6">
-            <h3 className="text-sm font-medium mb-4">Compound growth rate</h3>
+            <h3 className="text-sm font-medium mb-4">
+              Compound Growth Rate
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger className="cursor-default">
+                    <Info className="ml-2 h-4 w-4 text-bitcoin-orange inline-block" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Shows the annual growth rate of your portfolio over different time periods.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </h3>
             <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -399,17 +433,6 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
                 <TableRow>
                   <TableCell className="font-medium text-center w-[10.625%]">
                     Your Portfolio
-                    <TooltipProvider delayDuration={0}>
-                      <Tooltip>
-                        <TooltipTrigger className="cursor-default">
-                          <Info className="ml-1 h-4 w-4 text-bitcoin-orange inline-block" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Calculated based on your actual portfolio history during this period.</p>
-                          <p>Empty values appear when your portfolio doesn't have sufficient history.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
                   </TableCell>
                   <TableCell className="text-center w-[10.625%] text-bitcoin-orange">
                     {data.compoundGrowth.oneYear ? formatPercent(data.compoundGrowth.oneYear) : "-"}
