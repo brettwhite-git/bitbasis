@@ -402,18 +402,6 @@ export function ImportPreview({
                 Transactions from {formatDate(dateRange?.start.toISOString() || '')} to {formatDate(dateRange?.end.toISOString() || '')}
               </CardDescription>
             </div>
-            <div className="text-right">
-              <p className="text-sm font-medium text-bitcoin-orange">
-                Processing Import<span className="inline-flex">
-                  <span className="animate-dot1 text-lg leading-none text-bitcoin-orange">.</span>
-                  <span className="animate-dot2 text-lg leading-none text-bitcoin-orange">.</span>
-                  <span className="animate-dot3 text-lg leading-none text-bitcoin-orange">.</span>
-                </span>
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {originalRows.length} rows
-              </p>
-            </div>
           </div>
         </CardHeader>
         <CardContent>

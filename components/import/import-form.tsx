@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
-import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle, Trash2, CheckCircle, X, FileText, Download, CircleArrowRight, CircleArrowLeft, CircleArrowDown, CircleArrowUp, ExternalLink, Bitcoin, ArrowLeftRight } from "lucide-react"
+import { Upload, AlertCircle, Loader2, CheckCircle2, XCircle, Trash2, CheckCircle, X, FileText, Download, CircleArrowRight, CircleArrowLeft, CircleArrowDown, CircleArrowUp, ExternalLink, Bitcoin, ArrowLeftRight, Shield, Zap, Grid2x2Check } from "lucide-react"
 import Papa from 'papaparse'
 import type { ParseError, ParseResult } from 'papaparse'
 import { ImportPreview } from "@/components/import/import-preview"
@@ -34,6 +34,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { LoaderIcon } from "lucide-react"
 
 type OrderInsert = Database['public']['Tables']['orders']['Insert']
 type TransferInsert = Database['public']['Tables']['transfers']['Insert']
@@ -563,8 +564,8 @@ export function ImportForm() {
   }
 
   const parseCSV = async (file: File) => {
+    // No need to set isParsing here as we've already set it
     setIsLoading(true)
-    setIsParsing(true)
     setError(null)
     setParsedData(null)
     setValidationIssues([])
@@ -572,7 +573,7 @@ export function ImportForm() {
     setCsvUploadId(null)
     setFileContent(null)
     setFile(file)
-
+    
     try {
       // Read file contents
       const fileContent = await file.text()
@@ -712,62 +713,45 @@ export function ImportForm() {
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
+    e.stopPropagation()
     setIsDragging(false)
-    setError(null) // Clear any previous errors
-
-    const files = e.dataTransfer.files
-    if (!files || files.length === 0) {
-      setError('No file dropped')
-      return
+    
+    const droppedFile = e.dataTransfer?.files?.[0]
+    if (droppedFile) {
+      const validationError = validateFile(droppedFile)
+      if (validationError) {
+        setError(validationError)
+        return
+      }
+      
+      // Set parsing state immediately before any other operations
+      setIsParsing(true)
+      
+      // Use setTimeout to ensure the rendering happens before processing starts
+      setTimeout(() => {
+        parseCSV(droppedFile)
+      }, 10)
     }
-
-    // Only process the first file if multiple files are dropped
-    if (files.length > 1) {
-      setError('Please drop only one file')
-      return
-    }
-
-    const droppedFile = files[0]
-    if (!droppedFile) {
-      setError('Invalid file')
-      return
-    }
-
-    const validationError = validateFile(droppedFile)
-    if (validationError) {
-      setError(validationError)
-      return
-    }
-
-    setFile(droppedFile)
-    parseCSV(droppedFile)
   }
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setError(null) // Clear any previous errors
-    const files = e.target.files
-
-    if (!files || files.length === 0) {
-      setError('No file selected')
-      return
+    const selectedFile = e.target.files?.[0]
+    
+    if (selectedFile) {
+      const validationError = validateFile(selectedFile)
+      if (validationError) {
+        setError(validationError)
+        return
+      }
+      
+      // Set parsing state immediately before any other operations
+      setIsParsing(true)
+      
+      // Use setTimeout to ensure the rendering happens before processing starts
+      setTimeout(() => {
+        parseCSV(selectedFile)
+      }, 10)
     }
-
-    const selectedFile = files[0]
-    if (!selectedFile) {
-      setError('Invalid file')
-      return
-    }
-
-    const validationError = validateFile(selectedFile)
-    if (validationError) {
-      setError(validationError)
-      // Reset the input
-      e.target.value = ''
-      return
-    }
-
-    setFile(selectedFile)
-    parseCSV(selectedFile)
   }
 
   const handleUpload = async () => {
@@ -2013,6 +1997,31 @@ export function ImportForm() {
     )
   }
 
+  // Create a standalone loader component that handles its own animation
+  const ParsingLoader = () => {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 min-h-[700px] text-center border-border">
+        <style jsx>{`
+          @keyframes spinAnimation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          .parsing-spinner {
+            animation: spinAnimation 1s linear infinite;
+            color: #F7931A; /* Bitcoin orange */
+          }
+        `}</style>
+        <div className="mb-4">
+          <div className="parsing-spinner">
+            <Loader2 className="h-16 w-16" />
+          </div>
+        </div>
+        <h3 className="text-lg font-semibold text-bitcoin-orange">Parsing CSV...</h3>
+        <p className="mt-2 text-sm text-muted-foreground">Please wait while we process your file.</p>
+      </div>
+    );
+  };
+
   return (
     <Tabs defaultValue="import-data" className="w-full">
       <TabsList className="flex w-auto mb-4 bg-transparent p-0 h-auto justify-start gap-x-1 border-b border-border">
@@ -2038,18 +2047,12 @@ export function ImportForm() {
           value="csv-template"
           className="data-[state=active]:bg-bitcoin-orange data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-none rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/50 data-[state=inactive]:hover:text-accent-foreground justify-start data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border"
         >
-          CSV Template
+          Import Resources
         </TabsTrigger>
       </TabsList>
       
       <TabsContent value="import-data">
-        {isParsing && (
-          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 min-h-[700px] text-center border-border">
-             <Loader2 className="h-12 w-12 text-bitcoin-orange animate-spin mb-4" />
-             <h3 className="text-lg font-semibold">Parsing CSV...</h3>
-             <p className="mt-2 text-sm text-muted-foreground">Please wait while we process your file.</p>
-           </div>
-        )}
+        {isParsing && <ParsingLoader />}
         
         {!isParsing && !parsedData && (
           <div
@@ -2111,60 +2114,350 @@ export function ImportForm() {
       </TabsContent>
       
       <TabsContent value="csv-template">
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Left Column - Templates */}
+          <div className="space-y-6 flex flex-col">
             {/* Orders Template Card */}
-            <Card>
-              <CardHeader className="flex flex-col items-center text-center">
-                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-muted mb-4">
-                  <Bitcoin className="h-6 w-6 text-bitcoin-orange" />
+            <Card className="flex-1 flex flex-col bg-zinc-950 border-zinc-800">
+              <div className="flex justify-center mt-8 mb-6">
+                <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center">
+                  <Bitcoin className="h-8 w-8 text-bitcoin-orange" />
                 </div>
-                <CardTitle>Orders Template</CardTitle>
-                <CardDescription>
-                  <ul className="list-none text-center mt-2 space-y-1">
-                    <li>• Buy and sell transaction records</li>
-                    <li>• Fiat amounts and BTC amounts tracking</li>
-                    <li>• Price per BTC and exchange information</li>
-                    <li>• Service fees and transaction metadata</li>
-                  </ul>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pb-0 pt-0">
-                {/* Content if needed, or keep empty */}
-              </CardContent>
-              <CardFooter className="flex justify-center pt-2">
-                <Button variant="outline" className="px-6">
+              </div>
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-medium text-white">Orders Template</h3>
+              </div>
+              <div className="flex justify-center mb-2">
+                <ul className="list-none space-y-3 text-sm text-muted-foreground max-w-[80%]">
+                  <li className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>Buy and sell transaction records</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>Fiat amounts and BTC amounts tracking</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>Price per BTC and exchange information</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>Service fees and transaction metadata</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="flex-grow"></div>
+              <div className="flex justify-center pb-12 pt-4">
+                <Button variant="outline" className="border-zinc-700 hover:bg-zinc-800 text-white">
                   <Download className="mr-2 h-4 w-4" />
                   Download Orders Template
                 </Button>
-              </CardFooter>
+              </div>
             </Card>
 
             {/* Transfers Template Card */}
-            <Card>
-              <CardHeader className="flex flex-col items-center text-center">
-                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-muted mb-4">
-                  <ArrowLeftRight className="h-6 w-6 text-bitcoin-orange" />
+            <Card className="flex-1 flex flex-col bg-zinc-950 border-zinc-800">
+              <div className="flex justify-center mt-8 mb-6">
+                <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center">
+                  <ArrowLeftRight className="h-8 w-8 text-bitcoin-orange" />
                 </div>
-                <CardTitle>Transfers Template</CardTitle>
-                <CardDescription>
-                  <ul className="list-none text-center mt-2 space-y-1">
-                    <li>• Deposit and withdrawal transactions</li>
-                    <li>• BTC amounts and network fees tracking</li>
-                    <li>• Transaction hash for blockchain records</li>
-                    <li>• Optional price data at time of transfer</li>
-                  </ul>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pb-0 pt-0">
-                {/* Content if needed, or keep empty */}
-              </CardContent>
-              <CardFooter className="flex justify-center pt-2">
-                <Button variant="outline" className="px-6">
+              </div>
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-medium text-white">Transfers Template</h3>
+              </div>
+              <div className="flex justify-center mb-2">
+                <ul className="list-none space-y-3 text-sm text-muted-foreground max-w-[80%]">
+                  <li className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>Deposit and withdrawal transactions</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>BTC amounts and network fees tracking</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>Transaction hash for blockchain records</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>Optional price data at time of transfer</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="flex-grow"></div>
+              <div className="flex justify-center pb-12 pt-4">
+                <Button variant="outline" className="border-zinc-700 hover:bg-zinc-800 text-white">
                   <Download className="mr-2 h-4 w-4" />
                   Download Transfers Template
                 </Button>
-              </CardFooter>
+              </div>
+            </Card>
+          </div>
+          
+          {/* Right Column - Providers */}
+          <div className="space-y-6">
+
+            {/* Blockchain Explorers Card */}
+
+            {/* Exchange Providers Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <ArrowLeftRight className="h-5 w-5 mr-2 text-bitcoin-orange" />
+                  Exchange Providers
+                </CardTitle>
+                <CardDescription>
+                  Bitcoin exchanges that provide CSV exports compatible with BitBasis
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <a 
+                    href="https://river.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    aria-label="River Financial - Bitcoin financial services"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                      <Bitcoin className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">River Financial</h3>
+                      <p className="text-sm text-muted-foreground">Bitcoin financial services</p>
+                    </div>
+                  </a>
+                  
+                  <a 
+                    href="https://unchained.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    aria-label="Unchained Capital - Bitcoin financial services"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                      <Bitcoin className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Unchained Capital</h3>
+                      <p className="text-sm text-muted-foreground">Bitcoin financial services</p>
+                    </div>
+                  </a>
+                  
+                  <a 
+                    href="https://kraken.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    aria-label="Kraken - Cryptocurrency exchange"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center mr-3">
+                      <ArrowLeftRight className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Kraken</h3>
+                      <p className="text-sm text-muted-foreground">Cryptocurrency exchange</p>
+                    </div>
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Grid2x2Check className="h-5 w-5 mr-2 text-bitcoin-orange" />
+                  Blockchain Explorers
+                </CardTitle>
+                <CardDescription>
+                  Tools to explore the Bitcoin blockchain and verify transactions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+                  <a 
+                    href="https://blockchair.com/address/statement"
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    aria-label="Blockchair - Blockchain explorer and analytics"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                      <ExternalLink className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Blockchair</h3>
+                      <p className="text-sm text-muted-foreground">Blockchain Wallet Explorer</p>
+                    </div>
+                  </a>
+
+                  <a 
+                    href="https://blockstream.info" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    aria-label="Blockstream Explorer - Bitcoin blockchain explorer"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                      <ExternalLink className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Blockstream Explorer</h3>
+                      <p className="text-sm text-muted-foreground">Blockchain explorer</p>
+                    </div>
+                  </a>
+                  
+                  <a 
+                    href="https://mempool.space" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    aria-label="Mempool.space - Bitcoin explorer and network statistics"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center mr-3">
+                      <Bitcoin className="h-6 w-6 text-bitcoin-orange" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Mempool.space</h3>
+                      <p className="text-sm text-muted-foreground">Bitcoin explorer and stats</p>
+                    </div>
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
+            
+            
+            
+            {/* Wallets Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Zap className="h-5 w-5 mr-2 text-bitcoin-orange" />
+                  Hot Wallets
+                </CardTitle>
+                <CardDescription>
+                  Bitcoin wallets with transaction export capabilities
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <a 
+                    href="https://proton.me/wallet" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    aria-label="Proton Wallet - Bitcoin wallet"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center mr-3">
+                      <Bitcoin className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Proton Wallet</h3>
+                      <p className="text-sm text-muted-foreground">Open Source and E2E</p>
+                    </div>
+                  </a>
+
+                  <a 
+                    href="https://bluewallet.io" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    aria-label="Blue Wallet - Bitcoin wallet"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                      <Bitcoin className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Blue Wallet</h3>
+                      <p className="text-sm text-muted-foreground">Open Source and Multisig</p>
+                    </div>
+                  </a>
+
+                  <a 
+                    href="https://nunchuk.io/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    aria-label="Unchained Capital - Vaults and wallet services"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                      <Bitcoin className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Nunchuk</h3>
+                      <p className="text-sm text-muted-foreground">Multisig and Inheritance</p>
+                    </div>
+                  </a>                
+
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Hardware Keys Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Shield className="h-5 w-5 mr-2 text-bitcoin-orange" />
+                  Hardware Wallets
+                </CardTitle>
+                <CardDescription>
+                  Bitcoin hardware wallets for secure cold storage
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <a 
+                    href="https://coldcard.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    aria-label="Coldcard - Bitcoin hardware wallet"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-zinc-100 flex items-center justify-center mr-3">
+                      <Bitcoin className="h-6 w-6 text-zinc-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Coldcard</h3>
+                      <p className="text-sm text-muted-foreground">Bitcoin hardware wallet</p>
+                    </div>
+                  </a>
+                  
+                  <a 
+                    href="https://trezor.io" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    aria-label="Trezor - Bitcoin hardware wallet"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-black flex items-center justify-center mr-3">
+                      <Bitcoin className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Trezor</h3>
+                      <p className="text-sm text-muted-foreground">Bitcoin hardware wallet</p>
+                    </div>
+                  </a>
+                  
+                  <a 
+                    href="https://blockstream.com/jade/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    aria-label="Blockstream Jade - Bitcoin hardware wallet"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                      <Bitcoin className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Blockstream Jade</h3>
+                      <p className="text-sm text-muted-foreground">Bitcoin hardware wallet</p>
+                    </div>
+                  </a>
+                </div>
+              </CardContent>
             </Card>
           </div>
         </div>
