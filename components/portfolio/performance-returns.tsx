@@ -334,16 +334,16 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
               <TableBody>
                 <TableRow>
                   <TableCell className="font-medium text-center w-[10.625%]">Percent</TableCell>
-                  <TableCell className="text-center w-[10.625%]">
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.month.percent !== null && data.cumulative.month.percent >= 0 ? "text-green-500" : data.cumulative.month.percent !== null ? "text-red-500" : ""}`}>
                     {data.cumulative.month.percent ? formatPercent(data.cumulative.month.percent) : "-"}
                   </TableCell>
-                  <TableCell className="text-center w-[10.625%]">
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.threeMonth.percent !== null && data.cumulative.threeMonth.percent >= 0 ? "text-green-500" : data.cumulative.threeMonth.percent !== null ? "text-red-500" : ""}`}>
                     {data.cumulative.threeMonth.percent ? formatPercent(data.cumulative.threeMonth.percent) : "-"}
                   </TableCell>
-                  <TableCell className="text-center w-[10.625%]">
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.ytd.percent !== null && data.cumulative.ytd.percent >= 0 ? "text-green-500" : data.cumulative.ytd.percent !== null ? "text-red-500" : ""}`}>
                     {data.cumulative.ytd.percent ? formatPercent(data.cumulative.ytd.percent) : "-"}
                   </TableCell>
-                  <TableCell className="text-center w-[10.625%]">
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.year.percent !== null && data.cumulative.year.percent >= 0 ? "text-green-500" : data.cumulative.year.percent !== null ? "text-red-500" : ""}`}>
                     {data.cumulative.year.percent ? formatPercent(data.cumulative.year.percent) : "-"}
                   </TableCell>
                   <TableCell className={`text-center w-[10.625%] ${data.cumulative.twoYear?.percent && data.cumulative.twoYear.percent >= 0 ? "text-green-500" : data.cumulative.twoYear?.percent ? "text-red-500" : ""}`}>
@@ -351,7 +351,7 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
                       ? formatPercent(data.cumulative.twoYear.percent) 
                       : "-"}
                   </TableCell>
-                  <TableCell className="text-center w-[10.625%]">
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.threeYear.percent !== null && data.cumulative.threeYear.percent >= 0 ? "text-green-500" : data.cumulative.threeYear.percent !== null ? "text-red-500" : ""}`}>
                     {data.cumulative.threeYear.percent ? formatPercent(data.cumulative.threeYear.percent) : "-"}
                   </TableCell>
                   <TableCell className={`text-center w-[10.625%] ${data.cumulative.fourYear?.percent && data.cumulative.fourYear.percent >= 0 ? "text-green-500" : data.cumulative.fourYear?.percent ? "text-red-500" : ""}`}>
@@ -359,22 +359,22 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
                       ? formatPercent(data.cumulative.fourYear.percent) 
                       : "-"}
                   </TableCell>
-                  <TableCell className="text-center w-[10.625%]">
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.fiveYear.percent !== null && data.cumulative.fiveYear.percent >= 0 ? "text-green-500" : data.cumulative.fiveYear.percent !== null ? "text-red-500" : ""}`}>
                     {data.cumulative.fiveYear.percent ? formatPercent(data.cumulative.fiveYear.percent) : "-"}
                   </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-center w-[10.625%]">Dollar</TableCell>
-                  <TableCell className="text-center w-[10.625%]">
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.month.dollar !== null && data.cumulative.month.dollar >= 0 ? "text-green-500" : data.cumulative.month.dollar !== null ? "text-red-500" : ""}`}>
                     {data.cumulative.month.dollar ? formatCurrency(data.cumulative.month.dollar) : "-"}
                   </TableCell>
-                  <TableCell className="text-center w-[10.625%]">
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.threeMonth.dollar !== null && data.cumulative.threeMonth.dollar >= 0 ? "text-green-500" : data.cumulative.threeMonth.dollar !== null ? "text-red-500" : ""}`}>
                     {data.cumulative.threeMonth.dollar ? formatCurrency(data.cumulative.threeMonth.dollar) : "-"}
                   </TableCell>
-                  <TableCell className="text-center w-[10.625%]">
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.ytd.dollar !== null && data.cumulative.ytd.dollar >= 0 ? "text-green-500" : data.cumulative.ytd.dollar !== null ? "text-red-500" : ""}`}>
                     {data.cumulative.ytd.dollar ? formatCurrency(data.cumulative.ytd.dollar) : "-"}
                   </TableCell>
-                  <TableCell className="text-center w-[10.625%]">
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.year.dollar !== null && data.cumulative.year.dollar >= 0 ? "text-green-500" : data.cumulative.year.dollar !== null ? "text-red-500" : ""}`}>
                     {data.cumulative.year.dollar ? formatCurrency(data.cumulative.year.dollar) : "-"}
                   </TableCell>
                   <TableCell className={`text-center w-[10.625%] ${data.cumulative.twoYear?.dollar && data.cumulative.twoYear.dollar >= 0 ? "text-green-500" : data.cumulative.twoYear?.dollar ? "text-red-500" : ""}`}>
@@ -382,7 +382,7 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
                       ? formatCurrency(data.cumulative.twoYear.dollar) 
                       : "-"}
                   </TableCell>
-                  <TableCell className="text-center w-[10.625%]">
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.threeYear.dollar !== null && data.cumulative.threeYear.dollar >= 0 ? "text-green-500" : data.cumulative.threeYear.dollar !== null ? "text-red-500" : ""}`}>
                     {data.cumulative.threeYear.dollar ? formatCurrency(data.cumulative.threeYear.dollar) : "-"}
                   </TableCell>
                   <TableCell className={`text-center w-[10.625%] ${data.cumulative.fourYear?.dollar && data.cumulative.fourYear.dollar >= 0 ? "text-green-500" : data.cumulative.fourYear?.dollar ? "text-red-500" : ""}`}>
@@ -390,7 +390,7 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
                       ? formatCurrency(data.cumulative.fourYear.dollar) 
                       : "-"}
                   </TableCell>
-                  <TableCell className="text-center w-[10.625%]">
+                  <TableCell className={`text-center w-[10.625%] ${data.cumulative.fiveYear.dollar !== null && data.cumulative.fiveYear.dollar >= 0 ? "text-green-500" : data.cumulative.fiveYear.dollar !== null ? "text-red-500" : ""}`}>
                     {data.cumulative.fiveYear.dollar ? formatCurrency(data.cumulative.fiveYear.dollar) : "-"}
                   </TableCell>
                 </TableRow>

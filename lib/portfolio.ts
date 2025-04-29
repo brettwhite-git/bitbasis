@@ -57,7 +57,9 @@ export interface PerformanceMetrics {
     ytd: { percent: number | null; dollar: number | null }
     threeMonth: { percent: number | null; dollar: number | null }
     year: { percent: number | null; dollar: number | null }
+    twoYear: { percent: number | null; dollar: number | null }
     threeYear: { percent: number | null; dollar: number | null }
+    fourYear: { percent: number | null; dollar: number | null }
     fiveYear: { percent: number | null; dollar: number | null }
   }
   compoundGrowth: {
@@ -529,7 +531,9 @@ export async function getPerformanceMetrics(
           ytd: { percent: null, dollar: null },
           threeMonth: { percent: null, dollar: null },
           year: { percent: null, dollar: null },
+          twoYear: { percent: null, dollar: null },
           threeYear: { percent: null, dollar: null },
+          fourYear: { percent: null, dollar: null },
           fiveYear: { percent: null, dollar: null }
         },
         compoundGrowth: {
@@ -608,7 +612,9 @@ export async function getPerformanceMetrics(
               ytd: { percent: null, dollar: null },
               threeMonth: { percent: null, dollar: null },
               year: { percent: null, dollar: null },
+              twoYear: { percent: null, dollar: null },
               threeYear: { percent: null, dollar: null },
+              fourYear: { percent: null, dollar: null },
               fiveYear: { percent: null, dollar: null }
             },
             compoundGrowth: {
@@ -755,8 +761,12 @@ export async function getPerformanceMetrics(
     threeMonthsAgo.setMonth(today.getMonth() - 3)
     const oneYearAgo = new Date(today)
     oneYearAgo.setFullYear(today.getFullYear() - 1)
+    const twoYearsAgo = new Date(today)
+    twoYearsAgo.setFullYear(today.getFullYear() - 2)
     const threeYearsAgo = new Date(today)
     threeYearsAgo.setFullYear(today.getFullYear() - 3)
+    const fourYearsAgo = new Date(today)
+    fourYearsAgo.setFullYear(today.getFullYear() - 4)
     const fiveYearsAgo = new Date(today)
     fiveYearsAgo.setFullYear(today.getFullYear() - 5)
 
@@ -767,7 +777,9 @@ export async function getPerformanceMetrics(
     const valueStartOfYear = getValueAtDate(startOfYear)
     const valueThreeMonthsAgo = getValueAtDate(threeMonthsAgo)
     const valueOneYearAgo = getValueAtDate(oneYearAgo)
+    const valueTwoYearsAgo = getValueAtDate(twoYearsAgo)
     const valueThreeYearsAgo = getValueAtDate(threeYearsAgo)
+    const valueFourYearsAgo = getValueAtDate(fourYearsAgo)
     const valueFiveYearsAgo = getValueAtDate(fiveYearsAgo)
 
     // Helper for percentage calculation (Gain / Investment)
@@ -813,9 +825,17 @@ export async function getPerformanceMetrics(
         percent: calculateReturnPercent(valueNow.usdValue, valueOneYearAgo.usdValue, valueOneYearAgo.investment),
         dollar: calculateReturnDollar(valueNow.usdValue, valueOneYearAgo.usdValue)
       } : { percent: null, dollar: null },
+      twoYear: firstOrderDate && firstOrderDate <= twoYearsAgo ? {
+        percent: calculateReturnPercent(valueNow.usdValue, valueTwoYearsAgo.usdValue, valueTwoYearsAgo.investment),
+        dollar: calculateReturnDollar(valueNow.usdValue, valueTwoYearsAgo.usdValue)
+      } : { percent: null, dollar: null },
       threeYear: firstOrderDate && firstOrderDate <= threeYearsAgo ? {
         percent: calculateReturnPercent(valueNow.usdValue, valueThreeYearsAgo.usdValue, valueThreeYearsAgo.investment),
         dollar: calculateReturnDollar(valueNow.usdValue, valueThreeYearsAgo.usdValue)
+      } : { percent: null, dollar: null },
+      fourYear: firstOrderDate && firstOrderDate <= fourYearsAgo ? {
+        percent: calculateReturnPercent(valueNow.usdValue, valueFourYearsAgo.usdValue, valueFourYearsAgo.investment),
+        dollar: calculateReturnDollar(valueNow.usdValue, valueFourYearsAgo.usdValue)
       } : { percent: null, dollar: null },
       fiveYear: firstOrderDate && firstOrderDate <= fiveYearsAgo ? {
         percent: calculateReturnPercent(valueNow.usdValue, valueFiveYearsAgo.usdValue, valueFiveYearsAgo.investment),
@@ -1106,7 +1126,8 @@ export async function getPerformanceMetrics(
       cumulative: {
         total: { percent: 0, dollar: 0 }, day: { percent: 0, dollar: 0 }, week: { percent: 0, dollar: 0 },
         month: { percent: null, dollar: null }, ytd: { percent: null, dollar: null }, threeMonth: { percent: null, dollar: null },
-        year: { percent: null, dollar: null }, threeYear: { percent: null, dollar: null }, fiveYear: { percent: null, dollar: null }
+        year: { percent: null, dollar: null }, twoYear: { percent: null, dollar: null }, threeYear: { percent: null, dollar: null },
+        fourYear: { percent: null, dollar: null }, fiveYear: { percent: null, dollar: null }
       },
       compoundGrowth: {
         total: null, oneYear: null, twoYear: null, threeYear: null,

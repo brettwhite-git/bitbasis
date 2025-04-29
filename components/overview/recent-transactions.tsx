@@ -136,16 +136,20 @@ export function RecentTransactions() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center">
-                  <Badge
-                    variant="outline"
-                    className={`w-[70px] inline-flex items-center justify-center ${
-                      isShortTerm(transaction.date)
-                        ? "border-green-500 text-green-500"
-                        : "border-purple-500 text-purple-500"
-                    }`}
-                  >
-                    {isShortTerm(transaction.date) ? "SHORT" : "LONG"}
-                  </Badge>
+                  {transaction.type?.toLowerCase() === "buy" || transaction.type?.toLowerCase() === "sell" ? (
+                    <Badge
+                      variant="outline"
+                      className={`w-[70px] inline-flex items-center justify-center ${
+                        isShortTerm(transaction.date)
+                          ? "border-green-500 text-green-500"
+                          : "border-purple-500 text-purple-500"
+                      }`}
+                    >
+                      {isShortTerm(transaction.date) ? "SHORT" : "LONG"}
+                    </Badge>
+                  ) : (
+                    "-"
+                  )}
                 </TableCell>
                 <TableCell className="text-center">
                   {formatBTC(transaction.btc_amount, false)}

@@ -86,6 +86,16 @@ function capitalizeExchange(exchange: string | null): string {
     .join(' ');
 }
 
+// Function to determine if transaction is short-term or long-term
+function isShortTerm(date: string): boolean {
+  const transactionDate = new Date(date);
+  const now = new Date();
+  const oneYearAgo = new Date(now);
+  oneYearAgo.setFullYear(now.getFullYear() - 1);
+  // Return true if the transaction date is AFTER one year ago (less than 1 year hold)
+  return transactionDate > oneYearAgo;
+}
+
 // Create a unified transaction type for display
 interface UnifiedDisplayTransaction {
   id: string;
@@ -493,13 +503,14 @@ export function ImportPreview({
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="text-center">Date</TableHead>
                     <TableHead className="text-center">Type</TableHead>
+                    <TableHead className="text-center">Term</TableHead>
                     <TableHead className="text-center">Amount (BTC)</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">Price (BTC/USD)</TableHead>
                     <TableHead className="text-center">Amount (USD)</TableHead>
-                    <TableHead className="text-center hidden md:table-cell">Price (USD/BTC)</TableHead>
                     <TableHead className="text-center hidden md:table-cell">Fees (USD)</TableHead>
                     <TableHead className="text-center hidden lg:table-cell">Exchange</TableHead>
                     <TableHead className="text-center hidden lg:table-cell">Fees (BTC)</TableHead>
-                    {hasAnyTxid && <TableHead className="text-center hidden lg:table-cell">TXID</TableHead>}
+                    <TableHead className="text-center hidden lg:table-cell">TXID</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -518,13 +529,29 @@ export function ImportPreview({
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        {formatNumber(transaction.btc_amount, 8)}
+                        {transaction.type === 'buy' || transaction.type === 'sell' ? (
+                          <Badge
+                            variant="outline"
+                            className={`w-[70px] inline-flex items-center justify-center ${
+                              isShortTerm(transaction.date)
+                                ? "border-green-500 text-green-500"
+                                : "border-purple-500 text-purple-500"
+                            }`}
+                          >
+                            {isShortTerm(transaction.date) ? "SHORT" : "LONG"}
+                          </Badge>
+                        ) : (
+                          "-"
+                        )}
                       </TableCell>
                       <TableCell className="text-center">
-                        {formatCurrency(transaction.usd_value)}
+                        {formatNumber(transaction.btc_amount, 8)}
                       </TableCell>
                       <TableCell className="text-center hidden md:table-cell">
                         {formatCurrency(transaction.price_at_tx)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {formatCurrency(transaction.usd_value)}
                       </TableCell>
                       <TableCell className="text-center hidden md:table-cell">
                         {formatCurrency(transaction.fee_usd)}

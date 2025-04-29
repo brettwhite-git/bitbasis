@@ -33,6 +33,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 type OrderInsert = Database['public']['Tables']['orders']['Insert']
 type TransferInsert = Database['public']['Tables']['transfers']['Insert']
@@ -356,6 +357,16 @@ function useUserId() {
     throw new Error('User ID not found in session');
   }
   return user.id;
+}
+
+// Function to determine if transaction is short-term or long-term
+function isShortTerm(date: string): boolean {
+  const transactionDate = new Date(date);
+  const now = new Date();
+  const oneYearAgo = new Date(now);
+  oneYearAgo.setFullYear(now.getFullYear() - 1);
+  // Return true if the transaction date is AFTER one year ago (less than 1 year hold)
+  return transactionDate > oneYearAgo;
 }
 
 // Define a type for the form data for clarity
@@ -1610,22 +1621,21 @@ export function ImportForm() {
                   <TableRow>
                     <TableHead className="text-center">Date</TableHead>
                     <TableHead className="text-center">Type</TableHead>
+                    <TableHead className="text-center">Term</TableHead>
                     <TableHead className="text-center">Amount (BTC)</TableHead>
-                    <TableHead className="text-center hidden md:table-cell">Price (USD/BTC)</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">Price (BTC/USD)</TableHead>
                     <TableHead className="text-center">Amount (USD)</TableHead>
                     <TableHead className="text-center hidden md:table-cell">Fees (USD)</TableHead>
                     <TableHead className="text-center hidden lg:table-cell">Exchange</TableHead>
                     <TableHead className="text-center hidden lg:table-cell">Fees (BTC)</TableHead>
-                    {stagedTransactions.some(tx => tx.type === 'withdrawal' || tx.type === 'deposit') && (
-                      <TableHead className="text-center hidden lg:table-cell">TXID</TableHead>
-                    )}
+                    <TableHead className="text-center hidden lg:table-cell">TXID</TableHead>
                     <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {stagedTransactions.length === 0 && (
                      <TableRow>
-                       <TableCell colSpan={10} className="text-center text-muted-foreground py-4">
+                       <TableCell colSpan={11} className="text-center text-muted-foreground py-4">
                          No transactions added to preview yet.
                        </TableCell>
                      </TableRow>
@@ -1660,6 +1670,22 @@ export function ImportForm() {
                           </Badge>
                         </div>
                       </TableCell>
+                      <TableCell className="text-center">
+                        {tx.type === 'buy' || tx.type === 'sell' ? (
+                          <Badge
+                            variant="outline"
+                            className={`w-[70px] inline-flex items-center justify-center ${
+                              isShortTerm(tx.date)
+                                ? "border-green-500 text-green-500"
+                                : "border-purple-500 text-purple-500"
+                            }`}
+                          >
+                            {isShortTerm(tx.date) ? "SHORT" : "LONG"}
+                          </Badge>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
                       <TableCell className="text-center">{tx.btcAmount || '0.00000000'}</TableCell>
                       <TableCell className="text-center hidden md:table-cell">${tx.price || '0.00'}</TableCell>
                       <TableCell className="text-center">${tx.usdAmount || '0.00'}</TableCell>
@@ -1668,21 +1694,19 @@ export function ImportForm() {
                       <TableCell className="text-center hidden lg:table-cell">
                         {tx.type === 'withdrawal' ? (tx.network_fee || '0.00000000') : '-'}
                       </TableCell>
-                      {stagedTransactions.some(t => t.type === 'withdrawal' || t.type === 'deposit') && (
-                        <TableCell className="text-center hidden lg:table-cell">
-                          {(tx.type === 'withdrawal' || tx.type === 'deposit') && tx.txid ? (
-                            <a 
-                              href={`https://mempool.space/tx/${tx.txid}`} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center text-blue-500 hover:text-blue-700"
-                              title="View transaction on Mempool.space"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          ) : '-'}
-                        </TableCell>
-                      )}
+                      <TableCell className="text-center hidden lg:table-cell">
+                        {(tx.type === 'withdrawal' || tx.type === 'deposit') && tx.txid ? (
+                          <a 
+                            href={`https://mempool.space/tx/${tx.txid}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center text-blue-500 hover:text-blue-700"
+                            title="View transaction on Mempool.space"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        ) : '-'}
+                      </TableCell>
                       <TableCell className="text-center">
                         <Button 
                           variant="ghost" 
@@ -1758,11 +1782,13 @@ export function ImportForm() {
                   <TableRow>
                     <TableHead className="text-center">Date</TableHead>
                     <TableHead className="text-center">Type</TableHead>
+                    <TableHead className="text-center">Term</TableHead>
                     <TableHead className="text-center">Amount (BTC)</TableHead>
-                    <TableHead className="text-center hidden md:table-cell">Price (USD/BTC)</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">Price (BTC/USD)</TableHead>
                     <TableHead className="text-center">Amount (USD)</TableHead>
-                    <TableHead className="text-center hidden md:table-cell">Fees</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">Fees (USD)</TableHead>
                     <TableHead className="text-center hidden lg:table-cell">Exchange</TableHead>
+                    <TableHead className="text-center hidden lg:table-cell">Fees (BTC)</TableHead>
                     <TableHead className="text-center hidden lg:table-cell">TXID</TableHead>
                     <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
@@ -1770,7 +1796,7 @@ export function ImportForm() {
                 <TableBody>
                   {isLoadingTransactions ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8">
+                      <TableCell colSpan={11} className="text-center py-8">
                         <div className="flex flex-col items-center justify-center">
                           <Loader2 className="h-8 w-8 text-bitcoin-orange animate-spin mb-2" />
                           <p className="text-muted-foreground">Loading transactions...</p>
@@ -1779,7 +1805,7 @@ export function ImportForm() {
                     </TableRow>
                   ) : importedTransactions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                         <div className="flex flex-col items-center justify-center">
                           <p className="mb-2">No transactions found</p>
                           <p className="text-sm text-muted-foreground mb-4">Your manually entered transactions will appear here after submission</p>
@@ -1821,13 +1847,29 @@ export function ImportForm() {
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
+                          {tx.type === 'buy' || tx.type === 'sell' ? (
+                            <Badge
+                              variant="outline"
+                              className={`w-[70px] inline-flex items-center justify-center ${
+                                isShortTerm(tx.date)
+                                  ? "border-green-500 text-green-500"
+                                  : "border-purple-500 text-purple-500"
+                              }`}
+                            >
+                              {isShortTerm(tx.date) ? "SHORT" : "LONG"}
+                            </Badge>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
                           {tx.type === 'buy' 
                             ? tx.received_btc_amount 
                             : tx.type === 'sell' 
                               ? tx.sell_btc_amount 
                               : tx.amount_btc}
                         </TableCell>
-                        <TableCell className="text-center hidden md:table-cell">${tx.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                        <TableCell className="text-center hidden md:table-cell">${tx.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                         <TableCell className="text-center">
                           ${tx.type === 'buy' 
                             ? tx.buy_fiat_amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
@@ -1837,10 +1879,15 @@ export function ImportForm() {
                         </TableCell>
                         <TableCell className="text-center hidden md:table-cell">
                           {tx.type === 'withdrawal' 
-                            ? (tx.fee_amount_btc ? tx.fee_amount_btc + ' BTC' : '-')
+                            ? (tx.fee_amount_btc && tx.price ? '$' + (tx.fee_amount_btc * tx.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-')
                             : (tx.service_fee ? '$' + tx.service_fee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-')}
                         </TableCell>
                         <TableCell className="text-center hidden lg:table-cell">{tx.exchange || '-'}</TableCell>
+                        <TableCell className="text-center hidden lg:table-cell">
+                          {tx.type === 'withdrawal' 
+                            ? (tx.fee_amount_btc ? Number(tx.fee_amount_btc).toLocaleString(undefined, { minimumFractionDigits: 8, maximumFractionDigits: 8 }) : '-')
+                            : '-'}
+                        </TableCell>
                         <TableCell className="text-center hidden lg:table-cell">
                           {tx.hash ? (
                             <a 
