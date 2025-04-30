@@ -235,16 +235,18 @@ export function InvestmentChart({ chartData, title, bitcoinUnit }: InvestmentCha
   } : mockData;
 
   return (
-    <div className="w-full h-[500px] overflow-hidden relative p-2">
+    <div className="w-full h-full min-h-[400px] flex flex-col overflow-hidden relative p-2">
       {title && (
         <div className="text-center text-base font-medium mb-2">{title}</div>
       )}
-      <ReactChart
-        type="bar"
-        options={chartOptions}
-        data={chartConfig as any}
-        height={"100%"}
-      />
+      <div className="flex-1">
+        <ReactChart
+          type="bar"
+          options={chartOptions}
+          data={chartConfig as any}
+          height={"100%"}
+        />
+      </div>
     </div>
   );
 } 

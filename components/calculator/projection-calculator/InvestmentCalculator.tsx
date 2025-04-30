@@ -53,7 +53,7 @@ export function InvestmentCalculator() {
   const [recurringBuyAmount, setRecurringBuyAmount] = useState('100'); // Default recurring buy amount
   const [satsGoal, setSatsGoal] = useState('0.1'); // Underlying goal stored ALWAYS as BTC string
   const [displayGoalValue, setDisplayGoalValue] = useState('0.1'); // Formatted value shown in the active input
-  const [priceGrowth, setPriceGrowth] = useState('48'); // Default 48% (1 year CAGR)
+  const [priceGrowth, setPriceGrowth] = useState('30'); // Default 30% CAGR
   
   // Use Bitcoin price hook
   const { price: btcPrice, loading: priceLoading } = useBitcoinPrice();
@@ -190,9 +190,9 @@ export function InvestmentCalculator() {
   };
 
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-      <div className="p-6 space-y-6">
-        <Tabs value={calculatorMode} onValueChange={(value) => setCalculatorMode(value as typeof calculatorMode)} className="w-full">
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm h-full">
+      <div className="p-6 space-y-6 flex flex-col h-full">
+        <Tabs value={calculatorMode} onValueChange={(value) => setCalculatorMode(value as typeof calculatorMode)} className="w-full flex-1 flex flex-col">
           <TabsList>
             <TabsTrigger value="savingsGoal">
               Savings Goal
@@ -205,80 +205,86 @@ export function InvestmentCalculator() {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="savingsGoal">
-            <SavingsGoalCalculator />
-          </TabsContent>
-          
-          <TabsContent value="satsGoal">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Input Section (Left) - Replaced with FixedGoalCalculator */}
-              <FixedGoalCalculator
-                bitcoinUnit={bitcoinUnit}
-                setBitcoinUnit={setBitcoinUnit}
-                satsGoal={satsGoal}
-                displayGoalValue={displayGoalValue}
-                handleBtcGoalChange={handleBtcGoalChange}
-                handleSatsInputChange={handleSatsInputChange}
-                satsGoalInputRef={satsGoalInputRef}
-                frequency={frequency}
-                setFrequency={setFrequency}
-                goalDuration={goalDuration}
-                setGoalDuration={setGoalDuration}
-                priceGrowth={priceGrowth}
-                setPriceGrowth={setPriceGrowth}
-              />
+          <div className="flex-1 flex flex-col">
+            <TabsContent value="savingsGoal" className="flex-1">
+              <SavingsGoalCalculator />
+            </TabsContent>
+            
+            <TabsContent value="satsGoal" className="flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-[650px]">
+                {/* Input Section (Left) - Replaced with FixedGoalCalculator */}
+                <FixedGoalCalculator
+                  bitcoinUnit={bitcoinUnit}
+                  setBitcoinUnit={setBitcoinUnit}
+                  satsGoal={satsGoal}
+                  displayGoalValue={displayGoalValue}
+                  handleBtcGoalChange={handleBtcGoalChange}
+                  handleSatsInputChange={handleSatsInputChange}
+                  satsGoalInputRef={satsGoalInputRef}
+                  frequency={frequency}
+                  setFrequency={setFrequency}
+                  goalDuration={goalDuration}
+                  setGoalDuration={setGoalDuration}
+                  priceGrowth={priceGrowth}
+                  setPriceGrowth={setPriceGrowth}
+                />
 
-              {/* Right Section (Chart for non-Savings Goal modes) */}
-              <div className="md:col-span-2 space-y-4">
-                <div className="h-full w-full rounded-md border border-border bg-background overflow-hidden">
-                  <div className="px-4 py-3 border-b border-border">
-                    <h3 className="text-lg font-semibold text-foreground">Satoshi Accumulation Forecast</h3>
-                  </div>
-                  <div className="px-4 py-6 min-h-[500px]">
-                    <InvestmentChart
-                      chartData={aggregatedChartData}
-                      title=""
-                      bitcoinUnit={bitcoinUnit}
-                    />
+                {/* Right Section (Chart for non-Savings Goal modes) */}
+                <div className="md:col-span-2 space-y-4 h-full">
+                  <div className="h-full w-full rounded-md border border-border bg-background overflow-hidden flex flex-col">
+                    <div className="px-4 py-3 border-b border-border">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {bitcoinUnit === 'satoshi' ? 'Satoshi' : 'Bitcoin'} Accumulation Forecast
+                      </h3>
+                    </div>
+                    <div className="px-4 py-6 flex-1 min-h-[500px]">
+                      <InvestmentChart
+                        chartData={aggregatedChartData}
+                        title=""
+                        bitcoinUnit={bitcoinUnit}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="recurringBuy">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Input Section (Left) - Replaced with RecurringGoalCalculator */}
-              <RecurringGoalCalculator
-                bitcoinUnit={bitcoinUnit}
-                setBitcoinUnit={setBitcoinUnit}
-                recurringBuyAmount={recurringBuyAmount}
-                handleRecurringBuyAmountChange={handleRecurringBuyAmountChange}
-                frequency={frequency}
-                setFrequency={setFrequency}
-                goalDuration={goalDuration}
-                setGoalDuration={setGoalDuration}
-                priceGrowth={priceGrowth}
-                setPriceGrowth={setPriceGrowth}
-              />
+            </TabsContent>
+            
+            <TabsContent value="recurringBuy" className="flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-[650px]">
+                {/* Input Section (Left) - Replaced with RecurringGoalCalculator */}
+                <RecurringGoalCalculator
+                  bitcoinUnit={bitcoinUnit}
+                  setBitcoinUnit={setBitcoinUnit}
+                  recurringBuyAmount={recurringBuyAmount}
+                  handleRecurringBuyAmountChange={handleRecurringBuyAmountChange}
+                  frequency={frequency}
+                  setFrequency={setFrequency}
+                  goalDuration={goalDuration}
+                  setGoalDuration={setGoalDuration}
+                  priceGrowth={priceGrowth}
+                  setPriceGrowth={setPriceGrowth}
+                />
 
-              {/* Right Section (Chart for non-Savings Goal modes) */}
-              <div className="md:col-span-2 space-y-4">
-                <div className="h-full w-full rounded-md border border-border bg-background overflow-hidden">
-                  <div className="px-4 py-3 border-b border-border">
-                    <h3 className="text-lg font-semibold text-foreground">Satoshi Accumulation Forecast</h3>
-                  </div>
-                  <div className="px-4 py-6 min-h-[500px]">
-                    <InvestmentChart
-                      chartData={aggregatedChartData}
-                      title=""
-                      bitcoinUnit={bitcoinUnit}
-                    />
+                {/* Right Section (Chart for non-Savings Goal modes) */}
+                <div className="md:col-span-2 space-y-4 h-full">
+                  <div className="h-full w-full rounded-md border border-border bg-background overflow-hidden flex flex-col">
+                    <div className="px-4 py-3 border-b border-border">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {bitcoinUnit === 'satoshi' ? 'Satoshi' : 'Bitcoin'} Accumulation Forecast
+                      </h3>
+                    </div>
+                    <div className="px-4 py-6 flex-1 min-h-[500px]">
+                      <InvestmentChart
+                        chartData={aggregatedChartData}
+                        title=""
+                        bitcoinUnit={bitcoinUnit}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
+          </div>
         </Tabs>
 
         {/* Full Width Table Section (for non-Savings Goal modes) */}
@@ -321,19 +327,17 @@ export function InvestmentCalculator() {
                             className={`border-b border-border ${originalIndex % 2 === 0 ? 'bg-muted/5' : 'bg-transparent'} hover:bg-muted/10`}>
                             <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{point.date}</td>
                             <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{bitcoinUnit === 'satoshi' ? formatNumber(point.periodicSats) : formatBTC(point.periodicSats / 100000000)}</td>
-                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.usdValueThisPeriod)}</td> 
+                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.usdValueThisPeriod ?? 0)}</td>
                             <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{bitcoinUnit === 'satoshi' ? formatNumber(point.accumulatedSats) : formatBTC(point.accumulatedSats / 100000000)}</td>
                             <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(totalInvested)}</td>
-                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.estimatedBtcPrice)}</td>
-                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.cumulativeUsdValue)}</td>
+                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.estimatedBtcPrice ?? 0)}</td>
+                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.cumulativeUsdValue ?? 0)}</td>
                           </tr>
                         );
                       })
                     ) : (
                       <tr>
-                        <td colSpan={7} className="text-center py-4 text-muted-foreground dark:text-gray-500">
-                          Enter details above to see accumulation forecast.
-                        </td>
+                        <td colSpan={7} className="text-center py-4">No data available</td>
                       </tr>
                     )}
                   </tbody>
@@ -345,4 +349,4 @@ export function InvestmentCalculator() {
       </div>
     </div>
   );
-} 
+}

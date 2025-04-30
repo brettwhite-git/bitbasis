@@ -331,11 +331,11 @@ export function SavingsGoalCalculator() {
   };
 
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-8"> 
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4"> 
 
       {/* === Section A: Saved Goal Tracker (Conditional) === */}
       {activeGoal && (
-        <div className="p-6 bg-black rounded-lg border border-border relative"> 
+        <div className="p-6 bg-black rounded-lg border border-primary relative">
             {/* Delete Button - Absolute positioned - Use Trash Icon */}
             <Button 
                 variant="ghost" 
@@ -411,7 +411,7 @@ export function SavingsGoalCalculator() {
                 </div>
                 
                 {/* Right Container: KPIs */}
-                <div className="md:w-7/12 bg-muted/20 rounded-lg p-4 flex items-center">
+                <div className="md:w-8/12 bg-muted/20 rounded-lg p-4 flex items-center">
                     <div className="grid grid-cols-3 w-full">
                         {/* KPI: Projected Value */}
                         <div className="text-center">
@@ -440,8 +440,8 @@ export function SavingsGoalCalculator() {
       )}
 
       {/* === Section B: Interactive Calculator & Goal Setter === */}
-      <div className="pt-6 border-t border-border">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div className="pt-4 border-t border-border">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
            {/* Left Column: Inputs - Wrapped in a styled container */}
            <div className="md:col-span-2 space-y-4 p-6 rounded-lg border bg-muted/20">
              {/* Put Input Title and Clear Button in a flex container */}
@@ -638,11 +638,11 @@ export function SavingsGoalCalculator() {
           </div>
 
           {/* Right Column: Dynamic Outputs & Chart - Wrapped in a styled container */}
-          <div className="md:col-span-3 space-y-2 p-6 rounded-lg border bg-muted/20">
+          <div className="md:col-span-3 space-y-2 p-4 rounded-lg border bg-muted/20">
              <h3 className="text-lg font-medium mb-4">Projection Results</h3>
              
              {/* Dynamic Output KPIs - Refactored into a single container */}
-             <div className="p-8 rounded-lg border border-border/50 bg-card grid grid-cols-3 gap-4">
+             <div className="p-6 rounded-lg border border-border/50 bg-card grid grid-cols-3 gap-4">
                  {/* Est. Time to 0.1 BTC */}
                  <div className="text-center flex flex-col items-center justify-center">
                      <Label className="text-sm text-muted-foreground">Est. Time to 0.1 BTC</Label>

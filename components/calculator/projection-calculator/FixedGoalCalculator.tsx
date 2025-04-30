@@ -41,16 +41,16 @@ export function FixedGoalCalculator({
 }: FixedGoalCalculatorProps) {
   return (
     <div className="md:col-span-1">
-      <div className="h-full p-4 rounded-md border border-border bg-muted/30 space-y-4 flex flex-col">
+      <div className="h-full p-6 rounded-md border border-border bg-muted/30 space-y-8 flex flex-col">
         {/* Bitcoin Unit */}
-        <div className="space-y-2">
-          <Label>Bitcoin Unit</Label>
-          <RadioGroup value={bitcoinUnit} onValueChange={(value) => setBitcoinUnit(value as BitcoinUnit)} className="grid grid-cols-2 gap-2">
+        <div className="space-y-3">
+          <Label className="text-base">Bitcoin Unit</Label>
+          <RadioGroup value={bitcoinUnit} onValueChange={(value) => setBitcoinUnit(value as BitcoinUnit)} className="grid grid-cols-2 gap-3">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="bitcoin" id="fg-bitcoin" className="peer sr-only" />
               <Label
                 htmlFor="fg-bitcoin"
-                className="flex-1 cursor-pointer rounded-md border-2 border-muted p-3 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange"
+                className="flex-1 cursor-pointer rounded-md border-2 border-muted p-4 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange"
               >
                 Bitcoin
               </Label>
@@ -59,7 +59,7 @@ export function FixedGoalCalculator({
               <RadioGroupItem value="satoshi" id="fg-satoshi" className="peer sr-only" />
               <Label
                 htmlFor="fg-satoshi"
-                className="flex-1 cursor-pointer rounded-md border-2 border-muted p-3 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange"
+                className="flex-1 cursor-pointer rounded-md border-2 border-muted p-4 hover:bg-muted peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange"
               >
                 Satoshi
               </Label>
@@ -68,10 +68,10 @@ export function FixedGoalCalculator({
         </div>
 
         {/* Fiat Currency */}
-        <div className="space-y-2">
-          <Label>Fiat Currency</Label>
+        <div className="space-y-3">
+          <Label className="text-base">Fiat Currency</Label>
           <Select defaultValue="USD">
-            <SelectTrigger className="bg-background border-input">
+            <SelectTrigger className="bg-background border-input p-6">
               <SelectValue placeholder="Select currency" />
             </SelectTrigger>
             <SelectContent>
@@ -81,9 +81,9 @@ export function FixedGoalCalculator({
         </div>
 
         {/* Buying Frequency */}
-        <div className="space-y-2">
-          <Label>Buying Frequency</Label>
-          <RadioGroup value={frequency} onValueChange={setFrequency} className="grid grid-cols-4 gap-2">
+        <div className="space-y-3">
+          <Label className="text-base">Buying Frequency</Label>
+          <RadioGroup value={frequency} onValueChange={setFrequency} className="grid grid-cols-4 gap-3">
             {["daily", "weekly", "monthly", "yearly"].map((period) => (
               <div key={`fg-${period}`} className="flex items-center space-x-2">
                 <RadioGroupItem value={period} id={`fg-${period}`} className="peer sr-only" />
@@ -99,8 +99,8 @@ export function FixedGoalCalculator({
         </div>
 
         {/* BTC Goal Input */}
-        <div className="space-y-2">
-          <Label>BTC Goal</Label>
+        <div className="space-y-3">
+          <Label className="text-base">BTC Goal</Label>
           <div className="grid grid-cols-2 gap-3">
             {bitcoinUnit === 'bitcoin' ? (
               <>
@@ -112,7 +112,7 @@ export function FixedGoalCalculator({
                     placeholder="0.1"
                     value={displayGoalValue} // Show formatted BTC
                     onChange={handleBtcGoalChange}
-                    className="pr-16 bg-muted/50 border-input"
+                    className="pr-16 bg-muted/50 border-input h-12"
                     inputMode="decimal"
                   />
                   <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
@@ -121,7 +121,7 @@ export function FixedGoalCalculator({
                 </div>
                 {/* Sats Display Field */}
                 <div className="relative">
-                  <div className="flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background h-10">
+                  <div className="flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background h-12">
                     <span className="text-sm mr-2 text-muted-foreground">=</span>
                     <span className="flex-1 text-sm font-medium">{btcToSats(satsGoal)}</span>
                     <span className="ml-1 text-sm text-muted-foreground">sats</span>
@@ -138,7 +138,7 @@ export function FixedGoalCalculator({
                     placeholder="10,000,000"
                     value={displayGoalValue} // Show formatted Sats
                     onChange={handleSatsInputChange}
-                    className="pr-16 bg-muted/50 border-input"
+                    className="pr-16 bg-muted/50 border-input h-12"
                     inputMode="numeric" // Use numeric for sats
                   />
                   <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
@@ -147,7 +147,7 @@ export function FixedGoalCalculator({
                 </div>
                 {/* BTC Display Field */}
                 <div className="relative">
-                  <div className="flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background h-10">
+                  <div className="flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background h-12">
                     <span className="text-sm mr-2 text-muted-foreground">=</span>
                     <span className="flex-1 text-sm font-medium">{formatBTC(satsGoal)}</span>
                     <span className="ml-1 text-sm text-muted-foreground">BTC</span>
@@ -159,9 +159,12 @@ export function FixedGoalCalculator({
         </div>
 
         {/* Goal Date Slider */}
-        <div className="space-y-2">
-          <Label>Goal Date</Label>
-          <div className="space-y-4">
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <Label className="text-base">Goal Date</Label>
+            <span className="font-medium dark:text-gray-100 text-base">{getDurationDetails(goalDuration).label}</span>
+          </div>
+          <div className="space-y-3 mt-2">
             <div className="relative pt-5">
               <div className="absolute top-0 left-0 right-0 flex justify-between text-xs text-muted-foreground px-1">
                 <span>1M</span>
@@ -192,61 +195,30 @@ export function FixedGoalCalculator({
                     index === 4 ? '5_year' : '10_year';
                   setGoalDuration(newDuration);
                 }}
-                className="w-full cursor-pointer h-2 rounded-lg appearance-none bg-muted dark:bg-gray-700"
+                className="w-full cursor-pointer h-3 rounded-lg appearance-none bg-primary/20 dark:bg-primary/10"
               />
-            </div>
-            <div className="text-center font-medium dark:text-gray-100">
-              {getDurationDetails(goalDuration).label}
             </div>
           </div>
         </div>
 
-        {/* Future Price Estimate Slider */}
-        <div className="space-y-2">
-          <Label className="dark:text-gray-300">Future Price Estimate</Label>
-          <div className="space-y-4">
-            <div className="relative pt-5">
-              <div className="absolute top-0 left-0 right-0 flex justify-between text-xs text-muted-foreground dark:text-gray-400 px-1">
-                <span>48%</span>
-                <span>85%</span>
-                <span>15%</span>
-                <span>72%</span>
-                <span>65%</span>
-                <span>74%</span>
-                <span>84%</span>
-                <span>75%</span>
-              </div>
-              <Slider
-                min={0}
-                max={7}
-                step={1}
-                value={[
-                  priceGrowth === '48' ? 0 :
-                  priceGrowth === '85' ? 1 :
-                  priceGrowth === '15' ? 2 :
-                  priceGrowth === '72' ? 3 :
-                  priceGrowth === '65' ? 4 :
-                  priceGrowth === '74' ? 5 :
-                  priceGrowth === '84' ? 6 : 7
-                ]}
-                onValueChange={(value) => {
-                  const index = value[0];
-                  setPriceGrowth(
-                    index === 0 ? '48' :
-                    index === 1 ? '85' :
-                    index === 2 ? '15' :
-                    index === 3 ? '72' :
-                    index === 4 ? '65' :
-                    index === 5 ? '74' :
-                    index === 6 ? '84' : '75'
-                  );
-                }}
-                className="w-full cursor-pointer h-2 rounded-lg appearance-none bg-muted dark:bg-gray-700"
-              />
-            </div>
-            <div className="text-center font-medium dark:text-gray-100">
-              CAGR: {priceGrowth}%
-            </div>
+        {/* Compound Annual Growth Rate (CAGR) Slider */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="cagrSlider" className="dark:text-gray-300 text-base">Compound Annual Growth Rate (CAGR)</Label>
+            <span className="font-medium dark:text-gray-100 text-base">{priceGrowth}%</span>
+          </div>
+          <div className="space-y-3 mt-2">
+            <Slider
+              id="cagrSlider"
+              min={0}
+              max={100} // Set max to 100%
+              step={1}
+              value={[parseFloat(priceGrowth)]} // Use the numeric value
+              onValueChange={(value) => {
+                setPriceGrowth(value[0]?.toString() || '30'); // Add null check and fallback
+              }}
+              className="w-full cursor-pointer h-3 rounded-lg appearance-none bg-primary/20 dark:bg-primary/10"
+            />
           </div>
         </div>
       </div>
