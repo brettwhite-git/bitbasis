@@ -151,6 +151,8 @@ export interface Transaction {
   price_usd: number
   total_usd: number
   fee_usd: number
+  network_fee_btc?: number | null
+  txid?: string | null
   created_at?: string
   updated_at?: string
 }
@@ -304,7 +306,9 @@ export async function getTransactions() {
       usd_value: transfer.amount_fiat,
       fee_usd: transfer.fee_amount_btc ? transfer.fee_amount_btc * (transfer.price || 0) : null,
       price_at_tx: transfer.price,
-      exchange: null
+      exchange: null,
+      network_fee_btc: transfer.fee_amount_btc,
+      txid: transfer.hash
     }))
 
     // Combine and sort by date descending

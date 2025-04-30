@@ -327,10 +327,12 @@ export function ImportPreview({
   }
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
+    return new Date(date).toLocaleString(undefined, {
       year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     })
   }
 
@@ -504,7 +506,7 @@ export function ImportPreview({
                 <TableBody>
                   {unifiedTransactions.slice(0, 10).map((transaction, i) => (
                     <TableRow key={i}>
-                      <TableCell className="text-center">{formatDate(transaction.date)}</TableCell>
+                      <TableCell className="text-center px-4">{formatDate(transaction.date)}</TableCell>
                       <TableCell className="text-center">
                         <div className="flex justify-center">
                           <Badge

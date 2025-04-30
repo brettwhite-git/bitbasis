@@ -8,19 +8,25 @@ import { getTransactions } from "@/lib/supabase"
 import { formatCurrency, formatBTC } from "@/lib/utils"
 import type { Database } from "@/types/supabase"
 
-// Use the same interface as TransactionsTable
+// Update the interface to match what getTransactions returns
 interface UnifiedTransaction {
   id: string
   date: string
-  type: 'Buy' | 'Sell' | 'Deposit' | 'Withdrawal'
+  type: 'Buy' | 'Sell' | 'Deposit' | 'Withdrawal' | 'buy' | 'sell' | 'deposit' | 'withdrawal'
   asset: string
   btc_amount: number | null
   usd_value: number | null
   fee_usd: number | null
   price_at_tx: number | null
   exchange: string | null
-  network_fee_btc: number | null
-  txid: string | null
+  network_fee_btc?: number | null
+  txid?: string | null
+}
+
+// Add type for getTransactions response
+interface TransactionsResponse {
+  data: UnifiedTransaction[] | null
+  error: Error | null
 }
 
 export function RecentTransactions() {
@@ -37,15 +43,23 @@ export function RecentTransactions() {
         setError(null)
 
         // Use the shared getTransactions function
-        const result = await getTransactions()
+        const result = await getTransactions() as TransactionsResponse
         
         if (result.error) {
-          // Ensure error is a string for the state
-          throw new Error(typeof result.error === 'string' ? result.error : result.error.message || 'Failed to fetch transactions')
+          throw result.error
         }
 
+        // Make the transaction objects match our interface 
+        // by ensuring all required properties exist
+        const unifiedData = (result.data || []).map(tx => ({
+          ...tx,
+          // Set optional properties if they don't exist
+          network_fee_btc: 'network_fee_btc' in tx ? tx.network_fee_btc : null,
+          txid: 'txid' in tx ? tx.txid : null,
+        })) as UnifiedTransaction[]
+
         // Take only the 5 most recent transactions
-        setTransactions(result.data.slice(0, 5))
+        setTransactions(unifiedData.slice(0, 5))
       } catch (err) {
         console.error('Failed to load recent transactions:', err)
         setError(err instanceof Error ? err.message : 'Failed to load recent transactions')
@@ -104,8 +118,14 @@ export function RecentTransactions() {
             return (
               <TableRow key={transaction.id}>
                 {/* Mirror cell rendering from TransactionsTable */}
-                <TableCell className="text-center">
-                  {new Date(transaction.date).toLocaleDateString()}
+                <TableCell className="text-center px-4">
+                  {new Date(transaction.date).toLocaleString(undefined, {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge
@@ -155,13 +175,13 @@ export function RecentTransactions() {
                   {formatBTC(transaction.btc_amount, false)}
                 </TableCell>
                 <TableCell className="hidden md:table-cell text-center">
-                  {formatCurrency(transaction.price_at_tx)}
+                  {transaction.price_at_tx !== null ? formatCurrency(transaction.price_at_tx) : '-'}
                 </TableCell>
                 <TableCell className="text-center">
-                  {formatCurrency(transaction.usd_value)}
+                  {transaction.usd_value !== null ? formatCurrency(transaction.usd_value) : '-'}
                 </TableCell>
                 <TableCell className="hidden md:table-cell text-center">
-                  {formatCurrency(transaction.fee_usd)}
+                  {transaction.fee_usd !== null ? formatCurrency(transaction.fee_usd) : '-'}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell text-center">
                   {transaction.exchange 

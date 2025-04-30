@@ -11,6 +11,8 @@ interface PerformanceData {
     month: { percent: number | null; dollar: number | null }
     ytd: { percent: number | null; dollar: number | null }
     threeMonth: { percent: number | null; dollar: number | null }
+    twoYear: { percent: number | null; dollar: number | null }
+    fourYear: { percent: number | null; dollar: number | null }
     year: { percent: number | null; dollar: number | null }
     threeYear: { percent: number | null; dollar: number | null }
     fiveYear: { percent: number | null; dollar: number | null }

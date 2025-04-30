@@ -222,14 +222,11 @@ function ChartFilters() {
 
 // --- REVISED Chart Component --- 
 function Chart() {
-  const context = useContext(ChartContext);
-  if (!context) throw new Error("Chart must be used within a ChartProvider");
-  const { period } = context;
-  const { supabase } = useSupabase();
-  
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { supabase } = useSupabase()
+  const { period } = useContext(ChartContext)
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     if (!supabase) {
@@ -238,8 +235,8 @@ function Chart() {
     }
     
     async function fetchData() {
-      setIsLoading(true);
-      setError(null);
+      setLoading(true);
+      setError("");
       console.log('PerformanceChart: Fetching orders...');
       
       try {
@@ -270,12 +267,12 @@ function Chart() {
         setError(err.message || "Failed to load chart data");
         setMonthlyData([]);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     }
 
     fetchData();
-  }, [supabase]);
+  }, [period, supabase]);
 
   // Filter data based on selected period
   const filteredData = (() => {
@@ -335,10 +332,10 @@ function Chart() {
   const windowSize = Math.min(6, Math.floor(portfolioValues.filter(v => v !== null).length / 2) || 1); // Ensure windowSize >= 1
   const longTermMovingAverage = calculateMovingAverage(portfolioValues, windowSize);
 
-  // Define chart options INSIDE the component to access filteredData
-  const dynamicOptions: ChartOptions<"line"> = {
+  // Calculate dynamic chart options
+  const dynamicOptions: ChartOptions<'line'> = {
     responsive: true,
-    maintainAspectRatio: false,
+    maintainAspectRatio: false, // Allow the chart to fill the container
     interaction: {
       mode: "index",
       intersect: false,
@@ -515,34 +512,50 @@ function Chart() {
     ],
   };
 
-  if (isLoading) {
-    return <div className="h-[500px] w-full">Loading chart data...</div>;
-  }
-
-  if (error) {
-    return <div className="h-[500px] w-full text-red-500">Error: {error}</div>;
-  }
-
-  if (filteredData.length === 0) {
-    return <div className="h-[500px] w-full text-gray-500">No data available for the selected period.</div>;
-  }
-
   return (
-    <div className="h-[450px] w-full">
-      <Line options={dynamicOptions} data={chartData} />
+    <div className="w-full h-full flex flex-col">
+      <div className="flex-1 relative min-h-[400px]">
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="animate-spin h-8 w-8 border-4 border-bitcoin-orange border-opacity-50 rounded-full border-t-transparent"></div>
+          </div>
+        ) : error ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-error text-center">{error}</p>
+          </div>
+        ) : (
+          <Line data={chartData} options={dynamicOptions} />
+        )}
+      </div>
     </div>
   );
 }
 // --- END REVISED Chart Component ---
 
 export function PerformanceChart() {
-  return <Chart />;
+  return (
+    <Chart />
+  )
 }
 
 export function PerformanceFilters() {
-  return <ChartFilters />;
+  return (
+    <ChartFilters />
+  )
 }
 
-export function PerformanceContainer({ children }: { children: React.ReactNode }) {
-  return <ChartProvider>{children}</ChartProvider>;
+export function PerformanceContainer({ 
+  children, 
+  className = "" 
+}: { 
+  children: React.ReactNode, 
+  className?: string 
+}) {
+  return (
+    <ChartProvider>
+      <div className={`w-full ${className}`}>
+        {children}
+      </div>
+    </ChartProvider>
+  )
 } 

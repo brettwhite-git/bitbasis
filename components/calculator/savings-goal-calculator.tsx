@@ -591,9 +591,6 @@ export function SavingsGoalCalculator() {
 
       {/* === Section B: Interactive Calculator & Goal Setter === */}
       <div className="pt-6 border-t border-border">
-        <h2 className="text-xl font-semibold mb-4">
-            {activeGoal ? "Update Your Projection / Goal" : "Calculate Savings Projection"}
-        </h2>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
            {/* Left Column: Inputs - Wrapped in a styled container */}
            <div className="md:col-span-2 space-y-4 p-6 rounded-lg border bg-muted/20">

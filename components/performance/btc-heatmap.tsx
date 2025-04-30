@@ -147,7 +147,7 @@ export function BtcHeatmap() {
             {
               from: 0,
               to: 0,
-              color: '#2D3748', // Muted color
+              color: '#121212', // Changed from #2D3748 to a near-black color
               name: 'No Activity'
             }
           ]

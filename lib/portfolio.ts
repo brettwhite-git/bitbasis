@@ -91,6 +91,12 @@ export interface PerformanceMetrics {
   highestBuyPrice?: number
 }
 
+interface DCAPerformanceResult {
+  dcaReturn: number
+  lumpSumReturn: number
+  outperformance: number
+}
+
 // Remove standalone client initialization
 // Initialize Supabase client
 // const supabase = createClient(
@@ -1147,5 +1153,51 @@ export async function getPerformanceMetrics(
       lowestBuyPrice: 0,
       highestBuyPrice: 0
     }
+  }
+}
+
+export function calculateDCAPerformance(orders: any[], currentPrice: number): DCAPerformanceResult {
+  // Filter to get only buy orders from the last 6 months
+  const sixMonthsAgo = new Date()
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+  
+  const recentBuyOrders = orders.filter(order => 
+    order.type === 'buy' && 
+    new Date(order.date) >= sixMonthsAgo
+  )
+
+  if (recentBuyOrders.length === 0) {
+    return {
+      dcaReturn: 0,
+      lumpSumReturn: 0,
+      outperformance: 0
+    }
+  }
+
+  // Calculate DCA performance
+  let totalInvested = 0
+  let totalBtcBought = 0
+  
+  recentBuyOrders.forEach(order => {
+    if (order.buy_fiat_amount && order.received_btc_amount) {
+      totalInvested += order.buy_fiat_amount
+      totalBtcBought += order.received_btc_amount
+    }
+  })
+
+  // Current value of DCA strategy
+  const currentValue = totalBtcBought * currentPrice
+  const dcaReturn = totalInvested > 0 ? ((currentValue - totalInvested) / totalInvested) * 100 : 0
+
+  // Calculate hypothetical lump sum performance
+  const firstOrder = recentBuyOrders[0]
+  const lumpSumBtc = totalInvested / firstOrder.price
+  const lumpSumValue = lumpSumBtc * currentPrice
+  const lumpSumReturn = totalInvested > 0 ? ((lumpSumValue - totalInvested) / totalInvested) * 100 : 0
+
+  return {
+    dcaReturn,
+    lumpSumReturn,
+    outperformance: dcaReturn - lumpSumReturn
   }
 } 

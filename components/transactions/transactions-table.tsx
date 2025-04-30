@@ -331,7 +331,13 @@ export function TransactionsTable({
 
   const prepareTransactionForCSV = (transaction: UnifiedTransaction) => {
     return {
-      Date: new Date(transaction.date).toLocaleDateString(),
+      Date: new Date(transaction.date).toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
       Type: transaction.type,
       Asset: transaction.asset,
       "Amount (BTC)": formatBTC(transaction.btc_amount, false), 
@@ -742,8 +748,14 @@ export function TransactionsTable({
                     className="border-muted-foreground/50 data-[state=checked]:border-bitcoin-orange data-[state=checked]:bg-bitcoin-orange"
                   />
                 </TableCell>
-                <TableCell className="text-center">
-                  {new Date(transaction.date).toLocaleDateString()}
+                <TableCell className="text-center px-8">
+                  {new Date(transaction.date).toLocaleString(undefined, {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge

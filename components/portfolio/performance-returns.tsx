@@ -14,6 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui"
 
 interface PerformanceData {
   cumulative: {
@@ -196,8 +197,13 @@ export function PerformanceReturns({ data }: { data: PerformanceData }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Performance</CardTitle>
+      <CardHeader className="pb-0">
+        <Tabs defaultValue="performance" className="w-full">
+          <TabsList className="w-full justify-start border-b border-border">
+            <TabsTrigger value="performance">Performance</TabsTrigger>
+            <TabsTrigger value="comparison">Comparison Chart</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Cost Basis Method Comparison Table */}
