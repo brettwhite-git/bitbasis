@@ -31,25 +31,55 @@ export default async function PerformancePage() {
   // Combine metrics with proper type safety
   const performance = {
     ...performanceMetrics,
+    totalBTC: extendedMetrics.totalBtc ?? 0,
     shortTermHoldings: extendedMetrics.shortTermHoldings ?? 0,
     longTermHoldings: extendedMetrics.longTermHoldings ?? 0
   }
   
   // Calculate drawdown from ATH (current) with null checks
-  const calculateDrawdownFromATH = () => {
+  const calculateDrawdownFromATHRatio = () => {
     const athPrice = performance?.allTimeHigh?.price ?? 0
     const currentPrice = performance?.currentPrice ?? 0
     
-    if (athPrice > 0 && currentPrice > 0) {
-      // Calculate percentage drop from market ATH to current price
-      const drawdown = ((athPrice - currentPrice) / athPrice) * 100
-      return Math.max(0, drawdown)
+    if (athPrice > 0) { // Check denominator
+      // Return the raw ratio for amount calculation
+      return (athPrice - currentPrice) / athPrice
     }
     return 0
   }
 
-  const drawdownFromATH = calculateDrawdownFromATH()
-  const maxDrawdown = performance?.maxDrawdown?.percent ?? 0
+  const drawdownFromATHRatio = calculateDrawdownFromATHRatio()
+  const drawdownFromATHPercent = Math.max(0, drawdownFromATHRatio * 100) // Percentage, clamped at 0
+
+  // Calculate Drawdown from ATH Amount
+  const calculateDrawdownFromATHAmount = () => {
+    const athPrice = performance?.allTimeHigh?.price ?? 0;
+    const currentPrice = performance?.currentPrice ?? 0;
+    const totalBTC = performance?.totalBTC ?? 0; // Assuming totalBTC is in performance object
+  
+    if (athPrice > 0 && totalBTC > 0) {
+        const amount = (athPrice - currentPrice) * totalBTC;
+        return Math.max(0, amount); // Loss amount cannot be negative
+    }
+    return 0;
+  };
+  const drawdownFromATHAmount = calculateDrawdownFromATHAmount();
+
+  const maxDrawdownPercent = performance?.maxDrawdown?.percent ?? 0
+
+  // Calculate Max Drawdown Amount (Potential loss from ATH based on Max Drawdown %)
+  const calculateMaxDrawdownAmount = () => {
+      const athPrice = performance?.allTimeHigh?.price ?? 0;
+      const totalBTC = performance?.totalBTC ?? 0; // Assuming totalBTC is in performance object
+      const maxDrawdownRatio = maxDrawdownPercent / 100;
+
+      if (athPrice > 0 && totalBTC > 0 && maxDrawdownRatio > 0) {
+          const amount = athPrice * maxDrawdownRatio * totalBTC;
+          return amount; 
+      }
+      return 0;
+  }
+  const maxDrawdownAmount = calculateMaxDrawdownAmount();
 
   // Calculate days since all-time high with null checks
   const calculateDaysSinceATH = () => {
@@ -160,14 +190,15 @@ export default async function PerformancePage() {
                     <div className="flex flex-col">
                       <div className="flex justify-between items-center">
                         <div className="text-sm font-medium text-muted-foreground">Drawdown from ATH</div>
-                        <div className="text-error">
-                          <TrendingDownIcon className="h-4 w-4" />
+                        <div className="px-4 py-2 bg-error/20 rounded-full text-error text-xs font-medium flex items-center">
+                           <TrendingDownIcon className="h-3 w-3 mr-1" />
+                           {formatPercent(drawdownFromATHPercent)}
                         </div>
                       </div>
                       <div>
-                        <div className="text-2xl font-bold text-error">{formatPercent(drawdownFromATH)}</div>
+                        <div className="text-2xl font-bold text-error">{formatCurrency(drawdownFromATHAmount)}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          From Market ATH
+                          From Portfolio ATH
                         </div>
                       </div>
                     </div>
@@ -175,12 +206,16 @@ export default async function PerformancePage() {
                     <div className="flex flex-col">
                       <div className="flex justify-between items-center">
                         <div className="text-sm font-medium text-muted-foreground">Max Drawdown</div>
-                        <div className="text-error">
-                          <TrendingDownIcon className="h-4 w-4" />
+                         <div className="px-4 py-2 bg-error/20 rounded-full text-error text-xs font-medium flex items-center">
+                           <TrendingDownIcon className="h-3 w-3 mr-1" />
+                           {formatPercent(maxDrawdownPercent)}
                         </div>
                       </div>
                       <div>
-                        <div className="text-2xl font-bold text-error">{formatPercent(maxDrawdown)}</div>
+                        <div className="text-2xl font-bold text-error">{formatCurrency(maxDrawdownAmount)}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Portfolio Peak to Trough</div>
+                         {/* Optional: Add a sub-label if needed, e.g., explaining the amount calculation */}
+                         {/* <div className="text-xs text-muted-foreground mt-1">Historical Peak Loss</div> */}
                       </div>
                     </div>
                   </div>
