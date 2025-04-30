@@ -10,18 +10,19 @@ interface SavingsGoalInput {
 }
 
 // Define the structure for the hook's return value
-interface SavingsGoalProgress {
+export interface SavingsGoalData {
   btcProgressPercent: number;
   accumulatedBtcSinceStart: number;
   isLoading: boolean;
   error: string | null;
 }
 
-export function useSavingsGoalProgress(goal: SavingsGoalInput | null): SavingsGoalProgress {
+// Renamed hook: useSavingsGoalData
+export function useSavingsGoalData(goal: SavingsGoalInput | null): SavingsGoalData {
   const supabase = createClientComponentClient<Database>();
   const { user } = useAuth(); // Get user from custom auth provider
 
-  const [progressData, setProgressData] = useState<SavingsGoalProgress>({
+  const [progressData, setProgressData] = useState<SavingsGoalData>({
     btcProgressPercent: 0,
     accumulatedBtcSinceStart: 0,
     isLoading: true, // Start in loading state
@@ -46,7 +47,7 @@ export function useSavingsGoalProgress(goal: SavingsGoalInput | null): SavingsGo
     }
 
     // --- Log hook inputs ---
-    console.log('useSavingsGoalProgress running with goal:', goal, 'User ID:', user?.id);
+    console.log('useSavingsGoalData running with goal:', goal, 'User ID:', user?.id);
 
     // Set loading state
     setProgressData(prev => ({ ...prev, isLoading: true, error: null }));
@@ -102,7 +103,7 @@ export function useSavingsGoalProgress(goal: SavingsGoalInput | null): SavingsGo
         });
 
       } catch (err) {
-        console.error('Error in useSavingsGoalProgress:', err);
+        console.error('Error in useSavingsGoalData:', err);
         setProgressData({
           btcProgressPercent: 0,
           accumulatedBtcSinceStart: 0,

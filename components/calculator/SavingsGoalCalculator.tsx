@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
-import { ProjectionChart } from "./projection-chart";
-import { useSavingsGoalProgress } from '@/hooks/useSavingsGoalProgress';
+import { ProjectionChart } from "./SavingsGoalProjectionChart";
+import { useSavingsGoalData } from '@/hooks/useSavingsGoalData';
 import { calculateTimeRemaining } from '@/lib/utils';
 import { CheckCircle, Circle, LoaderCircle, Trash2 } from "lucide-react";
 import { useBitcoinPrice } from '@/hooks/useBitcoinPrice';
@@ -55,7 +55,7 @@ export function SavingsGoalCalculator() {
   }, [activeGoal]);
 
   // --- Call the new hook for progress calculation ---
-  const goalProgress = useSavingsGoalProgress(
+  const goalProgress = useSavingsGoalData(
     activeGoal
         ? {
               startDate: activeGoal.startDate,
@@ -415,13 +415,13 @@ export function SavingsGoalCalculator() {
                     <div className="grid grid-cols-3 w-full">
                         {/* KPI: Projected Value */}
                         <div className="text-center">
-                            <div className="text-xs text-muted-foreground mb-1">Projected Value</div>
+                            <div className="text-lg text-muted-foreground mb-1">Projected Value</div>
                             <div className="text-xl font-semibold">${formatCurrency(activeGoal.projectedValueAtTarget ?? 0)}</div>
                         </div>
                         
                         {/* KPI: Contribution */}
                         <div className="text-center">
-                            <div className="text-xs text-muted-foreground mb-1">
+                            <div className="text-lg text-muted-foreground mb-1">
                                 {activeGoal.savedProjection.contributionFrequency.charAt(0).toUpperCase() + 
                                 activeGoal.savedProjection.contributionFrequency.slice(1)} Contribution
                             </div>
@@ -430,8 +430,8 @@ export function SavingsGoalCalculator() {
                         
                         {/* KPI: ROI */}
                         <div className="text-center">
-                            <div className="text-xs text-muted-foreground mb-1">ROI</div>
-                            <div className="text-xl font-semibold">{(activeGoal.roiAtTarget ?? 0).toFixed(1)}%</div>
+                            <div className="text-lg text-muted-foreground mb-1">ROI</div>
+                            <div className="text-lg font-semibold">{(activeGoal.roiAtTarget ?? 0).toFixed(1)}%</div>
                         </div>
                     </div>
                 </div>
@@ -638,23 +638,24 @@ export function SavingsGoalCalculator() {
           </div>
 
           {/* Right Column: Dynamic Outputs & Chart - Wrapped in a styled container */}
-          <div className="md:col-span-3 space-y-4 p-6 rounded-lg border bg-muted/20">
+          <div className="md:col-span-3 space-y-2 p-6 rounded-lg border bg-muted/20">
              <h3 className="text-lg font-medium mb-4">Projection Results</h3>
              
-             {/* Dynamic Output KPIs */}
-             <div className="grid grid-cols-3 gap-4 mb-6">
-                 <div className="p-4 rounded-lg border border-border/50 bg-card text-center flex flex-col items-center justify-center">
-                     <Label className="text-xs text-muted-foreground">Est. Time to 0.1 BTC</Label>
+             {/* Dynamic Output KPIs - Refactored into a single container */}
+             <div className="p-8 rounded-lg border border-border/50 bg-card grid grid-cols-3 gap-4">
+                 {/* Est. Time to 0.1 BTC */}
+                 <div className="text-center flex flex-col items-center justify-center">
+                     <Label className="text-sm text-muted-foreground">Est. Time to 0.1 BTC</Label>
                      <div className="mt-1">
                          {estimatedBtcTargetDate ? (
                              <>
-                                 <p className="text-lg font-medium mb-0">
+                                 <p className="text-lg font-medium mb-1">
                                      {estimatedBtcTargetDate.toLocaleDateString('en-US', { 
                                          month: 'short', 
                                          year: 'numeric' 
                                      })}
                                  </p>
-                                 <p className="text-xs text-muted-foreground">
+                                 <p className="text-sm text-muted-foreground">
                                      Target: ${targetUsdValue ? formatCurrency(targetUsdValue) : 'N/A'}
                                  </p>
                              </>
@@ -664,25 +665,27 @@ export function SavingsGoalCalculator() {
                      </div>
                  </div>
                  
-                 <div className="p-4 rounded-lg border border-border/50 bg-card text-center flex flex-col items-center justify-center">
-                     <Label className="text-xs text-muted-foreground">Projected Value</Label>
+                 {/* Projected Value */}
+                 <div className="text-center flex flex-col items-center justify-center">
+                     <Label className="text-sm text-muted-foreground">Projected Value</Label>
                      <div className="mt-1">
-                         <p className="text-lg font-medium mb-0">
+                         <p className="text-lg font-medium mb-1">
                              ${formatCurrency(projectedValueUSD)}
                          </p>
-                         <p className="text-xs text-muted-foreground">
+                         <p className="text-sm text-muted-foreground">
                              ${formatCurrency(projectedValueAdjustedUSD)} (inflation adj.)
                          </p>
                      </div>
                  </div>
                  
-                 <div className="p-4 rounded-lg border border-border/50 bg-card text-center flex flex-col items-center justify-center">
-                     <Label className="text-xs text-muted-foreground">Return on Investment</Label>
+                 {/* Return on Investment */}
+                 <div className="text-center flex flex-col items-center justify-center">
+                     <Label className="text-sm text-muted-foreground">Return on Investment</Label>
                      <div className="mt-1">
-                         <p className="text-lg font-medium mb-0">
+                         <p className="text-lg font-medium mb-1">
                              {roiPercent.toFixed(1)}%
                          </p>
-                         <p className="text-xs text-muted-foreground">
+                         <p className="text-sm text-muted-foreground">
                              Total invested: ${formatCurrency(totalPrincipal)}
                          </p>
                      </div>

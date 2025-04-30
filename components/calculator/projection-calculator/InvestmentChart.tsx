@@ -15,9 +15,9 @@ import {
   Chart,
 } from "chart.js"
 import { Chart as ReactChart } from "react-chartjs-2"
-import { COLORS } from "./utils/color-constants"
-import { ChartDataPoint } from "./types/calculator-types"
-import { formatBTC, formatCurrency, formatNumber } from "./utils/format-utils"
+import { COLORS } from "../utils/color-constants" // Adjusted import path
+import { ChartDataPoint } from "../types/calculator-types" // Adjusted import path
+import { formatBTC, formatCurrency, formatNumber } from "../utils/format-utils" // Adjusted import path
 
 // Register ChartJS components
 ChartJS.register(
@@ -31,7 +31,7 @@ ChartJS.register(
   Legend
 )
 
-export interface CalculatorChartProps {
+export interface InvestmentChartProps { // Renamed interface
   chartData?: ChartDataPoint[];
   title?: string;
   bitcoinUnit: 'bitcoin' | 'satoshi';
@@ -58,7 +58,7 @@ const mockData = {
   ],
 };
 
-export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorChartProps) {
+export function InvestmentChart({ chartData, title, bitcoinUnit }: InvestmentChartProps) { // Renamed function and props type
   // Define chartOptions INSIDE the component to access chartData prop
   const chartOptions = {
     responsive: true,
@@ -163,8 +163,8 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
               if (label.includes('Total Accumulated')) {
                 label += `${formatNumber(value)} sats (${formatBTC(btc)} BTC)`;
               } else if (label.includes('Sats Stacked')) {
-                label += bitcoinUnit === 'satoshi' 
-                  ? `${formatNumber(value)} sats` 
+                label += bitcoinUnit === 'satoshi'
+                  ? `${formatNumber(value)} sats`
                   : `${formatBTC(btc)} BTC`;
               } else {
                 label += formatNumber(value) + ' sats';
@@ -224,7 +224,7 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
         label: 'USD Value',
         data: chartData.map(point => point.cumulativeUsdValue || 0),
         backgroundColor: 'transparent',
-        borderColor: COLORS.success, 
+        borderColor: COLORS.success,
         borderWidth: 2,
         type: 'line' as const,
         yAxisID: 'y1',

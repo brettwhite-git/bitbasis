@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { BitcoinCalculator } from "@/components/calculator/bitcoin-calculator"
+import { InvestmentCalculator } from "@/components/calculator/projection-calculator/InvestmentCalculator"
 
 export const metadata: Metadata = {
   title: "Bitcoin Calculator | BitBasis",
@@ -12,7 +12,7 @@ export default function CalculatorPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Investment Calculator</h1>
       </div>
-      <BitcoinCalculator />
+      <InvestmentCalculator />
     </div>
   )
 } 

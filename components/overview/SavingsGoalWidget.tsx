@@ -8,7 +8,7 @@ import {
   CardTitle 
 } from "@/components/ui";
 import { Button } from "@/components/ui/button";
-import { useSavingsGoalProgress } from '@/hooks/useSavingsGoalProgress';
+import { useSavingsGoalData } from '@/hooks/useSavingsGoalData';
 import { calculateTimeRemaining } from '@/lib/utils';
 import { CheckCircle, LoaderCircle, ExternalLink } from "lucide-react";
 import Link from 'next/link';
@@ -40,7 +40,7 @@ export function SavingsGoalWidget({ className }: SavingsGoalWidgetProps) {
   const [activeGoal, setActiveGoal] = useState<SavedGoalData | null>(null);
   
   // Get progress data using the hook
-  const goalProgress = useSavingsGoalProgress(
+  const goalProgress = useSavingsGoalData(
     activeGoal
       ? {
           startDate: activeGoal.startDate,
