@@ -13,10 +13,11 @@ import {
   Legend,
   Filler,
   ChartOptions,
-  ChartData,
-  DatasetChartOptions
+  ChartData
 } from 'chart.js';
-import { COLORS } from './color-constants';
+import { COLORS } from './utils/color-constants';
+import { ProjectionPoint } from './types/calculator-types';
+import { formatCurrency } from './utils/format-utils';
 
 ChartJS.register(
   CategoryScale,
@@ -29,23 +30,10 @@ ChartJS.register(
   Filler
 );
 
-// Updated data point structure
-interface ProjectionPoint {
-    year: number;
-    nominalValue: number;
-    adjustedValue: number;
-}
-
 interface ProjectionChartProps {
   data: ProjectionPoint[];
   showInflationAdjusted: boolean; // Prop to control adjusted line visibility
 }
-
-// Helper to format currency for tooltips/axes
-const formatCurrency = (value: number | undefined | null): string => {
-  if (value === undefined || value === null || isNaN(value)) return '$0';
-  return value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-};
 
 export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChartProps) {
 
@@ -81,16 +69,16 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
     yAxisID: 'y', // Assign to the primary y-axis
   };
 
-  const chartData: ChartData<'line'> = {
+  const chartData = {
     labels: data.map(d => `${d.year}y`), // Shorter year labels like '0y', '1y'
     datasets: showInflationAdjusted ? [nominalDataset, adjustedDataset] : [nominalDataset], // Conditionally include adjusted dataset
   };
 
-  const chartOptions: ChartOptions<'line'> = {
+  const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { // Improve tooltip interaction
-        mode: 'index', 
+        mode: 'index' as const, 
         intersect: false,
     },
     scales: {
@@ -125,7 +113,7 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
     plugins: {
       legend: {
         display: true, // Show legend now
-        position: 'bottom', // Position legend at the bottom
+        position: 'bottom' as const, // Position legend at the bottom
         labels: {
             color: COLORS.foreground, // Use foreground color from theme
             usePointStyle: true, // Use point style (circle) instead of box
@@ -157,7 +145,7 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
 
   return (
       <div className="h-full w-full">
-        <Line options={chartOptions} data={chartData} />
+        <Line options={chartOptions as any} data={chartData as any} />
       </div>
   );
 } 

@@ -13,10 +13,11 @@ import {
   ChartData,
   ChartOptions,
   Chart,
-  ChartDataset
 } from "chart.js"
 import { Chart as ReactChart } from "react-chartjs-2"
-import { COLORS } from "./color-constants"
+import { COLORS } from "./utils/color-constants"
+import { ChartDataPoint } from "./types/calculator-types"
+import { formatBTC, formatCurrency, formatNumber } from "./utils/format-utils"
 
 // Register ChartJS components
 ChartJS.register(
@@ -30,20 +31,10 @@ ChartJS.register(
   Legend
 )
 
-// Define interfaces for chart data
-export interface ChartDataPoint {
-  date: string;
-  accumulatedSats: number;
-  periodicSats: number;
-  estimatedBtcPrice?: number; // Optional: Estimated BTC price for this period
-  usdValueThisPeriod?: number; // Optional: USD value exchanged this period
-  cumulativeUsdValue?: number; // Optional: Estimated cumulative USD value at this point
-}
-
 export interface CalculatorChartProps {
   chartData?: ChartDataPoint[];
   title?: string;
-  bitcoinUnit: 'bitcoin' | 'satoshi'; // Add the unit prop
+  bitcoinUnit: 'bitcoin' | 'satoshi';
 }
 
 // Mock data structure (used only if chartData is not provided)
@@ -65,31 +56,11 @@ const mockData = {
       stack: 'Stack 0',
     },
   ],
-}
-
-// Moved helper formats inside or make them importable if used elsewhere
-const formatNumber = (value: string | number, options?: Intl.NumberFormatOptions): string => {
-  if (value === '' || value === undefined || value === null) return '';
-  const num = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value;
-  if (isNaN(num)) return typeof value === 'string' ? value : '';
-  return num.toLocaleString('en-US', options);
-};
-
-const formatBTC = (btc: string | number): string => {
-  if (!btc) return '0';
-  const value = typeof btc === 'string' ? parseFloat(btc.replace(/,/g, '')) : btc;
-  if (isNaN(value)) return '0';
-  return value.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 });
-};
-
-const formatCurrency = (value: number | undefined | null): string => {
-  if (value === undefined || value === null || isNaN(value)) return '$0.00';
-  return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 };
 
 export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorChartProps) {
   // Define chartOptions INSIDE the component to access chartData prop
-  const chartOptions: ChartOptions<'bar'> = {
+  const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     layout: {
@@ -230,7 +201,7 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
     },
   };
 
-  const chartConfig: ChartData<'bar'> = chartData && chartData.length > 0 ? {
+  const chartConfig = chartData && chartData.length > 0 ? {
     labels: chartData.map(point => point.date),
     datasets: [
       {
@@ -252,22 +223,28 @@ export function CalculatorChart({ chartData, title, bitcoinUnit }: CalculatorCha
       {
         label: 'USD Value',
         data: chartData.map(point => point.cumulativeUsdValue || 0),
-        type: 'line' as const,
-        borderColor: COLORS.success,
-        borderWidth: 2,
         backgroundColor: 'transparent',
-        pointRadius: chartData.length > 30 ? 1.5 : 3,
-        pointHoverRadius: 5,
+        borderColor: COLORS.success, 
+        borderWidth: 2,
+        type: 'line' as const,
         yAxisID: 'y1',
+        pointRadius: 0,
         order: 1,
-      } as any,
+      }
     ],
   } : mockData;
 
   return (
-    <div className="relative h-[500px] w-full">
-      {title && <h3 className="text-lg font-medium mb-2">{title}</h3>}
-      <ReactChart type="bar" options={chartOptions} data={chartConfig} />
+    <div className="w-full h-[500px] overflow-hidden relative p-2">
+      {title && (
+        <div className="text-center text-base font-medium mb-2">{title}</div>
+      )}
+      <ReactChart
+        type="bar"
+        options={chartOptions}
+        data={chartConfig as any}
+        height={"100%"}
+      />
     </div>
   );
 } 

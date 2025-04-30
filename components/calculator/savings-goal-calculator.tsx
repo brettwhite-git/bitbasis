@@ -11,193 +11,41 @@ import { Slider } from "@/components/ui/slider";
 import { ProjectionChart } from "./projection-chart";
 import { useSavingsGoalProgress } from '@/hooks/useSavingsGoalProgress';
 import { calculateTimeRemaining } from '@/lib/utils';
-import { CheckCircle, Circle, LoaderCircle } from "lucide-react";
+import { CheckCircle, Circle, LoaderCircle, Trash2 } from "lucide-react";
+import { useBitcoinPrice } from '@/hooks/useBitcoinPrice';
+import { formatCurrency } from './utils/format-utils';
+import { calculateProjection } from './utils/calculation-utils';
+import { ProjectionPoint, CalculateProjectionParams, ProjectionResult, SavedGoalData } from './types/calculator-types';
 // import { Line } from 'react-chartjs-2'; // We'll add chart imports later
 // We'll need Chart.js core and scales too later
 
-// Define the structure for the saved goal data (based on our plan)
-interface SavedGoalData {
-  goalName: string;
-  startDate: string; // ISO string
-
-  // Input parameters at the time of saving
-  savedProjection: {
-    contributionAmountUSD: number;
-    contributionFrequency: string;
-    expectedGrowthPercent: number;
-    projectionPeriodYears: number; // Still save user's projection period for context/loading
-    targetBtcAmount: number; // Make non-optional for saved goal
-    currentBtcPriceUSD: number; // Make non-optional for saved goal
-    inflationRatePercent: number; // Make non-optional for saved goal
-  };
-
-  // Calculated outcomes based on reaching the BTC target
-  estimatedTargetDateISO: string | null; // ISO string, or null if unreachable
-  projectedValueAtTarget: number | null; // Value when target reached (null if unreachable)
-  principalAtTarget: number | null; // Principal when target reached (null if unreachable)
-  roiAtTarget: number | null; // ROI when target reached (null if unreachable)
-}
-
-// Define the structure for chart data points including inflation
-interface ProjectionPoint {
-    year: number;
-    nominalValue: number;
-    adjustedValue: number;
-}
-
-// --- Reusable Calculation Function --- 
-
-interface CalculateProjectionParams {
-  contributionAmountUSD: number;
-  contributionFrequency: string;
-  expectedGrowthPercent: number;
-  projectionPeriodYears: number; // For chart length
-  inflationRatePercent: number;
-  targetBtcAmount: number;
-  currentBtcPriceUSD: number;
-  startDate?: Date; // Optional start date (defaults to now)
-}
-
-interface ProjectionResult {
-  dataPoints: ProjectionPoint[]; // Chart data up to projectionPeriodYears
-  estimatedTargetDate: Date | null;
-  projectedValueAtTarget: number | null;
-  principalAtTarget: number | null;
-  nominalValueAtPeriodEnd: number; // Value at end of projectionPeriodYears
-  adjustedValueAtPeriodEnd: number; // Adjusted value at end of projectionPeriodYears
-  principalAtPeriodEnd: number; // Principal at end of projectionPeriodYears
-}
-
-function calculateProjection(params: CalculateProjectionParams): ProjectionResult {
-  const { 
-      contributionAmountUSD, 
-      contributionFrequency, 
-      expectedGrowthPercent, 
-      projectionPeriodYears, 
-      inflationRatePercent, 
-      targetBtcAmount, 
-      currentBtcPriceUSD,
-      startDate = new Date() // Default start date to now
-  } = params;
-
-  const periodsPerYear = contributionFrequency === 'monthly' ? 12 : 52;
-  const totalPeriodsForChart = projectionPeriodYears * periodsPerYear;
-  const annualGrowthRate = expectedGrowthPercent / 100;
-  const periodicGrowthRate = Math.pow(1 + annualGrowthRate, 1 / periodsPerYear) - 1;
-  const annualInflationRate = inflationRatePercent / 100;
-
-  const targetUsd = targetBtcAmount > 0 && currentBtcPriceUSD > 0 ? targetBtcAmount * currentBtcPriceUSD : null;
-
-  let currentNominalValue = 0;
-  let principal = 0;
-  let targetReachedPeriod: number | null = null;
-
-  let nominalValueAtPeriodEnd = 0;
-  let principalAtPeriodEnd = 0;
-  let adjustedValueAtPeriodEnd = 0;
-
-  let projectedValueAtTarget: number | null = null;
-  let principalAtTarget: number | null = null;
-
-  const dataPoints: ProjectionPoint[] = [{ year: 0, nominalValue: 0, adjustedValue: 0 }];
-
-  const maxProjectionYears = 100; // Safety limit
-  const maxPeriods = maxProjectionYears * periodsPerYear;
-
-  for (let period = 1; period <= maxPeriods; period++) {
-      currentNominalValue += contributionAmountUSD;
-      principal += contributionAmountUSD;
-      currentNominalValue *= (1 + periodicGrowthRate);
-
-      const yearsElapsed = period / periodsPerYear;
-      const currentAdjustedValue = currentNominalValue / Math.pow(1 + annualInflationRate, yearsElapsed);
-
-      // Check if adjusted target is reached
-      if (targetUsd !== null && currentAdjustedValue >= targetUsd && targetReachedPeriod === null) {
-          targetReachedPeriod = period;
-          projectedValueAtTarget = currentNominalValue; // Store nominal value when adjusted target hit
-          principalAtTarget = principal;
-          // Don't break yet, need to continue for chart data up to totalPeriodsForChart
-      }
-
-       // Capture values at the end of the user's specified projection period (for interactive KPIs)
-       if (period === totalPeriodsForChart) {
-           nominalValueAtPeriodEnd = currentNominalValue;
-           principalAtPeriodEnd = principal;
-           adjustedValueAtPeriodEnd = currentAdjustedValue;
-       }
-
-      // Store data points *only* within the user's selected projection period for the chart
-      if (period <= totalPeriodsForChart && period % periodsPerYear === 0) { 
-          const currentYear = Math.ceil(period / periodsPerYear);
-          dataPoints.push({ year: currentYear, nominalValue: currentNominalValue, adjustedValue: currentAdjustedValue });
-      }
-
-      // Stop loop early if target is found AND we have passed the chart period
-      if (targetReachedPeriod !== null && period >= totalPeriodsForChart) {
-          break;
-      }
-
-      // Safety Break
-      if (period === maxPeriods && targetReachedPeriod === null) {
-          break;
-      }
-  }
-
-  // Calculate final estimated date
-  let estimatedTargetDate: Date | null = null;
-  if (targetReachedPeriod !== null) {
-      const targetYear = Math.ceil(targetReachedPeriod / periodsPerYear);
-      const dateEstimate = new Date(startDate); // Use provided start date
-      dateEstimate.setFullYear(dateEstimate.getFullYear() + targetYear);
-      const monthEstimate = (targetReachedPeriod % periodsPerYear) * (12 / periodsPerYear);
-      dateEstimate.setMonth(dateEstimate.getMonth() + Math.floor(monthEstimate));
-      estimatedTargetDate = dateEstimate;
-  }
-
-   // Ensure the end values are captured even if totalPeriodsForChart wasn't hit exactly (e.g., projection < 1 year)
-   if (totalPeriodsForChart < periodsPerYear && nominalValueAtPeriodEnd === 0) {
-       nominalValueAtPeriodEnd = currentNominalValue;
-       principalAtPeriodEnd = principal;
-       adjustedValueAtPeriodEnd = currentNominalValue / Math.pow(1 + annualInflationRate, projectionPeriodYears);
-   }
-
-  return {
-      dataPoints,
-      estimatedTargetDate,
-      projectedValueAtTarget,
-      principalAtTarget,
-      nominalValueAtPeriodEnd,
-      adjustedValueAtPeriodEnd,
-      principalAtPeriodEnd,
-  };
-}
+// Removed local type definitions and calculation function as they are now imported
 
 export function SavingsGoalCalculator() {
   // State for Inputs
   const [goalName, setGoalName] = useState("My Savings Goal");
-  // const [initialInvestmentUSD, setInitialInvestmentUSD] = useState(0); // Removed
   const [contributionAmountUSD, setContributionAmountUSD] = useState(250);
   const [contributionFrequency, setContributionFrequency] = useState('weekly');
   const [expectedGrowthPercent, setExpectedGrowthPercent] = useState(80); // Annual %
   const [projectionPeriodYears, setProjectionPeriodYears] = useState(1);
-  const [inflationRatePercent, setInflationRatePercent] = useState(3); // New state for inflation rate
-  const [showInflationAdjusted, setShowInflationAdjusted] = useState(true); // New state for checkbox
-  const [currentBtcPriceUSD, setCurrentBtcPriceUSD] = useState(85000); // New state for BTC price
-  const [targetBtcAmount, setTargetBtcAmount] = useState(0.1); // New state for target BTC
-  const [startDate, setStartDate] = useState(new Date()); // <<< Add state for start date
+  const [inflationRatePercent, setInflationRatePercent] = useState(3);
+  const [showInflationAdjusted, setShowInflationAdjusted] = useState(true);
+  const [targetBtcAmount, setTargetBtcAmount] = useState(0.1);
+  const [startDate, setStartDate] = useState(new Date());
+
+  // Use Bitcoin price hook instead of manual input
+  const { price: currentBtcPriceUSD, loading: priceLoading } = useBitcoinPrice();
 
   // State for Calculated Outputs
   const [projectedValueUSD, setProjectedValueUSD] = useState(0);
-  const [projectedValueAdjustedUSD, setProjectedValueAdjustedUSD] = useState(0); // New state for adjusted value
+  const [projectedValueAdjustedUSD, setProjectedValueAdjustedUSD] = useState(0);
   const [roiPercent, setRoiPercent] = useState(0);
-  // const [completionDate, setCompletionDate] = useState<Date | null>(null); // Removed, calculated dynamically
   const [totalPrincipal, setTotalPrincipal] = useState(0);
   const [totalInterest, setTotalInterest] = useState(0);
-  const [projectionData, setProjectionData] = useState<ProjectionPoint[]>([]); // Updated state for chart data structure
-  const [targetUsdValue, setTargetUsdValue] = useState<number | null>(null); // New state: USD value of BTC target
-  const [estimatedBtcTargetDate, setEstimatedBtcTargetDate] = useState<Date | null>(null); // New state: Estimated date to reach target
-  const [savedGoalEstBtcDate, setSavedGoalEstBtcDate] = useState<Date | null>(null); // New state: Estimated date for the *saved* goal's BTC target
+  const [projectionData, setProjectionData] = useState<ProjectionPoint[]>([]);
+  const [targetUsdValue, setTargetUsdValue] = useState<number | null>(null);
+  const [estimatedBtcTargetDate, setEstimatedBtcTargetDate] = useState<Date | null>(null);
+  const [savedGoalEstBtcDate, setSavedGoalEstBtcDate] = useState<Date | null>(null);
 
   const [activeGoal, setActiveGoal] = useState<SavedGoalData | null>(null);
 
@@ -266,9 +114,10 @@ export function SavingsGoalCalculator() {
     const savedGoalString = localStorage.getItem('savingsGoal');
     if (savedGoalString) {
       try {
+        const savedGoals = JSON.parse(localStorage.getItem('savingsGoals') || '[]');
         const loadedGoal = JSON.parse(savedGoalString) as SavedGoalData;
         setActiveGoal(loadedGoal);
-        // Optional: Pre-fill interactive calculator with saved goal's parameters
+        
         setGoalName(loadedGoal.goalName);
         // setInitialInvestmentUSD(loadedGoal.savedProjection.initialInvestmentUSD); // Removed
         setContributionAmountUSD(loadedGoal.savedProjection.contributionAmountUSD);
@@ -276,7 +125,7 @@ export function SavingsGoalCalculator() {
         setExpectedGrowthPercent(loadedGoal.savedProjection.expectedGrowthPercent);
         setProjectionPeriodYears(loadedGoal.savedProjection.projectionPeriodYears);
         // Potential future: Load saved BTC price and target if we add them to SavedGoalData
-        setCurrentBtcPriceUSD(loadedGoal.savedProjection.currentBtcPriceUSD ?? 60000); // Load saved or default
+        // Don't set BTC price as we're using the hook: setCurrentBtcPriceUSD(loadedGoal.savedProjection.currentBtcPriceUSD ?? 60000);
         setTargetBtcAmount(loadedGoal.savedProjection.targetBtcAmount ?? 0.1); // Load saved or default
         // Optional: Load saved inflation rate if we add it later
         setInflationRatePercent(loadedGoal.savedProjection.inflationRatePercent ?? 3); // Load saved or default (3%)
@@ -460,13 +309,14 @@ export function SavingsGoalCalculator() {
 
   // --- Clear Inputs Function ---
   const handleClearInputs = () => {
-    setGoalName("My Savings Goal"); // Default value
-    setContributionAmountUSD(250); // Default value
-    setContributionFrequency('weekly'); // Default value
-    setExpectedGrowthPercent(80); // Default value
+    setGoalName("My Savings Goal");
+    // setInitialInvestmentUSD(0);
+    setContributionAmountUSD(250);
+    setContributionFrequency('weekly');
+    setExpectedGrowthPercent(80);
     setProjectionPeriodYears(1); // Default value
     setInflationRatePercent(3); // Default value
-    setCurrentBtcPriceUSD(85000); // Default value
+    // Don't set BTC price as we're using the hook now: setCurrentBtcPriceUSD(85000);
     setTargetBtcAmount(0.1); // Default value
     setStartDate(new Date()); // Reset start date
     // Output states (like projectedValueUSD, roiPercent, etc.) will recalculate automatically via useEffect
@@ -486,14 +336,14 @@ export function SavingsGoalCalculator() {
       {/* === Section A: Saved Goal Tracker (Conditional) === */}
       {activeGoal && (
         <div className="p-6 bg-black rounded-lg border border-border relative"> 
-            {/* Delete Button - Absolute positioned */}
+            {/* Delete Button - Absolute positioned - Use Trash Icon */}
             <Button 
                 variant="ghost" 
-                size="sm" 
                 onClick={handleDeleteGoal} 
-                className="absolute top-6 right-6 text-xs text-muted-foreground hover:text-destructive"
+                className="absolute top-10 right-10 text-bitcoin-orange hover:text-destructive h-auto"
+                aria-label="Delete goal"
             >
-                Delete
+                <Trash2 className="h-4 w-4" /> {/* User set icon size */}
             </Button>
             
             <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
@@ -597,7 +447,7 @@ export function SavingsGoalCalculator() {
              {/* Put Input Title and Clear Button in a flex container */}
              <div className="flex justify-between items-center mb-4">
                  <h3 className="text-lg font-medium">Inputs</h3>
-                 <Button variant="ghost" size="sm" onClick={handleClearInputs} className="text-xs text-muted-foreground hover:text-primary">
+                 <Button variant="outline" size="sm" onClick={handleClearInputs} className="text-xs text-primary">
                       Clear Inputs
                  </Button>
              </div>
@@ -660,17 +510,18 @@ export function SavingsGoalCalculator() {
                 </div>
             </div>
 
-             {/* Current BTC Price Input */}
-             <div>
-                <Label htmlFor="currentBtcPrice">Current BTC Price ($)</Label>
-                <Input
-                id="currentBtcPrice"
-                type="number"
-                value={currentBtcPriceUSD}
-                onChange={(e) => setCurrentBtcPriceUSD(parseFloat(e.target.value) || 0)}
-                min="0"
-                step="100" // Allow reasonable steps
-                />
+             {/* Estimated BTC Price Display */}
+             <div className="space-y-2">
+                <Label htmlFor="estimatedBtcPrice">Estimated BTC Price</Label>
+                {/* Remove the flex container and the extra span */}
+                {/* Apply input-like styling to the price display div */}
+                <div id="estimatedBtcPrice" className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+                    {priceLoading ? (
+                        <span className="text-muted-foreground">Loading...</span>
+                    ) : (
+                        <span>${formatCurrency(currentBtcPriceUSD)}</span>
+                    )}
+                </div>
             </div>
 
              {/* Target BTC Amount */}
