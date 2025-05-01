@@ -178,7 +178,13 @@ export default async function PerformancePage() {
 
                   <div className="grid grid-cols-3 gap-8 pt-4">
                     <div className="flex flex-col">
-                      <div className="text-sm font-medium text-muted-foreground">Days Since ATH</div>
+                      <div className="flex justify-between items-center">
+                        <div className="text-sm font-medium text-muted-foreground">Days Since ATH</div>
+                        <div className="px-4 py-2 bg-error/20 rounded-full text-error text-xs font-medium flex items-center">
+                          <TrendingDownIcon className="h-3 w-3 mr-1" />
+                          {formatPercent(drawdownFromATHPercent)}
+                        </div>
+                      </div>
                       <div>
                         <div className="text-2xl font-bold text-error">{daysSinceATH}</div>
                         <div className="text-xs text-muted-foreground mt-1">

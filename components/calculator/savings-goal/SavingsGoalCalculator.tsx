@@ -13,9 +13,9 @@ import { useSavingsGoalData } from '@/hooks/useSavingsGoalData';
 import { calculateTimeRemaining } from '@/lib/utils';
 import { CheckCircle, Circle, LoaderCircle, Trash2 } from "lucide-react";
 import { useBitcoinPrice } from '@/hooks/useBitcoinPrice';
-import { formatCurrency } from './utils/format-utils';
-import { calculateProjection } from './utils/calculation-utils';
-import { ProjectionPoint, CalculateProjectionParams, ProjectionResult, SavedGoalData } from './types/calculator-types';
+import { formatCurrency } from '../utils/format-utils';
+import { calculateProjection } from '../utils/calculation-utils';
+import { ProjectionPoint, CalculateProjectionParams, ProjectionResult, SavedGoalData } from '../types/calculator-types';
 // import { Line } from 'react-chartjs-2'; // We'll add chart imports later
 // We'll need Chart.js core and scales too later
 

@@ -15,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
 import { InvestmentChart } from "./InvestmentChart"
-import { SavingsGoalCalculator } from "../SavingsGoalCalculator"
+import { SavingsGoalCalculator } from "../savings-goal/SavingsGoalCalculator"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { 
   BitcoinUnit, 

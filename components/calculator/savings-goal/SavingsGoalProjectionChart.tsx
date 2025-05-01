@@ -15,9 +15,9 @@ import {
   ChartOptions,
   ChartData
 } from 'chart.js';
-import { COLORS } from './utils/color-constants';
-import { ProjectionPoint } from './types/calculator-types';
-import { formatCurrency } from './utils/format-utils';
+import { COLORS } from '../utils/color-constants';
+import { ProjectionPoint } from '../types/calculator-types';
+import { formatCurrency } from '../utils/format-utils';
 
 ChartJS.register(
   CategoryScale,
