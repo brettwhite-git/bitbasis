@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
-import { calculatePortfolioMetrics, PortfolioMetrics } from './calculations'
+import { calculatePortfolioMetrics, PortfolioMetrics } from './calculations' // Path should be correct now
 
 interface Transaction {
   id: string

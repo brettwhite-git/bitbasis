@@ -36,7 +36,7 @@ import {
 } from "lucide-react"
 import type { Database } from '@/types/supabase'
 import { Button } from "@/components/ui/button"
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils/utils'
 import { format } from 'date-fns'
 
 // Import necessary types from the central types file

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getCSVUploads, deleteCSVUpload } from '@/lib/supabase'; // Assuming these helpers exist
+import { getCSVUploads, deleteCSVUpload } from '@/lib/supabase/supabase'; // Assuming these helpers exist
 import { UploadedCSV } from '../lib/types'; // Fixed path: Import the type
 import { useAuth } from '@/providers/supabase-auth-provider'; // To get userId
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ import { Trash2, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns'; // For formatting dates
 import { formatFileSize } from '../lib/utils'; // Fixed path: Import utility
 import { useToast } from "@/hooks/use-toast"; // Correct path for the hook
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 
 // No specific props needed from container if we use useAuth here directly
 // interface ManageCSVsProps {

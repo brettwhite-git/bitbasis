@@ -201,4 +201,4 @@ const findClosestDateEntry = (
   return closestEntry;
 };
 
-export { formatDate, findClosestDateEntry }; // Export the additional functions
+export { formatDate, findClosestDateEntry }; // Export the additional functions 

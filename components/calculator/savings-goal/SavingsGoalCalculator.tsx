@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { ProjectionChart } from "./SavingsGoalProjectionChart";
 import { useSavingsGoalData } from '@/hooks/useSavingsGoalData';
-import { calculateTimeRemaining } from '@/lib/utils';
+import { calculateTimeRemaining } from '@/lib/utils/utils';
 import { CheckCircle, Circle, LoaderCircle, Trash2 } from "lucide-react";
 import { useBitcoinPrice } from '@/hooks/useBitcoinPrice';
 import { formatCurrency } from '../utils/format-utils';

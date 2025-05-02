@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { UploadCloud, X, File as FileIcon } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress"; // If progress bar is needed
-import { cn } from "@/lib/utils"; // For conditional class names
+import { cn } from "@/lib/utils/utils"; // For conditional class names
 
 // Props definition based on REFACTORING_PLAN.md (Step 9)
 interface FileUploadProps {

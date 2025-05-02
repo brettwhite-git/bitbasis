@@ -1,8 +1,8 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui"
-import { formatCurrency, formatPercent } from "@/lib/utils"
-import type { PerformanceMetrics } from "@/lib/portfolio"
+import { formatCurrency, formatPercent } from "@/lib/utils/utils"
+import type { PerformanceMetrics } from "@/lib/core/portfolio"
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react"
 
 interface KPICardsProps {
@@ -109,12 +109,12 @@ export function KPICards({ performance }: KPICardsProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">CAGR</CardTitle>
-          <div className={performance.annualized.total && performance.annualized.total >= 0 ? "text-green-500" : "text-red-500"}>
-            {performance.annualized.total && performance.annualized.total >= 0 ? <ArrowUpIcon className="h-4 w-4" /> : <ArrowDownIcon className="h-4 w-4" />}
+          <div className={performance.compoundGrowth.total && performance.compoundGrowth.total >= 0 ? "text-green-500" : "text-red-500"}>
+            {performance.compoundGrowth.total && performance.compoundGrowth.total >= 0 ? <ArrowUpIcon className="h-4 w-4" /> : <ArrowDownIcon className="h-4 w-4" />}
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatPercent(performance.annualized.total ?? 0)}</div>
+          <div className="text-2xl font-bold">{formatPercent(performance.compoundGrowth.total ?? 0)}</div>
           <p className="text-xs text-muted-foreground pt-2">
             Compound Annual Growth Rate
           </p>

@@ -19,7 +19,7 @@ import { PortfolioStats } from "./portfolio-stats"
 import { PortfolioPerformanceChart } from "./portfolio-performance-chart"
 import { SavingsGoalWidget } from "./SavingsGoalWidget"
 import { useState } from "react"
-import { formatCurrency, formatPercent } from "@/lib/utils"
+import { formatCurrency, formatPercent } from "@/lib/utils/utils"
 import { Progress } from "@/components/ui/progress"
 
 interface DashboardContentProps {

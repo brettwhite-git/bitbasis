@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'; // Correct Supabase client import
-import { formatDate, findClosestDateEntry } from '@/lib/utils'; // Updated import path
+import { formatDate, findClosestDateEntry } from '@/lib/utils/utils'; // Updated import path
 
 // Define types for the fear & greed data
 interface FearGreedData {

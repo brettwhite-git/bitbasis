@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui"
 import { PerformanceReturnsWrapper } from "@/components/portfolio/performance-returns-wrapper"
-import { getPortfolioMetrics, getPerformanceMetrics } from "@/lib/portfolio"
-import { formatCurrency, formatBTC } from "@/lib/utils"
+import { getPortfolioMetrics, getPerformanceMetrics } from "@/lib/core/portfolio"
+import { formatCurrency, formatBTC } from "@/lib/utils/utils"
 import { Database } from "@/types/supabase"
-import { requireAuth } from "@/lib/server-auth"
+import { requireAuth } from "@/lib/auth/server-auth"
 import { TaxLiabilityCardWrapper } from "@/components/portfolio/tax-liability-card-wrapper"
 
 export default async function PortfolioPage() {

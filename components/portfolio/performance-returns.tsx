@@ -2,9 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { formatCurrency, formatPercent } from "@/lib/utils"
+import { formatCurrency, formatPercent } from "@/lib/utils/utils"
 import { useSupabase } from "@/components/providers/supabase-provider"
-import { calculateCostBasis } from "@/lib/portfolio"
+import { calculateCostBasis } from "@/lib/core/portfolio"
 import { useState, useEffect } from "react"
 import { Database } from "@/types/supabase"
 import { ArrowUpDown, ArrowDown, ArrowUp, Info } from "lucide-react"

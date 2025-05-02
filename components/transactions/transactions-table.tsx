@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Search, SendHorizontal, ArrowUpDown, ArrowDown, ArrowUp, X, Loader2, Trash2, ArrowDownToLine, ArrowUpFromLine, ExternalLink, CheckCircle2, CircleArrowDown, CircleArrowUp, CircleArrowLeft, CircleArrowRight } from "lucide-react"
-import { getTransactions } from "@/lib/supabase"
+import { getTransactions } from "@/lib/supabase/supabase"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import type { Database } from "@/types/supabase"
 import { DateRange } from "react-day-picker"
@@ -28,7 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils/utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 

@@ -252,151 +252,117 @@ export async function insertTransactions({
       data: null, 
       error: { 
         message: err instanceof Error ? err.message : 'An unexpected error occurred',
-        code: 'UNKNOWN'
+        details: 'Could not insert transactions'
       } 
     }
   }
 }
 
 export async function getTransactions() {
-  const supabaseClient = createBrowserClient()
+  const supabase = createClientComponentClient<Database>()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !authData.user) {
+    console.error('Auth error or no user:', authError)
+    return { data: { orders: [], transfers: [] }, error: authError || new Error('Not authenticated') }
+  }
+
+  const userId = authData.user.id
 
   try {
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
-    if (authError) throw authError
-    if (!user) throw new Error('User not authenticated')
-
-    // Fetch orders and transfers in parallel
     const [ordersResult, transfersResult] = await Promise.all([
-      supabaseClient
+      supabase
         .from('orders')
         .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false }),
-      supabaseClient
+        .eq('user_id', userId)
+        .order('date', { ascending: true }),
+      supabase
         .from('transfers')
         .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
+        .eq('user_id', userId)
+        .order('date', { ascending: true })
     ])
 
     if (ordersResult.error) throw ordersResult.error
     if (transfersResult.error) throw transfersResult.error
 
-    // Map orders to unified format
-    const mappedOrders = (ordersResult.data || []).map(order => ({
-      id: `order-${order.id}`,
-      date: order.date,
-      type: order.type,
-      asset: order.asset,
-      btc_amount: order.type === 'buy' ? order.received_btc_amount : order.sell_btc_amount,
-      usd_value: order.type === 'buy' ? order.buy_fiat_amount : order.received_fiat_amount,
-      fee_usd: order.service_fee_currency === 'USD' ? order.service_fee : null,
-      price_at_tx: order.price,
-      exchange: order.exchange
-    }))
-
-    // Map transfers to unified format
-    const mappedTransfers = (transfersResult.data || []).map(transfer => ({
-      id: `transfer-${transfer.id}`,
-      date: transfer.date,
-      type: transfer.type,
-      asset: transfer.asset,
-      btc_amount: transfer.amount_btc,
-      usd_value: transfer.amount_fiat,
-      fee_usd: transfer.fee_amount_btc ? transfer.fee_amount_btc * (transfer.price || 0) : null,
-      price_at_tx: transfer.price,
-      exchange: null,
-      network_fee_btc: transfer.fee_amount_btc,
-      txid: transfer.hash
-    }))
-
-    // Combine and sort by date descending
-    const allTransactions = [...mappedOrders, ...mappedTransfers].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
-
-    console.log(`Successfully fetched and combined ${allTransactions.length} transactions`)
-    return { data: allTransactions, error: null }
-
-  } catch (error) {
-    // Enhanced error logging
-    const errorDetails = {
-      error,
-      type: typeof error,
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      timestamp: new Date().toISOString()
+    return {
+      data: {
+        orders: ordersResult.data || [],
+        transfers: transfersResult.data || []
+      },
+      error: null
     }
-    console.error('Error in getTransactions:', errorDetails)
-    
+  } catch (error) {
+    console.error('Error fetching transactions:', error)
     return { 
-      data: null, 
-      error: error instanceof Error ? error : new Error('Failed to fetch transactions') 
+      data: { orders: [], transfers: [] }, 
+      error: error as PostgrestError 
     }
   }
 }
 
-/**
- * Uploads a CSV file to Supabase Storage and creates a record in the csv_uploads table
- */
 export async function uploadCSVFile(file: File) {
-  const supabaseClient = createBrowserClient()
-  
+  const supabase = createClientComponentClient<Database>()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !authData.user) {
+    console.error('Auth error or no user for upload:', authError)
+    return { data: null, error: { message: 'Authentication required for upload' } }
+  }
+
+  const userId = authData.user.id
+  const fileName = `${userId}/${new Date().toISOString()}-${file.name}`
+
   try {
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
-    if (authError) throw authError
-    if (!user) throw new Error('User not authenticated')
-    
-    // Generate a unique filename to avoid collisions
-    const fileExt = file.name.split('.').pop()
-    const uniqueId = crypto.randomUUID()
-    const fileName = `${uniqueId}.${fileExt}`
-    const storagePath = `${user.id}/${fileName}`
-    
-    // Upload the file to Supabase Storage
-    const { data: storageData, error: storageError } = await supabaseClient.storage
-      .from('csv_uploads')
-      .upload(storagePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      })
-      
-    if (storageError) throw storageError
-    
-    // Create a record in the csv_uploads table
-    const { data: csvUpload, error: dbError } = await supabaseClient
+    // 1. Create an entry in the csv_uploads table
+    const { data: uploadEntry, error: insertError } = await supabase
       .from('csv_uploads')
       .insert({
-        user_id: user.id,
-        filename: storagePath,
-        original_filename: file.name,
+        user_id: userId,
+        file_name: file.name,
+        storage_path: fileName,
         status: 'pending',
-        file_size: file.size
+        row_count: 0 // Initialize row count
       })
       .select()
       .single()
-      
-    if (dbError) {
-      // If the database insert fails, delete the uploaded file to maintain consistency
-      await supabaseClient.storage.from('csv_uploads').remove([storagePath])
-      throw dbError
+
+    if (insertError) {
+      console.error('Error creating CSV upload entry:', insertError)
+      return { data: null, error: { message: `Failed to log upload: ${insertError.message}` } }
     }
-    
-    return { data: csvUpload, error: null }
-    
+
+    const csvUploadId = uploadEntry.id
+
+    // 2. Upload the file to Supabase Storage
+    const { data: storageData, error: storageError } = await supabase.storage
+      .from('csv-files')
+      .upload(fileName, file, {
+        contentType: 'text/csv'
+      })
+
+    if (storageError) {
+      console.error('Storage upload error:', storageError)
+      // Update status to error if storage fails
+      await updateCSVUploadStatus(csvUploadId, 'error', { errorMessage: `Storage error: ${storageError.message}` })
+      return { data: null, error: { message: `Failed to upload file: ${storageError.message}` } }
+    }
+
+    console.log('Successfully uploaded file:', storageData)
+
+    // 3. Update status to processing (optional, can be done by background job)
+    await updateCSVUploadStatus(csvUploadId, 'processing')
+
+    // 4. Return the ID for tracking
+    return { data: { csvUploadId }, error: null }
+
   } catch (error) {
-    console.error('Error in uploadCSVFile:', error)
-    return { 
-      data: null, 
-      error: error instanceof Error ? error : new Error('Failed to upload CSV file') 
-    }
+    console.error('Error uploading CSV:', error)
+    return { data: null, error: { message: 'An unexpected error occurred during upload' } }
   }
 }
 
-/**
- * Update CSV upload status in the database
- */
 export async function updateCSVUploadStatus(
   csvUploadId: string,
   status: 'pending' | 'processing' | 'completed' | 'error',
@@ -406,16 +372,18 @@ export async function updateCSVUploadStatus(
     errorMessage?: string;
   }
 ) {
-  const supabaseClient = createBrowserClient()
+  const supabase = createClientComponentClient<Database>()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !authData.user) {
+    console.error('Auth error during status update')
+    return { error: new Error('Authentication required') }
+  }
 
   try {
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
-    if (authError) throw authError
-    if (!user) throw new Error('User not authenticated')
-
-    // Explicitly map keys to snake_case database columns
     const updateData: Partial<Database['public']['Tables']['csv_uploads']['Update']> = {
       status,
+      updated_at: new Date().toISOString()
     }
     if (details?.rowCount !== undefined) {
       updateData.row_count = details.rowCount
@@ -427,106 +395,112 @@ export async function updateCSVUploadStatus(
       updateData.error_message = details.errorMessage
     }
 
-    const { data, error } = await supabaseClient
+    const { error } = await supabase
       .from('csv_uploads')
       .update(updateData)
       .eq('id', csvUploadId)
-      .eq('user_id', user.id)
-      .select()
-      .single()
+      .eq('user_id', authData.user.id)
 
-    if (error) throw error
-
-    return { data, error: null }
-
-  } catch (error) {
-    console.error('Error updating CSV upload status:', error)
-    return {
-      data: null,
-      error: error instanceof Error ? error : new Error('Failed to update CSV upload status')
+    if (error) {
+      console.error(`Error updating CSV upload ${csvUploadId} status to ${status}:`, error)
+      return { error }
     }
+
+    console.log(`CSV upload ${csvUploadId} status updated to ${status}`)
+    return { error: null }
+  } catch (err) {
+    console.error('Unexpected error updating CSV status:', err)
+    return { error: err instanceof Error ? err : new Error('Unknown error') }
   }
 }
 
-/**
- * Get all CSV uploads for the current user
- */
 export async function getCSVUploads() {
-  const supabaseClient = createBrowserClient()
-  
+  const supabase = createClientComponentClient<Database>()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !authData.user) {
+    console.error('Auth error or no user fetching CSV uploads:', authError)
+    return { data: [], error: authError || new Error('Not authenticated') }
+  }
+
   try {
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
-    if (authError) throw authError
-    if (!user) throw new Error('User not authenticated')
-    
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
       .from('csv_uploads')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', authData.user.id)
       .order('created_at', { ascending: false })
-      
+
     if (error) throw error
-    
-    return { data, error: null }
-    
+
+    return { data: data || [], error: null }
   } catch (error) {
-    console.error('Error in getCSVUploads:', error)
-    return { 
-      data: null, 
-      error: error instanceof Error ? error : new Error('Failed to get CSV uploads') 
-    }
+    console.error('Error fetching CSV uploads:', error)
+    return { data: [], error: error as PostgrestError }
   }
 }
 
-/**
- * Delete a CSV upload and its associated file
- */
 export async function deleteCSVUpload(csvUploadId: string) {
-  const supabaseClient = createBrowserClient()
-  
+  const supabase = createClientComponentClient<Database>()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !authData.user) {
+    console.error('Auth error during CSV deletion:', authError)
+    return { data: null, error: { message: 'Authentication required' } }
+  }
+
+  const userId = authData.user.id
+
   try {
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
-    if (authError) throw authError
-    if (!user) throw new Error('User not authenticated')
-    
-    // First, get the file path
-    const { data: csvUpload, error: getError } = await supabaseClient
+    // 1. Get the CSV upload entry to find the storage path
+    const { data: uploadEntry, error: fetchError } = await supabase
       .from('csv_uploads')
-      .select('filename')
+      .select('storage_path')
       .eq('id', csvUploadId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
-      
-    if (getError || !csvUpload) throw getError || new Error('CSV upload not found')
-    
-    // Delete the file from storage
-    if (csvUpload.filename) {
-      const { error: storageError } = await supabaseClient.storage
-        .from('csv_uploads')
-        .remove([csvUpload.filename])
-        
-      if (storageError) {
-        console.error('Error deleting file from storage:', storageError)
-        // Continue anyway, as we want to delete the database record
-      }
+
+    if (fetchError) {
+      console.error(`Error fetching CSV upload ${csvUploadId} for deletion:`, fetchError)
+      return { data: null, error: { message: fetchError.message || 'CSV record not found' } }
     }
+
+    if (!uploadEntry?.storage_path) {
+      console.warn(`CSV upload ${csvUploadId} has no storage path, deleting DB entry only.`)
+    }
+
+    // 2. Delete associated orders and transfers first (optional, depending on RLS/cascade)
+    // await supabase.from('orders').delete().eq('csv_upload_id', csvUploadId)
+    // await supabase.from('transfers').delete().eq('csv_upload_id', csvUploadId)
     
-    // Delete the database record - this will cascade delete related transactions
-    const { error: deleteError } = await supabaseClient
+    // 3. Delete the entry from the csv_uploads table
+    const { error: deleteDbError } = await supabase
       .from('csv_uploads')
       .delete()
       .eq('id', csvUploadId)
-      .eq('user_id', user.id)
-      
-    if (deleteError) throw deleteError
-    
-    return { success: true, error: null }
-    
-  } catch (error) {
-    console.error('Error in deleteCSVUpload:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error : new Error('Failed to delete CSV upload') 
+      .eq('user_id', userId)
+
+    if (deleteDbError) {
+      console.error(`Error deleting CSV upload entry ${csvUploadId} from DB:`, deleteDbError)
+      return { data: null, error: { message: deleteDbError.message || 'Failed to delete database record' } }
     }
+
+    // 4. Delete the file from Supabase Storage (if path exists)
+    if (uploadEntry.storage_path) {
+      const { error: deleteStorageError } = await supabase.storage
+        .from('csv-files')
+        .remove([uploadEntry.storage_path])
+
+      if (deleteStorageError) {
+        // Log warning but don't fail the whole operation if storage deletion fails
+        console.warn(`Failed to delete file ${uploadEntry.storage_path} from storage:`, deleteStorageError)
+      }
+    }
+
+    console.log(`Successfully deleted CSV upload ${csvUploadId} and associated data/file.`)
+    return { data: { success: true }, error: null }
+
+  } catch (error) {
+    console.error(`Unexpected error deleting CSV upload ${csvUploadId}:`, error)
+    return { data: null, error: { message: 'An unexpected error occurred during deletion' } }
   }
 } 

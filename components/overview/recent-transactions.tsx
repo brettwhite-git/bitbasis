@@ -4,8 +4,8 @@ import { useEffect, useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { ArrowDownRight, ArrowUpRight, ArrowDownToLine, ArrowUpFromLine, ExternalLink, CircleArrowUp, CircleArrowDown, CircleArrowLeft, CircleArrowRight } from "lucide-react"
-import { getTransactions } from "@/lib/supabase"
-import { formatCurrency, formatBTC } from "@/lib/utils"
+import { getTransactions } from "@/lib/supabase/supabase"
+import { formatCurrency, formatBTC } from "@/lib/utils/utils"
 import type { Database } from "@/types/supabase"
 
 // Update the interface to match what getTransactions returns
@@ -43,23 +43,76 @@ export function RecentTransactions() {
         setError(null)
 
         // Use the shared getTransactions function
-        const result = await getTransactions() as TransactionsResponse
+        // Remove the incorrect type assertion
+        const result = await getTransactions()
         
         if (result.error) {
           throw result.error
         }
 
-        // Make the transaction objects match our interface 
-        // by ensuring all required properties exist
-        const unifiedData = (result.data || []).map(tx => ({
-          ...tx,
-          // Set optional properties if they don't exist
-          network_fee_btc: 'network_fee_btc' in tx ? tx.network_fee_btc : null,
-          txid: 'txid' in tx ? tx.txid : null,
-        })) as UnifiedTransaction[]
+        // Check if data exists and contains orders/transfers
+        if (result.data && (result.data.orders || result.data.transfers)) {
+          // Combine orders and transfers into one array
+          const combined = [
+            ...(result.data.orders || []).map(tx => ({ ...tx, type: tx.type || 'unknown' })), // Ensure type exists
+            ...(result.data.transfers || []).map(tx => ({ ...tx, type: tx.type || 'unknown' })), // Ensure type exists
+          ];
 
-        // Take only the 5 most recent transactions
-        setTransactions(unifiedData.slice(0, 5))
+          // Sort by date descending (most recent first)
+          combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+          // Map to UnifiedTransaction interface (ensure optional fields)
+          const unifiedData = combined.map(tx => {
+            const isOrder = ['Buy', 'Sell', 'buy', 'sell'].includes(tx.type);
+            const isTransfer = ['Deposit', 'Withdrawal', 'deposit', 'withdrawal'].includes(tx.type);
+
+            let btc_amount: number | null = null;
+            let usd_value: number | null = null;
+            let fee_usd: number | null = null;
+            let network_fee_btc: number | null = null;
+            let txid: string | null = null;
+            let exchange: string | null = null;
+
+            if (isOrder) {
+              // Explicitly cast to the expected Order type (adjust if type name differs)
+              const order = tx as Database['public']['Tables']['orders']['Row']; 
+              btc_amount = order.received_btc_amount ?? order.sell_btc_amount ?? null;
+              usd_value = order.buy_fiat_amount ?? order.received_fiat_amount ?? null;
+              fee_usd = order.service_fee ?? null;
+              exchange = order.exchange ?? null;
+              // Orders don't have network_fee_btc or txid directly in this structure
+            } else if (isTransfer) {
+               // Explicitly cast to the expected Transfer type (adjust if type name differs)
+              const transfer = tx as Database['public']['Tables']['transfers']['Row'];
+              btc_amount = transfer.amount_btc ?? null;
+              usd_value = transfer.amount_fiat ?? null;
+              network_fee_btc = transfer.fee_amount_btc ?? null;
+              txid = transfer.hash ?? null;
+              // Transfers don't have service_fee or exchange directly
+            }
+
+            return {
+              id: String(tx.id), // Ensure ID is string
+              date: tx.date,
+              type: tx.type as UnifiedTransaction['type'], // Assume type is validated upstream or default
+              asset: tx.asset || 'BTC', // Assume BTC if missing
+              price_at_tx: tx.price ?? null,
+              btc_amount, // Use mapped value
+              usd_value, // Use mapped value
+              fee_usd, // Use mapped value
+              exchange, // Use mapped value
+              network_fee_btc, // Use mapped value
+              txid, // Use mapped value
+            } as UnifiedTransaction;
+          });
+
+          // Take only the 5 most recent transactions
+          setTransactions(unifiedData.slice(0, 5))
+        } else {
+          // Handle case where data is empty or missing orders/transfers
+          setTransactions([]);
+        }
+
       } catch (err) {
         console.error('Failed to load recent transactions:', err)
         setError(err instanceof Error ? err.message : 'Failed to load recent transactions')

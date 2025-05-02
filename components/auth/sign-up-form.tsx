@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
-import { checkEmailExists } from '@/lib/supabase'
+import { checkEmailExists } from '@/lib/supabase/supabase'
 import { Icons } from '../icons'
 import {
   Form,

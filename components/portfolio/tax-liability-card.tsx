@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Info, Loader2, ChevronDown } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency } from "@/lib/utils/utils"
 import {
   Select,
   SelectContent,
@@ -17,8 +17,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useSupabase } from "@/components/providers/supabase-provider"
-import { calculateCostBasis } from "@/lib/portfolio"
-import { cn } from "@/lib/utils"
+import { calculateCostBasis } from "@/lib/core/portfolio"
+import { cn } from "@/lib/utils/utils"
 
 type TaxMethod = "Average Cost" | "FIFO" | "LIFO"
 

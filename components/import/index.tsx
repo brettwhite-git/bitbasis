@@ -14,12 +14,12 @@ import {
 } from './lib/types';
 import { normalizeHeaders, transformRowToTransaction } from './lib/parsing';
 import { validateTransaction } from './lib/validation';
-import { 
-    uploadCSVFile, 
-    insertTransactions, 
-    updateCSVUploadStatus,
-    deleteCSVUpload
-} from '@/lib/supabase'; // Assuming these are correctly exported
+import {
+  getTransactions,
+  insertTransactions,
+  uploadCSVFile,
+  getCSVUploads,
+} from '@/lib/supabase/supabase'; // Assuming these are correctly exported
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Papa from 'papaparse';
 import { useToast } from "@/hooks/use-toast";

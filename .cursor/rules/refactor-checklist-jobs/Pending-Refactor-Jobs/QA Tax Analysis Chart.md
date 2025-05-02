@@ -31,13 +31,13 @@ Refactored Tax Analysis Feature Implementation Plan
 *   [ ] **Create New Component:** `components/portfolio/TaxAnalysisTab.tsx`.
 *   [ ] **Add Tab Navigation:** Integrate the "Tax Analysis" tab into the portfolio section's navigation.
 *   [ ] **Input Parameters Section:**
-    *   Input field: "Amount to Sell (BTC)" (numeric validation).
-    *   Input field: "Assumed BTC Price (USD)" (numeric validation, default to current market price).
-    *   Input fields: "Short-Term Tax Rate (%)" and "Long-Term Tax Rate (%)" (0-100 validation, default values, persist user overrides).
-    *   Button: "Calculate Tax Impact".
+        *   Input field: "Amount to Sell (BTC)" (numeric validation).
+        *   Input field: "Assumed BTC Price (USD)" (numeric validation, default to current market price).
+        *   Input fields: "Short-Term Tax Rate (%)" and "Long-Term Tax Rate (%)" (0-100 validation, default values, persist user overrides).
+        *   Button: "Calculate Tax Impact".
 *   [ ] **API Integration:**
-    *   On "Calculate" button click, call the `calculate_tax_liability` Supabase function via RPC three times (once for each method: FIFO, LIFO, HIFO).
-    *   Call the portfolio composition helper function on component load.
+        *   On "Calculate" button click, call the `calculate_tax_liability` Supabase function via RPC three times (once for each method: FIFO, LIFO, HIFO).
+        *   Call the portfolio composition helper function on component load.
 *   [ ] **Chart Implementation (using Chart.js or similar):**
     *   **Chart 1: Tax Liability Comparison:**
         *   Type: Grouped Bar Chart.
@@ -50,12 +50,12 @@ Refactored Tax Analysis Feature Implementation Plan
     *   **(Optional) Chart 3: Cost Basis Layers:**
         *   Type: Scatter/Bubble Chart (X: Purchase Date, Y: Cost Basis/BTC, Size: BTC Amount, Color: Short/Long-Term). Fetch detailed lot data if implementing this.
 *   [ ] **Dynamic Insights Section:**
-    *   Display text insights based on API results and composition data (Optimal method, potential savings, holding period summary, tax-loss harvesting opportunities).
-    *   Update dynamically when calculations are re-run.
+        *   Display text insights based on API results and composition data (Optimal method, potential savings, holding period summary, tax-loss harvesting opportunities).
+        *   Update dynamically when calculations are re-run.
 *   [ ] **Strategic Recommendations Section:**
-    *   Provide actionable advice based on insights (e.g., timing considerations for lots nearing long-term, benefits of tax-loss harvesting).
+        *   Provide actionable advice based on insights (e.g., timing considerations for lots nearing long-term, benefits of tax-loss harvesting).
 *   [ ] **(Optional) Tax Lot Table:**
-    *   Display a detailed table of purchase lots if implementing lot-specific simulation.
+        *   Display a detailed table of purchase lots if implementing lot-specific simulation.
 *   [ ] **UI Styling:** Apply consistent dark theme, ensure responsiveness.
 *   [ ] **Error Handling:** Gracefully handle API errors or scenarios like insufficient funds.
 

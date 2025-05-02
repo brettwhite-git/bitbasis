@@ -1,6 +1,6 @@
-import { getPortfolioMetrics, getPerformanceMetrics } from "@/lib/portfolio"
+import { getPortfolioMetrics, getPerformanceMetrics } from "@/lib/core/portfolio"
 import { DashboardContent } from "@/components/overview/dashboard-content"
-import { requireAuth } from "@/lib/server-auth"
+import { requireAuth } from "@/lib/auth/server-auth"
 
 export default async function DashboardPage() {
   // Remove test logs

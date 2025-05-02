@@ -1,8 +1,8 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui"
-import { formatCurrency, formatPercent } from "@/lib/utils"
-import type { PerformanceMetrics } from "@/lib/portfolio"
+import { formatCurrency, formatPercent } from "@/lib/utils/utils"
+import type { PerformanceMetrics } from "@/lib/core/portfolio"
 import { 
   ArrowDownIcon, 
   ArrowUpIcon, 
