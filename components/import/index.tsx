@@ -19,7 +19,8 @@ import {
   insertTransactions,
   uploadCSVFile,
   getCSVUploads,
-} from '@/lib/supabase/supabase'; // Assuming these are correctly exported
+  updateCSVUploadStatus,
+} from '@/lib/supabase/supabase'; // Add updateCSVUploadStatus to the imports
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Papa from 'papaparse';
 import { useToast } from "@/hooks/use-toast";

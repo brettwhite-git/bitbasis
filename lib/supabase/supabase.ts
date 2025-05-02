@@ -312,16 +312,25 @@ export async function uploadCSVFile(file: File) {
   }
 
   const userId = authData.user.id
-  const fileName = `${userId}/${new Date().toISOString()}-${file.name}`
+  const storageFileName = `${userId}/${new Date().toISOString()}-${file.name}`
 
   try {
+    console.log("Attempting to insert CSV upload record with:", {
+      user_id: userId,
+      filename: storageFileName,
+      original_filename: file.name,
+      file_size: file.size,
+      status: 'pending'
+    });
+
     // 1. Create an entry in the csv_uploads table
     const { data: uploadEntry, error: insertError } = await supabase
       .from('csv_uploads')
       .insert({
         user_id: userId,
-        file_name: file.name,
-        storage_path: fileName,
+        filename: storageFileName,          // Changed from file_name
+        original_filename: file.name,        // New required field
+        file_size: file.size,                // New required field
         status: 'pending',
         row_count: 0 // Initialize row count
       })
@@ -329,7 +338,13 @@ export async function uploadCSVFile(file: File) {
       .single()
 
     if (insertError) {
-      console.error('Error creating CSV upload entry:', insertError)
+      console.error('Error creating CSV upload entry:', {
+        error: insertError,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        code: insertError.code
+      });
       return { data: null, error: { message: `Failed to log upload: ${insertError.message}` } }
     }
 
@@ -337,8 +352,8 @@ export async function uploadCSVFile(file: File) {
 
     // 2. Upload the file to Supabase Storage
     const { data: storageData, error: storageError } = await supabase.storage
-      .from('csv-files')
-      .upload(fileName, file, {
+      .from('csv_uploads')  // Changed from 'csv-files' to match your bucket name
+      .upload(storageFileName, file, {
         contentType: 'text/csv'
       })
 
@@ -355,7 +370,7 @@ export async function uploadCSVFile(file: File) {
     await updateCSVUploadStatus(csvUploadId, 'processing')
 
     // 4. Return the ID for tracking
-    return { data: { csvUploadId }, error: null }
+    return { data: { id: csvUploadId }, error: null }
 
   } catch (error) {
     console.error('Error uploading CSV:', error)
@@ -382,8 +397,8 @@ export async function updateCSVUploadStatus(
 
   try {
     const updateData: Partial<Database['public']['Tables']['csv_uploads']['Update']> = {
-      status,
-      updated_at: new Date().toISOString()
+      status
+      // 'updated_at' is handled automatically by Supabase, no need to specify
     }
     if (details?.rowCount !== undefined) {
       updateData.row_count = details.rowCount
@@ -451,10 +466,10 @@ export async function deleteCSVUpload(csvUploadId: string) {
   const userId = authData.user.id
 
   try {
-    // 1. Get the CSV upload entry to find the storage path
+    // 1. Get the CSV upload entry to find the storage path (filename)
     const { data: uploadEntry, error: fetchError } = await supabase
       .from('csv_uploads')
-      .select('storage_path')
+      .select('filename')
       .eq('id', csvUploadId)
       .eq('user_id', userId)
       .single()
@@ -464,8 +479,8 @@ export async function deleteCSVUpload(csvUploadId: string) {
       return { data: null, error: { message: fetchError.message || 'CSV record not found' } }
     }
 
-    if (!uploadEntry?.storage_path) {
-      console.warn(`CSV upload ${csvUploadId} has no storage path, deleting DB entry only.`)
+    if (!uploadEntry?.filename) {
+      console.warn(`CSV upload ${csvUploadId} has no filename, deleting DB entry only.`)
     }
 
     // 2. Delete associated orders and transfers first (optional, depending on RLS/cascade)
@@ -485,20 +500,19 @@ export async function deleteCSVUpload(csvUploadId: string) {
     }
 
     // 4. Delete the file from Supabase Storage (if path exists)
-    if (uploadEntry.storage_path) {
+    if (uploadEntry.filename) {
       const { error: deleteStorageError } = await supabase.storage
-        .from('csv-files')
-        .remove([uploadEntry.storage_path])
+        .from('csv_uploads')  // Changed from 'csv-files' to match your bucket name
+        .remove([uploadEntry.filename])
 
       if (deleteStorageError) {
         // Log warning but don't fail the whole operation if storage deletion fails
-        console.warn(`Failed to delete file ${uploadEntry.storage_path} from storage:`, deleteStorageError)
+        console.warn(`Failed to delete file ${uploadEntry.filename} from storage:`, deleteStorageError)
       }
     }
 
     console.log(`Successfully deleted CSV upload ${csvUploadId} and associated data/file.`)
     return { data: { success: true }, error: null }
-
   } catch (error) {
     console.error(`Unexpected error deleting CSV upload ${csvUploadId}:`, error)
     return { data: null, error: { message: 'An unexpected error occurred during deletion' } }
