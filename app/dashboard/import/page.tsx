@@ -7,7 +7,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card"
-import { ImportForm } from "@/components/import/import-form"
+import { ImportFormContainer } from "@/components/import"
 import { Button } from "@/components/ui/button"
 import { FileDown } from "lucide-react"
 
@@ -29,7 +29,7 @@ export default function ImportPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ImportForm />
+            <ImportFormContainer />
           </CardContent>
         </Card>
       </div>

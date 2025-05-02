@@ -7,69 +7,98 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          operationName?: string
-          query?: string
-          variables?: Json
-          extensions?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
-      csv_uploads: {
+      ath: {
         Row: {
-          id: string
+          ath_date: string
           created_at: string
-          user_id: string
-          filename: string
-          original_filename: string
-          status: 'pending' | 'processing' | 'completed' | 'error'
-          row_count: number | null
-          imported_row_count: number | null
-          error_message: string | null
-          file_size: number
+          id: number
+          price_usd: number
+          source: string | null
+          updated_at: string
         }
         Insert: {
-          id?: string
+          ath_date: string
           created_at?: string
-          user_id: string
-          filename: string
-          original_filename: string
-          status: 'pending' | 'processing' | 'completed' | 'error'
-          row_count?: number | null
-          imported_row_count?: number | null
-          error_message?: string | null
-          file_size: number
+          id?: number
+          price_usd: number
+          source?: string | null
+          updated_at?: string
         }
         Update: {
-          id?: string
+          ath_date?: string
           created_at?: string
-          user_id?: string
-          filename?: string
-          original_filename?: string
-          status?: 'pending' | 'processing' | 'completed' | 'error'
-          row_count?: number | null
+          id?: number
+          price_usd?: number
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      csv_uploads: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          file_size: number
+          filename: string
+          id: string
+          imported_row_count: number | null
+          original_filename: string
+          row_count: number | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          file_size: number
+          filename: string
+          id?: string
           imported_row_count?: number | null
+          original_filename: string
+          row_count?: number | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
           error_message?: string | null
           file_size?: number
+          filename?: string
+          id?: string
+          imported_row_count?: number | null
+          original_filename?: string
+          row_count?: number | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fear_greed_index: {
+        Row: {
+          classification: string
+          created_at: string
+          date: string | null
+          id: string
+          last_updated: string
+          value: number
+        }
+        Insert: {
+          classification: string
+          created_at?: string
+          date?: string | null
+          id?: string
+          last_updated: string
+          value: number
+        }
+        Update: {
+          classification?: string
+          created_at?: string
+          date?: string | null
+          id?: string
+          last_updated?: string
+          value?: number
         }
         Relationships: []
       }
@@ -79,6 +108,7 @@ export type Database = {
           buy_currency: string | null
           buy_fiat_amount: number | null
           created_at: string
+          csv_upload_id: string | null
           date: string
           exchange: string | null
           id: number
@@ -91,16 +121,16 @@ export type Database = {
           sell_btc_currency: string | null
           service_fee: number | null
           service_fee_currency: string | null
-          type: "buy" | "sell"
+          type: string
           updated_at: string | null
           user_id: string
-          csv_upload_id: string | null
         }
         Insert: {
           asset: string
           buy_currency?: string | null
           buy_fiat_amount?: number | null
           created_at?: string
+          csv_upload_id?: string | null
           date: string
           exchange?: string | null
           id?: number
@@ -113,16 +143,16 @@ export type Database = {
           sell_btc_currency?: string | null
           service_fee?: number | null
           service_fee_currency?: string | null
-          type: "buy" | "sell"
+          type: string
           updated_at?: string | null
           user_id: string
-          csv_upload_id?: string | null
         }
         Update: {
           asset?: string
           buy_currency?: string | null
           buy_fiat_amount?: number | null
           created_at?: string
+          csv_upload_id?: string | null
           date?: string
           exchange?: string | null
           id?: number
@@ -135,118 +165,141 @@ export type Database = {
           sell_btc_currency?: string | null
           service_fee?: number | null
           service_fee_currency?: string | null
-          type?: "buy" | "sell"
+          type?: string
           updated_at?: string | null
           user_id?: string
-          csv_upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_csv_upload_id_fkey"
+            columns: ["csv_upload_id"]
+            isOneToOne: false
+            referencedRelation: "csv_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spot_price: {
+        Row: {
+          created_at: string
+          id: number
+          price_usd: number
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          price_usd: number
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          price_usd?: number
+          source?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
       transfers: {
         Row: {
-          id: number
+          amount_btc: number
+          amount_fiat: number | null
+          asset: string
           created_at: string
+          csv_upload_id: string | null
+          date: string
+          fee_amount_btc: number | null
+          hash: string | null
+          id: number
+          price: number | null
+          type: string
           updated_at: string | null
           user_id: string
-          date: string
-          type: "withdrawal" | "deposit"
-          asset: string
-          amount_btc: number
-          fee_amount_btc: number | null
-          amount_fiat: number | null
-          price: number | null
-          hash: string | null
-          csv_upload_id: string | null
         }
         Insert: {
-          id?: number
+          amount_btc: number
+          amount_fiat?: number | null
+          asset?: string
           created_at?: string
+          csv_upload_id?: string | null
+          date: string
+          fee_amount_btc?: number | null
+          hash?: string | null
+          id?: number
+          price?: number | null
+          type: string
           updated_at?: string | null
           user_id: string
-          date: string
-          type: "withdrawal" | "deposit"
-          asset?: string
-          amount_btc: number
-          fee_amount_btc?: number | null
-          amount_fiat?: number | null
-          price?: number | null
-          hash?: string | null
-          csv_upload_id?: string | null
         }
         Update: {
-          id?: number
+          amount_btc?: number
+          amount_fiat?: number | null
+          asset?: string
           created_at?: string
+          csv_upload_id?: string | null
+          date?: string
+          fee_amount_btc?: number | null
+          hash?: string | null
+          id?: number
+          price?: number | null
+          type?: string
           updated_at?: string | null
           user_id?: string
-          date?: string
-          type?: "withdrawal" | "deposit"
-          asset?: string
-          amount_btc?: number
-          fee_amount_btc?: number | null
-          amount_fiat?: number | null
-          price?: number | null
-          hash?: string | null
-          csv_upload_id?: string | null
         }
-        Relationships: []
-      }
-      spot_price: {
-        Row: {
-          id: number
-          created_at: string
-          updated_at: string
-          price_usd: number
-          source: string | null
-        }
-        Insert: {
-          id?: number
-          created_at?: string
-          updated_at?: string
-          price_usd: number
-          source?: string | null
-        }
-        Update: {
-          id?: number
-          created_at?: string
-          updated_at?: string
-          price_usd?: number
-          source?: string | null
-        }
-        Relationships: []
-      }
-      ath: {
-        Row: {
-          id: number
-          created_at: string
-          updated_at: string
-          price_usd: number
-          ath_date: string
-          source: string | null
-        }
-        Insert: {
-          id?: number
-          created_at?: string
-          updated_at?: string
-          price_usd: number
-          ath_date: string
-          source?: string | null
-        }
-        Update: {
-          id?: number
-          created_at?: string
-          updated_at?: string
-          price_usd?: number
-          ath_date?: string
-          source?: string | null
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transfers_csv_upload_id_fkey"
+            columns: ["csv_upload_id"]
+            isOneToOne: false
+            referencedRelation: "csv_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      call_update_price: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      check_and_update_btc_ath: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      fetch_and_store_btc_price_http: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      fetch_and_update_btc_spot_price: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_ath: {
+        Args: {
+          new_price_usd: number
+          new_ath_date: string
+          source_name?: string
+        }
+        Returns: undefined
+      }
+      update_btc_price: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_fear_greed_index: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_spot_price: {
+        Args: { new_price_usd: number; source_name?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
@@ -363,11 +416,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
 } as const
-
