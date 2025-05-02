@@ -73,6 +73,9 @@ export function ManageCSVs() {
         fetchUploads();
     }, [fetchUploads]);
 
+    // Filter uploads to only show completed ones
+    const completedUploads = uploads.filter(upload => upload.status === 'completed');
+
     const handleDeleteClick = (upload: UploadedCSV) => {
         setUploadToDelete(upload);
         setShowConfirmDialog(true);
@@ -130,7 +133,7 @@ export function ManageCSVs() {
             <Table>
                 <TableCaption>
 A list of your previously uploaded CSV files.
-                    {uploads.length === 0 && loadingState !== 'fetching' && " No uploads found."}
+                    {completedUploads.length === 0 && loadingState !== 'fetching' && " No completed uploads found."}
                 </TableCaption>
                 <TableHeader>
                     <TableRow>
@@ -143,7 +146,7 @@ A list of your previously uploaded CSV files.
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {uploads.map((upload) => (
+                    {completedUploads.map((upload) => (
                         <TableRow key={upload.id}>
                             <TableCell className="font-medium truncate max-w-xs">{upload.original_filename}</TableCell>
                             <TableCell>{format(new Date(upload.created_at), 'PP pp')}</TableCell>

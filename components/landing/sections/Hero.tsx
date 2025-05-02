@@ -1,22 +1,38 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, Lock } from "lucide-react"
+import { MempoolAnimation } from "@/components/animations"
 
 export function HeroSection() {
   return (
     <section className="relative overflow-hidden py-24 md:py-32 lg:py-40 text-center">
-      {/* Optional: Add subtle background grid */}
-      <div className="absolute inset-0 z-[-1] opacity-[0.07]" style={{backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
+      {/* Mempool animation background with full page coverage */}
+      <MempoolAnimation 
+        opacity={0.2} 
+        blockCount={60} 
+        fullPage={true} 
+        blockSize={{ min: 30, max: 60 }}
+        dropInterval={500}
+      />
+      
+      {/* Subtle background grid - position above animation but below content */}
+      <div 
+        className="absolute inset-0 z-[1] opacity-[0.07]" 
+        style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', 
+          backgroundSize: '20px 20px'
+        }}
+      />
 
-      <div className="container mx-auto px-4 relative">
+      <div className="container mx-auto px-4 relative z-10">
         {/* Simple background accent that matches other sections */}
         <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-bitcoin-orange/[0.04] rounded-full filter blur-[100px]" />
         <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-500/[0.02] rounded-full filter blur-[100px]" />
 
         <div className="max-w-3xl mx-auto animate-fade-in-up duration-500">
           <div className="space-y-4">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-tight">
-              Privacy focused cost basis tracking for <span className="text-transparent bg-clip-text bg-gradient-to-r from-bitcoin-orange to-[#D4A76A]">long-term Bitcoin holders</span>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-tight drop-shadow-sm">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-bitcoin-orange to-[#D4A76A]">Bitcoin</span> portfolio tracking designed for <span className="text-transparent bg-clip-text bg-gradient-to-r from-bitcoin-orange to-[#D4A76A]">hodlers</span>
             </h1>
           </div>
           
