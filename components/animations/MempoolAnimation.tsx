@@ -111,7 +111,7 @@ export function MempoolAnimation({
       // Calculate random starting position
       const xPos = Math.random() * (canvasWidth - size);
       
-      // Create block with appropriate styling
+      // Create block with appropriate styling - all solid (no hollow)
       const block = Bodies.rectangle(
         xPos, 
         -size, // Start above the viewport
@@ -120,8 +120,7 @@ export function MempoolAnimation({
         {
           render: {
             fillStyle: isOrangeBlock ? orangeColor : darkColor,
-            strokeStyle: orangeColor,
-            lineWidth: isOrangeBlock ? 0 : 1,
+            lineWidth: 0, // Set lineWidth to 0 for all blocks to ensure they're solid
             opacity: isOrangeBlock ? Math.min(opacity + 0.1, 1) : opacity,
           },
           chamfer: { radius: size / 10 }, // Rounded corners

@@ -12,9 +12,9 @@ export function BenefitsSection() {
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-bitcoin-orange/[0.07] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative z-10 flex flex-col h-full">
               <Shield className="h-12 w-12 mb-6 text-bitcoin-orange" />
-              <h3 className="font-bold text-xl text-white mb-3">Complete Privacy</h3>
+              <h3 className="font-bold text-xl text-white mb-3">Data Minimalism</h3>
               <p className="text-gray-400 text-sm leading-relaxed flex-grow">
-                Your financial data remains yours. No invasive exchange integrations or API key sharing required. Track securely via CSV imports.
+                We collect only what's necessary. No API keys, no exchange integrations, no personal details beyond basic authentication. Track your investments with simple CSV imports.
               </p>
             </div>
           </div>
@@ -23,9 +23,9 @@ export function BenefitsSection() {
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/[0.07] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative z-10 flex flex-col h-full">
               <TrendingUp className="h-12 w-12 mb-6 text-blue-400" />
-              <h3 className="font-bold text-xl text-white mb-3">Accurate Performance</h3>
+              <h3 className="font-bold text-xl text-white mb-3">For All Levels</h3>
               <p className="text-gray-400 text-sm leading-relaxed flex-grow">
-                Precisely calculate your cost basis, unrealized gains, and portfolio performance over various timeframes. Make informed decisions.
+                Whether you're new to Bitcoin or an experienced investor, our platform makes complex metrics simple. Track cost basis, gains, and performance in an intuitive interface.
               </p>
             </div>
           </div>
@@ -34,9 +34,9 @@ export function BenefitsSection() {
              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-500/[0.07] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
              <div className="relative z-10 flex flex-col h-full">
               <Lock className="h-12 w-12 mb-6 text-purple-400" />
-              <h3 className="font-bold text-xl text-white mb-3">Secure & Simple</h3>
+              <h3 className="font-bold text-xl text-white mb-3">Secure Foundation</h3>
               <p className="text-gray-400 text-sm leading-relaxed flex-grow">
-                Enjoy an intuitive interface backed by enterprise-grade security (powered by Supabase). Focus on your strategy, not complexity.
+                Built on Supabase's secure infrastructure with encrypted connections and protected database access. Your data remains under your control with transparent storage practices.
               </p>
             </div>
           </div>

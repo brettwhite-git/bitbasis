@@ -8,11 +8,11 @@ export function HeroSection() {
     <section className="relative overflow-hidden py-24 md:py-32 lg:py-40 text-center">
       {/* Mempool animation background with full page coverage */}
       <MempoolAnimation 
-        opacity={0.2} 
-        blockCount={60} 
+        opacity={0.02} 
+        blockCount={200} 
         fullPage={true} 
-        blockSize={{ min: 30, max: 60 }}
-        dropInterval={500}
+        blockSize={{ min: 10, max: 40 }}
+        dropInterval={300}
       />
       
       {/* Subtle background grid - position above animation but below content */}
