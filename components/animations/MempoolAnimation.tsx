@@ -138,7 +138,10 @@ export function MempoolAnimation({
       if (bodies.length > blockCount + 3) { // +3 for the walls and ground
         // Remove oldest blocks (skipping the first 3 which are our walls and ground)
         for (let i = 3; i < bodies.length - blockCount; i++) {
-          World.remove(engine.world, bodies[i]);
+          const body = bodies[i];
+          if (body) {
+            World.remove(engine.world, body);
+          }
         }
       }
     };
@@ -198,7 +201,7 @@ export function MempoolAnimation({
       // Properly cleanup Matter.js resources
       if (render) Render.stop(render);
       if (runnerRef.current) Runner.stop(runnerRef.current);
-      if (engine.world) World.clear(engine.world);
+      if (engine.world) World.clear(engine.world, false);
       if (engine) Engine.clear(engine);
       
       engineRef.current = null;

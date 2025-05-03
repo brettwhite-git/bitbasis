@@ -8,7 +8,7 @@ export function HeroSection() {
     <section className="relative overflow-hidden py-24 md:py-32 lg:py-40 text-center">
       {/* Mempool animation background with full page coverage */}
       <MempoolAnimation 
-        opacity={0.02} 
+        opacity={0.01} 
         blockCount={200} 
         fullPage={true} 
         blockSize={{ min: 10, max: 40 }}
@@ -44,7 +44,7 @@ export function HeroSection() {
             <Link href="/auth/sign-up">
               <Button size="lg" className="relative overflow-hidden w-full sm:w-auto bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white font-semibold px-8 py-3 shadow-lg hover:shadow-bitcoin-orange/30 transform hover:-translate-y-1 transition-all duration-300 group">
                  <Lock className="w-4 h-4 mr-2 relative z-10" />
-                 <span className="relative z-10">Start tracking privately</span>
+                 <span className="relative z-10">Start tracking</span>
                  <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 group-active:opacity-20 transition-opacity duration-300"></span>
               </Button>
             </Link>

@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ShieldCheck } from "lucide-react"
+import Link from "next/link"
 
 export function PrivacySettings() {
   // TODO: Replace defaultChecked/values with actual user preferences state
@@ -68,9 +69,9 @@ export function PrivacySettings() {
              <AlertDescription className="text-muted-foreground">
                BitBasis is committed to protecting your privacy. We never sell your data or share it with third parties
                without your explicit consent. Read our{" "}
-               <a href="/privacy" className="font-medium text-primary hover:underline">
+               <Link href="/privacy" className="font-medium text-primary hover:underline">
                  Privacy Policy
-               </a>{" "}
+               </Link>{" "}
                for more information.
              </AlertDescription>
            </Alert>
