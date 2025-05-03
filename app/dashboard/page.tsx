@@ -1,5 +1,5 @@
 import { getPortfolioMetrics, getPerformanceMetrics } from "@/lib/core/portfolio"
-import { DashboardContent } from "@/components/overview/dashboard-content"
+import { OverviewLayout } from "@/components/dashboard/overview/overview-layout"
 import { requireAuth } from "@/lib/auth/server-auth"
 
 export default async function DashboardPage() {
@@ -36,7 +36,7 @@ export default async function DashboardPage() {
     // console.log("[DashboardPage] Promise.all for metrics successful.")
     
     // console.log("[DashboardPage] Rendering DashboardContent.")
-    return <DashboardContent metrics={metrics} performance={performance} />
+    return <OverviewLayout metrics={metrics} performance={performance} />
   } catch (error) {
     console.error("[DashboardPage] Error fetching metrics:", error)
     return <div>Error loading dashboard data. Please try again later.</div>

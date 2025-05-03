@@ -270,5 +270,4 @@ export function RecentTransactions() {
       </Table>
     </div>
   )
-}
-
+} 
