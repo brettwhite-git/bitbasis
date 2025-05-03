@@ -1,12 +1,15 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui";
-import { PerformanceChart, PerformanceFilters, PerformanceContainer } from "@/components/performance/performance-chart";
-import { InvestmentInsights } from "@/components/performance/investment-insights";
+import { formatCurrency, formatPercent } from "@/lib/utils/utils";
+import { PerformanceChart, PerformanceFilters, PerformanceContainer } from "@/components/performance";
+import { InvestmentInsights } from "@/components/performance";
+import { ArrowUpIcon, ArrowDownIcon, TrendingUpIcon, TrendingDownIcon } from "lucide-react";
+import { ReturnsOverview } from "@/components/performance";
+import { DrawdownMetrics } from "@/components/performance";
+import { PerformanceMetrics } from "@/lib/core/portfolio";
 import { PerformanceData } from "@/hooks/usePerformanceData";
-import { ReturnsOverview } from "./returns-overview";
-import { DrawdownMetrics } from "./drawdown-metrics";
-import { SkeletonCard } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PersonalInsightsProps {
   performance: PerformanceData['performance'];
@@ -68,12 +71,12 @@ function PersonalInsightsSkeleton() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[525px_1fr] gap-3">
       <div className="lg:row-span-1 flex">
-        <SkeletonCard className="w-full h-[600px]" />
+        <Skeleton className="w-full h-[600px]" />
       </div>
       
       <div className="space-y-3 flex flex-col">
-        <SkeletonCard className="w-full h-[250px]" />
-        <SkeletonCard className="w-full h-[400px]" />
+        <Skeleton className="w-full h-[250px]" />
+        <Skeleton className="w-full h-[400px]" />
       </div>
     </div>
   );

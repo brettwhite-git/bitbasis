@@ -1,11 +1,9 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
-import { BitcoinHoldingsWaterfall } from "@/components/performance/bitcoin-holdings-waterfall";
-import { HodlAgeDistribution } from "@/components/performance/hodl-age-distribution";
-import { BtcHeatmap } from "@/components/performance/btc-heatmap";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BitcoinHoldingsWaterfall, HodlAgeDistribution, BtcHeatmap } from "@/components/performance";
 import { PerformanceData } from "@/hooks/usePerformanceData";
-import { SkeletonCard } from "@/components/ui/skeleton";
 
 interface HodlDistributionProps {
   performance: PerformanceData['performance'];
@@ -43,11 +41,11 @@ function HodlDistributionSkeleton() {
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <SkeletonCard className="h-[400px]" />
-        <SkeletonCard className="h-[400px]" />
+        <Skeleton className="h-[400px]" />
+        <Skeleton className="h-[400px]" />
       </div>
       
-      <SkeletonCard className="w-full h-[500px]" />
+      <Skeleton className="w-full h-[500px]" />
     </>
   );
 } 

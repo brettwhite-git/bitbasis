@@ -1,5 +1,5 @@
 import { requireAuth } from "@/lib/auth/server-auth"
-import { PerformanceOverview } from "@/components/performance/overview"
+import { PerformanceOverview } from "@/components/performance"
 
 export default async function PerformancePage() {
   const { user } = await requireAuth()

@@ -4,7 +4,7 @@ import { useState, lazy, Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui";
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { UserMetadata } from '@supabase/supabase-js';
-import { SkeletonCard } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy load tab content components
 const PersonalInsights = lazy(() => import('./personal-insights').then(mod => ({ default: mod.PersonalInsights })));
@@ -71,9 +71,9 @@ export function PerformanceOverview({ user }: PerformanceOverviewProps) {
 function TabContentSkeleton() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <SkeletonCard className="h-[400px]" />
-      <SkeletonCard className="h-[400px]" />
-      <SkeletonCard className="h-[300px] lg:col-span-2" />
+      <Skeleton className="h-[400px]" />
+      <Skeleton className="h-[400px]" />
+      <Skeleton className="h-[300px] lg:col-span-2" />
     </div>
   );
 } 
