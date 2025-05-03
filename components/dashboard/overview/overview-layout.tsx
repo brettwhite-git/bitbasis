@@ -101,8 +101,9 @@ export function OverviewLayout({ metrics, performance }: DashboardContentProps) 
         </Card>
         <div className="col-span-1 md:col-span-1 flex flex-col gap-4">
           <SavingsGoalWidget className="h-full" />
-          <BuyPatternHistogram className="h-full" />
           <FearGreedMultiGauge className="h-full" />
+          <BuyPatternHistogram className="h-full" />
+          
         </div>
       </div>
       <div className="w-full">
