@@ -7,8 +7,8 @@ import { UserMetadata } from '@supabase/supabase-js';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy load tab content components
-const PersonalInsights = lazy(() => import('./personal-insights').then(mod => ({ default: mod.PersonalInsights })));
-const HodlDistribution = lazy(() => import('./hodl-distribution').then(mod => ({ default: mod.HodlDistribution })));
+const PersonalInsights = lazy(() => import('../insights/personal-insights').then(mod => ({ default: mod.PersonalInsights })));
+const HodlDistribution = lazy(() => import('../holdings/hodl-distribution').then(mod => ({ default: mod.HodlDistribution })));
 
 interface PerformanceOverviewProps {
   user: UserMetadata;

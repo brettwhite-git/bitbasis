@@ -2,7 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BitcoinHoldingsWaterfall, HodlAgeDistribution, BtcHeatmap } from "@/components/performance";
+import { BitcoinHoldingsWaterfall } from "./bitcoin-holdings-waterfall";
+import { HodlAgeDistribution } from "./hodl-age-distribution";
+import { BtcHeatmap } from "../insights/btc-heatmap";
 import { PerformanceData } from "@/hooks/usePerformanceData";
 
 interface HodlDistributionProps {

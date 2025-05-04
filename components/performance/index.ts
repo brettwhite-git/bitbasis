@@ -1,17 +1,23 @@
-// Main container
-export { PerformanceOverview } from './overview';
+// Overview components
+export {
+  PerformanceOverview,
+  ReturnsOverview,
+  PerformanceChart,
+  PerformanceFilters,
+  PerformanceContainer
+} from './overview/exports';
 
-// Tab containers
-export { PersonalInsights } from './personal-insights';
-export { HodlDistribution } from './hodl-distribution';
+// Holdings components
+export {
+  HodlDistribution,
+  HodlAgeDistribution,
+  BitcoinHoldingsWaterfall
+} from './holdings/exports';
 
-// Metric components
-export { ReturnsOverview } from './returns-overview';
-export { DrawdownMetrics } from './drawdown-metrics';
-
-// Charts and visualizations
-export { PerformanceChart, PerformanceFilters, PerformanceContainer } from './performance-chart';
-export { InvestmentInsights } from './investment-insights';
-export { BitcoinHoldingsWaterfall } from './bitcoin-holdings-waterfall';
-export { HodlAgeDistribution } from './hodl-age-distribution';
-export { BtcHeatmap } from './btc-heatmap'; 
+// Insights components
+export {
+  PersonalInsights,
+  InvestmentInsights,
+  DrawdownMetrics,
+  BtcHeatmap
+} from './insights/exports'; 

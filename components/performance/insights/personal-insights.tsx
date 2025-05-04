@@ -2,11 +2,11 @@
 
 import { Card, CardContent } from "@/components/ui";
 import { formatCurrency, formatPercent } from "@/lib/utils/utils";
-import { PerformanceChart, PerformanceFilters, PerformanceContainer } from "@/components/performance";
-import { InvestmentInsights } from "@/components/performance";
+import { PerformanceChart, PerformanceFilters, PerformanceContainer } from "../overview/exports";
+import { InvestmentInsights } from "./investment-insights";
 import { ArrowUpIcon, ArrowDownIcon, TrendingUpIcon, TrendingDownIcon } from "lucide-react";
-import { ReturnsOverview } from "@/components/performance";
-import { DrawdownMetrics } from "@/components/performance";
+import { ReturnsOverview } from "../overview/exports";
+import { DrawdownMetrics } from "./drawdown-metrics";
 import { PerformanceMetrics } from "@/lib/core/portfolio";
 import { PerformanceData } from "@/hooks/usePerformanceData";
 import { Skeleton } from "@/components/ui/skeleton";
