@@ -1,39 +1,67 @@
 "use client"
 
-import { PerformanceReturns } from "@/components/portfolio/performance-returns"
-import SupabaseProvider from "@/components/providers/supabase-provider"
+import { usePerformanceMetrics } from "@/lib/hooks/usePerformanceMetrics"
+import { Skeleton } from "@/components/ui/skeleton"
+import { AlertCircle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { CumulativeReturns } from "./performance/cumulative-returns"
+import { CompoundGrowth } from "./performance/compound-growth"
+import { ReturnsTable } from "./performance/returns-table"
 
-interface PerformanceData {
-  cumulative: {
-    total: { percent: number; dollar: number }
-    day: { percent: number; dollar: number }
-    week: { percent: number; dollar: number }
-    month: { percent: number | null; dollar: number | null }
-    ytd: { percent: number | null; dollar: number | null }
-    threeMonth: { percent: number | null; dollar: number | null }
-    twoYear: { percent: number | null; dollar: number | null }
-    fourYear: { percent: number | null; dollar: number | null }
-    year: { percent: number | null; dollar: number | null }
-    threeYear: { percent: number | null; dollar: number | null }
-    fiveYear: { percent: number | null; dollar: number | null }
+export function PerformanceReturnsWrapper() {
+  const { data, loading, error, refetch } = usePerformanceMetrics()
+
+  if (loading) {
+    return <PerformanceSkeleton />
   }
-  compoundGrowth: {
-    total: number | null
-    oneYear: number | null
-    twoYear: number | null
-    threeYear: number | null
-    fourYear: number | null
-    fiveYear: number | null
-    sixYear: number | null
-    sevenYear: number | null
-    eightYear: number | null
+  
+  if (error) {
+    return <PerformanceError error={error} onRetry={refetch} />
   }
+  
+  if (!data) {
+    return <PerformanceError error="No performance data available" onRetry={refetch} />
+  }
+  
+  return (
+    <Card>
+      <CardHeader className="pb-0">
+        <h2 className="text-xl font-semibold">Performance Metrics</h2>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Returns Table (Cost Basis Method Comparison) */}
+        <ReturnsTable />
+
+        {/* Cumulative Returns Table */}
+        <CumulativeReturns data={data.cumulative} />
+
+        {/* Compound Growth Rate Table */}
+        <CompoundGrowth data={data.compoundGrowth} />
+      </CardContent>
+    </Card>
+  )
 }
 
-export function PerformanceReturnsWrapper({ data }: { data: PerformanceData }) {
+function PerformanceSkeleton() {
   return (
-    <SupabaseProvider>
-      <PerformanceReturns data={data} />
-    </SupabaseProvider>
+    <div className="space-y-6">
+      <Skeleton className="w-full h-[500px]" />
+    </div>
+  )
+}
+
+function PerformanceError({ error, onRetry }: { error: string, onRetry: () => Promise<void> }) {
+  return (
+    <Alert variant="destructive" className="mb-4">
+      <AlertCircle className="h-4 w-4 mr-2" />
+      <AlertDescription className="flex items-center justify-between">
+        <span>Error loading performance data: {error}</span>
+        <Button variant="outline" size="sm" onClick={() => onRetry()}>
+          Retry
+        </Button>
+      </AlertDescription>
+    </Alert>
   )
 } 

@@ -1,104 +1,65 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui"
-import { PerformanceReturnsWrapper } from "@/components/portfolio/performance-returns-wrapper"
-import { getPortfolioMetrics, getPerformanceMetrics } from "@/lib/core/portfolio"
-import { formatCurrency, formatBTC } from "@/lib/utils/utils"
-import { Database } from "@/types/supabase"
-import { requireAuth } from "@/lib/auth/server-auth"
-import { TaxLiabilityCardWrapper } from "@/components/portfolio/tax-liability-card-wrapper"
+"use client"
 
-export default async function PortfolioPage() {
-  const { supabase, user } = await requireAuth()
+import { useState } from 'react'
+import { PortfolioMetricsWrapper } from '@/components/portfolio/portfolio-metrics-wrapper'
+import { PerformanceReturnsWrapper } from '@/components/portfolio/performance-returns-wrapper'
+import { CostBasisComparisonContent, TaxLiabilityContent } from '@/components/portfolio/tax'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
-  // Fetch portfolio metrics and performance metrics
-  const [metrics, performance] = await Promise.all([
-    getPortfolioMetrics(user.id, supabase),
-    getPerformanceMetrics(user.id, supabase)
-  ])
-
-  // Ensure positive values and proper formatting
-  const totalBtc = Math.max(0, metrics.totalBtc)
-  const formattedTotalBtc = totalBtc.toFixed(8)
-  const currentValue = Math.max(0, metrics.currentValue)
-  const formattedCurrentValue = formatCurrency(currentValue)
-
+export default function PortfolioPage() {
+  const [mainTab, setMainTab] = useState('performance')
+  const [analysisTab, setAnalysisTab] = useState('cost-basis')
+  
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold tracking-tight text-white">Portfolio Details</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-bitcoin-orange">{formattedCurrentValue}</div>
-            <p className="text-xs text-muted-foreground pt-2">
-              BTC Price: {formatCurrency(metrics.currentValue / metrics.totalBtc)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cost Basis</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(metrics.totalCostBasis)}</div>
-            <p className="text-xs text-muted-foreground pt-2">
-              Avg Cost: {formatCurrency(metrics.totalCostBasis / metrics.totalBtc)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Bitcoin</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-bitcoin-orange">{formatBTC(totalBtc)}</div>
-            <p className="text-xs text-muted-foreground pt-2">
-              {metrics.totalTransactions} total transactions
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Fees Paid</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-bitcoin-orange">{formatCurrency(metrics.totalFees)}</div>
-            <p className="text-xs text-muted-foreground pt-2">
-              {metrics.totalCostBasis > 0 
-                ? `${((metrics.totalFees / metrics.totalCostBasis) * 100).toFixed(2)}% of total cost basis`
-                : 'No purchases yet'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Long-Term Holdings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-bitcoin-orange">{formatBTC(metrics.longTermHoldings)}</div>
-            <p className="text-xs text-muted-foreground pt-2">
-              Value: {formatCurrency(metrics.longTermHoldings * (metrics.currentValue / metrics.totalBtc))}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Short-Term Holdings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-bitcoin-orange">{formatBTC(metrics.shortTermHoldings)}</div>
-            <p className="text-xs text-muted-foreground pt-2">
-              Value: {formatCurrency(metrics.shortTermHoldings * (metrics.currentValue / metrics.totalBtc))}
-            </p>
-          </CardContent>
-        </Card>
-        <TaxLiabilityCardWrapper 
-          stLiability={metrics.potentialTaxLiabilityST} 
-          ltLiability={metrics.potentialTaxLiabilityLT}
-        />
-      </div>
-      <PerformanceReturnsWrapper data={performance} />
+    <div className="w-full space-y-6">
+      <h1 className="text-2xl font-bold tracking-tight text-foreground">Bitcoin Portfolio</h1>
+      
+      <PortfolioMetricsWrapper />
+      
+      <Tabs defaultValue="performance" value={mainTab} onValueChange={setMainTab} className="w-full space-y-4">
+        <TabsList className="flex w-auto mb-4 bg-transparent p-0 h-auto justify-start gap-x-1 border-b border-border">
+          <TabsTrigger 
+            value="performance"
+            className="data-[state=active]:bg-bitcoin-orange data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-none rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/50 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border"
+          >
+            Performance Metrics
+          </TabsTrigger>
+          <TabsTrigger 
+            value="analysis"
+            className="data-[state=active]:bg-bitcoin-orange data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-none rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/50 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border"
+          >
+            Portfolio Analysis
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="performance">
+          <PerformanceReturnsWrapper />
+        </TabsContent>
+        
+        <TabsContent value="analysis">
+          <Card>
+            <CardHeader className="pb-0">
+              <h2 className="text-xl font-semibold">Portfolio Analysis</h2>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <Tabs defaultValue="cost-basis" value={analysisTab} onValueChange={setAnalysisTab}>
+                <TabsList className="w-full justify-start border-b border-border mb-4">
+                  <TabsTrigger value="cost-basis">Cost Basis Methods</TabsTrigger>
+                  <TabsTrigger value="tax-liability">Tax Liability</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="cost-basis">
+                  <CostBasisComparisonContent />
+                </TabsContent>
+                <TabsContent value="tax-liability">
+                  <TaxLiabilityContent />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

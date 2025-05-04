@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Database } from '@/types/supabase';
-import { getPerformanceMetrics, getPortfolioMetrics, PerformanceMetrics } from '@/lib/core/portfolio';
+import { getPerformanceMetrics } from '@/lib/core/portfolio/performance';
+import { getPortfolioMetrics } from '@/lib/core/portfolio/metrics';
+import { PerformanceMetrics } from '@/lib/core/portfolio/types';
 import { useToast } from '@/hooks/use-toast';
 
 export interface PerformanceData {

@@ -54,7 +54,9 @@ export function PersonalInsights({ performance, orders, isLoading }: PersonalIns
                   <h3 className="text-lg font-semibold text-foreground">Performance Over Time</h3>
                   <p className="text-sm text-muted-foreground">Track your Bitcoin portfolio performance</p>
                 </div>
-                <PerformanceFilters />
+                <div className="flex items-center">
+                  <PerformanceFilters />
+                </div>
               </div>
               <div className="w-full flex-1">
                 <PerformanceChart />
