@@ -14,7 +14,9 @@ export function calculateSatsGoalData(
   duration: string,
   frequency: string,
   btcPrice: number,
-  priceGrowth: number
+  priceGrowth: number,
+  inflationRate: number = 3,
+  showInflationAdjusted: boolean = true
 ): ChartDataPoint[] | undefined {
   if (isNaN(btcGoal) || btcGoal <= 0) return undefined;
   
@@ -26,6 +28,9 @@ export function calculateSatsGoalData(
   
   const annualGrowthRate = parseFloat(priceGrowth.toString()) / 100;
   const periodicGrowthRate = Math.pow(1 + annualGrowthRate, 1 / periodsPerYear) - 1;
+  const annualInflationRate = parseFloat(inflationRate.toString()) / 100;
+  const periodicInflationRate = Math.pow(1 + annualInflationRate, 1 / periodsPerYear) - 1;
+  
   const startDate = new Date();
   const totalSatsGoal = Math.round(btcGoal * 100000000);
   const satsPerPeriod = Math.round(totalSatsGoal / totalPeriods);
@@ -35,6 +40,7 @@ export function calculateSatsGoalData(
   const result: ChartDataPoint[] = [];
   let currentPrice = btcPrice;
   let cumulativeSats = 0;
+  let cumulativeCost = 0;
   
   for (let i = 0; i < totalPeriods; i++) {
     const periodDate = addPeriods(startDate, frequency, i);
@@ -42,15 +48,28 @@ export function calculateSatsGoalData(
     const btcNeededThisPeriod = satsPerPeriod / 100000000;
     const usdNeededThisPeriod = btcNeededThisPeriod * estimatedPriceThisPeriod;
     cumulativeSats += satsPerPeriod;
+    cumulativeCost += usdNeededThisPeriod;
     const finalSats = (i === totalPeriods - 1) ? totalSatsGoal : cumulativeSats;
+
+    // Calculate inflation-adjusted values if needed
+    const yearsElapsed = i / periodsPerYear;
+    const inflationFactor = Math.pow(1 + annualInflationRate, yearsElapsed);
+    const adjustedUsdThisPeriod = showInflationAdjusted ? usdNeededThisPeriod / inflationFactor : usdNeededThisPeriod;
+    const adjustedCumulativeValue = showInflationAdjusted ? 
+      (finalSats / 100000000 * estimatedPriceThisPeriod) / inflationFactor : 
+      (finalSats / 100000000 * estimatedPriceThisPeriod);
 
     result.push({
       date: formatDateLabel(periodDate, frequency, totalPeriods),
       accumulatedSats: finalSats,
       periodicSats: satsPerPeriod,
       estimatedBtcPrice: estimatedPriceThisPeriod,
-      usdValueThisPeriod: usdNeededThisPeriod,
-      cumulativeUsdValue: finalSats / 100000000 * estimatedPriceThisPeriod
+      usdValueThisPeriod: adjustedUsdThisPeriod,
+      cumulativeUsdValue: adjustedCumulativeValue,
+      inflationAdjusted: showInflationAdjusted,
+      rawUsdValue: usdNeededThisPeriod,
+      rawCumulativeValue: finalSats / 100000000 * estimatedPriceThisPeriod,
+      inflationFactor: inflationFactor
     });
     
     currentPrice *= (1 + periodicGrowthRate);
@@ -62,12 +81,19 @@ export function calculateSatsGoalData(
     const finalPrice = currentPrice;
     
     if (lastPoint) {
-      lastPoint.cumulativeUsdValue = totalSatsGoal / 100000000 * finalPrice;
+      const lastInflationFactor = lastPoint.inflationFactor || 1;
+      const rawValue = totalSatsGoal / 100000000 * finalPrice;
+      lastPoint.rawCumulativeValue = rawValue;
+      lastPoint.cumulativeUsdValue = showInflationAdjusted ? rawValue / lastInflationFactor : rawValue;
+      
       const previousAccumulatedSats = result.length > 1 ? result[result.length - 2]?.accumulatedSats || 0 : 0;
       const satsInLastPeriod = totalSatsGoal - previousAccumulatedSats;
       lastPoint.periodicSats = satsInLastPeriod;
+      
       const priceForLastPeriodCalc = lastPoint.estimatedBtcPrice ?? finalPrice;
-      lastPoint.usdValueThisPeriod = (satsInLastPeriod / 100000000) * priceForLastPeriodCalc;
+      const rawUsdThisPeriod = (satsInLastPeriod / 100000000) * priceForLastPeriodCalc;
+      lastPoint.rawUsdValue = rawUsdThisPeriod;
+      lastPoint.usdValueThisPeriod = showInflationAdjusted ? rawUsdThisPeriod / lastInflationFactor : rawUsdThisPeriod;
     }
   }
   
@@ -82,7 +108,9 @@ export function calculateRecurringBuyData(
   duration: string,
   frequency: string,
   btcPrice: number,
-  priceGrowth: number
+  priceGrowth: number,
+  inflationRate: number = 3,
+  showInflationAdjusted: boolean = true
 ): ChartDataPoint[] | undefined {
   if (isNaN(recurringUSD) || recurringUSD <= 0) return undefined;
   
@@ -94,25 +122,51 @@ export function calculateRecurringBuyData(
   
   const annualGrowthRate = parseFloat(priceGrowth.toString()) / 100;
   const periodicGrowthRate = Math.pow(1 + annualGrowthRate, 1 / periodsPerYear) - 1;
+  const annualInflationRate = parseFloat(inflationRate.toString()) / 100;
+  const periodicInflationRate = Math.pow(1 + annualInflationRate, 1 / periodsPerYear) - 1;
+  
   const startDate = new Date();
   const result: ChartDataPoint[] = [];
   let currentPrice = btcPrice;
   let cumulativeSats = 0;
+  let totalInvested = 0;
   
   for (let i = 0; i < totalPeriods; i++) {
     const periodDate = addPeriods(startDate, frequency, i);
     const estimatedPriceThisPeriod = currentPrice;
-    const btcBoughtThisPeriod = recurringUSD / estimatedPriceThisPeriod;
+    
+    // Calculate inflation-adjusted recurring USD if needed
+    const yearsElapsed = i / periodsPerYear;
+    const inflationFactor = Math.pow(1 + annualInflationRate, yearsElapsed);
+    const adjustedRecurringUSD = showInflationAdjusted ? 
+      recurringUSD / inflationFactor : 
+      recurringUSD;
+    
+    totalInvested += recurringUSD;
+    
+    // Calculate how much BTC can be bought with the adjusted USD
+    const btcBoughtThisPeriod = adjustedRecurringUSD / estimatedPriceThisPeriod;
     const satsBoughtThisPeriod = Math.round(btcBoughtThisPeriod * 100000000);
     cumulativeSats += satsBoughtThisPeriod;
+    
+    // Calculate total value (possibly inflation-adjusted)
+    const rawCumulativeValue = cumulativeSats / 100000000 * estimatedPriceThisPeriod;
+    const adjustedCumulativeValue = showInflationAdjusted ? 
+      rawCumulativeValue / inflationFactor : 
+      rawCumulativeValue;
 
     result.push({
       date: formatDateLabel(periodDate, frequency, totalPeriods),
       accumulatedSats: cumulativeSats,
       periodicSats: satsBoughtThisPeriod,
       estimatedBtcPrice: estimatedPriceThisPeriod,
-      usdValueThisPeriod: recurringUSD,
-      cumulativeUsdValue: cumulativeSats / 100000000 * estimatedPriceThisPeriod
+      usdValueThisPeriod: adjustedRecurringUSD,
+      cumulativeUsdValue: adjustedCumulativeValue,
+      inflationAdjusted: showInflationAdjusted,
+      rawUsdValue: recurringUSD,
+      rawCumulativeValue: rawCumulativeValue,
+      inflationFactor: inflationFactor,
+      totalInvested: totalInvested
     });
     
     currentPrice *= (1 + periodicGrowthRate);
@@ -124,7 +178,10 @@ export function calculateRecurringBuyData(
     const finalPrice = currentPrice;
     
     if (lastPoint) {
-      lastPoint.cumulativeUsdValue = lastPoint.accumulatedSats / 100000000 * finalPrice;
+      const lastInflationFactor = lastPoint.inflationFactor || 1;
+      const rawValue = lastPoint.accumulatedSats / 100000000 * finalPrice;
+      lastPoint.rawCumulativeValue = rawValue;
+      lastPoint.cumulativeUsdValue = showInflationAdjusted ? rawValue / lastInflationFactor : rawValue;
     }
   }
   
@@ -264,6 +321,8 @@ export function aggregateChartData(
     let weekUsd = 0;
     let lastPointOfWeek: ChartDataPoint | null = null;
     let weekStartDateLabel = '';
+    let weekRawUsd = 0;
+    let weekTotalInvested = 0;
 
     chartData.forEach((point, index) => {
       const isStartOfWeek = index % 7 === 0;
@@ -277,12 +336,16 @@ export function aggregateChartData(
             date: weekStartDateLabel,
             periodicSats: weekSats,
             usdValueThisPeriod: weekUsd,
+            rawUsdValue: weekRawUsd,
+            totalInvested: weekTotalInvested
           });
         }
         
         // Reset for new week
         weekSats = 0;
         weekUsd = 0;
+        weekRawUsd = 0;
+        weekTotalInvested = 0;
         weekStartDateLabel = point.date;
       }
 
@@ -290,6 +353,12 @@ export function aggregateChartData(
       weekSats += point.periodicSats;
       if (point.usdValueThisPeriod) {
         weekUsd += point.usdValueThisPeriod;
+      }
+      if (point.rawUsdValue) {
+        weekRawUsd += point.rawUsdValue;
+      }
+      if (point.totalInvested) {
+        weekTotalInvested = point.totalInvested; // Use the latest value for the week
       }
 
       // Save the last point for each week
@@ -302,6 +371,8 @@ export function aggregateChartData(
           date: weekStartDateLabel,
           periodicSats: weekSats,
           usdValueThisPeriod: weekUsd,
+          rawUsdValue: weekRawUsd,
+          totalInvested: weekTotalInvested
         });
       }
     });

@@ -8,6 +8,7 @@ export const COLORS = {
   bitcoinOrange: 'hsl(33 98% 54%)', // --bitcoin-orange
   success: 'hsl(142 76% 45%)', // --success
   error: 'hsl(0 84% 60%)', // --error
+  satStacked: 'hsl(270, 70%, 65%)', // Light purple color for Sats Stacked
   
   // Theme colors
   primary: 'hsl(0 0% 98%)', // --primary

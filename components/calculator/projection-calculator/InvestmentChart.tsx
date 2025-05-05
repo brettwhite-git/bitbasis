@@ -35,6 +35,7 @@ export interface InvestmentChartProps { // Renamed interface
   chartData?: ChartDataPoint[];
   title?: string;
   bitcoinUnit: 'bitcoin' | 'satoshi';
+  showInflationAdjusted?: boolean;
 }
 
 // Mock data structure (used only if chartData is not provided)
@@ -58,7 +59,7 @@ const mockData = {
   ],
 };
 
-export function InvestmentChart({ chartData, title, bitcoinUnit }: InvestmentChartProps) { // Renamed function and props type
+export function InvestmentChart({ chartData, title, bitcoinUnit, showInflationAdjusted = true }: InvestmentChartProps) { // Renamed function and props type
   // Define chartOptions INSIDE the component to access chartData prop
   const chartOptions = {
     responsive: true,
@@ -215,13 +216,13 @@ export function InvestmentChart({ chartData, title, bitcoinUnit }: InvestmentCha
       {
         label: 'Sats Stacked This Period',
         data: chartData.map(point => point.periodicSats),
-        backgroundColor: COLORS.secondary,
+        backgroundColor: COLORS.satStacked, // Use the new blue color from constants
         type: 'bar' as const,
         stack: 'Stack 0',
         order: 3,
       },
       {
-        label: 'USD Value',
+        label: showInflationAdjusted ? 'USD Value (Inflation Adjusted)' : 'USD Value',
         data: chartData.map(point => point.cumulativeUsdValue || 0),
         backgroundColor: 'transparent',
         borderColor: COLORS.success,

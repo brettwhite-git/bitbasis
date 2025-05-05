@@ -6,7 +6,7 @@
 export type BitcoinUnit = 'bitcoin' | 'satoshi';
 
 // Calculator mode types
-export type CalculatorMode = 'satsGoal' | 'recurringBuy' | 'savingsGoal';
+export type CalculatorMode = 'investmentGoal' | 'savingsGoal';
 
 // Chart data structure
 export interface ChartDataPoint {
@@ -16,6 +16,11 @@ export interface ChartDataPoint {
   estimatedBtcPrice?: number;
   usdValueThisPeriod?: number;
   cumulativeUsdValue?: number;
+  inflationAdjusted?: boolean;
+  rawUsdValue?: number;
+  rawCumulativeValue?: number;
+  inflationFactor?: number;
+  totalInvested?: number;
 }
 
 // Projection chart data structure
