@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownRight, ArrowUpRight, ArrowDownToLine, ArrowUpFromLine, ExternalLink, CircleArrowUp, CircleArrowDown, CircleArrowLeft, CircleArrowRight } from "lucide-react"
+import { ExternalLink } from "lucide-react"
 import { getTransactions } from "@/lib/supabase/supabase"
 import { formatCurrency, formatBTC } from "@/lib/utils/utils"
 import type { Database } from "@/types/supabase"
+import { TransactionBadge } from "@/components/transactions/badges/TransactionBadge"
+import { TermBadge } from "@/components/transactions/badges/TermBadge"
 
 // Update the interface to match what getTransactions returns
 interface UnifiedTransaction {
@@ -124,15 +126,6 @@ export function RecentTransactions() {
     loadTransactions()
   }, [])
 
-  const isShortTerm = (date: string) => {
-    const transactionDate = new Date(date)
-    // Use our stored current date for consistency
-    const oneYearAgo = new Date(currentDate)
-    oneYearAgo.setFullYear(currentDate.getFullYear() - 1)
-    // Return true if the transaction date is AFTER one year ago (less than 1 year hold)
-    return transactionDate > oneYearAgo
-  }
-
   if (isLoading) {
     return <div className="flex justify-center items-center h-[300px]">Loading transactions...</div>
   }
@@ -165,107 +158,69 @@ export function RecentTransactions() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.map((transaction) => {
-            // TEMPORARY LOG: Check the actual transaction type being rendered
-            console.log('[RecentTransactions] Rendering type:', transaction.type);
-            return (
-              <TableRow key={transaction.id}>
-                {/* Mirror cell rendering from TransactionsTable */}
-                <TableCell className="text-center px-4">
-                  {new Date(transaction.date).toLocaleString(undefined, {
-                    year: 'numeric',
-                    month: 'numeric',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </TableCell>
-                <TableCell className="text-center">
-                  <Badge
-                    variant="outline"
-                    className={`w-[125px] inline-flex items-center justify-center rounded-full border shadow-sm transition-none ${
-                      // Make case-insensitive check like the main transactions table
-                      transaction.type?.toLowerCase() === "buy" 
-                        ? "bg-gradient-to-r from-bitcoin-orange/90 to-bitcoin-orange/70 border-bitcoin-orange/40 text-white" 
-                        : transaction.type?.toLowerCase() === "sell"
-                        ? "bg-gradient-to-r from-red-500/90 to-red-400/70 border-red-500/40 text-white"
-                        : transaction.type?.toLowerCase() === "deposit"
-                        ? "bg-gradient-to-r from-green-500/90 to-green-400/70 border-green-500/40 text-white"
-                        : "bg-gradient-to-r from-blue-500/90 to-blue-400/70 border-blue-500/40 text-white"
-                    }`}
+          {transactions.map((transaction) => (
+            <TableRow key={transaction.id}>
+              {/* Mirror cell rendering from TransactionsTable */}
+              <TableCell className="text-center px-4">
+                {new Date(transaction.date).toLocaleString(undefined, {
+                  year: 'numeric',
+                  month: 'numeric',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </TableCell>
+              <TableCell className="text-center">
+                <TransactionBadge type={transaction.type} />
+              </TableCell>
+              <TableCell className="text-center">
+                {transaction.type?.toLowerCase() === "buy" || transaction.type?.toLowerCase() === "sell" ? (
+                  <TermBadge date={transaction.date} currentDate={currentDate} />
+                ) : (
+                  "-"
+                )}
+              </TableCell>
+              <TableCell className="text-center">
+                {formatBTC(transaction.btc_amount, false)}
+              </TableCell>
+              <TableCell className="hidden md:table-cell text-center">
+                {transaction.price_at_tx !== null ? formatCurrency(transaction.price_at_tx) : '-'}
+              </TableCell>
+              <TableCell className="text-center">
+                {transaction.usd_value !== null ? formatCurrency(transaction.usd_value) : '-'}
+              </TableCell>
+              <TableCell className="hidden md:table-cell text-center">
+                {transaction.fee_usd !== null ? formatCurrency(transaction.fee_usd) : '-'}
+              </TableCell>
+              <TableCell className="hidden lg:table-cell text-center">
+                {transaction.exchange 
+                  ? transaction.exchange.charAt(0).toUpperCase() + transaction.exchange.slice(1).toLowerCase()
+                  : "-"}
+              </TableCell>
+              <TableCell className="hidden lg:table-cell text-center">
+                 {/* Display Network Fee BTC */}
+                {transaction.network_fee_btc && transaction.network_fee_btc !== 0 
+                  ? formatBTC(transaction.network_fee_btc, false) 
+                  : "-"}
+              </TableCell>
+              <TableCell className="hidden lg:table-cell text-center">
+                {/* Display TXID link */}
+                {transaction.txid ? (
+                  <a 
+                    href={`https://mempool.space/tx/${transaction.txid}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center text-blue-500 hover:text-blue-700"
+                    title="View transaction on Mempool.space"
                   >
-                    {/* Also make case-insensitive checks for icons */}
-                    {transaction.type?.toLowerCase() === "buy" ? (
-                      <CircleArrowRight className="mr-1 h-4 w-4" />
-                    ) : transaction.type?.toLowerCase() === "sell" ? (
-                      <CircleArrowLeft className="mr-1 h-4 w-4" />
-                    ) : transaction.type?.toLowerCase() === "deposit" ? (
-                      <CircleArrowDown className="mr-1 h-4 w-4" />
-                    ) : (
-                      <CircleArrowUp className="mr-1 h-4 w-4" />
-                    )}
-                    {/* Still display the type in uppercase */}
-                    {transaction.type.toUpperCase()}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-center">
-                  {transaction.type?.toLowerCase() === "buy" || transaction.type?.toLowerCase() === "sell" ? (
-                    <Badge
-                      variant="outline"
-                      className={`w-[70px] inline-flex items-center justify-center ${
-                        isShortTerm(transaction.date)
-                          ? "border-green-500 text-green-500"
-                          : "border-purple-500 text-purple-500"
-                      }`}
-                    >
-                      {isShortTerm(transaction.date) ? "SHORT" : "LONG"}
-                    </Badge>
-                  ) : (
-                    "-"
-                  )}
-                </TableCell>
-                <TableCell className="text-center">
-                  {formatBTC(transaction.btc_amount, false)}
-                </TableCell>
-                <TableCell className="hidden md:table-cell text-center">
-                  {transaction.price_at_tx !== null ? formatCurrency(transaction.price_at_tx) : '-'}
-                </TableCell>
-                <TableCell className="text-center">
-                  {transaction.usd_value !== null ? formatCurrency(transaction.usd_value) : '-'}
-                </TableCell>
-                <TableCell className="hidden md:table-cell text-center">
-                  {transaction.fee_usd !== null ? formatCurrency(transaction.fee_usd) : '-'}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell text-center">
-                  {transaction.exchange 
-                    ? transaction.exchange.charAt(0).toUpperCase() + transaction.exchange.slice(1).toLowerCase()
-                    : "-"}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell text-center">
-                   {/* Display Network Fee BTC */}
-                  {transaction.network_fee_btc && transaction.network_fee_btc !== 0 
-                    ? formatBTC(transaction.network_fee_btc, false) 
-                    : "-"}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell text-center">
-                  {/* Display TXID link */}
-                  {transaction.txid ? (
-                    <a 
-                      href={`https://mempool.space/tx/${transaction.txid}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center text-blue-500 hover:text-blue-700"
-                      title="View transaction on Mempool.space"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  ) : (
-                    "-"
-                  )}
-                </TableCell>
-              </TableRow>
-            )
-          })}
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                ) : (
+                  "-"
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>

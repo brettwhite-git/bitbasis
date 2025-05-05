@@ -1,6 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui"
-import { TransactionsTable } from "@/components/transactions/transactions-table"
+import { TransactionsTable } from "@/components/transactions/TransactionsTable"
 
+/**
+ * The main transactions page component that displays transaction history
+ */
 export default function TransactionsPage() {
   // Get the current date on the server
   const currentDate = new Date();
