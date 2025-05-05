@@ -3,18 +3,18 @@
 import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { getPortfolioMetrics } from '@/lib/core/portfolio/metrics'
-import { PortfolioMetrics } from '@/lib/core/portfolio/types'
+import { PortfolioMetrics, ExtendedPortfolioMetrics } from '@/lib/core/portfolio/types'
 import { Database } from '@/types/supabase'
 
 export interface UsePortfolioMetricsResult {
-  data: PortfolioMetrics | null
+  data: ExtendedPortfolioMetrics | null
   loading: boolean
   error: Error | null
   refetch: () => void
 }
 
 export function usePortfolioMetrics(): UsePortfolioMetricsResult {
-  const [data, setData] = useState<PortfolioMetrics | null>(null)
+  const [data, setData] = useState<ExtendedPortfolioMetrics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [userId, setUserId] = useState<string | null>(null)

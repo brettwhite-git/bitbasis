@@ -1,6 +1,7 @@
 "use client"
 
 import { usePortfolioMetrics } from "@/lib/hooks/usePortfolioMetrics"
+import { ExtendedPortfolioMetrics } from "@/lib/core/portfolio/types"
 import { PortfolioValue } from "./metrics/portfolio-value"
 import { CostBasis } from "./metrics/cost-basis"
 import { BitcoinHoldings } from "./metrics/bitcoin-holdings"
@@ -35,14 +36,24 @@ export function PortfolioMetricsWrapper() {
   }
 
   // Use default values of 0 if data is not available
-  const metrics = data || {
+  const metrics: ExtendedPortfolioMetrics = data || {
     totalBtc: 0,
     currentValue: 0,
     totalCostBasis: 0,
     totalTransactions: 0,
     totalFees: 0,
     longTermHoldings: 0,
-    shortTermHoldings: 0
+    shortTermHoldings: 0,
+    unrealizedGain: 0,
+    unrealizedGainPercent: 0,
+    averageBuyPrice: 0,
+    sendReceiveMetrics: {
+      totalSent: 0,
+      totalReceived: 0,
+      netTransfers: 0
+    },
+    potentialTaxLiabilityST: 0,
+    potentialTaxLiabilityLT: 0
   }
 
   // Calculate BTC price for holdings components
@@ -50,6 +61,11 @@ export function PortfolioMetricsWrapper() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <BitcoinHoldings 
+        totalBtc={metrics.totalBtc}
+        totalTransactions={metrics.totalTransactions}
+        isLoading={loading}
+      />
       <PortfolioValue 
         currentValue={metrics.currentValue}
         totalBtc={metrics.totalBtc}
@@ -58,16 +74,6 @@ export function PortfolioMetricsWrapper() {
       <CostBasis 
         totalCostBasis={metrics.totalCostBasis}
         totalBtc={metrics.totalBtc}
-        isLoading={loading}
-      />
-      <BitcoinHoldings 
-        totalBtc={metrics.totalBtc}
-        totalTransactions={metrics.totalTransactions}
-        isLoading={loading}
-      />
-      <FeesPaid 
-        totalFees={metrics.totalFees}
-        totalCostBasis={metrics.totalCostBasis}
         isLoading={loading}
       />
       <HoldingsTerm
@@ -80,6 +86,11 @@ export function PortfolioMetricsWrapper() {
         btcAmount={metrics.shortTermHoldings}
         btcPrice={btcPrice}
         term="Short-Term"
+        isLoading={loading}
+      />
+      <FeesPaid 
+        totalFees={metrics.totalFees}
+        totalCostBasis={metrics.totalCostBasis}
         isLoading={loading}
       />
     </div>
