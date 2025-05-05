@@ -17,6 +17,7 @@ import { Slider } from "@/components/ui/slider"
 import { InvestmentChart } from "./InvestmentChart"
 import { SavingsGoalCalculator } from "../savings-goal/SavingsGoalCalculator"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { BtcPriceInput } from "../utils/BtcPriceInput"
 import { 
   BitcoinUnit, 
   CalculatorMode, 
@@ -55,9 +56,19 @@ export function InvestmentCalculator() {
   const [priceGrowth, setPriceGrowth] = useState('30'); // Default 30% CAGR
   const [inflationRate, setInflationRate] = useState('3'); // Default 3% inflation
   const [showInflationAdjusted, setShowInflationAdjusted] = useState(true); // Default to showing inflation-adjusted values
+  const [customBtcPrice, setCustomBtcPrice] = useState<string | null>(null); // Custom BTC price input by user
   
   // Use Bitcoin price hook
   const { price: btcPrice, loading: priceLoading } = useBitcoinPrice();
+  
+  // Get effective BTC price (custom if set, otherwise spot price)
+  const effectiveBtcPrice = useMemo(() => {
+    if (customBtcPrice !== null) {
+      const parsedCustomPrice = parseFloat(customBtcPrice);
+      return !isNaN(parsedCustomPrice) && parsedCustomPrice > 0 ? parsedCustomPrice : btcPrice;
+    }
+    return btcPrice;
+  }, [customBtcPrice, btcPrice]);
   
   // Refs for cursor position
   const satsGoalInputRef = useRef<HTMLInputElement>(null);
@@ -89,7 +100,7 @@ export function InvestmentCalculator() {
         btcGoal,
         goalDuration,
         frequency,
-        btcPrice,
+        effectiveBtcPrice,
         parseFloat(priceGrowth),
         parseFloat(inflationRate),
         showInflationAdjusted
@@ -102,7 +113,7 @@ export function InvestmentCalculator() {
         recurringUSD,
         goalDuration,
         frequency,
-        btcPrice,
+        effectiveBtcPrice,
         parseFloat(priceGrowth),
         parseFloat(inflationRate),
         showInflationAdjusted
@@ -117,7 +128,7 @@ export function InvestmentCalculator() {
     satsGoal, // Dependency for fixed goal mode
     recurringBuyAmount, // Dependency for recurring mode
     goalDuration,
-    btcPrice,
+    effectiveBtcPrice,
     priceGrowth,
     frequency,
     inflationRate,
@@ -249,12 +260,12 @@ export function InvestmentCalculator() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-[650px]">
                 {/* Input Section (Left) - Combined calculator */}
                 <div className="md:col-span-1">
-                  <div className="h-full p-6 rounded-md border border-border bg-muted/30 space-y-8 flex flex-col">
+                  <div className="h-full p-6 rounded-md border border-border bg-muted/30 space-y-5 flex flex-col">
                     {/* Goal Type Selector */}
-                    <div className="space-y-3">
-                      <Label className="text-base">Goal Type</Label>
+                    <div>
+                      <Label className="text-base mb-2 block">Goal Type</Label>
                       <Select value={goalType} onValueChange={(value) => setGoalType(value as 'fixed' | 'recurring')}>
-                        <SelectTrigger className="bg-background border-input">
+                        <SelectTrigger className="h-10 bg-background border-input">
                           <SelectValue placeholder="Select goal type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -263,38 +274,38 @@ export function InvestmentCalculator() {
                         </SelectContent>
                       </Select>
                     </div>
-
-                    {/* Fiat Currency */}
-                    <div className="space-y-3">
-                      <Label className="text-base">Fiat Currency</Label>
-                      <Select defaultValue="USD">
-                        <SelectTrigger className="bg-background border-input">
-                          <SelectValue placeholder="Select currency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USD">USD ($)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    
+                    {/* BTC Price */}
+                    <div>
+                      <Label className="text-base mb-2 block">BTC Price</Label>
+                      <div className="mt-0">
+                        <BtcPriceInput 
+                          customBtcPrice={customBtcPrice}
+                          setCustomBtcPrice={setCustomBtcPrice}
+                          spotPrice={btcPrice}
+                          loading={priceLoading}
+                        />
+                      </div>
                     </div>
 
                     {/* Bitcoin Unit */}
-                    <div className="space-y-3">
-                      <Label className="text-base">Bitcoin Unit</Label>
-                      <RadioGroup value={bitcoinUnit} onValueChange={(value) => setBitcoinUnit(value as BitcoinUnit)} className="grid grid-cols-2 gap-3">
-                        <div className="flex items-center space-x-2">
+                    <div>
+                      <Label className="text-base mb-2 block">Bitcoin Unit</Label>
+                      <RadioGroup value={bitcoinUnit} onValueChange={(value) => setBitcoinUnit(value as BitcoinUnit)} className="grid grid-cols-2 gap-3 mt-0">
+                        <div className="flex items-center">
                           <RadioGroupItem value="bitcoin" id="bitcoin" className="peer sr-only" />
                           <Label
                             htmlFor="bitcoin"
-                            className="flex-1 cursor-pointer rounded-md border border-input px-3 py-2 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange"
+                            className="flex-1 cursor-pointer rounded-md border border-input px-4 py-3 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center"
                           >
                             Bitcoin
                           </Label>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center">
                           <RadioGroupItem value="satoshi" id="satoshi" className="peer sr-only" />
                           <Label
                             htmlFor="satoshi"
-                            className="flex-1 cursor-pointer rounded-md border border-input px-3 py-2 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange"
+                            className="flex-1 cursor-pointer rounded-md border border-input px-4 py-3 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center"
                           >
                             Satoshi
                           </Label>
@@ -303,15 +314,15 @@ export function InvestmentCalculator() {
                     </div>
 
                     {/* Buying Frequency */}
-                    <div className="space-y-3">
-                      <Label className="text-base">Buying Frequency</Label>
-                      <RadioGroup value={frequency} onValueChange={setFrequency} className="grid grid-cols-4 gap-3">
+                    <div>
+                      <Label className="text-base mb-2 block">Buying Frequency</Label>
+                      <RadioGroup value={frequency} onValueChange={setFrequency} className="grid grid-cols-4 gap-2 mt-0">
                         {["daily", "weekly", "monthly", "yearly"].map((period) => (
-                          <div key={`freq-${period}`} className="flex items-center space-x-2">
+                          <div key={`freq-${period}`} className="flex items-center">
                             <RadioGroupItem value={period} id={`freq-${period}`} className="peer sr-only" />
                             <Label
                               htmlFor={`freq-${period}`}
-                              className="flex-1 cursor-pointer rounded-md border border-input px-3 py-2 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center capitalize"
+                              className="flex-1 cursor-pointer rounded-md border border-input px-0 py-3 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center capitalize"
                             >
                               {getFrequencyDetails(period).label}
                             </Label>
@@ -322,9 +333,9 @@ export function InvestmentCalculator() {
 
                     {/* Conditional Input based on Goal Type */}
                     {goalType === 'fixed' ? (
-                      <div className="space-y-3">
-                        <Label className="text-base">BTC Goal</Label>
-                        <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-base mb-2 block">BTC Goal</Label>
+                        <div className="grid grid-cols-2 gap-3 mt-0">
                           {bitcoinUnit === 'bitcoin' ? (
                             <>
                               {/* BTC Input Field */}
@@ -335,7 +346,7 @@ export function InvestmentCalculator() {
                                   placeholder="0.1"
                                   value={displayGoalValue} // Show formatted BTC
                                   onChange={handleBtcGoalChange}
-                                  className="pr-16 bg-muted/50 border-input"
+                                  className="pr-16 pl-3 h-10 bg-muted/50 border-input"
                                   inputMode="decimal"
                                 />
                                 <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
@@ -344,7 +355,7 @@ export function InvestmentCalculator() {
                               </div>
                               {/* Sats Display Field */}
                               <div className="relative">
-                                <div className="flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background h-9">
+                                <div className="flex items-center rounded-md border border-input bg-background px-3 h-10 text-sm ring-offset-background">
                                   <span className="text-sm mr-2 text-muted-foreground">=</span>
                                   <span className="flex-1 text-sm font-medium">{btcToSats(satsGoal)}</span>
                                   <span className="ml-1 text-sm text-muted-foreground">sats</span>
@@ -361,7 +372,7 @@ export function InvestmentCalculator() {
                                   placeholder="10,000,000"
                                   value={displayGoalValue} // Show formatted Sats
                                   onChange={handleSatsInputChange}
-                                  className="pr-16 bg-muted/50 border-input"
+                                  className="pr-16 pl-3 h-10 bg-muted/50 border-input"
                                   inputMode="numeric" // Use numeric for sats
                                 />
                                 <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
@@ -370,7 +381,7 @@ export function InvestmentCalculator() {
                               </div>
                               {/* BTC Display Field */}
                               <div className="relative">
-                                <div className="flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background h-9">
+                                <div className="flex items-center rounded-md border border-input bg-background px-3 h-10 text-sm ring-offset-background">
                                   <span className="text-sm mr-2 text-muted-foreground">=</span>
                                   <span className="flex-1 text-sm font-medium">{formatBTC(satsGoal)}</span>
                                   <span className="ml-1 text-sm text-muted-foreground">BTC</span>
@@ -381,15 +392,15 @@ export function InvestmentCalculator() {
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-3">
-                        <Label className="text-base">Recurring Buy Amount</Label>
-                        <div className="relative">
+                      <div>
+                        <Label className="text-base mb-2 block">Recurring Buy Amount</Label>
+                        <div className="relative mt-0">
                           <Input
                             type="text"
                             placeholder="100"
                             value={recurringBuyAmount} // Display the raw state value
                             onChange={handleRecurringBuyAmountChange}
-                            className="pl-8 pr-10 bg-muted/50 border-input" // Padding for symbols and increased height
+                            className="pl-8 pr-10 h-10 bg-muted/50 border-input" // Match height with other inputs
                             inputMode="decimal"
                           />
                           <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-muted-foreground">
@@ -403,12 +414,12 @@ export function InvestmentCalculator() {
                     )}
 
                     {/* Goal Date Slider */}
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
                         <Label className="text-base">Goal Date</Label>
                         <span className="font-medium dark:text-gray-100 text-base">{getDurationDetails(goalDuration).label}</span>
                       </div>
-                      <div className="space-y-3 mt-2">
+                      <div className="mt-0">
                         <div className="relative pt-5">
                           <div className="absolute top-0 left-0 right-0 flex justify-between text-xs text-muted-foreground px-1">
                             <span>1M</span>
@@ -446,12 +457,12 @@ export function InvestmentCalculator() {
                     </div>
 
                     {/* Compound Annual Growth Rate (CAGR) Slider */}
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <Label htmlFor="cagrSlider" className="dark:text-gray-300 text-base">Compound Annual Growth Rate (CAGR)</Label>
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Label htmlFor="cagrSlider" className="text-base">Compound Annual Growth Rate (CAGR)</Label>
                         <span className="font-medium dark:text-gray-100 text-base">{priceGrowth}%</span>
                       </div>
-                      <div className="space-y-3 mt-2">
+                      <div className="mt-0">
                         <Slider
                           id="cagrSlider"
                           min={0}
@@ -467,12 +478,12 @@ export function InvestmentCalculator() {
                     </div>
 
                     {/* Inflation Rate Slider */}
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <Label htmlFor="inflationSlider" className="dark:text-gray-300 text-base">Inflation Rate</Label>
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Label htmlFor="inflationSlider" className="text-base">Inflation Rate</Label>
                         <span className="font-medium dark:text-gray-100 text-base">{inflationRate}%</span>
                       </div>
-                      <div className="space-y-3 mt-2">
+                      <div className="mt-0">
                         <Slider
                           id="inflationSlider"
                           min={0}
@@ -485,7 +496,7 @@ export function InvestmentCalculator() {
                           className="w-full cursor-pointer h-3 rounded-lg appearance-none bg-primary/20 dark:bg-primary/10"
                         />
                       </div>
-                      <div className="flex items-center space-x-2 mt-2">
+                      <div className="flex items-center space-x-2 mt-3">
                         <Checkbox 
                           id="showInflationAdjusted" 
                           checked={showInflationAdjusted}

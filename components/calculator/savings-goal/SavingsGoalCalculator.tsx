@@ -15,6 +15,7 @@ import { CheckCircle, Circle, LoaderCircle, Trash2 } from "lucide-react";
 import { useBitcoinPrice } from '@/hooks/useBitcoinPrice';
 import { formatCurrency } from '../utils/format-utils';
 import { calculateProjection } from '../utils/calculation-utils';
+import { BtcPriceInput } from "../utils/BtcPriceInput";
 import { ProjectionPoint, CalculateProjectionParams, ProjectionResult, SavedGoalData } from '../types/calculator-types';
 // import { Line } from 'react-chartjs-2'; // We'll add chart imports later
 // We'll need Chart.js core and scales too later
@@ -32,9 +33,19 @@ export function SavingsGoalCalculator() {
   const [showInflationAdjusted, setShowInflationAdjusted] = useState(true);
   const [targetBtcAmount, setTargetBtcAmount] = useState(0.1);
   const [startDate, setStartDate] = useState(new Date());
+  const [customBtcPrice, setCustomBtcPrice] = useState<string | null>(null); // Custom BTC price input by user
 
   // Use Bitcoin price hook instead of manual input
-  const { price: currentBtcPriceUSD, loading: priceLoading } = useBitcoinPrice();
+  const { price: spotBtcPrice, loading: priceLoading } = useBitcoinPrice();
+
+  // Get effective BTC price (custom if set, otherwise spot price)
+  const currentBtcPriceUSD = useMemo(() => {
+    if (customBtcPrice !== null) {
+      const parsedCustomPrice = parseFloat(customBtcPrice);
+      return !isNaN(parsedCustomPrice) && parsedCustomPrice > 0 ? parsedCustomPrice : spotBtcPrice;
+    }
+    return spotBtcPrice;
+  }, [customBtcPrice, spotBtcPrice]);
 
   // State for Calculated Outputs
   const [projectedValueUSD, setProjectedValueUSD] = useState(0);
@@ -510,19 +521,16 @@ export function SavingsGoalCalculator() {
                 </div>
             </div>
 
-             {/* Estimated BTC Price Display */}
-             <div className="space-y-2">
-                <Label htmlFor="estimatedBtcPrice">Estimated BTC Price</Label>
-                {/* Remove the flex container and the extra span */}
-                {/* Apply input-like styling to the price display div */}
-                <div id="estimatedBtcPrice" className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
-                    {priceLoading ? (
-                        <span className="text-muted-foreground">Loading...</span>
-                    ) : (
-                        <span>${formatCurrency(currentBtcPriceUSD)}</span>
-                    )}
-                </div>
-            </div>
+             {/* BTC Price Input - Add this where appropriate in the UI */}
+             <div className="mb-6">
+               <BtcPriceInput 
+                 customBtcPrice={customBtcPrice}
+                 setCustomBtcPrice={setCustomBtcPrice}
+                 spotPrice={spotBtcPrice}
+                 loading={priceLoading}
+                 label="Bitcoin Price"
+               />
+             </div>
 
              {/* Target BTC Amount */}
              <div>
