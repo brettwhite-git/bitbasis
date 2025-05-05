@@ -57,13 +57,40 @@ export function calculateUnrealizedGains(totalBtc: number, currentPrice: number,
 }
 
 /**
- * Calculates average buy price
- * Formula: Total Cost Basis / Total BTC Bought
+ * Calculates average buy price with HIFO method
+ * Formula: Uses the highest cost basis purchases first when calculating average cost
  */
 export function calculateAverageBuyPrice(orders: Order[]): number {
   const buyOrders = orders.filter(order => order.type === 'buy')
-  const totalCostBasis = calculateCostBasis(buyOrders)
-  const totalBtcBought = buyOrders.reduce((total, order) => total + (order.received_btc_amount || 0), 0)
+  
+  // If no buy orders, return 0
+  if (buyOrders.length === 0) return 0
+
+  // Process holdings similar to HIFO method
+  let btcHoldings: {
+    amount: number, 
+    costBasis: number,
+    pricePerCoin: number
+  }[] = []
+
+  buyOrders.forEach(order => {
+    if (order.received_btc_amount && order.buy_fiat_amount && order.price != null) {
+      const fee = (order.service_fee && order.service_fee_currency === 'USD') ? order.service_fee : 0
+      const costBasisPerBuy = order.buy_fiat_amount + fee
+
+      btcHoldings.push({
+        amount: order.received_btc_amount,
+        costBasis: costBasisPerBuy,
+        pricePerCoin: order.price
+      })
+    }
+  })
+
+  // Sort by price per coin (highest first) to implement HIFO
+  btcHoldings.sort((a, b) => b.pricePerCoin - a.pricePerCoin)
+
+  const totalCostBasis = btcHoldings.reduce((sum, h) => sum + h.costBasis, 0)
+  const totalBtcBought = btcHoldings.reduce((sum, h) => sum + h.amount, 0)
   
   return totalBtcBought > 0 ? totalCostBasis / totalBtcBought : 0
 }

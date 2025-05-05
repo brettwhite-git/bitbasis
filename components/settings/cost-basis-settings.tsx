@@ -43,14 +43,13 @@ export function CostBasisSettings() {
           </div>
         </div>
         <div className="flex items-start space-x-2 w-full">
-          <RadioGroupItem value="average" id="average" className="mt-1" />
+          <RadioGroupItem value="hifo" id="hifo" className="mt-1" />
           <div className="grid gap-1.5 flex-1">
-            <Label htmlFor="average" className="font-medium">
-              Average Cost
+            <Label htmlFor="hifo" className="font-medium">
+              Highest In, First Out (HIFO)
             </Label>
             <p className="text-sm text-muted-foreground">
-              Calculates the cost basis by taking the total amount spent on all Bitcoin purchases and dividing by the
-              total number of Bitcoin acquired.
+              Assumes the Bitcoin purchased at the highest price is the first one you sell. This method typically minimizes capital gains by maximizing the cost basis.
             </p>
           </div>
         </div>

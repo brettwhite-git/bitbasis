@@ -24,7 +24,7 @@ type CostBasisResult = {
   remainingBtc: number
 }
 
-type SortField = 'method' | 'totalBtc' | 'costBasis' | 'averageCost' | 'realizedGains' | 'unrealizedGain' | 'unrealizedGainPercent' | 'taxLiabilityST' | 'taxLiabilityLT'
+type SortField = 'method' | 'totalBtc' | 'costBasis' | 'averageCost' | 'realizedGains' | 'unrealizedGain' | 'unrealizedGainPercent' | 'taxLiabilityST' | 'taxLiabilityLT' | 'totalTaxLiability'
 type SortConfig = { field: SortField, direction: 'asc' | 'desc' }
 
 export function ReturnsTable() {
@@ -59,9 +59,9 @@ export function ReturnsTable() {
   // Function to sort the results
   const getSortedResults = () => {
     const results = [
-      { name: 'Average Cost', results: averageResults },
       { name: 'FIFO', results: fifoResults },
-      { name: 'LIFO', results: lifoResults }
+      { name: 'LIFO', results: lifoResults },
+      { name: 'HIFO', results: averageResults }
     ].filter((item): item is { name: string; results: CostBasisResult } => item.results !== null)
 
     return results.sort((a, b) => {
@@ -78,9 +78,6 @@ export function ReturnsTable() {
         case 'costBasis':
           comparison = a.results.totalCostBasis - b.results.totalCostBasis
           break
-        case 'averageCost':
-          comparison = a.results.averageCost - b.results.averageCost
-          break
         case 'realizedGains':
           comparison = a.results.realizedGains - b.results.realizedGains
           break
@@ -95,6 +92,11 @@ export function ReturnsTable() {
           break
         case 'taxLiabilityLT':
           comparison = a.results.potentialTaxLiabilityLT - b.results.potentialTaxLiabilityLT
+          break
+        case 'totalTaxLiability':
+          const aTotalTax = a.results.potentialTaxLiabilityST + a.results.potentialTaxLiabilityLT
+          const bTotalTax = b.results.potentialTaxLiabilityST + b.results.potentialTaxLiabilityLT
+          comparison = aTotalTax - bTotalTax
           break
       }
       return sortConfig.direction === 'asc' ? comparison : -comparison
@@ -143,7 +145,7 @@ export function ReturnsTable() {
         // 3. Calculate results for each method using the fetched data
         const fifo = await calculateCostBasis(user.id, 'FIFO', orders, currentPrice)
         const lifo = await calculateCostBasis(user.id, 'LIFO', orders, currentPrice)
-        const average = await calculateCostBasis(user.id, 'Average Cost', orders, currentPrice)
+        const average = await calculateCostBasis(user.id, 'HIFO', orders, currentPrice)
 
         setFifoResults(fifo)
         setLifoResults(lifo)
@@ -174,42 +176,37 @@ export function ReturnsTable() {
           <Table className="table-fixed w-full">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead onClick={() => handleSort('method')} className="cursor-pointer w-[10.625%] text-center">
+                <TableHead onClick={() => handleSort('method')} className="cursor-pointer w-[11.11%] text-center">
                   <div className="flex items-center justify-center gap-2">
                     Method {getSortIcon('method')}
                   </div>
                 </TableHead>
-                <TableHead onClick={() => handleSort('totalBtc')} className="cursor-pointer w-[10.625%] text-center">
+                <TableHead onClick={() => handleSort('totalBtc')} className="cursor-pointer w-[11.11%] text-center">
                   <div className="flex items-center justify-center gap-2">
                     Total BTC {getSortIcon('totalBtc')}
                   </div>
                 </TableHead>
-                <TableHead onClick={() => handleSort('costBasis')} className="cursor-pointer w-[10.625%] text-center">
+                <TableHead onClick={() => handleSort('costBasis')} className="cursor-pointer w-[11.11%] text-center">
                   <div className="flex items-center justify-center gap-2">
                     Cost Basis {getSortIcon('costBasis')}
                   </div>
                 </TableHead>
-                <TableHead onClick={() => handleSort('averageCost')} className="cursor-pointer w-[10.625%] text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    Average Cost {getSortIcon('averageCost')}
-                  </div>
-                </TableHead>
-                <TableHead onClick={() => handleSort('realizedGains')} className="cursor-pointer w-[10.625%] text-center">
+                <TableHead onClick={() => handleSort('realizedGains')} className="cursor-pointer w-[11.11%] text-center">
                   <div className="flex items-center justify-center gap-2">
                     Realized Gains {getSortIcon('realizedGains')}
                   </div>
                 </TableHead>
-                <TableHead onClick={() => handleSort('unrealizedGain')} className="cursor-pointer w-[10.625%] text-center">
+                <TableHead onClick={() => handleSort('unrealizedGain')} className="cursor-pointer w-[11.11%] text-center">
                   <div className="flex items-center justify-center gap-2">
                     Unrealized Gains {getSortIcon('unrealizedGain')}
                   </div>
                 </TableHead>
-                <TableHead onClick={() => handleSort('unrealizedGainPercent')} className="cursor-pointer w-[10.625%] text-center">
+                <TableHead onClick={() => handleSort('unrealizedGainPercent')} className="cursor-pointer w-[11.11%] text-center">
                   <div className="flex items-center justify-center gap-2">
                     Unrealized % {getSortIcon('unrealizedGainPercent')}
                   </div>
                 </TableHead>
-                <TableHead onClick={() => handleSort('taxLiabilityST')} className="cursor-pointer w-[10.625%] text-center">
+                <TableHead onClick={() => handleSort('taxLiabilityST')} className="cursor-pointer w-[11.11%] text-center">
                   <div className="flex items-center justify-center gap-2">
                     Tax Liability ST {getSortIcon('taxLiabilityST')}
                     <TooltipProvider delayDuration={0}>
@@ -218,13 +215,13 @@ export function ReturnsTable() {
                           <Info className="h-4 w-4 text-bitcoin-orange" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Consult tax advisor for actual liability</p>
+                          <p>Short-term tax liability (37% rate)<br/>Consult tax advisor for actual liability</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </div>
                 </TableHead>
-                <TableHead onClick={() => handleSort('taxLiabilityLT')} className="cursor-pointer w-[10.625%] text-center">
+                <TableHead onClick={() => handleSort('taxLiabilityLT')} className="cursor-pointer w-[11.11%] text-center">
                   <div className="flex items-center justify-center gap-2">
                     Tax Liability LT {getSortIcon('taxLiabilityLT')}
                     <TooltipProvider delayDuration={0}>
@@ -233,7 +230,22 @@ export function ReturnsTable() {
                           <Info className="h-4 w-4 text-bitcoin-orange" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Consult tax advisor for actual liability</p>
+                          <p>Long-term tax liability (20% rate)<br/>Consult tax advisor for actual liability</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </TableHead>
+                <TableHead onClick={() => handleSort('totalTaxLiability')} className="cursor-pointer w-[11.11%] text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    Total Tax Liability {getSortIcon('totalTaxLiability')}
+                    <TooltipProvider delayDuration={0}>
+                      <Tooltip>
+                        <TooltipTrigger className="cursor-default">
+                          <Info className="h-4 w-4 text-bitcoin-orange" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Sum of ST (37%) and LT (20%) tax liabilities<br/>Consult tax advisor for actual liability</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -244,15 +256,15 @@ export function ReturnsTable() {
             <TableBody>
               {getSortedResults().map(({ name, results }) => (
                 <TableRow key={name} className="hover:bg-muted/50">
-                  <TableCell className="font-medium text-center w-[10.625%]">{name}</TableCell>
-                  <TableCell className="text-center w-[10.625%]">{results.remainingBtc.toFixed(8)}</TableCell>
-                  <TableCell className="text-center w-[10.625%]">{formatCurrency(results.totalCostBasis)}</TableCell>
-                  <TableCell className="text-center w-[10.625%]">{formatCurrency(results.averageCost)}</TableCell>
-                  <TableCell className="text-center w-[10.625%]">{formatCurrency(results.realizedGains)}</TableCell>
-                  <TableCell className="text-center w-[10.625%]">{formatCurrency(results.unrealizedGain)}</TableCell>
-                  <TableCell className="text-center w-[10.625%]">{formatPercent(results.unrealizedGainPercent)}</TableCell>
-                  <TableCell className="text-center w-[10.625%]">{formatCurrency(results.potentialTaxLiabilityST)}</TableCell>
-                  <TableCell className="text-center w-[10.625%]">{formatCurrency(results.potentialTaxLiabilityLT)}</TableCell>
+                  <TableCell className="font-medium text-center w-[11.11%]">{name}</TableCell>
+                  <TableCell className="text-center w-[11.11%]">{results.remainingBtc.toFixed(8)}</TableCell>
+                  <TableCell className="text-center w-[11.11%]">{formatCurrency(results.totalCostBasis)}</TableCell>
+                  <TableCell className="text-center w-[11.11%]">{formatCurrency(results.realizedGains)}</TableCell>
+                  <TableCell className="text-center w-[11.11%]">{formatCurrency(results.unrealizedGain)}</TableCell>
+                  <TableCell className="text-center w-[11.11%]">{formatPercent(results.unrealizedGainPercent)}</TableCell>
+                  <TableCell className="text-center w-[11.11%]">{formatCurrency(results.potentialTaxLiabilityST)}</TableCell>
+                  <TableCell className="text-center w-[11.11%]">{formatCurrency(results.potentialTaxLiabilityLT)}</TableCell>
+                  <TableCell className="text-center w-[11.11%]">{formatCurrency(results.potentialTaxLiabilityST + results.potentialTaxLiabilityLT)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

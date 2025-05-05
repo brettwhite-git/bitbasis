@@ -5,7 +5,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/types/supabase'
 import { calculateCostBasis } from '@/lib/core/portfolio/cost-basis'
 
-export type CostBasisMethod = 'FIFO' | 'LIFO' | 'Average Cost'
+export type CostBasisMethod = 'FIFO' | 'LIFO' | 'HIFO'
 
 export interface CostBasisResult {
   totalCostBasis: number
@@ -28,7 +28,7 @@ export interface UseCostBasisCalculationResult {
 }
 
 export function useCostBasisCalculation(
-  initialMethod: CostBasisMethod = 'Average Cost'
+  initialMethod: CostBasisMethod = 'HIFO'
 ): UseCostBasisCalculationResult {
   const [data, setData] = useState<CostBasisResult | null>(null)
   const [loading, setLoading] = useState(true)

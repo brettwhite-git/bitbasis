@@ -160,7 +160,7 @@ export interface SortConfig {
  */
 export interface PortfolioFunctions {
   getPortfolioMetrics: (userId: string, supabase: SupabaseClient<Database>) => Promise<ExtendedPortfolioMetrics>
-  calculateCostBasis: (userId: string, method: 'FIFO' | 'LIFO' | 'Average Cost', orders: any[], currentPrice: number) => Promise<CostBasisMethodResult>
+  calculateCostBasis: (userId: string, method: 'FIFO' | 'LIFO' | 'HIFO', orders: any[], currentPrice: number) => Promise<CostBasisMethodResult>
   getPerformanceMetrics: (userId: string, supabase: SupabaseClient<Database>) => Promise<PerformanceMetrics>
   calculateDCAPerformance: (orders: any[], currentPrice: number) => DCAPerformanceResult
 }

@@ -1,4 +1,2 @@
-export { CostBasisComparison } from './cost-basis-comparison'
-export { TaxLiability } from './tax-liability'
-export { CostBasisComparisonContent } from './cost-basis-comparison-content'
-export { TaxLiabilityContent } from './tax-liability-content' 
+// This file is kept as a placeholder for future tax-related components
+// All previous tax-related components have been removed 

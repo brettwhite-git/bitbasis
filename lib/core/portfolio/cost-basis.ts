@@ -9,7 +9,7 @@ const SHORT_TERM_TAX_RATE = 0.37 // Updated placeholder ST rate
 const LONG_TERM_TAX_RATE = 0.20  // Updated placeholder LT rate
 
 /**
- * Calculates cost basis using the specified method (FIFO, LIFO, or Average Cost)
+ * Calculates cost basis using the specified method (FIFO, LIFO, or HIFO)
  * @param userId User ID for logging purposes
  * @param method Cost basis calculation method
  * @param orders Array of buy/sell orders
@@ -18,7 +18,7 @@ const LONG_TERM_TAX_RATE = 0.20  // Updated placeholder LT rate
  */
 export async function calculateCostBasis(
   userId: string,
-  method: 'FIFO' | 'LIFO' | 'Average Cost',
+  method: 'FIFO' | 'LIFO' | 'HIFO',
   orders: Order[],
   currentPrice: number
 ): Promise<CostBasisMethodResult> {
@@ -57,59 +57,7 @@ export async function calculateCostBasis(
 
     const remainingBtc = Math.max(0, runningBalance)
 
-    // --- Average Cost Method --- 
-    if (method === 'Average Cost') {
-      let totalUsdSpent = 0
-      let totalUsdReceived = 0
-
-      orders.forEach(order => {
-        if (order.type === 'buy') {
-          if (order.buy_fiat_amount) {
-            totalUsdSpent += order.buy_fiat_amount
-          }
-          // Ensure service_fee and currency are checked correctly
-          if (order.service_fee && order.service_fee_currency === 'USD') {
-            totalUsdSpent += order.service_fee
-          }
-        } else if (order.type === 'sell') {
-          if (order.received_fiat_amount) {
-            totalUsdReceived += order.received_fiat_amount
-          }
-        }
-      })
-
-      const averageCost = totalBtcBought > 0 ? totalUsdSpent / totalBtcBought : 0 
-      const currentValue = remainingBtc * currentPrice
-      const costBasisOfRemaining = remainingBtc * averageCost
-      const realizedGains = totalUsdReceived - (totalSold * averageCost) // Gain/loss from sales
-      const unrealizedGain = currentValue - costBasisOfRemaining // Gain/loss on remaining holdings
-      const unrealizedGainPercent = costBasisOfRemaining > 0 
-        ? (unrealizedGain / costBasisOfRemaining) * 100 
-        : 0
-
-      // Calculate potential tax liability using proportions
-      let potentialTaxLiabilityST = 0
-      let potentialTaxLiabilityLT = 0
-      if (unrealizedGain > 0 && totalBtcBought > 0) {
-        const shortTermProportion = totalBtcBought > 0 ? totalShortTermBtcBought / totalBtcBought : 0
-        const longTermProportion = totalBtcBought > 0 ? totalLongTermBtcBought / totalBtcBought : 0
-        potentialTaxLiabilityST = unrealizedGain * shortTermProportion * SHORT_TERM_TAX_RATE
-        potentialTaxLiabilityLT = unrealizedGain * longTermProportion * LONG_TERM_TAX_RATE
-      }
-
-      return {
-        totalCostBasis: costBasisOfRemaining, // Cost basis of *remaining* BTC
-        averageCost, // Average cost of *all* bought BTC
-        unrealizedGain,
-        unrealizedGainPercent,
-        potentialTaxLiabilityST,
-        potentialTaxLiabilityLT,
-        realizedGains,
-        remainingBtc
-      }
-    }
-
-    // --- FIFO and LIFO Methods --- 
+    // --- FIFO, LIFO, and HIFO Methods --- 
     let btcHoldings: BTCHolding[] = []
     let realizedGains = 0
 
@@ -131,11 +79,23 @@ export async function calculateCostBasis(
 
     // Clone and sort holdings based on method for processing sells
     let holdingsToProcess = [...btcHoldings] // Work on a copy
-    holdingsToProcess.sort((a, b) => 
-      method === 'FIFO' 
-        ? new Date(a.date).getTime() - new Date(b.date).getTime()
-        : new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
+    
+    if (method === 'FIFO') {
+      // Sort by date (oldest first)
+      holdingsToProcess.sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      )
+    } else if (method === 'LIFO') {
+      // Sort by date (newest first)
+      holdingsToProcess.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      )
+    } else if (method === 'HIFO') {
+      // Sort by price per coin (highest first)
+      holdingsToProcess.sort((a, b) => 
+        b.pricePerCoin - a.pricePerCoin
+      )
+    }
 
     // Process only sell transactions against the sorted holdings
     orders.forEach(order => {
@@ -147,7 +107,9 @@ export async function calculateCostBasis(
             : 0
 
         while (remainingSellAmount > 0 && holdingsToProcess.length > 0) {
-          const holding = method === 'FIFO' ? holdingsToProcess[0] : holdingsToProcess[holdingsToProcess.length - 1] // Get first for FIFO, last for LIFO
+          // Get the appropriate holding based on method
+          const holdingIndex = 0 // For all methods, we take from the beginning of the sorted array
+          const holding = holdingsToProcess[holdingIndex]
           if (!holding) break // Should not happen if length > 0
 
           const sellAmountFromHolding = Math.min(remainingSellAmount, holding.amount)
@@ -162,11 +124,7 @@ export async function calculateCostBasis(
           holding.costBasis -= costBasisForPortion
 
           if (holding.amount <= 1e-9) { // Use tolerance for floating point comparison
-            if (method === 'FIFO') {
-              holdingsToProcess.shift() // Remove from beginning
-            } else {
-              holdingsToProcess.pop() // Remove from end
-            }
+            holdingsToProcess.splice(holdingIndex, 1) // Remove the holding
           }
 
           remainingSellAmount -= sellAmountFromHolding
@@ -174,7 +132,7 @@ export async function calculateCostBasis(
       }
     })
 
-    // --- Calculate final metrics for FIFO/LIFO based on remaining holdings --- 
+    // --- Calculate final metrics --- 
     const remainingHoldings = holdingsToProcess
     const totalCostBasis = remainingHoldings.reduce((sum, h) => sum + h.costBasis, 0)
     const averageCost = remainingBtc > 0 ? totalCostBasis / remainingBtc : 0 // Avg cost of *remaining* holdings

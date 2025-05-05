@@ -105,7 +105,13 @@ export function BtcHeatmap() {
 
       // Ensure orders is not null before calculating
       if (orders && orders.length > 0) {
-        const calculatedData = calculateMonthlyTransactions(orders)
+        // Filter and validate order types to match the 'buy' | 'sell' union type
+        const validOrders = orders.filter(
+          (order): order is Order => 
+            order.type === 'buy' || order.type === 'sell'
+        )
+        
+        const calculatedData = calculateMonthlyTransactions(validOrders)
         setHeatmapData(calculatedData)
       } else {
         console.log("No orders found.")

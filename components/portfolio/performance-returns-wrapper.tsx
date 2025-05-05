@@ -28,7 +28,6 @@ export function PerformanceReturnsWrapper() {
   return (
     <Card>
       <CardHeader className="pb-0">
-        <h2 className="text-xl font-semibold">Performance Metrics</h2>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Returns Table (Cost Basis Method Comparison) */}

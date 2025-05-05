@@ -22,7 +22,7 @@ export {
   calculateCostBasis as calculateCostBasisFromOrders,
   calculateTotalFees,
   calculateUnrealizedGains,
-  calculateAverageBuyPrice,
+  calculateAverageBuyPrice as calculateHifoBuyPrice,
   calculateShortTermHoldings,
   calculateLongTermHoldings,
   calculatePortfolioMetrics,

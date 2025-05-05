@@ -30,7 +30,7 @@ export function CostBasis({ totalCostBasis, totalBtc, isLoading = false }: CostB
               {formatCurrency(totalCostBasis)}
             </div>
             <p className="text-xs text-muted-foreground pt-2">
-              Avg Cost: {formatCurrency(averageCost)}
+              Avg Buy Price: {formatCurrency(averageCost)}
             </p>
           </>
         )}
