@@ -30,7 +30,7 @@ import { AlertCircle } from 'lucide-react';
 // Placeholder imports for child components - will be created later
 import { FileUpload } from './components/FileUpload';
 import { ManualEntry, ManualEntryFormValues } from './components/ManualEntry';
-import { ManageCSVs } from './components/ManageCSVs';
+import { ManageFilesSettings } from "@/components/settings/manage-files";
 import { ImportResources } from './components/ImportResources';
 import { ImportPreview } from './components/ImportPreview';
 
@@ -419,7 +419,7 @@ export function ImportFormContainer() {
                 </TabsContent>
 
                 <TabsContent value="manage">
-                     <ManageCSVs />
+                    <ManageFilesSettings />
                 </TabsContent>
 
                 <TabsContent value="resources">
