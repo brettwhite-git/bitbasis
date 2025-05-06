@@ -10,6 +10,7 @@ import { useTransactionFilters } from "@/hooks/useTransactionFilters"
 import { useTransactionSorting } from "@/hooks/useTransactionSorting"
 import { useTransactionSelection } from "@/hooks/useTransactionSelection"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useToast } from "@/hooks/use-toast"
 
 // Import components
 import { UnifiedFilterDropdown } from "@/components/transactions/filters/UnifiedFilterDropdown"
@@ -18,18 +19,17 @@ import { TransactionRow } from "@/components/transactions/table/TransactionRow"
 import { TransactionsMobileView } from "@/components/transactions/table/TransactionsMobileView"
 import { TransactionsPagination } from "@/components/transactions/table/TransactionsPagination"
 import { DeleteDialog } from "@/components/transactions/dialogs/DeleteDialog"
-import { SuccessDialog } from "@/components/transactions/dialogs/SuccessDialog"
 import { DataTableEmpty } from "@/components/shared/data-table/DataTableEmpty"
 import { DataTableLoading } from "@/components/shared/data-table/DataTableLoading"
 import { DataTableError } from "@/components/shared/data-table/DataTableError"
 import { Button } from "@/components/ui/button"
-import { Trash2, PlusCircle, FileDown } from "lucide-react"
+import { Trash2, PlusCircle, FileDown, Upload } from "lucide-react"
 
 // Import types
 import { TransactionsTableProps } from "@/types/transactions"
 
-// Import the new ImportExportModal
-import { ImportExportModal } from "@/components/transactions/dialogs/ImportExportModal"
+// Import modals
+import { ImportModal } from "@/components/transactions/dialogs/import/ImportModal"
 
 /**
  * The main transactions table component that displays transaction data
@@ -50,14 +50,14 @@ export function TransactionsTable({
 }: TransactionsTableProps) {
   // Check if we're on mobile
   const isMobile = useIsMobile()
+  const { toast } = useToast()
   
   // State for managing various modal dialogs
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [successDialogOpen, setSuccessDialogOpen] = useState(false)
-  const [successMessage, setSuccessMessage] = useState('')
-  const [importExportOpen, setImportExportOpen] = useState(false)
+  const [importModalOpen, setImportModalOpen] = useState(false)
+  const [addTransactionOpen, setAddTransactionOpen] = useState(false)
   
   // Parse the current date from the ISO string
   const currentDate = new Date(currentDateISO)
@@ -104,7 +104,7 @@ export function TransactionsTable({
    * Deletes all selected transactions
    * 
    * Sends a request to the API to delete all transactions that are currently
-   * selected. Shows a success dialog on success, or an error message on failure.
+   * selected. Shows a success toast on success, or an error message on failure.
    */
   const handleDeleteSelected = async () => {
     if (selectedCount === 0) return;
@@ -131,9 +131,12 @@ export function TransactionsTable({
         console.error('API returned error:', result);
         setDeleteError(`${errorMsg}${result.errors ? ` Details: ${JSON.stringify(result.errors)}` : ''}`);
       } else {
-        // Success case - no need to log to console
-        setSuccessMessage(result.message);
-        setSuccessDialogOpen(true);
+        // Success case - show toast notification
+        toast({
+          title: "Success!",
+          description: result.message,
+          variant: "default",
+        });
         
         // Clear selection and close delete confirmation dialog
         clearSelections();
@@ -156,10 +159,21 @@ export function TransactionsTable({
     setCurrentPage(1)
   }, [filters, sortConfig])
   
+  // Handle import success
+  const handleImportSuccess = async (count: number) => {
+    // Show toast for import success
+    toast({
+      title: "Import Successful",
+      description: `Successfully imported ${count} transactions.`,
+      variant: "default",
+    });
+    
+    await refetch();
+  }
+  
   // Add a handleAddTransaction function
   const handleAddTransaction = () => {
-    // TODO: Implement add transaction functionality
-    console.log("Add transaction clicked")
+    setAddTransactionOpen(true);
   }
   
   // Update the actionButtons to show the modal
@@ -178,12 +192,12 @@ export function TransactionsTable({
       <Button
         variant="outline"
         size="sm"
-        onClick={() => setImportExportOpen(true)}
+        onClick={() => setImportModalOpen(true)}
         disabled={isLoading}
-        className="flex items-center gap-1 whitespace-nowrap"
+        className="flex items-center gap-1"
       >
-        <FileDown className="h-4 w-4" />
-        <span>Import/Export</span>
+        <Upload className="h-4 w-4" />
+        <span className="hidden sm:inline">Import</span>
       </Button>
     </div>
   )
@@ -199,24 +213,11 @@ export function TransactionsTable({
         onTypeFilterChange={setTypeFilter}
         termFilter={filters.termFilter}
         onTermFilterChange={setTermFilter}
+        exchanges={uniqueExchanges}
         exchangeFilter={filters.exchangeFilter}
         onExchangeFilterChange={setExchangeFilter}
-        exchanges={uniqueExchanges}
         onReset={resetFilters}
       />
-      
-      {selectedCount > 0 && (
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => setDeleteDialogOpen(true)}
-          className="flex items-center gap-1"
-          disabled={isLoading}
-        >
-          <Trash2 className="h-4 w-4" />
-          <span>Delete ({selectedCount})</span>
-        </Button>
-      )}
     </div>
   )
   
@@ -239,111 +240,120 @@ export function TransactionsTable({
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDeleteSelected}
         isDeleting={isDeleting}
-        count={selectedCount}
         error={deleteError}
+        count={selectedCount}
       />
       
-      <SuccessDialog
-        open={successDialogOpen}
-        onOpenChange={setSuccessDialogOpen}
-        message={successMessage}
+      <ImportModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        onImportSuccess={handleImportSuccess}
       />
       
-      <ImportExportModal
-        open={importExportOpen}
-        onOpenChange={setImportExportOpen}
-        transactions={transactions}
-        onImportSuccess={(count) => {
-          setSuccessMessage(`Successfully imported ${count} transactions.`);
-          setSuccessDialogOpen(true);
-          refetch();
-        }}
-      />
+      {/* Add Transaction Modal will be implemented here */}
+      {/* TODO: Create AddTransactionModal component */}
+      {/* <AddTransactionModal
+        open={addTransactionOpen}
+        onOpenChange={setAddTransactionOpen}
+        onSuccess={handleTransactionAdded}
+      /> */}
     </>
   )
   
   // Render the component based on device size
   return (
     <div className="space-y-4">
-      {isMobile ? (
-        // Mobile View
-        <>
-          <div className="flex items-center justify-between">
-            {filterSection}
-          </div>
-          
-          <div className="flex justify-end items-center">
-            {actionButtons}
-          </div>
-          
-          <TransactionsMobileView
-            transactions={paginatedTransactions}
-            isLoading={isLoading}
-            error={error}
-            selectedTransactions={selectedTransactions}
-            toggleSelection={toggleSelection}
-            currentDate={currentDate}
-            onRetry={refetch}
-          />
-          
-          {paginationSection}
-        </>
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        {actionButtons}
+        {filterSection}
+      </div>
+
+      {/* Handle loading, error, and empty states */}
+      {isLoading ? (
+        <DataTableLoading colSpan={7} />
+      ) : error ? (
+        <DataTableError message={error} onRetry={refetch} colSpan={7} />
+      ) : filteredTransactions.length === 0 ? (
+        <DataTableEmpty 
+          message={
+            transactions.length === 0
+              ? "No transactions found. Import transactions to get started."
+              : "No transactions match your filters."
+          }
+          colSpan={7}
+          action={
+            transactions.length === 0 
+              ? <Button onClick={() => setImportModalOpen(true)}>Import Transactions</Button>
+              : <Button onClick={resetFilters}>Clear Filters</Button>
+          }
+        />
       ) : (
-        // Desktop View
         <>
-          <div className="flex items-center justify-between">
-            {filterSection}
-            {actionButtons}
-          </div>
-          
-          <div className="rounded-md border">
-            <Table>
-              <TransactionHeaders
-                sortConfig={sortConfig}
-                onSort={handleSort}
-                areAllSelected={areAllSelected(paginatedTransactions)}
-                onSelectAll={() => toggleSelectAll(paginatedTransactions)}
-                hasTransactions={paginatedTransactions.length > 0}
-              />
-              <TableBody>
-                {isLoading ? (
-                  <DataTableLoading colSpan={11} />
-                ) : error ? (
-                  <DataTableError 
-                    colSpan={11} 
-                    message={`Error: ${error}`}
-                    onRetry={refetch}
-                  />
-                ) : paginatedTransactions.length === 0 ? (
-                  <DataTableEmpty 
-                    colSpan={11} 
-                    message="No transactions found matching your filters."
-                    action={
-                      filters.searchQuery || filters.dateRange || 
-                      filters.typeFilter !== "all" || filters.termFilter !== "all" || 
-                      filters.exchangeFilter !== "all" ? (
-                        <Button variant="outline" size="sm" onClick={resetFilters}>
-                          Clear Filters
-                        </Button>
-                      ) : undefined
-                    }
-                  />
-                ) : (
-                  paginatedTransactions.map(transaction => (
+          {/* Delete selected button - shown when transactions are selected */}
+          {selectedCount > 0 && (
+            <div className="bg-muted p-2 rounded-md flex items-center justify-between">
+              <span className="text-sm font-medium ml-2">
+                {selectedCount} {selectedCount === 1 ? 'transaction' : 'transactions'} selected
+              </span>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setDeleteDialogOpen(true)}
+                className="flex items-center gap-1"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete Selected</span>
+              </Button>
+            </div>
+          )}
+
+          {/* Desktop view */}
+          {!isMobile && (
+            <div className="rounded-md border">
+              <Table>
+                <TransactionHeaders
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                  areAllSelected={areAllSelected(paginatedTransactions)}
+                  onSelectAll={() => toggleSelectAll(paginatedTransactions)}
+                  hasTransactions={paginatedTransactions.length > 0}
+                />
+                <TableBody>
+                  {paginatedTransactions.map((transaction) => (
                     <TransactionRow
                       key={transaction.id}
                       transaction={transaction}
                       isSelected={selectedTransactions.has(transaction.id)}
-                      onSelect={toggleSelection}
+                      onSelect={() => toggleSelection(transaction.id)}
                       currentDate={currentDate}
                     />
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          
-          {paginationSection}
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {/* Mobile view */}
+          {isMobile && (
+            <TransactionsMobileView
+              transactions={paginatedTransactions}
+              isLoading={false}
+              error={null}
+              selectedTransactions={selectedTransactions}
+              toggleSelection={toggleSelection}
+              currentDate={currentDate}
+              onRetry={refetch}
+            />
+          )}
+
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <TransactionsPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </>
       )}
       

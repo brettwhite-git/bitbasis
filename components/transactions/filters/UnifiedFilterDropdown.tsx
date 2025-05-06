@@ -46,6 +46,19 @@ const CheckRadioItem = React.forwardRef<
 ))
 CheckRadioItem.displayName = "CheckRadioItem"
 
+// Types for each subcomponent
+interface SearchInputProps {
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+}
+
+interface FilterOptionsProps {
+  value: string;
+  onValueChange: (value: string) => void;
+  options: FilterOption[];
+  label: string;
+}
+
 interface UnifiedFilterDropdownProps {
   searchQuery: string
   onSearchChange: (value: string) => void
@@ -60,6 +73,43 @@ interface UnifiedFilterDropdownProps {
   exchanges: string[]
   onReset: () => void
 }
+
+// Subcomponents
+const SearchInput = ({ searchQuery, onSearchChange }: SearchInputProps) => (
+  <div className="relative w-full sm:w-[260px]">
+    <Input
+      placeholder="Search transactions..."
+      value={searchQuery}
+      onChange={(e) => onSearchChange(e.target.value)}
+      className="pl-3"
+    />
+    {searchQuery && (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="absolute right-1 top-1 h-6 w-6 p-0"
+        onClick={() => onSearchChange("")}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    )}
+  </div>
+);
+
+const FilterOptions = ({ value, onValueChange, options, label }: FilterOptionsProps) => (
+  <div className="space-y-2">
+    <DropdownMenuLabel className="block">{label}</DropdownMenuLabel>
+    <div className="border rounded-md p-2 max-h-[200px] overflow-y-auto">
+      <DropdownMenuRadioGroup value={value} onValueChange={onValueChange}>
+        {options.map((option) => (
+          <CheckRadioItem key={option.value} value={option.value} className="rounded-sm">
+            {option.label}
+          </CheckRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+    </div>
+  </div>
+);
 
 export function UnifiedFilterDropdown({
   searchQuery,
@@ -112,24 +162,7 @@ export function UnifiedFilterDropdown({
   
   return (
     <div className="flex items-center gap-2">
-      <div className="relative w-full sm:w-[260px]">
-        <Input
-          placeholder="Search transactions..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-3"
-        />
-        {searchQuery && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute right-1 top-1 h-6 w-6 p-0"
-            onClick={() => onSearchChange("")}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+      <SearchInput searchQuery={searchQuery} onSearchChange={onSearchChange} />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -161,47 +194,26 @@ export function UnifiedFilterDropdown({
 
           {/* Three Column Layout for Filters */}
           <div className="grid grid-cols-3 gap-4 p-4">
-            {/* Column 1: Transaction Type */}
-            <div className="space-y-2">
-              <DropdownMenuLabel className="block">Transaction Type</DropdownMenuLabel>
-              <div className="border rounded-md p-2">
-                <DropdownMenuRadioGroup value={typeFilter} onValueChange={onTypeFilterChange}>
-                  {typeOptions.map((option) => (
-                    <CheckRadioItem key={option.value} value={option.value} className="rounded-sm">
-                      {option.label}
-                    </CheckRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </div>
-            </div>
+            <FilterOptions 
+              value={typeFilter}
+              onValueChange={onTypeFilterChange}
+              options={typeOptions}
+              label="Transaction Type"
+            />
 
-            {/* Column 2: Term */}
-            <div className="space-y-2">
-              <DropdownMenuLabel className="block">Term</DropdownMenuLabel>
-              <div className="border rounded-md p-2">
-                <DropdownMenuRadioGroup value={termFilter} onValueChange={onTermFilterChange}>
-                  {termOptions.map((option) => (
-                    <CheckRadioItem key={option.value} value={option.value} className="rounded-sm">
-                      {option.label}
-                    </CheckRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </div>
-            </div>
+            <FilterOptions 
+              value={termFilter}
+              onValueChange={onTermFilterChange}
+              options={termOptions}
+              label="Term"
+            />
 
-            {/* Column 3: Exchange */}
-            <div className="space-y-2">
-              <DropdownMenuLabel className="block">Exchange</DropdownMenuLabel>
-              <div className="border rounded-md p-2 max-h-[200px] overflow-y-auto">
-                <DropdownMenuRadioGroup value={exchangeFilter} onValueChange={onExchangeFilterChange}>
-                  {exchangeOptions.map((option) => (
-                    <CheckRadioItem key={option.value} value={option.value} className="rounded-sm">
-                      {option.label}
-                    </CheckRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </div>
-            </div>
+            <FilterOptions 
+              value={exchangeFilter}
+              onValueChange={onExchangeFilterChange}
+              options={exchangeOptions}
+              label="Exchange"
+            />
           </div>
 
           {/* Reset Button - Full Width */}
