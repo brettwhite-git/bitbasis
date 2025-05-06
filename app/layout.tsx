@@ -2,6 +2,7 @@ import type React from "react"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SupabaseAuthProvider } from "@/providers/supabase-auth-provider"
 import SupabaseProvider from "@/components/providers/supabase-provider"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
@@ -28,6 +29,7 @@ export default function RootLayout({
           <SupabaseProvider>
             <SupabaseAuthProvider>
               {children}
+              <Toaster />
             </SupabaseAuthProvider>
           </SupabaseProvider>
         </ThemeProvider>

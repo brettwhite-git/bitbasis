@@ -23,7 +23,9 @@ import { DataTableEmpty } from "@/components/shared/data-table/DataTableEmpty"
 import { DataTableLoading } from "@/components/shared/data-table/DataTableLoading"
 import { DataTableError } from "@/components/shared/data-table/DataTableError"
 import { Button } from "@/components/ui/button"
-import { Trash2, PlusCircle, FileDown, Upload } from "lucide-react"
+import { Trash2, Upload } from "lucide-react"
+import { TransactionsActions } from "@/components/transactions/actions/TransactionsActions"
+import { TransactionFormValues } from "@/components/transactions/dialogs/AddTransactionDialog"
 
 // Import types
 import { TransactionsTableProps } from "@/types/transactions"
@@ -39,7 +41,6 @@ import { ImportModal } from "@/components/transactions/dialogs/import/ImportModa
  * - Sortable column headers
  * - Paginated transaction rows
  * - Selection functionality for batch operations
- * - Export to CSV capability
  * - Delete functionality
  * - Responsive design with dedicated mobile view
  * 
@@ -57,7 +58,6 @@ export function TransactionsTable({
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [importModalOpen, setImportModalOpen] = useState(false)
-  const [addTransactionOpen, setAddTransactionOpen] = useState(false)
   
   // Parse the current date from the ISO string
   const currentDate = new Date(currentDateISO)
@@ -154,6 +154,36 @@ export function TransactionsTable({
     }
   }
   
+  /**
+   * Handles adding new transactions
+   */
+  const handleAddTransactions = async (transactions: TransactionFormValues[]) => {
+    try {
+      const response = await fetch('/api/transactions/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ transactions }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to add transactions');
+      }
+
+      // Refetch the transactions
+      await refetch();
+
+      // Return success
+      return result;
+    } catch (error: any) {
+      console.error('Error adding transactions:', error);
+      throw error;
+    }
+  }
+  
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1)
@@ -171,33 +201,25 @@ export function TransactionsTable({
     await refetch();
   }
   
-  // Add a handleAddTransaction function
-  const handleAddTransaction = () => {
-    setAddTransactionOpen(true);
-  }
-  
-  // Update the actionButtons to show the modal
+  // Update the actionButtons to use the simplified TransactionsActions
   const actionButtons = (
-    <div className="flex items-center gap-2 sm:gap-4">
-      <Button
-        variant="default"
-        size="sm"
-        onClick={handleAddTransaction}
-        className="flex items-center gap-1"
-      >
-        <PlusCircle className="h-4 w-4" />
-        <span>Add Transaction</span>
-      </Button>
+    <div className="flex items-center justify-end gap-2">
+      <TransactionsActions
+        onAddTransactions={handleAddTransactions}
+        disabled={isLoading}
+      />
       
       <Button
         variant="outline"
         size="sm"
         onClick={() => setImportModalOpen(true)}
         disabled={isLoading}
-        className="flex items-center gap-1"
+        className="h-9 flex items-center justify-center"
       >
-        <Upload className="h-4 w-4" />
-        <span className="hidden sm:inline">Import</span>
+        <div className="flex items-center justify-center">
+          <Upload className="h-4 w-4" />
+          <span className="hidden sm:inline ml-2">Import</span>
+        </div>
       </Button>
     </div>
   )
@@ -249,14 +271,6 @@ export function TransactionsTable({
         onOpenChange={setImportModalOpen}
         onImportSuccess={handleImportSuccess}
       />
-      
-      {/* Add Transaction Modal will be implemented here */}
-      {/* TODO: Create AddTransactionModal component */}
-      {/* <AddTransactionModal
-        open={addTransactionOpen}
-        onOpenChange={setAddTransactionOpen}
-        onSuccess={handleTransactionAdded}
-      /> */}
     </>
   )
   
@@ -264,8 +278,8 @@ export function TransactionsTable({
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        {actionButtons}
         {filterSection}
+        {actionButtons}
       </div>
 
       {/* Handle loading, error, and empty states */}
@@ -291,15 +305,15 @@ export function TransactionsTable({
         <>
           {/* Delete selected button - shown when transactions are selected */}
           {selectedCount > 0 && (
-            <div className="bg-muted p-2 rounded-md flex items-center justify-between">
-              <span className="text-sm font-medium ml-2">
+            <div className="bg-black p-3 px-4 rounded-md flex items-center">
+              <span className="text-sm font-medium text-white">
                 {selectedCount} {selectedCount === 1 ? 'transaction' : 'transactions'} selected
               </span>
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={() => setDeleteDialogOpen(true)}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 ml-4"
               >
                 <Trash2 className="h-4 w-4" />
                 <span>Delete Selected</span>

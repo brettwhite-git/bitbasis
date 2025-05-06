@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Check, CheckCircle2, FileText, Loader2 } from 'lucide-react'
 import { insertTransactions, updateCSVUploadStatus } from '@/lib/supabase/supabase'
 import { useAuth } from '@/providers/supabase-auth-provider'
+import { useToast } from '@/hooks/use-toast'
 
 export function ConfirmationStep() {
   const {
@@ -19,6 +20,9 @@ export function ConfirmationStep() {
     handleImportComplete
   } = useImport()
   
+  // Get toast functionality
+  const { toast } = useToast()
+
   // Get the current user
   const { user } = useAuth()
 
@@ -52,7 +56,7 @@ export function ConfirmationStep() {
       console.log('Original orders to be imported:', orders);
       console.log('Original transfers to be imported:', transfers);
       
-      // Format orders for database insertion
+      // Format orders for database insertion - we'll keep the same property names for now
       const formattedOrders = orders.map(order => {
         // Ensure user_id is set correctly
         const userId = user?.id
@@ -61,32 +65,35 @@ export function ConfirmationStep() {
           throw new Error('User ID is required for importing transactions')
         }
         
+        // Use any type to avoid property name issues for now
+        const orderAny = order as any;
+        
         return {
           user_id: userId,
           type: order.type,
           asset: order.asset || 'BTC',
-          date: new Date(order.date).toISOString(),
+          date: order.date ? new Date(order.date).toISOString() : new Date().toISOString(),
           price: Number(order.price) || 0,
           
           // Buy-specific fields
           ...(order.type === 'buy' && {
-            buy_fiat_amount: Number(order.buy_fiat_amount) || 0,
-            buy_currency: order.buy_currency || 'USD',
-            received_btc_amount: Number(order.received_btc_amount) || 0,
-            received_currency: order.received_currency || 'BTC',
+            buy_fiat_amount: Number(orderAny.buy_fiat_amount || orderAny.buyFiatAmount) || 0,
+            buy_currency: orderAny.buy_currency || orderAny.buyCurrency || 'USD',
+            received_btc_amount: Number(orderAny.received_btc_amount || orderAny.receivedBtcAmount) || 0,
+            received_currency: orderAny.received_currency || 'BTC',
           }),
           
           // Sell-specific fields
           ...(order.type === 'sell' && {
-            sell_btc_amount: Number(order.sell_btc_amount) || 0,
-            sell_btc_currency: order.sell_btc_currency || 'BTC',
-            received_fiat_amount: Number(order.received_fiat_amount) || 0,
-            received_fiat_currency: order.received_fiat_currency || 'USD',
+            sell_btc_amount: Number(orderAny.sell_btc_amount || orderAny.sellBtcAmount) || 0,
+            sell_btc_currency: orderAny.sell_btc_currency || orderAny.sellBtcCurrency || 'BTC',
+            received_fiat_amount: Number(orderAny.received_fiat_amount || orderAny.receivedFiatAmount) || 0,
+            received_fiat_currency: orderAny.received_fiat_currency || orderAny.receivedFiatCurrency || 'USD',
           }),
           
           // Common fields
-          service_fee: Number(order.service_fee) || null,
-          service_fee_currency: order.service_fee_currency || 'USD',
+          service_fee: Number(orderAny.service_fee || orderAny.serviceFee) || null,
+          service_fee_currency: orderAny.service_fee_currency || orderAny.serviceFeeCurrency || 'USD',
           exchange: order.exchange || null,
         };
       });
@@ -100,16 +107,19 @@ export function ConfirmationStep() {
           throw new Error('User ID is required for importing transactions')
         }
         
+        // Use any type to avoid property name issues for now 
+        const transferAny = transfer as any;
+        
         return {
           user_id: userId,
           type: transfer.type,
           asset: transfer.asset || 'BTC',
-          date: new Date(transfer.date).toISOString(),
-          amount_btc: Number(transfer.amount_btc) || 0,
-          amount_fiat: Number(transfer.amount_fiat) || null,
+          date: transfer.date ? new Date(transfer.date).toISOString() : new Date().toISOString(),
+          amount_btc: Number(transferAny.amount_btc || transferAny.amountBtc) || 0,
+          amount_fiat: Number(transferAny.amount_fiat || transferAny.amountFiat) || null,
           price: Number(transfer.price) || null,
-          fee_amount_btc: Number(transfer.fee_amount_btc) || null,
-          hash: transfer.hash || null,
+          fee_amount_btc: Number(transferAny.fee_amount_btc || transferAny.feeAmountBtc) || null,
+          hash: transferAny.hash || null,
         };
       });
       
@@ -131,9 +141,18 @@ export function ConfirmationStep() {
       // Update the CSV upload status to 'completed'
       if (csvUploadId) {
         await updateCSVUploadStatus(csvUploadId, 'completed', {
-          importedCount: transactions.length
+          importedRowCount: transactions.length
         })
       }
+      
+      // Show toast notification directly with increased priority
+      setTimeout(() => {
+        toast({
+          title: "Import Successful",
+          description: `Successfully imported ${transactions.length} transactions.`,
+          variant: "default",
+        });
+      }, 100);
       
       // Call the success handler with number of imported transactions
       handleImportComplete(transactions.length)
@@ -141,6 +160,13 @@ export function ConfirmationStep() {
       console.error("Import failed:", err)
       const errorMessage = err instanceof Error ? err.message : "Failed to import transactions"
       setError(errorMessage)
+      
+      // Show error toast
+      toast({
+        title: "Import Failed",
+        description: errorMessage,
+        variant: "destructive",
+      })
       
       // Update CSV status to error if we have an ID
       if (csvUploadId) {

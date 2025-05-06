@@ -4,7 +4,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DateRange } from "react-day-picker"
-import { FilterIcon, X, Check } from "lucide-react"
+import { FilterIcon, X, Check, Search } from "lucide-react"
 import { useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
@@ -76,12 +76,13 @@ interface UnifiedFilterDropdownProps {
 
 // Subcomponents
 const SearchInput = ({ searchQuery, onSearchChange }: SearchInputProps) => (
-  <div className="relative w-full sm:w-[260px]">
+  <div className="relative w-full sm:w-[300px]">
+    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
     <Input
       placeholder="Search transactions..."
       value={searchQuery}
       onChange={(e) => onSearchChange(e.target.value)}
-      className="pl-3"
+      className="pl-9"
     />
     {searchQuery && (
       <Button
@@ -161,7 +162,7 @@ export function UnifiedFilterDropdown({
   }, [searchQuery, dateRange, typeFilter, termFilter, exchangeFilter])
   
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 w-full sm:w-auto">
       <SearchInput searchQuery={searchQuery} onSearchChange={onSearchChange} />
 
       <DropdownMenu>
