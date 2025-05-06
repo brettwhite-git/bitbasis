@@ -2,7 +2,7 @@
 export * from "./ui"
 
 // Overview Components
-export * from "./overview/recent-transactions"
+export * from "./dashboard/overview"
 
 // Settings Components
 export * from "./settings/account-settings"

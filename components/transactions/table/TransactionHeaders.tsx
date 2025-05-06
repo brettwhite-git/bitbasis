@@ -43,7 +43,7 @@ export const TransactionHeaders = memo(function TransactionHeaders({
   }
   
   const renderSortableHeader = (column: keyof UnifiedTransaction, label: string, className: string = '') => (
-    <TableHead className={`cursor-pointer ${className}`}>
+    <TableHead className={`cursor-pointer text-center ${className}`}>
       <Button
         variant="ghost"
         size="sm"
@@ -75,7 +75,7 @@ export const TransactionHeaders = memo(function TransactionHeaders({
         {renderSortableHeader('date', 'Date', 'w-[80px]')}
         {renderSortableHeader('type', 'Type', 'w-[80px]')}
         
-        <TableHead className="w-[80px]">
+        <TableHead className="w-[80px] text-center">
           <div className="flex items-center justify-center font-semibold text-xs">
             Term
           </div>
@@ -88,7 +88,7 @@ export const TransactionHeaders = memo(function TransactionHeaders({
         {renderSortableHeader('exchange', 'Exchange', 'hidden lg:table-cell w-[80px]')}
         {renderSortableHeader('network_fee_btc', 'Fees (BTC)', 'hidden lg:table-cell w-[80px]')}
         
-        <TableHead className="hidden lg:table-cell w-[60px]">
+        <TableHead className="hidden lg:table-cell w-[60px] text-center">
           <div className="flex items-center justify-center font-semibold text-xs">
             TXID
           </div>

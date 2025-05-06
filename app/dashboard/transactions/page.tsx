@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui"
-import { TransactionsTable } from "@/components/transactions/TransactionsTable"
+import { TransactionsContainer } from "@/components/transactions/TransactionsContainer"
 
 /**
  * The main transactions page component that displays transaction history
@@ -26,17 +26,11 @@ export default function TransactionsPage() {
                 <CardTitle>Transaction History</CardTitle>
                 <CardDescription>View and manage all your Bitcoin transactions</CardDescription>
               </div>
-              <div className="flex flex-col items-end gap-2">
-                <div id="pagination-container" />
-                <div id="transaction-count-container" className="text-sm text-muted-foreground" />
-              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <TransactionsTable 
+            <TransactionsContainer 
               currentDateISO={currentDateISO} 
-              paginationContainerId="pagination-container"
-              transactionCountContainerId="transaction-count-container"
             />
           </CardContent>
         </Card>
