@@ -256,5 +256,4 @@ export const transformRowToTransaction = (row: CSVRow, source: 'csv' | 'manual' 
     // Re-throw but maybe wrap in a custom error type later
     throw new Error(`Failed to transform row: ${err instanceof Error ? err.message : String(err)}`); 
   }
-};
-
+}; 

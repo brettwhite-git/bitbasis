@@ -7,7 +7,7 @@ import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Logo } from "@/components/logo"
-import { LayoutDashboard, LineChart, PieChart, Upload, Settings, History, Calculator } from "lucide-react"
+import { LayoutDashboard, LineChart, PieChart, Settings, History, Calculator } from "lucide-react"
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
@@ -43,12 +43,6 @@ export function MobileNav() {
       icon: History,
       href: "/dashboard/transactions",
       isActive: pathname === "/dashboard/transactions",
-    },
-    {
-      title: "Import Data",
-      icon: Upload,
-      href: "/dashboard/import",
-      isActive: pathname === "/dashboard/import",
     },
     {
       title: "Settings",

@@ -1,5 +1,5 @@
 import { ParsedOrder, ParsedTransaction, ParsedTransfer, ValidationIssue } from "./types";
-import { isOrder, isTransfer } from "./utils"; // Corrected path
+import { isOrder, isTransfer } from "./utils";
 
 /**
  * Validates a single parsed transaction.

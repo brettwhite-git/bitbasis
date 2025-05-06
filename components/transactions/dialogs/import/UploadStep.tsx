@@ -9,10 +9,10 @@ import { useImport } from './ImportContext'
 import { cn } from '@/lib/utils/utils'
 import Papa from 'papaparse'
 import { uploadCSVFile, updateCSVUploadStatus } from '@/lib/supabase/supabase'
-import { normalizeHeaders, transformRowToTransaction } from '@/components/import/lib/parsing'
-import { validateTransaction } from '@/components/import/lib/validation'
+import { normalizeHeaders, transformRowToTransaction } from '@/components/transactions/utils/parsing'
+import { validateTransaction } from '@/components/transactions/utils/validation'
 import { useAuth } from '@/providers/supabase-auth-provider'
-import { ParsedTransaction, ValidationIssue } from '@/components/import/lib/types'
+import { ParsedTransaction, ValidationIssue } from '@/components/transactions/utils/types'
 
 // Type for validation field to match expected values
 type ValidationField = 'id' | 'source' | 'type' | 'date' | 'asset' | 'exchange' | 'price' |

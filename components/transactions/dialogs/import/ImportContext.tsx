@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react'
-import { ParsedTransaction, ValidationIssue } from '@/components/import/lib/types'
+import { ParsedTransaction, ValidationIssue } from '@/components/transactions/utils/types'
 
 export type ImportStep = 'upload' | 'preview' | 'confirmation'
 

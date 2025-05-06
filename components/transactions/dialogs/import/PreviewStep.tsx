@@ -8,7 +8,7 @@ import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { Badge } from '@/components/ui/badge'
 import { ChevronRight, AlertTriangle, Info, Check, CheckCircle2 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { ValidationIssue, ParsedTransaction } from '@/components/import/lib/types'
+import { ValidationIssue, ParsedTransaction } from '@/components/transactions/utils/types'
 import { cn } from '@/lib/utils/utils'
 import { Separator } from '@/components/ui/separator'
 
