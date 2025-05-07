@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Check, CheckCircle2, FileText, Loader2 } from 'lucide-react'
 import { insertTransactions, updateCSVUploadStatus } from '@/lib/supabase/supabase'
 import { useAuth } from '@/providers/supabase-auth-provider'
-import { useToast } from '@/hooks/use-toast'
+import { useToast } from '@/lib/hooks/use-toast'
 
 export function ConfirmationStep() {
   const {

@@ -17,6 +17,8 @@ export function TransactionsContainer({
     <div className="space-y-4">
       <TransactionsTable
         currentDateISO={currentDateISO}
+        paginationContainerId="pagination-container"
+        transactionCountContainerId="transaction-count-container"
       />
     </div>
   )

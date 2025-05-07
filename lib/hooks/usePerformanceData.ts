@@ -4,7 +4,7 @@ import { Database } from '@/types/supabase';
 import { getPerformanceMetrics } from '@/lib/core/portfolio/performance';
 import { getPortfolioMetrics } from '@/lib/core/portfolio/metrics';
 import { PerformanceMetrics } from '@/lib/core/portfolio/types';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/lib/hooks/use-toast';
 
 export interface PerformanceData {
   performance: PerformanceMetrics & {

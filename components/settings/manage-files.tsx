@@ -26,7 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Trash2, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/lib/hooks/use-toast";
 import { cn } from "@/lib/utils/utils";
 import {
   Card,

@@ -5,12 +5,12 @@ import { Table, TableBody } from "@/components/ui/table"
 import { DateRange } from "react-day-picker"
 
 // Import custom hooks
-import { useTransactions } from "@/hooks/useTransactions"
-import { useTransactionFilters } from "@/hooks/useTransactionFilters"
-import { useTransactionSorting } from "@/hooks/useTransactionSorting"
-import { useTransactionSelection } from "@/hooks/useTransactionSelection"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { useToast } from "@/hooks/use-toast"
+import { useTransactions } from "@/lib/hooks/useTransactions"
+import { useTransactionFilters } from "@/lib/hooks/useTransactionFilters"
+import { useTransactionSorting } from "@/lib/hooks/useTransactionSorting"
+import { useTransactionSelection } from "@/lib/hooks/useTransactionSelection"
+import { useIsMobile } from "@/lib/hooks/use-mobile"
+import { useToast } from "@/lib/hooks/use-toast"
 
 // Import components
 import { UnifiedFilterDropdown } from "@/components/transactions/filters/UnifiedFilterDropdown"

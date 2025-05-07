@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/card";
 import { Plus, PlusCircle, Trash2, Check, Calendar, DollarSign, Clock, X } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/lib/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 
 // --- Zod Schema for Validation ---

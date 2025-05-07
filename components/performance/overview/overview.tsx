@@ -2,7 +2,7 @@
 
 import { useState, lazy, Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui";
-import { usePerformanceData } from '@/hooks/usePerformanceData';
+import { usePerformanceData } from '@/lib/hooks/usePerformanceData';
 import { UserMetadata } from '@supabase/supabase-js';
 import { Skeleton } from '@/components/ui/skeleton';
 

@@ -141,7 +141,11 @@ export function calculatePortfolioMetrics(
   const currentValue = totalBtc * currentPrice
   const unrealizedGain = currentValue - totalCostBasis
   const unrealizedGainPercent = totalCostBasis > 0 ? (unrealizedGain / totalCostBasis) * 100 : 0
-  const averageBuyPrice = totalBtc > 0 ? totalCostBasis / totalBtc : 0
+  
+  // Calculate average buy price using only buy orders
+  const buyOrders = orders.filter(order => order.type === 'buy')
+  const totalBtcBought = buyOrders.reduce((total, order) => total + (order.received_btc_amount || 0), 0)
+  const averageBuyPrice = totalBtcBought > 0 ? totalCostBasis / totalBtcBought : 0
 
   return {
     totalBtc,

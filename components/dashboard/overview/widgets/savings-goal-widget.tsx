@@ -8,7 +8,7 @@ import {
   CardTitle 
 } from "@/components/ui";
 import { Button } from "@/components/ui/button";
-import { useSavingsGoalData } from '@/hooks/useSavingsGoalData';
+import { useSavingsGoalData } from '@/lib/hooks/useSavingsGoalData';
 import { calculateTimeRemaining } from '@/lib/utils/utils';
 import { CheckCircle, LoaderCircle, ExternalLink } from "lucide-react";
 import Link from 'next/link';

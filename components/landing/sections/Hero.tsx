@@ -1,20 +1,10 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, Lock } from "lucide-react"
-import { MempoolAnimation } from "@/components/animations"
 
 export function HeroSection() {
   return (
     <section className="relative overflow-hidden py-24 md:py-32 lg:py-40 text-center">
-      {/* Mempool animation background with full page coverage */}
-      <MempoolAnimation 
-        opacity={0.01} 
-        blockCount={200} 
-        fullPage={true} 
-        blockSize={{ min: 10, max: 40 }}
-        dropInterval={300}
-      />
-      
       {/* Subtle background grid - position above animation but below content */}
       <div 
         className="absolute inset-0 z-[1] opacity-[0.07]" 
