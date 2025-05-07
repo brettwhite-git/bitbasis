@@ -48,8 +48,52 @@ interface MonthlyData {
   averagePrice: number
 }
 
-// Calculate monthly data from transactions (now orders)
-function calculateMonthlyData(orders: Order[]): MonthlyData[] { // Renamed parameter
+// Updated function signature to accept currentPrice parameter
+async function fetchData() {
+  // Calculate date range based on timeframe
+  const end = new Date()
+  const start = new Date()
+  start.setMonth(end.getMonth() - (timeframe === "6M" ? 6 : 12))
+
+  // Format dates for query
+  const startStr = start.toISOString()
+  const endStr = end.toISOString()
+
+  // Fetch orders
+  const ordersResult = await supabase
+    .from('orders')
+    .select('date, type, received_btc_amount, sell_btc_amount, buy_fiat_amount, service_fee, price')
+    .order('date', { ascending: true })
+
+  // Fetch the current BTC price
+  const { data: priceData, error: priceError } = await supabase
+    .from('spot_price')
+    .select('price_usd')
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (priceError) {
+    console.error('Error fetching current price:', priceError)
+    return
+  }
+
+  const currentPrice = priceData?.price_usd || 0
+
+  if (ordersResult.error) {
+    console.error('Error fetching orders:', ordersResult.error)
+    return
+  }
+
+  // Calculate monthly data with orders and current price
+  if (ordersResult.data) {
+    const calculatedData = calculateMonthlyData(ordersResult.data, currentPrice)
+    setMonthlyData(calculatedData)
+  }
+}
+
+// Modified to accept currentPrice parameter and update current month
+function calculateMonthlyData(orders: Order[], currentPrice: number): MonthlyData[] {
   // Sort orders by date
   const sortedOrders = [...orders].sort((a, b) => // Renamed variable
     new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -58,7 +102,7 @@ function calculateMonthlyData(orders: Order[]): MonthlyData[] { // Renamed param
   const monthlyData = new Map<string, MonthlyData>()
   let cumulativeBTC = 0
   let cumulativeCostBasis = 0
-  let lastPrice = 0
+  let lastPrice = currentPrice // Use currentPrice as fallback
 
   // Get min and max dates to fill in all months
   if (sortedOrders.length === 0) return [] // Renamed variable
@@ -130,21 +174,38 @@ function calculateMonthlyData(orders: Order[]): MonthlyData[] { // Renamed param
 
   // Fill forward values for months with no transactions
   let lastValidData: MonthlyData | null = null
-  return monthlyDataArray.map(data => {
+  const result = monthlyDataArray.map(data => {
     if (data.portfolioValue === 0 && lastValidData) {
       return {
         ...data,
-        portfolioValue: lastValidData.portfolioValue,
+        portfolioValue: lastValidData.cumulativeBTC * data.averagePrice,
         costBasis: lastValidData.costBasis,
         cumulativeBTC: lastValidData.cumulativeBTC,
-        averagePrice: lastValidData.averagePrice
+        averagePrice: data.averagePrice
       }
     }
     if (data.portfolioValue > 0) {
-      lastValidData = data
+      lastValidData = { ...data }
     }
     return data
   })
+
+  // Update the current month with the current price
+  const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
+  const currentMonthIndex = result.findIndex(data => data.month === currentMonthKey)
+  
+  if (currentMonthIndex !== -1) {
+    const currentMonthData = result[currentMonthIndex]
+    // Update the current month's price and portfolio value
+    result[currentMonthIndex] = {
+      ...currentMonthData,
+      averagePrice: currentPrice,
+      portfolioValue: currentMonthData.cumulativeBTC * currentPrice
+    }
+    console.log(`Updated current month (${currentMonthKey}) with price: ${currentPrice}, value: ${currentMonthData.cumulativeBTC * currentPrice}`)
+  }
+  
+  return result
 }
 
 // Chart options
@@ -229,14 +290,29 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
         .select('date, type, received_btc_amount, sell_btc_amount, buy_fiat_amount, service_fee, price')
         .order('date', { ascending: true })
 
+      // Fetch the current BTC price
+      const { data: priceData, error: priceError } = await supabase
+        .from('spot_price')
+        .select('price_usd')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (priceError) {
+        console.error('Error fetching current price:', priceError)
+        return
+      }
+
+      const currentPrice = priceData?.price_usd || 0
+
       if (ordersResult.error) {
         console.error('Error fetching orders:', ordersResult.error)
         return
       }
 
-      // Calculate monthly data with orders
+      // Calculate monthly data with orders and current price
       if (ordersResult.data) {
-        const calculatedData = calculateMonthlyData(ordersResult.data)
+        const calculatedData = calculateMonthlyData(ordersResult.data, currentPrice)
         setMonthlyData(calculatedData)
       }
     }
