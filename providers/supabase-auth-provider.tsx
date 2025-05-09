@@ -12,18 +12,16 @@ type SupabaseAuthProviderProps = {
 
 type AuthContextType = {
   user: User | null
-  signUp: (email: string, password: string) => Promise<{ error: any }>
-  signIn: (email: string, password: string) => Promise<{ error: any }>
+  signUp: (email: string) => Promise<{ error: any }>
+  signInWithMagicLink: (email: string, captchaToken?: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
-  resetPassword: (email: string) => Promise<{ error: any }>
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   signUp: async () => ({ error: null }),
-  signIn: async () => ({ error: null }),
+  signInWithMagicLink: async () => ({ error: null }),
   signOut: async () => {},
-  resetPassword: async () => ({ error: null }),
 })
 
 export const useAuth = () => {
@@ -93,11 +91,10 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
     initAuth()
   }, [router, supabase])
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signInWithOtp({
         email,
-        password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -109,21 +106,30 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
     }
   }
 
-  const signIn = async (email: string, password: string) => {
+  const signInWithMagicLink = async (email: string, captchaToken?: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const options: any = {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      }
+      
+      // Add captcha token if provided
+      if (captchaToken) {
+        options.captchaToken = captchaToken
+      }
+      
+      const { error } = await supabase.auth.signInWithOtp({
         email,
-        password,
+        options,
       })
 
       if (error) {
-        console.error('Sign in error:', error)
+        console.error('Magic link sign in error:', error)
         return { error }
       }
 
       return { error: null }
     } catch (error) {
-      console.error('Sign in error:', error)
+      console.error('Magic link sign in error:', error)
       return { error }
     }
   }
@@ -138,24 +144,11 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
     }
   }
 
-  const resetPassword = async (email: string) => {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
-      })
-      return { error }
-    } catch (error) {
-      console.error('Password reset error:', error)
-      return { error }
-    }
-  }
-
   const value = {
     user,
     signUp,
-    signIn,
+    signInWithMagicLink,
     signOut,
-    resetPassword,
   }
 
   return (

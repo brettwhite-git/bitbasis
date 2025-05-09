@@ -7,23 +7,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
-import { checkEmailExists } from '@/lib/supabase/supabase'
-import { Icons } from '../icons'
-import { Checkbox } from "@/components/ui/checkbox"
 import { Turnstile } from "@marsidev/react-turnstile"
 import { validateTurnstileToken } from "@/lib/captcha"
 
-export function SignUpForm() {
-  const { signUp } = useAuth()
+export function MagicLinkForm() {
   const [email, setEmail] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const turnstileRef = useRef(null)
+  const { signInWithMagicLink } = useAuth()
 
   const resetCaptcha = () => {
     // @ts-ignore
@@ -38,7 +36,6 @@ export function SignUpForm() {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
-    setSuccess(null)
 
     if (!email) {
       setError('Please enter your email')
@@ -68,45 +65,31 @@ export function SignUpForm() {
         setIsLoading(false);
         return;
       }
-
-      // Check if email exists
-      const emailExists = await checkEmailExists(email)
-      if (emailExists) {
-        setError('This email is already registered. Please sign in instead.')
-        setIsLoading(false)
+      
+      // Then proceed with the magic link sign-in
+      const { error: signInError } = await signInWithMagicLink(email, captchaToken)
+      
+      if (signInError) {
+        console.error('Magic link sign in error:', signInError)
+        setError(signInError.message || 'Failed to send magic link')
         resetCaptcha()
+        setIsLoading(false)
         return
       }
 
-      // Proceed with sign up
-      const { error: signUpError } = await signUp(email)
-
-      if (signUpError) {
-        if (signUpError.message?.includes('already registered')) {
-          setError('This email is already registered. Please sign in instead.')
-        } else {
-          setError(signUpError.message || 'Failed to create account')
-        }
-        setIsLoading(false)
-        resetCaptcha()
-        return
-      }
-
-      // If successful, show success message
-      setSuccess('Please check your email for verification link.')
-      setEmail('')
-      resetCaptcha()
-      setTermsAccepted(false)
+      // Clear any existing errors on success
+      setError(null)
+      setEmailSent(true)
       setIsLoading(false)
     } catch (err) {
-      console.error('Sign up error:', err)
+      console.error('Magic link sign in error:', err)
       setError('An unexpected error occurred. Please try again.')
-      setIsLoading(false)
       resetCaptcha()
+      setIsLoading(false)
     }
   }
 
-  if (success) {
+  if (emailSent) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -116,15 +99,21 @@ export function SignUpForm() {
             </div>
             <CardTitle className="text-2xl text-center">Check your email</CardTitle>
             <CardDescription className="text-center">
-              We've sent you a confirmation link. Please check your email to complete your registration.
+              We've sent a magic link to <span className="font-medium">{email}</span>. 
+              Click the link in the email to sign in.
             </CardDescription>
           </CardHeader>
-          <CardFooter className="flex flex-col gap-2">
-            <Link href="/auth/sign-in">
-              <Button variant="link" className="text-bitcoin-orange">
-                Return to sign in
-              </Button>
-            </Link>
+          <CardFooter className="flex justify-center">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setEmailSent(false)
+                setEmail("")
+                resetCaptcha()
+              }}
+            >
+              Back to sign in
+            </Button>
           </CardFooter>
         </Card>
       </div>
@@ -138,9 +127,9 @@ export function SignUpForm() {
           <div className="flex justify-center mb-4">
             <Logo />
           </div>
-          <CardTitle className="text-2xl text-center">Create an account</CardTitle>
+          <CardTitle className="text-2xl text-center">Sign in to your account</CardTitle>
           <CardDescription className="text-center">
-            Enter your email to get started. We'll send you a magic link to complete signup.
+            Enter your email and we'll send you a magic link to sign in
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -155,7 +144,7 @@ export function SignUpForm() {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -163,7 +152,7 @@ export function SignUpForm() {
               />
             </div>
             
-            <div className="flex items-center space-x-2 my-4">
+            <div className="flex items-center space-x-2">
               <Checkbox 
                 id="terms" 
                 checked={termsAccepted}
@@ -201,27 +190,20 @@ export function SignUpForm() {
               />
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full bg-bitcoin-orange hover:bg-bitcoin-dark"
               disabled={isLoading || !captchaToken || !termsAccepted}
             >
-              {isLoading ? (
-                <>
-                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                "Create account"
-              )}
+              {isLoading ? "Sending..." : "Send Magic Link"}
             </Button>
           </form>
         </CardContent>
-        <CardFooter>
-          <div className="text-sm text-center w-full">
-            Already have an account?{" "}
-            <Link href="/auth/sign-in" className="text-bitcoin-orange hover:underline">
-              Sign in
+        <CardFooter className="flex flex-col space-y-2">
+          <div className="text-sm text-center">
+            Don't have an account?{" "}
+            <Link href="/auth/sign-up" className="text-bitcoin-orange hover:underline">
+              Sign up
             </Link>
           </div>
         </CardFooter>
