@@ -76,12 +76,12 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
 
     if (priceDiffPercent <= -10) {
       return {
-        message: "Spot price is significantly below your 3-month average buy price - consider increasing position",
+        message: "Spot price is significantly below your 3-month average buy price",
         percent: priceDiffPercent
       }
     } else if (priceDiffPercent < 0) {
       return {
-        message: "Spot price is below your 3-month average - potential buying opportunity",
+        message: "Spot price is below your 3-month averagey",
         percent: priceDiffPercent
       }
     } else if (priceDiffPercent <= 10) {
@@ -91,7 +91,7 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
       }
     } else {
       return {
-        message: "Spot price is higher than your 3-month average - consider waiting for a dip",
+        message: "Spot price is higher than your 3-month average",
         percent: priceDiffPercent
       }
     }

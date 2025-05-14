@@ -125,34 +125,6 @@ function Chart() {
     return portfolioHistory.filter(point => point.month >= startMonthKey);
   })();
 
-  // Calculate moving averages
-  const calculateMovingAverage = (data: (number | null)[], windowSize: number): (number | null)[] => {
-    const result: (number | null)[] = [];
-    const validData = data.map(d => d === null ? NaN : d); // Treat null as NaN for calculations
-
-    for (let i = 0; i < validData.length; i++) {
-      if (i < windowSize - 1) {
-        result.push(null); // Not enough data for a full window
-      } else {
-        const windowSlice = validData.slice(i - windowSize + 1, i + 1);
-        const validWindowValues = windowSlice.filter(v => !isNaN(v));
-        if (validWindowValues.length > 0) {
-          const sum = validWindowValues.reduce((acc, val) => acc + val, 0);
-          result.push(sum / validWindowValues.length);
-        } else {
-          result.push(null); // No valid data in window
-        }
-      }
-    }
-    return result;
-  };
-
-  // Calculate MAs using filtered data
-  const portfolioValues = filteredData.map(d => d?.portfolioValue ?? null);
-  const threeMonthMovingAverage = calculateMovingAverage(portfolioValues, 3);
-  const windowSize = Math.min(6, Math.floor(portfolioValues.filter(v => v !== null).length / 2) || 1);
-  const longTermMovingAverage = calculateMovingAverage(portfolioValues, windowSize);
-
   // Calculate dynamic chart options
   const dynamicOptions: ChartOptions<'line'> = {
     responsive: true,
@@ -166,7 +138,7 @@ function Chart() {
         position: "bottom",
         labels: {
           color: "#fff",
-          padding: 25,
+          padding: 10,
           usePointStyle: true,
           pointStyle: "circle",
         },
@@ -189,63 +161,18 @@ function Chart() {
       x: {
         grid: {
           display: false,
+          color: "#374151",
         },
         ticks: {
           color: "#9ca3af",
         },
       },
       y: {
+        type: 'linear',
+        display: true,
+        position: 'left',
         grid: {
           color: "#374151",
-        },
-        suggestedMin: function() {
-          const validThreeMonthMA = threeMonthMovingAverage.filter((v): v is number => v !== null && !isNaN(v));
-          const validLongTermMA = longTermMovingAverage.filter((v): v is number => v !== null && !isNaN(v));
-          
-          const allValues = filteredData.flatMap(d => [
-            d.portfolioValue,
-            d.costBasis,
-          ]).filter((v): v is number => v !== null && typeof v === 'number' && !isNaN(v))
-            .concat(validThreeMonthMA, validLongTermMA);
-
-          if (allValues.length === 0) return 0;
-
-          const minValue = Math.min(...allValues);
-          
-          if (minValue >= 0) {
-            return 0; // Start at 0 for non-negative data
-          }
-
-          // Calculate a nice minimum for negative data
-          const range = Math.max(1, Math.max(...allValues) - minValue);
-          const roughStep = range / 6;
-          const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep || 1)));
-          const normalizedStep = roughStep / magnitude;
-          let niceStep: number;
-          if (normalizedStep < 1.5) niceStep = 1;
-          else if (normalizedStep < 3) niceStep = 2;
-          else if (normalizedStep < 7) niceStep = 5;
-          else niceStep = 10;
-          niceStep *= magnitude;
-          
-          return Math.floor(minValue / niceStep) * niceStep;
-        },
-        suggestedMax: function() {
-          const validThreeMonthMA = threeMonthMovingAverage.filter((v): v is number => v !== null && !isNaN(v));
-          const validLongTermMA = longTermMovingAverage.filter((v): v is number => v !== null && !isNaN(v));
-
-          const allValues = filteredData.flatMap(d => [
-            d.portfolioValue,
-            d.costBasis,
-          ]).filter((v): v is number => v !== null && typeof v === 'number' && !isNaN(v))
-            .concat(validThreeMonthMA, validLongTermMA);
-
-          if (allValues.length === 0) return 100;
-
-          const minValue = Math.min(...allValues);
-          const maxValue = Math.max(...allValues);
-          const { max: niceMax } = calculateNiceScale(minValue, maxValue);
-          return niceMax;
         },
         ticks: {
           color: "#9ca3af",
@@ -257,8 +184,9 @@ function Chart() {
           maxTicksLimit: 8,
           includeBounds: true
         },
-        grace: 0,
-        beginAtZero: false
+        min: 0,
+        beginAtZero: true,
+        grace: 0
       },
     },
   }
@@ -276,45 +204,23 @@ function Chart() {
         label: "Portfolio Value",
         data: filteredData.map(d => d?.portfolioValue ?? null),
         borderColor: "#F7931A", // Bitcoin Orange
-        backgroundColor: "#F7931A",
+        backgroundColor: "rgba(247, 147, 26, 0.2)", // Semi-transparent Bitcoin Orange
         tension: 0.4,
-        pointRadius: filteredData.length < 50 ? 4 : 0,
+        fill: true,
+        pointRadius: 4,
         pointBackgroundColor: "rgba(247, 147, 26, 0.2)",
         pointBorderColor: "#F7931A",
         pointBorderWidth: 1,
         spanGaps: true,
       },
       {
-        label: "3-Month Moving Average",
-        data: threeMonthMovingAverage,
-        borderColor: "#A855F7", // Purple
-        backgroundColor: "#A855F7",
-        tension: 0.1,
-        pointRadius: 0,
-        borderWidth: 2,
-        borderDash: [10, 5],
-        fill: false,
-        spanGaps: true,
-      },
-      {
-        label: `${windowSize}-Month Moving Average`,
-        data: longTermMovingAverage,
-        borderColor: "#10B981", // Green
-        backgroundColor: "#10B981",
-        tension: 0.1,
-        pointRadius: 0,
-        borderWidth: 2,
-        borderDash: [5, 10],
-        fill: false,
-        spanGaps: true,
-      },
-      {
         label: "Cost Basis",
         data: filteredData.map(d => d?.costBasis ?? null),
         borderColor: "#3B82F6", // Blue
-        backgroundColor: "#3B82F6",
+        backgroundColor: "rgba(59, 130, 246, 0.2)", // Semi-transparent Blue
         tension: 0.4,
-        pointRadius: filteredData.length < 50 ? 4 : 0,
+        fill: true,
+        pointRadius: 4,
         pointBackgroundColor: "rgba(59, 130, 246, 0.2)",
         pointBorderColor: "#3B82F6",
         pointBorderWidth: 1,

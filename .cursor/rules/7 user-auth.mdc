@@ -32,7 +32,7 @@ alwaysApply: true
 - Redirect unauthenticated users to login page
 
 ## Authentication Components
-- Create login form with email/password authentication
+- Create login form with email / magic links
 - Implement registration form with email confirmation
 - Add profile management for authenticated users
 

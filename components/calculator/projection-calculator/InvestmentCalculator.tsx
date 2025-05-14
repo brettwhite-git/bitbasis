@@ -290,13 +290,13 @@ export function InvestmentCalculator() {
 
                     {/* Bitcoin Unit */}
                     <div>
-                      <Label className="text-base mb-2 block">Bitcoin Unit</Label>
+                      <Label className="text-base mb-3 block">Bitcoin Unit</Label>
                       <RadioGroup value={bitcoinUnit} onValueChange={(value) => setBitcoinUnit(value as BitcoinUnit)} className="grid grid-cols-2 gap-3 mt-0">
                         <div className="flex items-center">
                           <RadioGroupItem value="bitcoin" id="bitcoin" className="peer sr-only" />
                           <Label
                             htmlFor="bitcoin"
-                            className="flex-1 cursor-pointer rounded-md border border-input px-4 py-3 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center"
+                            className="flex-1 cursor-pointer rounded-md border border-input px-4 py-2 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center"
                           >
                             Bitcoin
                           </Label>
@@ -305,7 +305,7 @@ export function InvestmentCalculator() {
                           <RadioGroupItem value="satoshi" id="satoshi" className="peer sr-only" />
                           <Label
                             htmlFor="satoshi"
-                            className="flex-1 cursor-pointer rounded-md border border-input px-4 py-3 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center"
+                            className="flex-1 cursor-pointer rounded-md border border-input px-4 py-2 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center"
                           >
                             Satoshi
                           </Label>
@@ -315,14 +315,14 @@ export function InvestmentCalculator() {
 
                     {/* Buying Frequency */}
                     <div>
-                      <Label className="text-base mb-2 block">Buying Frequency</Label>
-                      <RadioGroup value={frequency} onValueChange={setFrequency} className="grid grid-cols-4 gap-2 mt-0">
+                      <Label className="text-base mb-3 block">Buying Frequency</Label>
+                      <RadioGroup value={frequency} onValueChange={setFrequency} className="grid grid-cols-4 gap-3 mt-0">
                         {["daily", "weekly", "monthly", "yearly"].map((period) => (
                           <div key={`freq-${period}`} className="flex items-center">
                             <RadioGroupItem value={period} id={`freq-${period}`} className="peer sr-only" />
                             <Label
                               htmlFor={`freq-${period}`}
-                              className="flex-1 cursor-pointer rounded-md border border-input px-0 py-3 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center capitalize"
+                              className="flex-1 cursor-pointer rounded-md border border-input px-0 py-2 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center capitalize"
                             >
                               {getFrequencyDetails(period).label}
                             </Label>
@@ -577,14 +577,46 @@ export function InvestmentCalculator() {
 
                         return (
                           <tr key={point.date + '-' + originalIndex}
-                            className={`border-b border-border ${originalIndex % 2 === 0 ? 'bg-muted/5' : 'bg-transparent'} hover:bg-muted/10`}>
-                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{point.date}</td>
-                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{bitcoinUnit === 'satoshi' ? formatNumber(point.periodicSats) : formatBTC(point.periodicSats / 100000000)}</td>
-                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.usdValueThisPeriod ?? 0)}</td>
-                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{bitcoinUnit === 'satoshi' ? formatNumber(point.accumulatedSats) : formatBTC(point.accumulatedSats / 100000000)}</td>
-                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(totalInvested)}</td>
-                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.estimatedBtcPrice ?? 0)}</td>
-                            <td className={`w-[14%] text-center py-2 px-3 ${rowTextColorClass}`}>{formatCurrency(point.cumulativeUsdValue ?? 0)}</td>
+                            className={`group ${originalIndex % 2 === 0 ? 'bg-muted/5' : 'bg-transparent'}`}>
+                            <td className="w-[14%] p-0">
+                              <div className="h-full relative group-hover:before:absolute group-hover:before:inset-y-[-1px] group-hover:before:left-0 group-hover:before:w-[1px] group-hover:before:bg-bitcoin-orange">
+                                <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
+                                  <span className={rowTextColorClass}>{point.date}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="w-[14%] p-0">
+                              <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
+                                <span className={rowTextColorClass}>{bitcoinUnit === 'satoshi' ? formatNumber(point.periodicSats) : formatBTC(point.periodicSats / 100000000)}</span>
+                              </div>
+                            </td>
+                            <td className="w-[14%] p-0">
+                              <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
+                                <span className={rowTextColorClass}>{formatCurrency(point.usdValueThisPeriod ?? 0)}</span>
+                              </div>
+                            </td>
+                            <td className="w-[14%] p-0">
+                              <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
+                                <span className={rowTextColorClass}>{bitcoinUnit === 'satoshi' ? formatNumber(point.accumulatedSats) : formatBTC(point.accumulatedSats / 100000000)}</span>
+                              </div>
+                            </td>
+                            <td className="w-[14%] p-0">
+                              <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
+                                <span className={rowTextColorClass}>{formatCurrency(totalInvested)}</span>
+                              </div>
+                            </td>
+                            <td className="w-[14%] p-0">
+                              <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
+                                <span className={rowTextColorClass}>{formatCurrency(point.estimatedBtcPrice ?? 0)}</span>
+                              </div>
+                            </td>
+                            <td className="w-[14%] p-0">
+                              <div className="h-full relative group-hover:after:absolute group-hover:after:inset-y-[-1px] group-hover:after:right-0 group-hover:after:w-[1px] group-hover:after:bg-bitcoin-orange">
+                                <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
+                                  <span className={rowTextColorClass}>{formatCurrency(point.cumulativeUsdValue ?? 0)}</span>
+                                </div>
+                              </div>
+                            </td>
                           </tr>
                         );
                       })

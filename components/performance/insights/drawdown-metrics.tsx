@@ -3,7 +3,7 @@
 import { memo, useMemo } from "react";
 import { TrendingDownIcon } from "lucide-react";
 import { formatCurrency, formatPercent, formatDateLong } from "@/lib/utils/utils";
-import { PerformanceData } from "@/hooks/usePerformanceData";
+import { PerformanceData } from "@/lib/hooks/usePerformanceData";
 import { 
   calculateDrawdownFromATHRatio, 
   calculateDrawdownFromATHAmount, 
@@ -64,7 +64,7 @@ export const DrawdownMetrics = memo(function DrawdownMetrics({ performance }: Dr
       {/* Drawdown from ATH */}
       <div className="flex flex-col">
         <div className="flex justify-between items-center">
-          <div className="text-sm font-medium text-muted-foreground">Drawdown from ATH</div>
+          <div className="text-sm font-medium text-muted-foreground">ATH Drawdown</div>
           <div className="px-4 py-2 bg-error/20 rounded-full text-error text-xs font-medium flex items-center">
             <TrendingDownIcon className="h-3 w-3 mr-1" />
             {formatPercent(metrics.drawdownFromATHPercent)}
