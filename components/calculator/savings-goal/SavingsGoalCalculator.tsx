@@ -341,6 +341,27 @@ export function SavingsGoalCalculator() {
     return `${year}-${month}-${day}`;
   };
 
+  // Add this where state is defined (after the useState hooks)
+  // Unique ID for BTC price input event
+  const btcPriceEventId = "savings-goal-btc-price-change";
+
+  // Add this near other useEffect hooks
+  useEffect(() => {
+    // Handler for BTC price change events
+    const handleBtcPriceChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setCustomBtcPrice(customEvent.detail);
+    };
+    
+    // Add event listener
+    window.addEventListener(btcPriceEventId, handleBtcPriceChange);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener(btcPriceEventId, handleBtcPriceChange);
+    };
+  }, []);
+
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4"> 
 
@@ -525,7 +546,7 @@ export function SavingsGoalCalculator() {
              <div className="mb-6">
                <BtcPriceInput 
                  customBtcPrice={customBtcPrice}
-                 setCustomBtcPrice={setCustomBtcPrice}
+                 onCustomBtcPriceChange={btcPriceEventId}
                  spotPrice={spotBtcPrice}
                  loading={priceLoading}
                  label="Bitcoin Price"

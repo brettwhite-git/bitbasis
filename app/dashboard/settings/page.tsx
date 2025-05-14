@@ -2,12 +2,10 @@
 
 import { useState } from 'react'
 import { AccountSettings } from "@/components/settings/account-settings"
-import { PrivacySettings } from "@/components/settings/privacy-settings"
-import { CostBasisSettings } from "@/components/settings/cost-basis-settings"
 import { ManageFilesSettings } from "@/components/settings/manage-files"
 import { ResourcesSettings } from "@/components/settings/resources-settings"
 
-type SettingsSection = 'account' | 'privacy' | 'costBasis' | 'files' | 'resources' // Add more sections as needed
+type SettingsSection = 'account' | 'files' | 'resources' // Add more sections as needed
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingsSection>('account')
@@ -16,10 +14,6 @@ export default function SettingsPage() {
     switch (activeSection) {
       case 'account':
         return <AccountSettings />
-      case 'privacy':
-        return <PrivacySettings />
-      case 'costBasis':
-        return <CostBasisSettings />
       case 'files':
         return <ManageFilesSettings />
       case 'resources':
@@ -31,8 +25,6 @@ export default function SettingsPage() {
 
   const menuItems = [
     { id: 'account', label: 'Account' },
-    { id: 'privacy', label: 'Privacy' },
-    { id: 'costBasis', label: 'Cost Basis' },
     { id: 'files', label: 'Manage Files' },
     { id: 'resources', label: 'Resources' },
   ]

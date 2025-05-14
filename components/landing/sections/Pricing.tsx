@@ -19,7 +19,7 @@ export function PricingSection() {
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> Up to 100 transactions</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> Basic Cost Basis (FIFO)</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> Portfolio Overview</li>
-              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> Secure CSV Import</li>
+              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> CSV Import</li>
             </ul>
             <Link href="/auth/sign-up">
               <Button size="lg" variant="outline" className="w-full text-gray-300 border-gray-700 hover:bg-gray-800/50 hover:text-white hover:border-gray-600 transition-all duration-300">
@@ -33,10 +33,10 @@ export function PricingSection() {
             <div className="absolute top-0 right-0 bg-bitcoin-orange text-black text-xs font-bold px-3 py-1 rounded-bl-lg">Most Popular</div>
             <h3 className="text-2xl font-semibold text-white mb-2">Pro</h3>
             <p className="text-gray-400 mb-6">Unlock advanced features and unlimited tracking.</p>
-            <p className="text-4xl font-bold text-white mb-6">$9 <span className="text-lg font-normal text-gray-400">/ month</span></p>
+            <p className="text-4xl font-bold text-white mb-6">$4.99 <span className="text-lg font-normal text-gray-400">/ month</span></p>
             <ul className="space-y-3 text-gray-300 mb-8">
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Unlimited transactions</li>
-              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Advanced Cost Basis (FIFO, LIFO, HIFO - soon)</li>
+              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" />  Cost Basis (FIFO, LIFO, HIFO)</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Detailed Performance Analytics</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Tax Lot Identification (soon)</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Priority Support</li>
@@ -54,7 +54,7 @@ export function PricingSection() {
             <div className="absolute top-0 right-0 bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-black text-xs font-bold px-3 py-1 rounded-bl-lg">Best Value</div>
             <h3 className="text-2xl font-semibold text-white mb-2">Lifetime</h3>
             <p className="text-gray-400 mb-6">One-time payment for lifetime access.</p>
-            <p className="text-4xl font-bold text-white mb-6">$149 <span className="text-lg font-normal text-bitcoin-orange">one-time</span></p>
+            <p className="text-4xl font-bold text-white mb-6">$210 <span className="text-lg font-normal text-bitcoin-orange">one-time</span></p>
             <ul className="space-y-3 text-gray-300 mb-8">
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Everything in Pro plan</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Lifetime Access</li>

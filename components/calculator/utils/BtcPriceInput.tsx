@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react';
+import React, { useTransition } from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { formatCurrency } from './format-utils';
 
 interface BtcPriceInputProps {
   customBtcPrice: string | null;
-  setCustomBtcPrice: (price: string | null) => void;
+  onCustomBtcPriceChange: string; // Form action ID for the callback
   spotPrice: number;
   loading: boolean;
   label?: string;
@@ -16,18 +16,25 @@ interface BtcPriceInputProps {
 
 export function BtcPriceInput({
   customBtcPrice,
-  setCustomBtcPrice,
+  onCustomBtcPriceChange,
   spotPrice,
   loading,
   label = "BTC Price"
 }: BtcPriceInputProps) {
+  const [isPending, startTransition] = useTransition();
+  
   // Handle custom BTC price change
   const handleCustomBtcPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value.replace(/[^\d.-]/g, ''); // Allow decimal and negative sign
     
     // Clear custom price if empty
     if (newValue === '') {
-      setCustomBtcPrice(null);
+      startTransition(() => {
+        // Use the client-side DOM API to dispatch a custom event
+        window.dispatchEvent(new CustomEvent(onCustomBtcPriceChange, { 
+          detail: null 
+        }));
+      });
       return;
     }
     
@@ -36,9 +43,23 @@ export function BtcPriceInput({
       const numValue = parseFloat(newValue);
       // Only set if it's a valid positive number
       if (!isNaN(numValue) && numValue >= 0) {
-        setCustomBtcPrice(newValue);
+        startTransition(() => {
+          // Use the client-side DOM API to dispatch a custom event
+          window.dispatchEvent(new CustomEvent(onCustomBtcPriceChange, { 
+            detail: newValue 
+          }));
+        });
       }
     }
+  };
+
+  // Reset the price to null (go back to spot price)
+  const handleReset = () => {
+    startTransition(() => {
+      window.dispatchEvent(new CustomEvent(onCustomBtcPriceChange, { 
+        detail: null 
+      }));
+    });
   };
 
   return (
@@ -64,9 +85,9 @@ export function BtcPriceInput({
             <span className="text-xs text-muted-foreground mr-2">(Custom)</span>
             <Button 
               variant="ghost" 
-              size="xs"
+              size="sm"
               className="h-6 px-2 py-0 text-xs text-muted-foreground hover:text-foreground" 
-              onClick={() => setCustomBtcPrice(null)}
+              onClick={handleReset}
             >
               Reset
             </Button>
