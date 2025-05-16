@@ -28,6 +28,7 @@ yarn-error.log*
 .env*.local
 .env
 .env.production
+.env.local.backup   
 
 # vercel
 .vercel
@@ -37,4 +38,4 @@ yarn-error.log*
 next-env.d.ts
 
 #rules files
-.cursor/rules
+.cursor/rules/
