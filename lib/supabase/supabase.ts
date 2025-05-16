@@ -7,7 +7,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 // Validate URL format and placeholder values
-if (!supabaseUrl || !supabaseUrl.startsWith('https://')) {
+if (!supabaseUrl || !(supabaseUrl.startsWith('https://') || supabaseUrl.startsWith('http://127.0.0.1'))) {
   console.error('Invalid or missing Supabase URL. Please check your .env.local file.')
   throw new Error('Invalid or missing NEXT_PUBLIC_SUPABASE_URL')
 }

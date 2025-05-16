@@ -42,14 +42,55 @@ alwaysApply: true
    - Different values needed for local vs. remote development
    - Credentials and secrets management
 
-### Best Practices Workflow
+5. **Authentication URL Handling**
+   - Redirect URLs may work differently in local vs production
+   - Email testing setup requires special handling locally
 
 ## 1. Development Workflow
 
-### A. Starting a New Feature
+### A. Environment Setup
+
+1. **Required Environment Variables:**
+   ```bash
+   # In .env.local (for local development)
+   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
+   # Database password for CLI operations with remote
+   SUPABASE_DB_PASSWORD=your-remote-db-password
+   
+   # In .env.production (for production)
+   NEXT_PUBLIC_SUPABASE_URL=https://npcvbxrshuflujcnikon.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-production-anon-key
+   ```
+
+2. **Switching Between Environments:**
+   ```json
+   // In package.json scripts
+   "scripts": {
+     "dev": "next dev",
+     "dev:local": "cp .env.local.backup .env.local && next dev",
+     "dev:prod": "cp .env.local .env.local.backup && cp .env.production .env.local && next dev",
+     "dev:reset": "cp .env.local.backup .env.local"
+   }
+   ```
+
+3. **Client Configuration:**
+   ```typescript
+   // Validate URL format for both local and production
+   if (!supabaseUrl || !(supabaseUrl.startsWith('https://') || 
+                          supabaseUrl.startsWith('http://127.0.0.1'))) {
+     throw new Error('Invalid or missing NEXT_PUBLIC_SUPABASE_URL')
+   }
+   ```
+
+### B. Starting a New Feature
 
 1. **Always start with a fresh sync:**
    ```bash
+   # Link to remote project first
+   export SUPABASE_DB_PASSWORD=$(grep SUPABASE_DB_PASSWORD .env.local | cut -d= -f2-)
+   supabase link --project-ref npcvbxrshuflujcnikon
+   
    # Ensure local is up-to-date with remote
    supabase db pull
    
@@ -68,7 +109,7 @@ alwaysApply: true
    touch supabase/migrations/$(date +%Y%m%d%H%M%S)_descriptive_name.sql
    ```
 
-### B. Testing Locally
+### C. Testing Locally
 
 1. **Apply migrations to local DB:**
    ```bash
@@ -93,7 +134,22 @@ alwaysApply: true
    npm run dev
    ```
 
-### C. Committing Changes
+4. **Test functionality that works differently in local:**
+   
+   - **Auth Flow:** Test at http://127.0.0.1:54324 for email verification
+   - **Cron Jobs:** Consider manually triggering functions
+     ```sql
+     -- Manual test of cron functions
+     SELECT public.your_cron_function();
+     ```
+   - **Turnstile/CAPTCHA:** Use test keys for local environment
+     ```
+     # Test keys for Cloudflare Turnstile
+     Site Key: 1x00000000000000000000AA
+     Secret Key: 1x0000000000000000000000000000000AA
+     ```
+
+### D. Committing Changes
 
 1. **Always commit migration files with related code:**
    ```bash
@@ -119,6 +175,9 @@ alwaysApply: true
    END;
    $$ LANGUAGE plpgsql;
    
+   -- Drop existing schedule first to avoid errors
+   SELECT cron.unschedule('job-name');
+   
    -- Create the cron job
    SELECT cron.schedule(
      'job-name',
@@ -130,7 +189,68 @@ alwaysApply: true
 2. **Document all cron jobs in a central place:**
    Create a `CRON-JOBS.md` file documenting all scheduled jobs.
 
-### B. RLS Policies
+3. **API Dependencies in Cron Jobs:**
+   - Make external API calls resilient with fallbacks
+   - Handle API rate limits and errors gracefully
+   - Test API calls manually in local environment
+
+### B. Authentication & Redirects
+
+**Key Issue:** Auth redirects behave differently between environments.
+
+**Solution:**
+1. **Implement robust auth callback handling:**
+   ```typescript
+   // In auth callback route
+   export async function GET(request: Request) {
+     try {
+       const requestUrl = new URL(request.url)
+       const code = requestUrl.searchParams.get('code')
+       const token = requestUrl.searchParams.get('token')
+       const next = requestUrl.searchParams.get('next') ?? '/dashboard'
+     
+       const cookieStore = cookies()
+       const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+     
+       // Handle both token and code for flexibility
+       if (token) {
+         await supabase.auth.verifyOtp({
+           token_hash: token,
+           type: 'email',
+         })
+         console.log('Auth verification successful with token')
+       } else if (code) {
+         await supabase.auth.exchangeCodeForSession(code)
+         console.log('Auth verification successful with code')
+       }
+     
+       // URL to redirect to after sign in process completes
+       return NextResponse.redirect(new URL(next, requestUrl.origin))
+     } catch (error) {
+       console.error('Auth callback error:', error)
+       return NextResponse.redirect(new URL('/auth/sign-in', request.url))
+     }
+   }
+   ```
+
+2. **Direct dashboard redirects for magic links:**
+   ```typescript
+   // In auth provider
+   const signInWithMagicLink = async (email: string, captchaToken?: string) => {
+     // Direct redirect to dashboard is more reliable
+     const redirectUrl = `${window.location.origin}/dashboard`;
+     
+     const { error } = await supabase.auth.signInWithOtp({
+       email,
+       options: {
+         emailRedirectTo: redirectUrl,
+         captchaToken
+       },
+     })
+   }
+   ```
+
+### C. RLS Policies
 
 **Key Issue:** RLS policies may differ between environments.
 
@@ -161,28 +281,6 @@ alwaysApply: true
    "
    ```
 
-### C. Environment Management
-
-**Key Issue:** Need different settings for local vs. remote.
-
-**Solution:**
-1. **Use .env.local for local development:**
-   ```
-   # Local settings
-   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-   ```
-
-2. **Use .env.production for production:**
-   ```
-   # Production settings
-   NEXT_PUBLIC_SUPABASE_URL=https://npcvbxrshuflujcnikon.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-   ```
-
-3. **Never commit .env files:**
-   Add to .gitignore and provide .env.example templates.
-
 ## 3. Deployment Process
 
 ### A. Testing Before Deployment
@@ -202,19 +300,29 @@ alwaysApply: true
 
 ### B. Deploying to Remote
 
-1. **Always review migration files before pushing:**
+1. **Link to remote project (if not already):**
    ```bash
-   # See what you're about to push
-   supabase db diff --linked
+   # Set password from environment variable
+   export SUPABASE_DB_PASSWORD=$(grep SUPABASE_DB_PASSWORD .env.local | cut -d= -f2-)
+   
+   # Link project
+   supabase link --project-ref npcvbxrshuflujcnikon
    ```
 
-2. **Push migrations to remote:**
+2. **Check migration status:**
+   ```bash
+   # See pending migrations
+   supabase migration list --linked
+   ```
+
+3. **Push migrations to remote:**
    ```bash
    supabase db push
    ```
 
-3. **Verify remote deployment:**
-   Test the deployed application with production DB.
+4. **Verify remote deployment:**
+   - Test the deployed application with production DB
+   - Check cron job execution with alerts or logs
 
 ## 4. Troubleshooting Common Issues
 
@@ -257,6 +365,20 @@ supabase stop
 supabase start
 ```
 
+### D. Authentication Issues
+
+**Problem:** Magic links or redirects not working.
+
+**Solution:**
+```bash
+# Check email service for local testing
+open http://127.0.0.1:54324
+
+# Ensure callback URL is correct
+# For local: http://localhost:3000/auth/callback?next=/dashboard
+# For prod: https://yourdomain.com/auth/callback?next=/dashboard
+```
+
 ## 5. Advanced Tips
 
 ### A. Database Snapshots
@@ -278,12 +400,17 @@ ALTER TABLE your_table ADD COLUMN new_column TEXT;
 -- ALTER TABLE your_table DROP COLUMN new_column;
 ```
 
-### C. Testing Production-Like Environment
+### C. Testing API Dependencies
 
-Use Docker Compose to create a more production-like environment:
-```bash
-# Create a testing environment with supabase and your app
-docker-compose -f docker-compose.test.yml up
+For functions relying on external APIs (e.g., price feeds):
+```sql
+-- Test API functions manually
+SELECT public.update_fear_greed_index();
+SELECT public.fetch_and_update_btc_spot_price();
+
+-- Check results
+SELECT * FROM public.spot_price ORDER BY date DESC LIMIT 5;
+SELECT * FROM public.fear_greed_index ORDER BY date DESC LIMIT 5;
 ```
 
 ## Remember
@@ -292,4 +419,6 @@ docker-compose -f docker-compose.test.yml up
 2. **Always test migrations locally** before applying to production
 3. **Keep local and remote in sync** to avoid surprises during deployment
 4. **Document all cron jobs and edge functions** for better maintenance
-5. **Use version control for all database changes** through migration files 
+5. **Use version control for all database changes** through migration files
+6. **Handle authentication and API dependencies with fallbacks**
+7. **Test both local and production environments before deploying**

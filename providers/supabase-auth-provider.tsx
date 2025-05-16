@@ -93,10 +93,15 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
 
   const signUp = async (email: string) => {
     try {
+      // Direct redirect to dashboard is more reliable
+      const redirectUrl = `${window.location.origin}/dashboard`;
+      
+      console.log('Signup redirect URL:', redirectUrl);
+      
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: redirectUrl,
         },
       })
       return { error }
@@ -108,8 +113,18 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
 
   const signInWithMagicLink = async (email: string, captchaToken?: string) => {
     try {
+      // Determine if we're in local development or production
+      const isLocalhost = window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1';
+      
+      // Direct redirect to dashboard is more reliable for magic links
+      // This works in both local and production environments
+      const redirectUrl = `${window.location.origin}/dashboard`;
+      
+      console.log('Magic link redirect URL:', redirectUrl);
+      
       const options: any = {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: redirectUrl,
       }
       
       // Add captcha token if provided

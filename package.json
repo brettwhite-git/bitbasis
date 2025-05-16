@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "cp .env.local.backup .env.local && next dev",
+    "dev:prod": "cp .env.local .env.local.backup && cp .env.production .env.local && next dev",
+    "dev:reset": "cp .env.local.backup .env.local",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
