@@ -62,8 +62,8 @@ BEGIN
     RAISE NOTICE 'Updated existing Fear & Greed Index entry for date %', today_date;
   ELSE
     -- Insert new entry
-    INSERT INTO public.fear_greed_index (value, classification, date)
-    VALUES (index_value, index_classification, today_date);
+    INSERT INTO public.fear_greed_index (value, classification, date, last_updated)
+    VALUES (index_value, index_classification, today_date, timezone('utc'::text, now()));
     
     RAISE NOTICE 'Inserted new Fear & Greed Index entry for date %', today_date;
   END IF;
