@@ -106,126 +106,175 @@ export function SignUpForm() {
     }
   }
 
-  if (success) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+  const content = (
+    <div className="flex min-h-screen flex-col text-gray-300 overflow-x-hidden relative isolate">
+      {/* Global Background Gradient & Grid */}
+      <div 
+        className="fixed inset-0 z-[-2] bg-gradient-to-b from-[#0F1116] via-[#171923] to-[#13151D]"
+      />
+      <div 
+        className="fixed inset-0 z-[-1] opacity-[0.07]"
+        style={{
+          backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+          backgroundSize: '30px 30px'
+        }}
+      />
+      {/* Noise Texture Overlay */}
+      <div 
+        className="fixed inset-0 z-[-1] opacity-30 mix-blend-soft-light pointer-events-none"
+        style={{ 
+          backgroundImage: 'url(\'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"><defs><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter></defs><rect width="100%" height="100%" filter="url(%23noiseFilter)"/></svg>\')',
+        }} 
+      />
+
+      <div className="flex min-h-screen items-center justify-center p-4 relative z-10">
+        <Card className="w-full max-w-md bg-gradient-to-br from-gray-800/30 via-[#171923]/50 to-gray-800/30 shadow-xl border border-white/10">
           <CardHeader className="space-y-2">
             <div className="flex justify-center mb-4">
               <Logo />
             </div>
-            <CardTitle className="text-2xl text-center">Check your email</CardTitle>
-            <CardDescription className="text-center">
-              We've sent you a confirmation link. Please check your email to complete your registration.
+            <CardTitle className="text-2xl text-center text-white">Create an account</CardTitle>
+            <CardDescription className="text-center text-gray-400">
+              Enter your email to get started. We'll send you a magic link to complete signup.
             </CardDescription>
           </CardHeader>
-          <CardFooter className="flex flex-col gap-2">
-            <Link href="/auth/sign-in">
-              <Button variant="link" className="text-bitcoin-orange">
-                Return to sign in
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-gray-300">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="bg-gray-800/50 border-gray-700 text-gray-300 placeholder:text-gray-500 focus:border-bitcoin-orange focus:ring-bitcoin-orange"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2 my-4">
+                <Checkbox 
+                  id="terms" 
+                  checked={termsAccepted}
+                  onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                  disabled={isLoading}
+                  className="border-gray-700 data-[state=checked]:bg-bitcoin-orange data-[state=checked]:border-bitcoin-orange"
+                />
+                <Label 
+                  htmlFor="terms" 
+                  className="text-sm leading-none text-gray-400 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  I agree to the{" "}
+                  <Link href="/terms" className="text-bitcoin-orange hover:underline">
+                    terms and conditions
+                  </Link>
+                  {" "}and{" "}
+                  <Link href="/privacy" className="text-bitcoin-orange hover:underline">
+                    privacy policy
+                  </Link>
+                </Label>
+              </div>
+              
+              <div className="flex justify-center my-4">
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"}
+                  onSuccess={(token) => setCaptchaToken(token)}
+                  onError={() => {
+                    setError("CAPTCHA validation failed. Please try again.")
+                    setCaptchaToken(null)
+                  }}
+                  onExpire={() => setCaptchaToken(null)}
+                  options={{
+                    theme: "dark",
+                  }}
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full relative overflow-hidden bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white font-semibold shadow-lg hover:shadow-bitcoin-orange/30 transform hover:-translate-y-px transition-all duration-300 group"
+                disabled={isLoading || !captchaToken || !termsAccepted}
+              >
+                <span className="relative z-10">
+                  {isLoading ? (
+                    <>
+                      <Icons.spinner className="mr-2 h-4 w-4 animate-spin inline" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Create account"
+                  )}
+                </span>
+                <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 group-active:opacity-20 transition-opacity duration-300"></span>
               </Button>
-            </Link>
+            </form>
+          </CardContent>
+          <CardFooter>
+            <div className="text-sm text-center w-full text-gray-400">
+              Already have an account?{" "}
+              <Link href="/auth/sign-in" className="text-bitcoin-orange hover:underline">
+                Sign in
+              </Link>
+            </div>
           </CardFooter>
         </Card>
+      </div>
+    </div>
+  )
+
+  if (success) {
+    return (
+      <div className="flex min-h-screen flex-col text-gray-300 overflow-x-hidden relative isolate">
+        {/* Global Background Gradient & Grid */}
+        <div 
+          className="fixed inset-0 z-[-2] bg-gradient-to-b from-[#0F1116] via-[#171923] to-[#13151D]"
+        />
+        <div 
+          className="fixed inset-0 z-[-1] opacity-[0.07]"
+          style={{
+            backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+            backgroundSize: '30px 30px'
+          }}
+        />
+        {/* Noise Texture Overlay */}
+        <div 
+          className="fixed inset-0 z-[-1] opacity-30 mix-blend-soft-light pointer-events-none"
+          style={{ 
+            backgroundImage: 'url(\'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"><defs><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter></defs><rect width="100%" height="100%" filter="url(%23noiseFilter)"/></svg>\')',
+          }} 
+        />
+
+        <div className="flex min-h-screen items-center justify-center p-4 relative z-10">
+          <Card className="w-full max-w-md bg-gradient-to-br from-gray-800/30 via-[#171923]/50 to-gray-800/30 shadow-xl border border-white/10">
+            <CardHeader className="space-y-2">
+              <div className="flex justify-center mb-4">
+                <Logo />
+              </div>
+              <CardTitle className="text-2xl text-center text-white">Check your email</CardTitle>
+              <CardDescription className="text-center text-gray-400">
+                We've sent you a confirmation link. Please check your email to complete your registration.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="flex flex-col gap-2">
+              <Link href="/auth/sign-in">
+                <Button variant="link" className="text-bitcoin-orange hover:text-bitcoin-orange/90">
+                  Return to sign in
+                </Button>
+              </Link>
+            </CardFooter>
+          </Card>
+        </div>
       </div>
     )
   }
 
-  return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-2">
-          <div className="flex justify-center mb-4">
-            <Logo />
-          </div>
-          <CardTitle className="text-2xl text-center">Create an account</CardTitle>
-          <CardDescription className="text-center">
-            Enter your email to get started. We'll send you a magic link to complete signup.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            
-            <div className="flex items-center space-x-2 my-4">
-              <Checkbox 
-                id="terms" 
-                checked={termsAccepted}
-                onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-                disabled={isLoading}
-              />
-              <Label 
-                htmlFor="terms" 
-                className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                I agree to the{" "}
-                <Link href="/terms" className="text-bitcoin-orange hover:underline">
-                  terms and conditions
-                </Link>
-                {" "}and{" "}
-                <Link href="/privacy" className="text-bitcoin-orange hover:underline">
-                  privacy policy
-                </Link>
-              </Label>
-            </div>
-            
-            <div className="flex justify-center my-4">
-              <Turnstile
-                ref={turnstileRef}
-                siteKey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"}
-                onSuccess={(token) => setCaptchaToken(token)}
-                onError={() => {
-                  setError("CAPTCHA validation failed. Please try again.")
-                  setCaptchaToken(null)
-                }}
-                onExpire={() => setCaptchaToken(null)}
-                options={{
-                  theme: "dark",
-                }}
-              />
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full bg-bitcoin-orange hover:bg-bitcoin-dark"
-              disabled={isLoading || !captchaToken || !termsAccepted}
-            >
-              {isLoading ? (
-                <>
-                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                "Create account"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter>
-          <div className="text-sm text-center w-full">
-            Already have an account?{" "}
-            <Link href="/auth/sign-in" className="text-bitcoin-orange hover:underline">
-              Sign in
-            </Link>
-          </div>
-        </CardFooter>
-      </Card>
-    </div>
-  )
+  return content
 } 
