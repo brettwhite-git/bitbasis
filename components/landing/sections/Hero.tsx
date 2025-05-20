@@ -16,8 +16,6 @@ export function HeroSection() {
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Simple background accent that matches other sections */}
-        <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-bitcoin-orange/[0.04] rounded-full filter blur-[100px]" />
-        <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-500/[0.02] rounded-full filter blur-[100px]" />
 
         <div className="max-w-3xl mx-auto animate-fade-in-up duration-500">
           <div className="space-y-4">

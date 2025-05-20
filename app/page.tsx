@@ -18,9 +18,9 @@ export default function LandingPage() {
         className="fixed inset-0 z-[-2] bg-gradient-to-b from-[#0F1116] via-[#171923] to-[#13151D]"
       />
       <div 
-        className="fixed inset-0 z-[-1] opacity-[0.03]"
+        className="fixed inset-0 z-[-1] opacity-[0.07]"
         style={{
-          backgroundImage: 'linear-gradient(white .5px, transparent .5px), linear-gradient(90deg, white .5px, transparent .5px)',
+          backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
           backgroundSize: '30px 30px'
         }}
       />

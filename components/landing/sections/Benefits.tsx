@@ -1,4 +1,4 @@
-import { Shield, TrendingUp, Lock } from "lucide-react"
+import { Shield, TrendingUp, Lock, CircleChevronRight } from "lucide-react"
 
 export function BenefitsSection() {
   return (
@@ -13,31 +13,64 @@ export function BenefitsSection() {
             <div className="relative z-10 flex flex-col h-full">
               <Shield className="h-12 w-12 mb-6 text-bitcoin-orange" />
               <h3 className="font-bold text-xl text-white mb-3">Data Minimalism</h3>
-              <p className="text-gray-400 text-sm leading-relaxed flex-grow">
-                We collect only what's necessary. No API keys, no exchange integrations, no personal details beyond basic authentication. Track your investments with simple CSV imports.
-              </p>
+              <ul className="text-gray-400 text-sm leading-relaxed flex-grow space-y-2">
+                <li className="flex items-start">
+                  <CircleChevronRight className="h-5 w-5 mr-2 text-bitcoin-orange shrink-0 mt-0.5" />
+                  <span>No API keys required from exchanges</span>
+                </li>
+                <li className="flex items-start">
+                  <CircleChevronRight className="h-5 w-5 mr-2 text-bitcoin-orange shrink-0 mt-0.5" />
+                  <span>No exchange integrations to risk your data</span>
+                </li>
+                <li className="flex items-start">
+                  <CircleChevronRight className="h-5 w-5 mr-2 text-bitcoin-orange shrink-0 mt-0.5" />
+                  <span>Simple CSV imports keep your data private</span>
+                </li>
+              </ul>
             </div>
           </div>
           {/* Benefit Card 2 */}
-           <div className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm transition-all duration-300 hover:shadow-blue-500/10 hover:bg-gradient-to-br hover:from-gray-800/25 hover:via-gray-900/35 hover:to-gray-800/25 transform hover:-translate-y-2">
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/[0.07] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+           <div className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm transition-all duration-300 hover:shadow-bitcoin-orange/10 hover:bg-gradient-to-br hover:from-gray-800/25 hover:via-gray-900/35 hover:to-gray-800/25 transform hover:-translate-y-2">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-bitcoin-orange/[0.07] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative z-10 flex flex-col h-full">
-              <TrendingUp className="h-12 w-12 mb-6 text-blue-400" />
+              <TrendingUp className="h-12 w-12 mb-6 text-bitcoin-orange" />
               <h3 className="font-bold text-xl text-white mb-3">For All Levels</h3>
-              <p className="text-gray-400 text-sm leading-relaxed flex-grow">
-                Whether you're new to Bitcoin or an experienced investor, our platform makes complex metrics simple. Track cost basis, gains, and performance in an intuitive interface.
-              </p>
+              <ul className="text-gray-400 text-sm leading-relaxed flex-grow space-y-2">
+                <li className="flex items-start">
+                  <CircleChevronRight className="h-5 w-5 mr-2 text-bitcoin-orange shrink-0 mt-0.5" />
+                  <span>Intuitive interface for beginners</span>
+                </li>
+                <li className="flex items-start">
+                  <CircleChevronRight className="h-5 w-5 mr-2 text-bitcoin-orange shrink-0 mt-0.5" />
+                  <span>Track cost basis and performance easily</span>
+                </li>
+                <li className="flex items-start">
+                  <CircleChevronRight className="h-5 w-5 mr-2 text-bitcoin-orange shrink-0 mt-0.5" />
+                  <span>Advanced metrics for experienced investors</span>
+                </li>
+              </ul>
             </div>
           </div>
           {/* Benefit Card 3 */}
-          <div className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm transition-all duration-300 hover:shadow-purple-500/10 hover:bg-gradient-to-br hover:from-gray-800/25 hover:via-gray-900/35 hover:to-gray-800/25 transform hover:-translate-y-2">
-             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-500/[0.07] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm transition-all duration-300 hover:shadow-bitcoin-orange/10 hover:bg-gradient-to-br hover:from-gray-800/25 hover:via-gray-900/35 hover:to-gray-800/25 transform hover:-translate-y-2">
+             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-bitcoin-orange/[0.07] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
              <div className="relative z-10 flex flex-col h-full">
-              <Lock className="h-12 w-12 mb-6 text-purple-400" />
+              <Lock className="h-12 w-12 mb-6 text-bitcoin-orange" />
               <h3 className="font-bold text-xl text-white mb-3">Secure Foundation</h3>
-              <p className="text-gray-400 text-sm leading-relaxed flex-grow">
-                Built on Supabase's secure infrastructure with encrypted connections and protected database access. Your data remains under your control with transparent storage practices.
-              </p>
+              <ul className="text-gray-400 text-sm leading-relaxed flex-grow space-y-2">
+                <li className="flex items-start">
+                  <CircleChevronRight className="h-5 w-5 mr-2 text-bitcoin-orange shrink-0 mt-0.5" />
+                  <span>Built on Supabase's secure infrastructure</span>
+                </li>
+                <li className="flex items-start">
+                  <CircleChevronRight className="h-5 w-5 mr-2 text-bitcoin-orange shrink-0 mt-0.5" />
+                  <span>Encrypted connections protect your data</span>
+                </li>
+                <li className="flex items-start">
+                  <CircleChevronRight className="h-5 w-5 mr-2 text-bitcoin-orange shrink-0 mt-0.5" />
+                  <span>Your data remains under your control</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
