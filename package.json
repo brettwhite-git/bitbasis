@@ -4,8 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:local": "cp .env.local.backup .env.local || echo 'No backup found, using current .env.local' && next dev",
-    "dev:prod": "cp .env.local .env.local.backup && cp .env.production .env.local && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

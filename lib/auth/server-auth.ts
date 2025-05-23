@@ -41,7 +41,7 @@ export async function requireUser() {
   
   if (error || !user) {
     console.error("Error fetching user in requireUser or user not found:", error)
-    redirect('/auth/signin')
+    redirect('/auth/sign-in')
   }
   
   return user // Return the freshly fetched, non-null user
@@ -56,11 +56,11 @@ export async function requireAuth() {
   if (sessionError) {
     // Keep generic error log
     console.error('[requireAuth] Error fetching session:', sessionError)
-    redirect('/auth/signin')
+    redirect('/auth/sign-in')
   }
 
   if (!session) {
-    redirect('/auth/signin')
+    redirect('/auth/sign-in')
   }
 
   // Fetch user directly for security
@@ -69,7 +69,7 @@ export async function requireAuth() {
   if (userError || !user) {
     // Keep generic error log
     console.error('[requireAuth] Error fetching user or user not found:', userError)
-    redirect('/auth/signin')
+    redirect('/auth/sign-in')
   }
   
   return {

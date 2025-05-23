@@ -71,7 +71,7 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
               
               if (event === 'SIGNED_OUT') {
                 await router.refresh()
-                router.push('/auth/signin')
+                router.push('/auth/sign-in')
               }
             }
           }

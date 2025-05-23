@@ -12,11 +12,11 @@ export async function clientRequireAuth() {
   
   if (sessionError) {
     console.error('[clientRequireAuth] Error fetching session:', sessionError)
-    redirect('/auth/signin')
+    redirect('/auth/sign-in')
   }
 
   if (!session) {
-    redirect('/auth/signin')
+    redirect('/auth/sign-in')
   }
 
   // Fetch user directly for security
@@ -24,7 +24,7 @@ export async function clientRequireAuth() {
 
   if (userError || !user) {
     console.error('[clientRequireAuth] Error fetching user or user not found:', userError)
-    redirect('/auth/signin')
+    redirect('/auth/sign-in')
   }
   
   return {
