@@ -18,6 +18,7 @@
 # misc
 .DS_Store
 *.pem
+.vscode/settings.json
 
 # debug
 npm-debug.log*
@@ -25,10 +26,10 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
 .env
+.env*.local
 .env.production
-.env.local.backup   
+.env.local.backup
 
 # vercel
 .vercel
@@ -37,5 +38,23 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-#rules files
+# cursor rules and AI artifacts  
 .cursor/rules/
+.cursorrules
+cursor.log
+.cursor-tutor/
+
+# temporary files
+*.tmp
+*.temp
+.cache/
+*.log
+
+# OS files
+Thumbs.db
+.DS_Store?
+ehthumbs.db
+
+# deployment artifacts
+/dist/
+/.vercel/
