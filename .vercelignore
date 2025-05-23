@@ -1,0 +1,13 @@
+# Exclude Supabase functions from Vercel deployment
+supabase/functions/
+supabase/functions/**
+**/supabase/functions/
+
+# Exclude Supabase config files
+supabase/config.toml
+supabase/migrations/
+supabase/seed.sql
+
+# Local environment files
+.env.local
+.env*.local 
