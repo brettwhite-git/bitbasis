@@ -104,6 +104,41 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 async function handleLifetimePayment(session: Stripe.Checkout.Session, userId: string) {
   console.log('Processing lifetime payment for user:', userId)
 
+  // First, cancel any existing active subscriptions for this user
+  try {
+    console.log('Looking for existing active subscriptions to cancel...')
+    
+    // Get existing active subscriptions from our database
+    const { data: existingSubscriptions, error: fetchError } = await supabaseAdmin
+      .from('subscriptions')
+      .select('id')
+      .eq('user_id', userId)
+      .in('status', ['active', 'trialing'])
+    
+    if (fetchError) {
+      console.error('Error fetching existing subscriptions:', fetchError)
+    } else if (existingSubscriptions && existingSubscriptions.length > 0) {
+      console.log(`Found ${existingSubscriptions.length} existing subscriptions to cancel`)
+      
+      // Cancel each subscription in Stripe
+      for (const sub of existingSubscriptions) {
+        try {
+          console.log(`Canceling subscription: ${sub.id}`)
+          await stripe.subscriptions.cancel(sub.id)
+          console.log(`Successfully canceled subscription: ${sub.id}`)
+        } catch (cancelError) {
+          console.error(`Error canceling subscription ${sub.id}:`, cancelError)
+          // Continue with other subscriptions even if one fails
+        }
+      }
+    } else {
+      console.log('No existing active subscriptions found')
+    }
+  } catch (error) {
+    console.error('Error handling existing subscriptions:', error)
+    // Continue with lifetime creation even if cancellation fails
+  }
+
   // Create a special "lifetime" subscription record
   const { error } = await supabaseAdmin
     .from('subscriptions')

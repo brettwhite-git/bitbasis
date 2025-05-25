@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
     console.log('✅ User authenticated:', user.id)
 
-    // Get or create Stripe customer
+    // Get or create Stripe customer with better race condition handling
     console.log('💳 Getting/creating Stripe customer...')
     let customerId: string | undefined
 
@@ -57,33 +57,75 @@ export async function POST(request: NextRequest) {
     if (existingCustomer?.stripe_customer_id) {
       customerId = existingCustomer.stripe_customer_id
       console.log('✅ Found existing customer:', customerId)
-    } else {
+      
+      // Verify the customer still exists in Stripe
+      try {
+        await stripe.customers.retrieve(customerId)
+        console.log('✅ Customer verified in Stripe')
+      } catch (stripeError) {
+        console.log('⚠️ Customer not found in Stripe, will create new one')
+        customerId = undefined
+      }
+    }
+
+    if (!customerId) {
       console.log('🆕 Creating new Stripe customer...')
-      // Create new Stripe customer
-      const customer = await stripe.customers.create({
+      
+      // Before creating, do one more check for existing customers by email
+      // This helps prevent duplicates from race conditions
+      console.log('🔍 Checking Stripe for existing customer by email...')
+      const existingStripeCustomers = await stripe.customers.list({
         email: user.email,
-        metadata: {
-          supabase_user_id: user.id,
-        },
+        limit: 1,
       })
 
-      customerId = customer.id
-      console.log('✅ Created new Stripe customer:', customerId)
+      if (existingStripeCustomers.data.length > 0) {
+        const existingStripeCustomer = existingStripeCustomers.data[0]
+        console.log('✅ Found existing Stripe customer by email:', existingStripeCustomer.id)
+        customerId = existingStripeCustomer.id
 
-      // Save customer ID to database
-      console.log('💾 Saving customer to database...')
-      const { error: upsertError } = await supabase
-        .from('customers')
-        .upsert({
-          id: user.id,
-          stripe_customer_id: customerId,
+        // Update our database with this customer ID
+        console.log('💾 Updating database with existing Stripe customer...')
+        const { error: upsertError } = await supabase
+          .from('customers')
+          .upsert({
+            id: user.id,
+            stripe_customer_id: customerId,
+          })
+        
+        if (upsertError) {
+          console.log('⚠️ Failed to update customer in database:', upsertError.message)
+          // Continue anyway - the customer exists in Stripe
+        } else {
+          console.log('✅ Database updated with existing customer')
+        }
+      } else {
+        // Create new Stripe customer
+        const customer = await stripe.customers.create({
+          email: user.email,
+          metadata: {
+            supabase_user_id: user.id,
+          },
         })
-      
-      if (upsertError) {
-        console.log('❌ Failed to save customer to database:', upsertError.message)
-        throw new Error(`Database error: ${upsertError.message}`)
+
+        customerId = customer.id
+        console.log('✅ Created new Stripe customer:', customerId)
+
+        // Save customer ID to database
+        console.log('💾 Saving customer to database...')
+        const { error: upsertError } = await supabase
+          .from('customers')
+          .upsert({
+            id: user.id,
+            stripe_customer_id: customerId,
+          })
+        
+        if (upsertError) {
+          console.log('❌ Failed to save customer to database:', upsertError.message)
+          throw new Error(`Database error: ${upsertError.message}`)
+        }
+        console.log('✅ Customer saved to database')
       }
-      console.log('✅ Customer saved to database')
     }
 
     // Debug environment variables
@@ -101,6 +143,34 @@ export async function POST(request: NextRequest) {
     console.log('Lifetime price ID from env:', lifetimePriceId)
     console.log('Is lifetime purchase:', isLifetime)
     console.log('Checkout mode:', mode)
+
+    // Check if user already has a lifetime subscription
+    if (isLifetime) {
+      console.log('🔍 Checking for existing lifetime subscription...')
+      const { data: existingLifetime, error: lifetimeCheckError } = await supabase
+        .from('subscriptions')
+        .select('id, metadata')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .not('metadata', 'is', null)
+        .single()
+
+      if (lifetimeCheckError && lifetimeCheckError.code !== 'PGRST116') {
+        console.log('⚠️ Error checking for lifetime subscription:', lifetimeCheckError.message)
+      }
+
+      if (existingLifetime?.metadata && 
+          typeof existingLifetime.metadata === 'object' && 
+          'type' in existingLifetime.metadata && 
+          existingLifetime.metadata.type === 'lifetime') {
+        console.log('❌ User already has lifetime subscription:', existingLifetime.id)
+        return NextResponse.json(
+          { error: 'You already have a lifetime subscription' },
+          { status: 400 }
+        )
+      }
+      console.log('✅ No existing lifetime subscription found')
+    }
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
@@ -136,13 +206,16 @@ export async function POST(request: NextRequest) {
       }),
     })
 
+    console.log('✅ Checkout session created:', session.id)
+    console.log('🔗 Checkout URL:', session.url)
+
     return NextResponse.json({
       sessionId: session.id,
       url: session.url,
     })
 
   } catch (error) {
-    console.error('Error creating checkout session:', error)
+    console.error('❌ Error creating checkout session:', error)
     
     return NextResponse.json(
       { 
