@@ -310,10 +310,68 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   console.log('Processing failed invoice payment:', invoice.id)
+  console.log('Invoice details:', {
+    id: invoice.id,
+    subscription: invoice.subscription,
+    customer: invoice.customer,
+    amount_due: invoice.amount_due,
+    attempt_count: invoice.attempt_count,
+    next_payment_attempt: invoice.next_payment_attempt,
+  })
 
   if (invoice.subscription) {
     // Fetch and update the subscription status
     const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
     await handleSubscriptionUpdate(subscription)
+
+    // Get user ID for notification/logging
+    let userId = subscription.metadata?.user_id
+    if (!userId) {
+      try {
+        const { data: customerRecord } = await supabaseAdmin
+          .from('customers')
+          .select('id')
+          .eq('stripe_customer_id', subscription.customer as string)
+          .single()
+        
+        if (customerRecord) {
+          userId = customerRecord.id
+        }
+      } catch (error) {
+        console.error('Error finding user for failed payment:', error)
+      }
+    }
+
+    // Log the payment failure for potential follow-up
+    if (userId) {
+      console.log(`Payment failed for user ${userId}, subscription ${subscription.id}`)
+      
+      // Here you could:
+      // 1. Send email notification to user
+      // 2. Create a record in a "payment_failures" table
+      // 3. Set up retry logic
+      // 4. Trigger dunning management
+      
+      // For now, we'll just log it comprehensively
+      console.log('Payment failure details:', {
+        userId,
+        subscriptionId: subscription.id,
+        invoiceId: invoice.id,
+        amountDue: invoice.amount_due,
+        attemptCount: invoice.attempt_count,
+        subscriptionStatus: subscription.status,
+        nextAttempt: invoice.next_payment_attempt,
+      })
+
+      // If this is the final attempt, the subscription will be marked as past_due or canceled
+      if (subscription.status === 'past_due' || subscription.status === 'canceled') {
+        console.log(`Subscription ${subscription.id} is now ${subscription.status} due to payment failure`)
+        
+        // You could implement additional logic here:
+        // - Grace period handling
+        // - Downgrade to free tier
+        // - Send recovery email
+      }
+    }
   }
 } 

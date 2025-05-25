@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
         },
       ],
       success_url: successUrl || `${request.nextUrl.origin}/dashboard/success`,
-      cancel_url: cancelUrl || `${request.nextUrl.origin}/dashboard?checkout=cancelled`,
+      cancel_url: cancelUrl || `${request.nextUrl.origin}/dashboard/cancel`,
       allow_promotion_codes: true,
       // Disable automatic tax in development mode
       ...(process.env.NODE_ENV === 'production' && {

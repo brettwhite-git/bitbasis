@@ -90,18 +90,19 @@ export function SubscriptionTierBadge() {
           </Badge>
         )}
 
-        {/* Tier Badge (non-actionable) */}
-        <Badge
-          variant={tierInfo.useCustomStyle ? "outline" : tierInfo.variant}
-          className={cn(
-            "min-w-[75px] inline-flex items-center justify-center rounded-full border shadow-sm transition-none text-xs font-medium px-3",
-            tierInfo.label === 'LIFETIME' && "min-w-[90px]"
-          )}
-          style={tierInfo.useCustomStyle ? tierInfo.style : undefined}
-        >
-          {tierInfo.icon}
-          {tierInfo.label}
-        </Badge>
+        {/* Tier Badge (only show for Pro and Lifetime users) */}
+        {!showUpgradeButton && (
+          <Badge
+            variant={tierInfo.variant}
+            className={cn(
+              "min-w-[75px] inline-flex items-center justify-center rounded-full border shadow-sm transition-none text-xs font-medium px-3",
+              tierInfo.label === 'LIFETIME' && "min-w-[90px]"
+            )}
+          >
+            {tierInfo.icon}
+            {tierInfo.label}
+          </Badge>
+        )}
       </div>
 
       {/* Unified Subscription Modal */}

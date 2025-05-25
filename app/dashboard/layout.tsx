@@ -5,6 +5,7 @@ import { UserNav } from "@/components/shared/user-nav"
 import { MobileNav } from "@/components/shared/mobile-nav"
 import { SidebarProvider } from "@/components/shared/sidebar-provider"
 import { SubscriptionTierBadge } from "@/components/subscription/SubscriptionTierBadge"
+import { PaymentRecoveryBanner } from "@/components/subscription/PaymentRecoveryBanner"
 
 export default function DashboardLayout({
   children,
@@ -30,6 +31,7 @@ export default function DashboardLayout({
           <DashboardSidebar />
           <main className="flex-1 overflow-hidden">
             <div className="h-full w-full px-8 py-6">
+              <PaymentRecoveryBanner />
               {children}
             </div>
           </main>

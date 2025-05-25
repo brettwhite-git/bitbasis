@@ -9,11 +9,13 @@ import { useAuth } from "@/providers/supabase-auth-provider"
 import { Crown, Star } from "lucide-react"
 import { TransactionCountDisplay } from "@/components/subscription/TransactionCountDisplay"
 import { SubscriptionModal } from "@/components/subscription/SubscriptionModal"
+import { DowngradeModal } from "@/components/subscription/DowngradeModal"
 
 export function SubscriptionManagement() {
   const { user } = useAuth()
-  const { subscriptionInfo, loading } = useSubscription()
+  const { subscriptionInfo, loading, refreshStatus } = useSubscription()
   const [modalOpen, setModalOpen] = useState(false)
+  const [downgradeModalOpen, setDowngradeModalOpen] = useState(false)
 
   if (loading) {
     return (
@@ -53,7 +55,6 @@ export function SubscriptionManagement() {
 
       if (isLifetime) {
         return {
-          plan: "Lifetime Plan",
           status: "Active",
           description: "One-time payment • Unlimited forever",
           badge: { text: "LIFETIME", variant: "default" as const, icon: Star },
@@ -63,7 +64,6 @@ export function SubscriptionManagement() {
         }
       } else {
         return {
-          plan: "Pro Plan",
           status: "Active", 
           description: "$4.99/month • Unlimited transactions",
           badge: { text: "PRO", variant: "default" as const, icon: Crown },
@@ -74,9 +74,8 @@ export function SubscriptionManagement() {
       }
     } else {
       return {
-        plan: "Free Plan",
         status: "Active",
-        description: `${transaction_count}/50 transactions used`,
+        description: "Limited to 50 transactions",
         badge: { text: "FREE", variant: "secondary" as const, icon: null },
         isLifetime: false,
         isPro: false,
@@ -98,9 +97,9 @@ export function SubscriptionManagement() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <h4 className="font-medium">{displayInfo.plan}</h4>
+                <h4 className="font-medium">Subscription Plan:</h4>
                 <Badge variant={displayInfo.badge.variant} className="flex items-center gap-1">
                   {displayInfo.badge.icon && <displayInfo.badge.icon className="h-3 w-3" />}
                   {displayInfo.badge.text}
@@ -109,19 +108,29 @@ export function SubscriptionManagement() {
               <p className="text-sm text-muted-foreground">{displayInfo.description}</p>
               <p className="text-xs text-muted-foreground">Status: {displayInfo.status}</p>
               
-              {/* Show transaction progress for free users */}
+              {/* Show transaction progress for free users in greyed container */}
               {displayInfo.isFree && (
-                <div className="pt-2">
+                <div className="flex items-center px-3 py-2 bg-muted/50 rounded-md border">
                   <TransactionCountDisplay showProgress={true} />
                 </div>
               )}
             </div>
-            <Button 
-              variant="orange-outline" 
-              onClick={() => setModalOpen(true)}
-            >
-              Manage Subscription
-            </Button>
+            <div className="flex gap-2">
+              {(displayInfo.isPro || displayInfo.isLifetime) && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setDowngradeModalOpen(true)}
+                >
+                  Cancel Subscription
+                </Button>
+              )}
+              <Button 
+                variant="orange-outline" 
+                onClick={() => setModalOpen(true)}
+              >
+                {displayInfo.isFree ? 'Upgrade' : 'Manage Subscription'}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -130,6 +139,13 @@ export function SubscriptionManagement() {
       <SubscriptionModal 
         open={modalOpen} 
         onOpenChange={setModalOpen} 
+      />
+
+      {/* Downgrade Modal */}
+      <DowngradeModal 
+        open={downgradeModalOpen} 
+        onOpenChange={setDowngradeModalOpen}
+        onSuccess={refreshStatus}
       />
     </>
   )

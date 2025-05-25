@@ -281,12 +281,12 @@ export function TransactionsTable({
         <>
           {/* Desktop */}
           <div className="hidden sm:flex items-center px-3 py-2 bg-muted/50 rounded-md border">
-            <TransactionCountDisplay totalTransactions={transactions.length} showProgress={true} />
+            <TransactionCountDisplay showProgress={true} />
           </div>
           
           {/* Mobile */}
           <div className="flex sm:hidden items-center px-2 py-1 bg-muted/30 rounded text-xs">
-            <TransactionCountDisplay totalTransactions={transactions.length} showProgress={false} />
+            <TransactionCountDisplay showProgress={false} />
           </div>
         </>
       )}
