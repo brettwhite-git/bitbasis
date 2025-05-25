@@ -16,7 +16,7 @@ export function PricingSection() {
             <p className="text-gray-400 mb-6">Get started with essential tracking features.</p>
             <p className="text-4xl font-bold text-white mb-6">$0 <span className="text-lg font-normal text-gray-400">/ month</span></p>
             <ul className="space-y-3 text-gray-300 mb-8">
-              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> Up to 100 transactions</li>
+              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> Up to 50 transactions</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> Basic Cost Basis (FIFO)</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> Portfolio Overview</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> CSV Import</li>
@@ -36,10 +36,10 @@ export function PricingSection() {
             <p className="text-4xl font-bold text-white mb-6">$4.99 <span className="text-lg font-normal text-gray-400">/ month</span></p>
             <ul className="space-y-3 text-gray-300 mb-8">
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Unlimited transactions</li>
-              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" />  Cost Basis (FIFO, LIFO, HIFO)</li>
+              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Cost Basis (FIFO, LIFO, HIFO)</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Detailed Performance Analytics</li>
-              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Tax Lot Identification (soon)</li>
-              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Priority Support</li>
+              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Tax Lot Identification</li>
+              
             </ul>
             <Link href="/auth/sign-up?plan=pro">
               <Button size="lg" className="w-full relative overflow-hidden bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white font-semibold shadow-lg hover:shadow-bitcoin-orange/30 transform hover:-translate-y-px transition-all duration-300 group">
@@ -59,8 +59,8 @@ export function PricingSection() {
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Everything in Pro plan</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Lifetime Access</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Future Premium Features</li>
-              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> Extended Export Options</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-bitcoin-orange" /> VIP Support</li>
+              
             </ul>
             <Link href="/auth/sign-up?plan=lifetime">
               <Button size="lg" className="w-full relative overflow-hidden bg-gradient-to-r from-[#D4A76A] to-bitcoin-orange text-white font-semibold shadow-lg hover:shadow-bitcoin-orange/40 transform hover:-translate-y-px transition-all duration-300 group">

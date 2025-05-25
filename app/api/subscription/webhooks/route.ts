@@ -1,0 +1,284 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { stripe } from '@/lib/stripe'
+import { createClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/supabase'
+import Stripe from 'stripe'
+
+// Use service role key for webhook processing (bypasses RLS)
+const supabaseAdmin = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
+
+const relevantEvents = new Set([
+  'checkout.session.completed',
+  'customer.subscription.created',
+  'customer.subscription.updated',
+  'customer.subscription.deleted',
+  'invoice.payment_succeeded',
+  'invoice.payment_failed',
+])
+
+export async function POST(request: NextRequest) {
+  const body = await request.text()
+  const signature = request.headers.get('stripe-signature')
+
+  if (!signature || !webhookSecret) {
+    console.error('Missing Stripe signature or webhook secret')
+    return NextResponse.json(
+      { error: 'Missing Stripe signature or webhook secret' },
+      { status: 400 }
+    )
+  }
+
+  let event: Stripe.Event
+
+  try {
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+  } catch (error) {
+    console.error('Webhook signature verification failed:', error)
+    return NextResponse.json(
+      { error: 'Invalid signature' },
+      { status: 400 }
+    )
+  }
+
+  if (!relevantEvents.has(event.type)) {
+    console.log(`Ignoring irrelevant event: ${event.type}`)
+    return NextResponse.json({ received: true })
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session)
+        break
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdate(event.data.object as Stripe.Subscription)
+        break
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
+        break
+      case 'invoice.payment_succeeded':
+        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice)
+        break
+      case 'invoice.payment_failed':
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice)
+        break
+      default:
+        console.log(`Unhandled event type: ${event.type}`)
+    }
+
+    return NextResponse.json({ received: true })
+  } catch (error) {
+    console.error(`Error processing webhook event ${event.type}:`, error)
+    return NextResponse.json(
+      { error: 'Webhook processing failed' },
+      { status: 500 }
+    )
+  }
+}
+
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  console.log('Processing checkout session completed:', session.id)
+
+  const userId = session.metadata?.user_id
+  if (!userId) {
+    console.error('No user_id in checkout session metadata')
+    return
+  }
+
+  // Handle different modes
+  if (session.mode === 'payment') {
+    // One-time payment (Lifetime)
+    await handleLifetimePayment(session, userId)
+  } else if (session.mode === 'subscription') {
+    // Subscription payment (Pro Monthly)
+    await handleSubscriptionPayment(session, userId)
+  }
+}
+
+async function handleLifetimePayment(session: Stripe.Checkout.Session, userId: string) {
+  console.log('Processing lifetime payment for user:', userId)
+
+  // Create a special "lifetime" subscription record
+  const { error } = await supabaseAdmin
+    .from('subscriptions')
+    .upsert({
+      id: `lifetime_${userId}`, // Custom ID for lifetime subscriptions
+      user_id: userId,
+      status: 'active',
+      metadata: {
+        type: 'lifetime',
+        checkout_session_id: session.id,
+        payment_intent_id: session.payment_intent,
+      },
+      price_id: session.metadata?.price_id || null,
+      quantity: 1,
+      cancel_at_period_end: false,
+      current_period_start: new Date().toISOString(),
+      current_period_end: new Date('2099-12-31').toISOString(), // Far future date
+      created: new Date().toISOString(),
+      ended_at: null,
+      cancel_at: null,
+      canceled_at: null,
+      trial_start: null,
+      trial_end: null,
+    })
+
+  if (error) {
+    console.error('Error creating lifetime subscription:', error)
+    throw error
+  }
+
+  console.log('Lifetime subscription created successfully for user:', userId)
+}
+
+async function handleSubscriptionPayment(session: Stripe.Checkout.Session, userId: string) {
+  console.log('Processing subscription payment for user:', userId)
+
+  if (!session.subscription) {
+    console.error('No subscription ID in checkout session')
+    return
+  }
+
+  // Fetch the subscription from Stripe to get full details
+  const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+  await handleSubscriptionUpdate(subscription)
+}
+
+async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+  console.log('Processing subscription update:', subscription.id)
+  console.log('Subscription metadata:', subscription.metadata)
+
+  let userId = subscription.metadata?.user_id
+  
+  // If no user_id in subscription metadata, try to get it from the customer
+  if (!userId) {
+    console.log('No user_id in subscription metadata, looking up customer...')
+    try {
+      const customer = await stripe.customers.retrieve(subscription.customer as string)
+      if (customer && !customer.deleted) {
+        userId = customer.metadata?.supabase_user_id
+        console.log('Found user_id from customer metadata:', userId)
+      }
+    } catch (error) {
+      console.error('Error retrieving customer:', error)
+    }
+  }
+
+  if (!userId) {
+    console.error('No user_id found in subscription or customer metadata for subscription:', subscription.id)
+    
+    // Try to find user by customer ID in our database
+    try {
+      const { data: customerRecord } = await supabaseAdmin
+        .from('customers')
+        .select('id')
+        .eq('stripe_customer_id', subscription.customer as string)
+        .single()
+      
+      if (customerRecord) {
+        userId = customerRecord.id
+        console.log('Found user_id from database customer record:', userId)
+      } else {
+        console.error('No customer record found for stripe customer:', subscription.customer)
+        return
+      }
+    } catch (dbError) {
+      console.error('Error looking up customer in database:', dbError)
+      return
+    }
+  }
+
+  const priceId = subscription.items.data[0]?.price.id
+
+  console.log('Attempting to upsert subscription with data:', {
+    id: subscription.id,
+    user_id: userId,
+    status: subscription.status,
+    price_id: priceId,
+  })
+
+  const { error } = await supabaseAdmin
+    .from('subscriptions')
+    .upsert({
+      id: subscription.id,
+      user_id: userId,
+      status: subscription.status,
+      metadata: subscription.metadata,
+      price_id: priceId,
+      quantity: subscription.items.data[0]?.quantity || 1,
+      cancel_at_period_end: subscription.cancel_at_period_end,
+      current_period_start: subscription.current_period_start 
+        ? new Date(subscription.current_period_start * 1000).toISOString() 
+        : new Date().toISOString(),
+      current_period_end: subscription.current_period_end 
+        ? new Date(subscription.current_period_end * 1000).toISOString() 
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now as fallback
+      created: subscription.created 
+        ? new Date(subscription.created * 1000).toISOString() 
+        : new Date().toISOString(),
+      ended_at: subscription.ended_at ? new Date(subscription.ended_at * 1000).toISOString() : null,
+      cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
+      canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
+      trial_start: subscription.trial_start ? new Date(subscription.trial_start * 1000).toISOString() : null,
+      trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+    })
+
+  if (error) {
+    console.error('Error updating subscription:', error)
+    console.error('Subscription data that failed:', {
+      id: subscription.id,
+      user_id: userId,
+      status: subscription.status,
+      price_id: priceId,
+    })
+    throw error
+  }
+
+  console.log('Subscription updated successfully:', subscription.id)
+}
+
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  console.log('Processing subscription deletion:', subscription.id)
+
+  const { error } = await supabaseAdmin
+    .from('subscriptions')
+    .update({
+      status: 'canceled',
+      ended_at: new Date().toISOString(),
+      canceled_at: new Date().toISOString(),
+    })
+    .eq('id', subscription.id)
+
+  if (error) {
+    console.error('Error marking subscription as deleted:', error)
+    throw error
+  }
+
+  console.log('Subscription marked as canceled:', subscription.id)
+}
+
+async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+  console.log('Processing successful invoice payment:', invoice.id)
+
+  if (invoice.subscription) {
+    // Fetch and update the subscription status
+    const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
+    await handleSubscriptionUpdate(subscription)
+  }
+}
+
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  console.log('Processing failed invoice payment:', invoice.id)
+
+  if (invoice.subscription) {
+    // Fetch and update the subscription status
+    const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
+    await handleSubscriptionUpdate(subscription)
+  }
+} 

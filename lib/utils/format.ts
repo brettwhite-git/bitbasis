@@ -109,3 +109,27 @@ export function capitalizeExchange(exchange: string | null | undefined): string 
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 } 
+
+/**
+ * Format a date as a short string (MM/DD/YYYY)
+ */
+export function formatDateShort(date: string | Date): string {
+  return formatDate(date, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+}
+
+/**
+ * Format a date with time
+ */
+export function formatDateTime(date: string | Date): string {
+  return formatDate(date, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+} 

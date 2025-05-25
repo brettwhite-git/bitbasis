@@ -4,6 +4,7 @@ import { DashboardSidebar } from "@/components/shared/sidebar"
 import { UserNav } from "@/components/shared/user-nav"
 import { MobileNav } from "@/components/shared/mobile-nav"
 import { SidebarProvider } from "@/components/shared/sidebar-provider"
+import { SubscriptionTierBadge } from "@/components/subscription/SubscriptionTierBadge"
 
 export default function DashboardLayout({
   children,
@@ -20,6 +21,7 @@ export default function DashboardLayout({
               <Logo />
             </div>
             <div className="ml-auto flex items-center gap-4">
+              <SubscriptionTierBadge />
               <UserNav />
             </div>
           </div>

@@ -2,15 +2,18 @@
 
 import React from 'react'
 import { useImport } from './ImportContext'
+import { useSubscription } from '@/hooks/use-subscription'
+import { TransactionLimitService } from '@/lib/subscription'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { Badge } from '@/components/ui/badge'
-import { ChevronRight, AlertTriangle, Info, Check, CheckCircle2 } from 'lucide-react'
+import { ChevronRight, AlertTriangle, Info, Check, CheckCircle2, XCircle } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ValidationIssue, ParsedTransaction } from '@/components/transactions/utils/types'
 import { cn } from '@/lib/utils/utils'
 import { Separator } from '@/components/ui/separator'
+import { useAuth } from '@/providers/supabase-auth-provider'
 
 export function PreviewStep() {
   const { 
@@ -19,10 +22,56 @@ export function PreviewStep() {
     setStep,
     currentFile
   } = useImport()
+  
+  const { user } = useAuth()
+  const { subscriptionInfo, loading: subscriptionLoading } = useSubscription()
+  const [limitValidation, setLimitValidation] = React.useState<{
+    allowed: boolean
+    message: string
+    loading: boolean
+  }>({
+    allowed: true,
+    message: '',
+    loading: true
+  })
 
   // Format transactions for display
   const transactions = parsedTransactions || []
   const totalCount = transactions.length
+
+  // Check transaction limits when component mounts or data changes
+  React.useEffect(() => {
+    const validateLimits = async () => {
+      if (!user?.id || subscriptionLoading || !subscriptionInfo) {
+        setLimitValidation({ allowed: true, message: '', loading: true })
+        return
+      }
+
+      // Skip validation for Pro users
+      if (subscriptionInfo.subscription_status === 'active' || subscriptionInfo.subscription_status === 'trialing') {
+        setLimitValidation({ allowed: true, message: '', loading: false })
+        return
+      }
+
+      try {
+        const result = await TransactionLimitService.validateBulkTransactionAdd(user.id, totalCount)
+        setLimitValidation({
+          allowed: result.allowed,
+          message: result.message,
+          loading: false
+        })
+      } catch (error) {
+        console.error('Error validating transaction limits:', error)
+        setLimitValidation({
+          allowed: false,
+          message: 'Unable to verify transaction limits. Please try again.',
+          loading: false
+        })
+      }
+    }
+
+    validateLimits()
+  }, [user?.id, subscriptionLoading, subscriptionInfo, totalCount])
 
   // Calculate transaction type counts
   const typeCounts = {
@@ -47,9 +96,14 @@ export function PreviewStep() {
   const warningCount = validationIssues.filter(issue => issue.severity === 'warning').length
   const hasIssues = errorCount > 0 || warningCount > 0
 
+  // Check if continue should be disabled
+  const shouldDisableContinue = transactions.length === 0 || errorCount > 0 || !limitValidation.allowed || limitValidation.loading
+
   // Handle continue button
   const handleContinue = () => {
+    if (!shouldDisableContinue) {
     setStep('confirmation')
+    }
   }
 
   // Render issue badge for a transaction
@@ -96,6 +150,22 @@ export function PreviewStep() {
           {totalCount} transactions from {currentFile?.name}
         </div>
       </div>
+      
+      {/* Transaction Limit Warning/Error */}
+      {!limitValidation.loading && !limitValidation.allowed && (
+        <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg">
+          <div className="flex items-center gap-3">
+            <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+            <div>
+              <h4 className="font-medium text-destructive">Import Blocked - Transaction Limit Exceeded</h4>
+              <p className="text-sm text-destructive/80 mt-1">{limitValidation.message}</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Upgrade to Pro ($4.99/month) or Lifetime ($210) for unlimited transactions.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Validation Summary */}
       <div className="bg-black/40 p-3 rounded-lg">
@@ -279,17 +349,23 @@ export function PreviewStep() {
         <Button 
           onClick={handleContinue} 
           className="flex items-center gap-2 px-6"
-          disabled={transactions.length === 0 || errorCount > 0}
+          disabled={shouldDisableContinue}
         >
           Continue
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
       
-      {/* Error notice */}
+      {/* Error notices */}
       {errorCount > 0 && (
         <div className="bg-destructive/10 p-3 rounded-md text-sm text-destructive mt-2">
           Please fix all errors before continuing. You may need to edit your CSV file and upload again.
+        </div>
+      )}
+      
+      {!limitValidation.loading && !limitValidation.allowed && (
+        <div className="bg-destructive/10 p-3 rounded-md text-sm text-destructive mt-2">
+          Cannot import: This would exceed your transaction limit. Please upgrade your plan to continue.
         </div>
       )}
     </div>

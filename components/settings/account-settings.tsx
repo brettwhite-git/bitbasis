@@ -19,13 +19,11 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { CheckCircle, ShieldCheck, InfoIcon } from "lucide-react"
 import Link from "next/link"
+import { SubscriptionManagement } from "./SubscriptionManagement"
+import { useAuth } from "@/providers/supabase-auth-provider"
 
 export function AccountSettings() {
-  // TODO: Replace static data with actual user data
-  const userEmail = "john.doe@example.com"
-  const isVerified = true // Example verification status
-  const subscriptionPlan = "Pro Plan"
-  const subscriptionDetails = "$9.99/month, renews on August 15, 2023"
+  const { user } = useAuth()
   const [costBasisMethod, setCostBasisMethod] = useState("fifo")
 
   return (
@@ -35,42 +33,22 @@ export function AccountSettings() {
         <CardHeader>
           <div className="flex items-center justify-between">
              <CardTitle className="text-lg">Email Address</CardTitle>
-             {isVerified && (
                <Badge className="bg-green-600 text-white flex items-center gap-1 px-2">
                  <CheckCircle className="h-3.5 w-3.5" />
                  Verified
                </Badge>
-             )}
            </div>
            <CardDescription>
              Your email address is used for login and notifications.
            </CardDescription>
         </CardHeader>
         <CardContent>
-          <Input id="email" type="email" value={userEmail} readOnly />
+          <Input id="email" type="email" value={user?.email || ""} readOnly />
         </CardContent>
       </Card>
 
-      {/* Subscription Section */}
-      <Card className="rounded-lg">
-        <CardHeader>
-          <CardTitle className="text-lg">Subscription</CardTitle>
-          <CardDescription>
-            Manage your BitBasis subscription plan.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-           <div className="flex items-center justify-between">
-             <div>
-               <h4 className="font-medium">{subscriptionPlan}</h4>
-               <p className="text-sm text-muted-foreground">{subscriptionDetails}</p>
-             </div>
-             <Button variant="orange-outline">
-               Manage Subscription
-             </Button>
-           </div>
-        </CardContent>
-      </Card>
+      {/* Subscription Section - Now Dynamic */}
+      <SubscriptionManagement />
 
       {/* Cost Basis Section */}
       <Card className="rounded-lg">

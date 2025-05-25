@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Table, TableBody } from "@/components/ui/table"
 import { DateRange } from "react-day-picker"
 
@@ -23,7 +23,7 @@ import { DataTableEmpty } from "@/components/shared/data-table/DataTableEmpty"
 import { DataTableLoading } from "@/components/shared/data-table/DataTableLoading"
 import { DataTableError } from "@/components/shared/data-table/DataTableError"
 import { Button } from "@/components/ui/button"
-import { Trash2, Upload } from "lucide-react"
+import { Trash2, Upload, Ghost } from "lucide-react"
 import { TransactionsActions } from "@/components/transactions/actions/TransactionsActions"
 import { TransactionFormValues } from "@/components/transactions/dialogs/AddTransactionDialog"
 
@@ -32,6 +32,8 @@ import { TransactionsTableProps } from "@/types/transactions"
 
 // Import modals
 import { ImportModal } from "@/components/transactions/dialogs/import/ImportModal"
+import { TransactionCountDisplay } from "@/components/subscription/TransactionCountDisplay"
+import { useSubscription } from "@/hooks/use-subscription"
 
 /**
  * The main transactions table component that displays transaction data
@@ -52,6 +54,7 @@ export function TransactionsTable({
   // Check if we're on mobile
   const isMobile = useIsMobile()
   const { toast } = useToast()
+  const { subscriptionInfo, loading: subscriptionLoading } = useSubscription()
   
   // State for managing various modal dialogs
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -201,6 +204,36 @@ export function TransactionsTable({
     await refetch();
   }
   
+  // Check if user can import transactions
+  const canImportTransactions = React.useMemo(() => {
+    if (subscriptionLoading || !subscriptionInfo) return false
+    
+    // Pro users can always import
+    if (subscriptionInfo.subscription_status === 'active' || subscriptionInfo.subscription_status === 'trialing') {
+      return true
+    }
+    
+    // Free users can import if under limit (import validation happens in PreviewStep)
+    return subscriptionInfo.can_add_transaction
+  }, [subscriptionInfo, subscriptionLoading])
+
+  const handleImportClick = () => {
+    if (canImportTransactions) {
+      setImportModalOpen(true)
+    } else {
+      const message = (subscriptionInfo?.transaction_count ?? 0) >= 50 
+        ? `You've reached your limit of 50 transactions. Upgrade to Pro for unlimited imports.`
+        : 'Unable to import transactions. Please check your subscription status.'
+        
+      toast({
+        title: "Import Blocked",
+        description: message,
+        variant: "destructive",
+        duration: 5000,
+      })
+    }
+  }
+  
   // Update the actionButtons to use the simplified TransactionsActions
   const actionButtons = (
     <div className="flex items-center justify-end gap-2">
@@ -212,8 +245,8 @@ export function TransactionsTable({
       <Button
         variant="outline"
         size="sm"
-        onClick={() => setImportModalOpen(true)}
-        disabled={isLoading}
+        onClick={handleImportClick}
+        disabled={isLoading || subscriptionLoading}
         className="h-9 flex items-center justify-center"
       >
         <div className="flex items-center justify-center">
@@ -225,7 +258,7 @@ export function TransactionsTable({
   )
   
   const filterSection = (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-4">
       <UnifiedFilterDropdown
         searchQuery={filters.searchQuery}
         onSearchChange={setSearchQuery}
@@ -240,6 +273,23 @@ export function TransactionsTable({
         onExchangeFilterChange={setExchangeFilter}
         onReset={resetFilters}
       />
+      
+      {/* Transaction count display - only show for free users */}
+      {!subscriptionLoading && subscriptionInfo && 
+       subscriptionInfo.subscription_status !== 'active' && 
+       subscriptionInfo.subscription_status !== 'trialing' && (
+        <>
+          {/* Desktop */}
+          <div className="hidden sm:flex items-center px-3 py-2 bg-muted/50 rounded-md border">
+            <TransactionCountDisplay totalTransactions={transactions.length} showProgress={true} />
+          </div>
+          
+          {/* Mobile */}
+          <div className="flex sm:hidden items-center px-2 py-1 bg-muted/30 rounded text-xs">
+            <TransactionCountDisplay totalTransactions={transactions.length} showProgress={false} />
+          </div>
+        </>
+      )}
     </div>
   )
   
@@ -288,19 +338,26 @@ export function TransactionsTable({
       ) : error ? (
         <DataTableError message={error} onRetry={refetch} colSpan={7} />
       ) : filteredTransactions.length === 0 ? (
-        <DataTableEmpty 
-          message={
-            transactions.length === 0
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="rounded-full bg-muted p-3 mb-2">
+            <Ghost className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            {transactions.length === 0
               ? "No transactions found. Import transactions to get started."
               : "No transactions match your filters."
           }
-          colSpan={7}
-          action={
-            transactions.length === 0 
-              ? <Button onClick={() => setImportModalOpen(true)}>Import Transactions</Button>
-              : <Button onClick={resetFilters}>Clear Filters</Button>
-          }
-        />
+          </p>
+          {transactions.length === 0 ? (
+            <Button onClick={() => setImportModalOpen(true)}>
+              Import Transactions
+            </Button>
+          ) : (
+            <Button onClick={resetFilters}>
+              Clear Filters
+            </Button>
+          )}
+        </div>
       ) : (
         <>
           {/* Delete selected button - shown when transactions are selected */}
@@ -362,11 +419,13 @@ export function TransactionsTable({
 
           {/* Pagination controls */}
           {totalPages > 1 && (
+            <div className="flex justify-end">
             <TransactionsPagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
             />
+            </div>
           )}
         </>
       )}
