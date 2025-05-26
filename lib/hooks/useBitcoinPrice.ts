@@ -7,7 +7,7 @@ interface BitcoinPriceData {
 }
 
 export function useBitcoinPrice(defaultPrice: number = 85000, refreshInterval: number = 60000) {
-  const [price, setPrice] = useState<number>(defaultPrice);
+  const [price, setPrice] = useState<number>(0); // Start with 0 to force loading
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -33,12 +33,17 @@ export function useBitcoinPrice(defaultPrice: number = 85000, refreshInterval: n
         setLastUpdated(priceData.updated_at);
         setError(null);
       } else {
-        // If no data found, keep using the default value
-        console.log('No Bitcoin price data found, using default:', defaultPrice);
+        // If no data found, use default price as fallback
+        setPrice(defaultPrice);
+        setError('Using default price - no database data available');
       }
     } catch (err) {
       console.error('Error fetching Bitcoin price:', err);
       setError('Failed to fetch Bitcoin price');
+      // Use default price as fallback on error
+      if (price === 0) {
+        setPrice(defaultPrice);
+      }
     } finally {
       setLoading(false);
     }

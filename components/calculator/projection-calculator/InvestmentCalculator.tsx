@@ -259,45 +259,58 @@ export function InvestmentCalculator() {
   };
 
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm h-full">
-      <div className="p-6 space-y-6 flex flex-col h-full">
-        <Tabs value={calculatorMode} onValueChange={(value) => setCalculatorMode(value as typeof calculatorMode)} className="w-full flex-1 flex flex-col">
-          <TabsList>
-            <TabsTrigger value="savingsGoal">
-              Savings Goal
-            </TabsTrigger>
-            <TabsTrigger value="investmentGoal">
-              Investment Goal
-            </TabsTrigger>
-          </TabsList>
+    <div className="w-full space-y-6">
+      <Tabs value={calculatorMode} onValueChange={(value) => setCalculatorMode(value as typeof calculatorMode)} className="w-full flex-1 flex flex-col">
+        <TabsList className="flex w-auto mb-4 bg-transparent p-0 h-auto justify-start gap-x-1 border-b border-border">
+          <TabsTrigger 
+            value="savingsGoal" 
+            className="relative overflow-hidden data-[state=active]:bg-gradient-to-r data-[state=active]:from-bitcoin-orange data-[state=active]:to-[#D4A76A] data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-bitcoin-orange/30 data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-all duration-300 rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/20 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border group"
+          >
+            <span className="relative z-10">Savings Goal</span>
+            <span className="absolute inset-0 bg-white opacity-0 data-[state=active]:group-hover:opacity-10 transition-opacity duration-100"></span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="investmentGoal" 
+            className="relative overflow-hidden data-[state=active]:bg-gradient-to-r data-[state=active]:from-bitcoin-orange data-[state=active]:to-[#D4A76A] data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-bitcoin-orange/30 data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-all duration-300 rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/20 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border group"
+          >
+            <span className="relative z-10">Investment Goal</span>
+            <span className="absolute inset-0 bg-white opacity-0 data-[state=active]:group-hover:opacity-10 transition-opacity duration-100"></span>
+          </TabsTrigger>
+        </TabsList>
           
-          <div className="flex-1 flex flex-col">
-            <TabsContent value="savingsGoal" className="flex-1">
-              <SavingsGoalCalculator />
-            </TabsContent>
-            
-            <TabsContent value="investmentGoal" className="flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-[650px]">
+        <div className="flex-1 flex flex-col">
+          <TabsContent value="savingsGoal" className="flex-1">
+            <div className="rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm border border-gray-700/50 shadow-2xl h-full">
+              <div className="p-6">
+                <SavingsGoalCalculator />
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="investmentGoal" className="flex-1">
+            <div className="rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm border border-gray-700/50 shadow-2xl h-full">
+              <div className="p-6 space-y-6 flex flex-col h-full">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-[650px]">
                 {/* Input Section (Left) - Combined calculator */}
                 <div className="md:col-span-1">
-                  <div className="h-full p-6 rounded-md border border-border bg-muted/30 space-y-5 flex flex-col">
+                  <div className="h-full p-6 rounded-xl bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm border border-gray-700/30 space-y-5 flex flex-col">
                     {/* Goal Type Selector */}
                     <div>
-                      <Label className="text-base mb-2 block">Goal Type</Label>
+                      <Label className="text-base mb-2 block text-white">Goal Type</Label>
                       <Select value={goalType} onValueChange={(value) => setGoalType(value as 'fixed' | 'recurring')}>
-                        <SelectTrigger className="h-10 bg-background border-input">
+                        <SelectTrigger className="h-10 bg-gray-800/30 border-gray-600/50 text-white">
                           <SelectValue placeholder="Select goal type" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="fixed">Fixed Bitcoin Goal</SelectItem>
-                          <SelectItem value="recurring">Recurring Investment</SelectItem>
+                        <SelectContent className="bg-gray-900/95 backdrop-blur-md border-gray-700/50">
+                          <SelectItem value="fixed" className="text-white hover:bg-gray-800/50">Fixed Bitcoin Goal</SelectItem>
+                          <SelectItem value="recurring" className="text-white hover:bg-gray-800/50">Recurring Investment</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     
                     {/* BTC Price */}
                     <div>
-                      <Label className="text-base mb-2 block">BTC Price</Label>
+                      <Label className="text-base mb-2 block text-white">BTC Price</Label>
                       <div className="mt-0">
                         <BtcPriceInput 
                           customBtcPrice={customBtcPrice}
@@ -310,13 +323,13 @@ export function InvestmentCalculator() {
 
                     {/* Bitcoin Unit */}
                     <div>
-                      <Label className="text-base mb-3 block">Bitcoin Unit</Label>
+                      <Label className="text-base mb-3 block text-white">Bitcoin Unit</Label>
                       <RadioGroup value={bitcoinUnit} onValueChange={(value) => setBitcoinUnit(value as BitcoinUnit)} className="grid grid-cols-2 gap-3 mt-0">
                         <div className="flex items-center">
                           <RadioGroupItem value="bitcoin" id="bitcoin" className="peer sr-only" />
                           <Label
                             htmlFor="bitcoin"
-                            className="flex-1 cursor-pointer rounded-md border border-input px-4 py-2 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center"
+                            className="flex-1 cursor-pointer rounded-md border border-gray-600/50 bg-gray-800/30 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-gradient-to-r peer-data-[state=checked]:from-bitcoin-orange/20 peer-data-[state=checked]:to-[#D4A76A]/20 peer-data-[state=checked]:text-bitcoin-orange text-center"
                           >
                             Bitcoin
                           </Label>
@@ -325,7 +338,7 @@ export function InvestmentCalculator() {
                           <RadioGroupItem value="satoshi" id="satoshi" className="peer sr-only" />
                           <Label
                             htmlFor="satoshi"
-                            className="flex-1 cursor-pointer rounded-md border border-input px-4 py-2 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center"
+                            className="flex-1 cursor-pointer rounded-md border border-gray-600/50 bg-gray-800/30 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-gradient-to-r peer-data-[state=checked]:from-bitcoin-orange/20 peer-data-[state=checked]:to-[#D4A76A]/20 peer-data-[state=checked]:text-bitcoin-orange text-center"
                           >
                             Satoshi
                           </Label>
@@ -335,14 +348,14 @@ export function InvestmentCalculator() {
 
                     {/* Buying Frequency */}
                     <div>
-                      <Label className="text-base mb-3 block">Buying Frequency</Label>
+                      <Label className="text-base mb-3 block text-white">Buying Frequency</Label>
                       <RadioGroup value={frequency} onValueChange={setFrequency} className="grid grid-cols-4 gap-3 mt-0">
                         {["daily", "weekly", "monthly", "yearly"].map((period) => (
                           <div key={`freq-${period}`} className="flex items-center">
                             <RadioGroupItem value={period} id={`freq-${period}`} className="peer sr-only" />
                             <Label
                               htmlFor={`freq-${period}`}
-                              className="flex-1 cursor-pointer rounded-md border border-input px-3 py-2 text-sm hover:bg-muted/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-bitcoin-orange/10 peer-data-[state=checked]:text-bitcoin-orange text-center capitalize"
+                              className="flex-1 cursor-pointer rounded-md border border-gray-600/50 bg-gray-800/30 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-gradient-to-r peer-data-[state=checked]:from-bitcoin-orange/20 peer-data-[state=checked]:to-[#D4A76A]/20 peer-data-[state=checked]:text-bitcoin-orange text-center capitalize"
                             >
                               {getFrequencyDetails(period).label}
                             </Label>
@@ -354,7 +367,7 @@ export function InvestmentCalculator() {
                     {/* Conditional Input based on Goal Type */}
                     {goalType === 'fixed' ? (
                       <div>
-                        <Label className="text-base mb-2 block">BTC Goal</Label>
+                        <Label className="text-base mb-2 block text-white">BTC Goal</Label>
                         <div className="grid grid-cols-2 gap-3 mt-0">
                           {bitcoinUnit === 'bitcoin' ? (
                             <>
@@ -366,19 +379,19 @@ export function InvestmentCalculator() {
                                   placeholder="0.1"
                                   value={displayGoalValue} // Show formatted BTC
                                   onChange={handleBtcGoalChange}
-                                  className="pr-16 pl-3 h-10 bg-muted/50 border-input"
+                                  className="pr-16 pl-3 h-10 bg-gray-800/30 border-gray-600/50 text-white"
                                   inputMode="decimal"
                                 />
-                                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
+                                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-400">
                                   BTC
                                 </span>
                               </div>
                               {/* Sats Display Field */}
                               <div className="relative">
-                                <div className="flex items-center rounded-md border border-input bg-background px-3 h-10 text-sm ring-offset-background">
-                                  <span className="text-sm mr-2 text-muted-foreground">=</span>
-                                  <span className="flex-1 text-sm font-medium">{btcToSats(satsGoal)}</span>
-                                  <span className="ml-1 text-sm text-muted-foreground">sats</span>
+                                <div className="flex items-center rounded-md border border-gray-600/50 bg-gray-800/30 px-3 h-10 text-sm">
+                                  <span className="text-sm mr-2 text-gray-400">=</span>
+                                  <span className="flex-1 text-sm font-medium text-white">{btcToSats(satsGoal)}</span>
+                                  <span className="ml-1 text-sm text-gray-400">sats</span>
                                 </div>
                               </div>
                             </>
@@ -392,19 +405,19 @@ export function InvestmentCalculator() {
                                   placeholder="10,000,000"
                                   value={displayGoalValue} // Show formatted Sats
                                   onChange={handleSatsInputChange}
-                                  className="pr-16 pl-3 h-10 bg-muted/50 border-input"
+                                  className="pr-16 pl-3 h-10 bg-gray-800/30 border-gray-600/50 text-white"
                                   inputMode="numeric" // Use numeric for sats
                                 />
-                                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
+                                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-400">
                                   sats
                                 </span>
                               </div>
                               {/* BTC Display Field */}
                               <div className="relative">
-                                <div className="flex items-center rounded-md border border-input bg-background px-3 h-10 text-sm ring-offset-background">
-                                  <span className="text-sm mr-2 text-muted-foreground">=</span>
-                                  <span className="flex-1 text-sm font-medium">{formatBTC(satsGoal)}</span>
-                                  <span className="ml-1 text-sm text-muted-foreground">BTC</span>
+                                <div className="flex items-center rounded-md border border-gray-600/50 bg-gray-800/30 px-3 h-10 text-sm">
+                                  <span className="text-sm mr-2 text-gray-400">=</span>
+                                  <span className="flex-1 text-sm font-medium text-white">{formatBTC(satsGoal)}</span>
+                                  <span className="ml-1 text-sm text-gray-400">BTC</span>
                                 </div>
                               </div>
                             </>
@@ -413,20 +426,20 @@ export function InvestmentCalculator() {
                       </div>
                     ) : (
                       <div>
-                        <Label className="text-base mb-2 block">Recurring Buy Amount</Label>
+                        <Label className="text-base mb-2 block text-white">Recurring Buy Amount</Label>
                         <div className="relative mt-0">
                           <Input
                             type="text"
                             placeholder="100"
                             value={recurringBuyAmount} // Display the raw state value
                             onChange={handleRecurringBuyAmountChange}
-                            className="pl-8 pr-10 h-10 bg-muted/50 border-input" // Match height with other inputs
+                            className="pl-8 pr-10 h-10 bg-gray-800/30 border-gray-600/50 text-white" // Match height with other inputs
                             inputMode="decimal"
                           />
-                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-muted-foreground">
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-gray-400">
                             $
                           </span>
-                          <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
+                          <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-400">
                             USD
                           </span>
                         </div>
@@ -436,12 +449,12 @@ export function InvestmentCalculator() {
                     {/* Goal Date Slider */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <Label className="text-base">Goal Date</Label>
-                        <span className="font-medium dark:text-gray-100 text-base">{getDurationDetails(goalDuration).label}</span>
+                        <Label className="text-base text-white">Goal Date</Label>
+                        <span className="font-medium text-bitcoin-orange text-base">{getDurationDetails(goalDuration).label}</span>
                       </div>
                       <div className="mt-0">
                         <div className="relative pt-5">
-                          <div className="absolute top-0 left-0 right-0 flex justify-between text-xs text-muted-foreground px-1">
+                          <div className="absolute top-0 left-0 right-0 flex justify-between text-xs text-gray-400 px-1">
                             <span>1M</span>
                             <span>6M</span>
                             <span>1Y</span>
@@ -479,8 +492,8 @@ export function InvestmentCalculator() {
                     {/* Compound Annual Growth Rate (CAGR) Slider */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <Label htmlFor="cagrSlider" className="text-base">Compound Annual Growth Rate (CAGR)</Label>
-                        <span className="font-medium dark:text-gray-100 text-base">{priceGrowth}%</span>
+                        <Label htmlFor="cagrSlider" className="text-base text-white">Compound Annual Growth Rate (CAGR)</Label>
+                        <span className="font-medium text-bitcoin-orange text-base">{priceGrowth}%</span>
                       </div>
                       <div className="mt-0">
                         <Slider
@@ -500,8 +513,8 @@ export function InvestmentCalculator() {
                     {/* Inflation Rate Slider */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <Label htmlFor="inflationSlider" className="text-base">Inflation Rate</Label>
-                        <span className="font-medium dark:text-gray-100 text-base">{inflationRate}%</span>
+                        <Label htmlFor="inflationSlider" className="text-base text-white">Inflation Rate</Label>
+                        <span className="font-medium text-bitcoin-orange text-base">{inflationRate}%</span>
                       </div>
                       <div className="mt-0">
                         <Slider
@@ -524,7 +537,7 @@ export function InvestmentCalculator() {
                         />
                         <Label 
                           htmlFor="showInflationAdjusted" 
-                          className="text-sm text-muted-foreground cursor-pointer"
+                          className="text-sm text-gray-300 cursor-pointer"
                         >
                           Show inflation-adjusted values
                         </Label>
@@ -535,9 +548,9 @@ export function InvestmentCalculator() {
 
                 {/* Right Section (Chart) */}
                 <div className="md:col-span-2 space-y-4 h-full">
-                  <div className="h-full w-full rounded-md border border-border bg-background overflow-hidden flex flex-col">
-                    <div className="px-4 py-3 border-b border-border">
-                      <h3 className="text-lg font-semibold text-foreground">
+                  <div className="h-full w-full rounded-xl bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm border border-gray-700/30 overflow-hidden flex flex-col">
+                    <div className="px-4 py-3 border-b border-gray-700/30">
+                      <h3 className="text-lg font-semibold text-white">
                         {bitcoinUnit === 'satoshi' ? 'Satoshi' : 'Bitcoin'} Accumulation Forecast
                       </h3>
                     </div>
@@ -552,28 +565,24 @@ export function InvestmentCalculator() {
                   </div>
                 </div>
               </div>
-            </TabsContent>
-          </div>
-        </Tabs>
-
-        {/* Full Width Table Section */}
-        {calculatorMode === 'investmentGoal' && (
-          <div className="mt-10 w-full">
-            <div className="w-full rounded-md border border-border bg-background overflow-hidden">
-              <div className="px-4 py-3 border-b border-border">
-                <h3 className="text-lg font-semibold text-foreground">Accumulation Details</h3>
-              </div>
-              <div className="w-full overflow-x-auto p-0">
-                <table className="w-full text-sm table-fixed">
+                  
+              {/* Full Width Table Section */}
+              <div className="mt-10 w-full">
+                <div className="w-full rounded-xl bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm border border-gray-700/30 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-700/30">
+                    <h3 className="text-lg font-semibold text-white">Accumulation Details</h3>
+                  </div>
+                  <div className="w-full overflow-x-auto p-0">
+                    <table className="w-full text-sm table-fixed">
                   <thead>
-                    <tr className="border-b border-border bg-muted/10">
-                      <th className="w-[14%] text-center py-2 px-3 font-medium">{getFrequencyDetails(frequency).label} Date</th> 
-                      <th className="w-[14%] text-center py-2 px-3 font-medium">{bitcoinUnit === 'satoshi' ? 'Sats' : 'BTC'} Stacked</th>
-                      <th className="w-[14%] text-center py-2 px-3 font-medium">{goalType === 'fixed' ? 'Est. Cost' : 'Amount Invested'}{showInflationAdjusted ? ' (Infl. Adj.)' : ''}</th>
-                      <th className="w-[14%] text-center py-2 px-3 font-medium">Total {bitcoinUnit === 'satoshi' ? 'Sats' : 'BTC'}</th>
-                      <th className="w-[14%] text-center py-2 px-3 font-medium">{goalType === 'fixed' ? 'Est. Total Cost' : 'Total Invested'}{showInflationAdjusted ? ' (Infl. Adj.)' : ''}</th>
-                      <th className="w-[14%] text-center py-2 px-3 font-medium">Est. BTC Price</th>
-                      <th className="w-[14%] text-center py-2 px-3 font-medium">Est. Total Value{showInflationAdjusted ? ' (Infl. Adj.)' : ''}</th>
+                    <tr className="border-b border-gray-700/30 bg-gray-800/30">
+                      <th className="w-[14%] text-center py-2 px-3 font-medium text-white">{getFrequencyDetails(frequency).label} Date</th> 
+                      <th className="w-[14%] text-center py-2 px-3 font-medium text-white">{bitcoinUnit === 'satoshi' ? 'Sats' : 'BTC'} Stacked</th>
+                      <th className="w-[14%] text-center py-2 px-3 font-medium text-white">{goalType === 'fixed' ? 'Est. Cost' : 'Amount Invested'}{showInflationAdjusted ? ' (Infl. Adj.)' : ''}</th>
+                      <th className="w-[14%] text-center py-2 px-3 font-medium text-white">Total {bitcoinUnit === 'satoshi' ? 'Sats' : 'BTC'}</th>
+                      <th className="w-[14%] text-center py-2 px-3 font-medium text-white">{goalType === 'fixed' ? 'Est. Total Cost' : 'Total Invested'}{showInflationAdjusted ? ' (Infl. Adj.)' : ''}</th>
+                      <th className="w-[14%] text-center py-2 px-3 font-medium text-white">Est. BTC Price</th>
+                      <th className="w-[14%] text-center py-2 px-3 font-medium text-white">Est. Total Value{showInflationAdjusted ? ' (Infl. Adj.)' : ''}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -582,7 +591,7 @@ export function InvestmentCalculator() {
                         const originalIndex = index;
                         const isFirstRow = index === 0;
                         const isLastRow = originalIndex === chartData.length - 1;
-                        const rowTextColorClass = (isFirstRow || isLastRow) ? 'font-medium' : '';
+                        const rowTextColorClass = (isFirstRow || isLastRow) ? 'font-medium text-white' : 'text-white';
                         let totalInvested = 0;
 
                         if (goalType === 'recurring') {
@@ -597,40 +606,40 @@ export function InvestmentCalculator() {
 
                         return (
                           <tr key={point.date + '-' + originalIndex}
-                            className={`group ${originalIndex % 2 === 0 ? 'bg-muted/5' : 'bg-transparent'} ${isLastRow ? 'border-b border-border' : ''}`}>
-                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-border' : ''}`}>
+                            className={`group ${originalIndex % 2 === 0 ? 'bg-gray-800/10' : 'bg-transparent'} ${isLastRow ? 'border-b border-gray-700/30' : ''}`}>
+                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-gray-700/30' : ''}`}>
                               <div className="h-full relative group-hover:before:absolute group-hover:before:inset-y-[-1px] group-hover:before:left-0 group-hover:before:w-[1px] group-hover:before:bg-bitcoin-orange">
                                 <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
                                   <span className={rowTextColorClass}>{point.date}</span>
                                 </div>
                               </div>
                             </td>
-                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-border' : ''}`}>
+                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-gray-700/30' : ''}`}>
                               <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
                                 <span className={rowTextColorClass}>{bitcoinUnit === 'satoshi' ? formatNumber(point.periodicSats) : formatBTC(point.periodicSats / 100000000)}</span>
                               </div>
                             </td>
-                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-border' : ''}`}>
+                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-gray-700/30' : ''}`}>
                               <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
                                 <span className={rowTextColorClass}>{formatCurrency(point.usdValueThisPeriod ?? 0)}</span>
                               </div>
                             </td>
-                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-border' : ''}`}>
+                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-gray-700/30' : ''}`}>
                               <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
                                 <span className={rowTextColorClass}>{bitcoinUnit === 'satoshi' ? formatNumber(point.accumulatedSats) : formatBTC(point.accumulatedSats / 100000000)}</span>
                               </div>
                             </td>
-                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-border' : ''}`}>
+                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-gray-700/30' : ''}`}>
                               <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
                                 <span className={rowTextColorClass}>{formatCurrency(totalInvested)}</span>
                               </div>
                             </td>
-                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-border' : ''}`}>
+                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-gray-700/30' : ''}`}>
                               <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
                                 <span className={rowTextColorClass}>{formatCurrency(point.estimatedBtcPrice ?? 0)}</span>
                               </div>
                             </td>
-                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-border' : ''}`}>
+                            <td className={`w-[14%] p-0 ${isLastRow ? 'border-b border-gray-700/30' : ''}`}>
                               <div className="h-full relative group-hover:after:absolute group-hover:after:inset-y-[-1px] group-hover:after:right-0 group-hover:after:w-[1px] group-hover:after:bg-bitcoin-orange">
                                 <div className="py-2 px-3 text-center relative group-hover:after:absolute group-hover:after:left-0 group-hover:after:right-[-1px] group-hover:after:top-[-1px] group-hover:after:h-[1px] group-hover:after:bg-bitcoin-orange group-hover:before:absolute group-hover:before:left-0 group-hover:before:right-[-1px] group-hover:before:bottom-[-1px] group-hover:before:h-[1px] group-hover:before:bg-bitcoin-orange">
                                   <span className={rowTextColorClass}>{formatCurrency(point.cumulativeUsdValue ?? 0)}</span>
@@ -642,16 +651,19 @@ export function InvestmentCalculator() {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={7} className="text-center py-4">No data available</td>
+                        <td colSpan={7} className="text-center py-4 text-gray-400">No data available</td>
                       </tr>
                     )}
-                  </tbody>
-                </table>
+                    </tbody>
+                  </table>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </TabsContent>
+        </div>
+      </Tabs>
     </div>
   );
 }

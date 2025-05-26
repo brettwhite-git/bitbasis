@@ -70,7 +70,19 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
   };
 
   const chartData = {
-    labels: data.map(d => `${d.year}y`), // Shorter year labels like '0y', '1y'
+    labels: data.map(d => {
+      // Use month directly from data
+      const months = d.month;
+      if (months < 12) {
+        return `${months}m`;
+      } else if (months % 12 === 0) {
+        return `${months / 12}y`;
+      } else {
+        const years = Math.floor(months / 12);
+        const remainingMonths = months % 12;
+        return `${years}y ${remainingMonths}m`;
+      }
+    }),
     datasets: showInflationAdjusted ? [nominalDataset, adjustedDataset] : [nominalDataset], // Conditionally include adjusted dataset
   };
 
@@ -87,7 +99,7 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
           display: false, // Keep X grid lines hidden
         },
         ticks: {
-          color: COLORS.chartText, // Use chart text color
+          color: 'hsl(240 5% 64.9%)', // Use muted foreground color
           maxRotation: 0,
           autoSkip: true,
           maxTicksLimit: data.length > 15 ? 10 : data.length+1 // Show more ticks for shorter periods
@@ -95,10 +107,10 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
       },
       y: {
         grid: {
-          color: COLORS.chartGrid, // Use chart grid color
+          color: 'hsl(240 3.7% 15.9%)', // Use border color for grid
         },
         ticks: {
-          color: COLORS.chartText, // Use chart text color
+          color: 'hsl(240 5% 64.9%)', // Use muted foreground color
           callback: function(value: string | number) { // Type correction
             // Format ticks as compact currency (e.g., $10k, $1M)
             const numValue = Number(value);
@@ -115,15 +127,17 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
         display: true, // Show legend now
         position: 'bottom' as const, // Position legend at the bottom
         labels: {
-            color: COLORS.foreground, // Use foreground color from theme
+            color: 'hsl(0 0% 98%)', // Use white for legend text
             usePointStyle: true, // Use point style (circle) instead of box
             padding: 30 // Add padding around legend items
         }
       },
       tooltip: {
-        backgroundColor: COLORS.background, // Use background color from theme
-        titleColor: COLORS.foreground, // Use foreground color from theme
-        bodyColor: COLORS.foreground, // Use foreground color from theme
+        backgroundColor: 'hsl(240 10% 3.9%)', // Use dark background
+        titleColor: 'hsl(0 0% 98%)', // Use white for title
+        bodyColor: 'hsl(0 0% 98%)', // Use white for body text
+        borderColor: 'hsl(240 3.7% 15.9%)', // Use border color
+        borderWidth: 1,
         padding: 15,
         boxPadding: 4,
         usePointStyle: true, // Use point style in tooltips

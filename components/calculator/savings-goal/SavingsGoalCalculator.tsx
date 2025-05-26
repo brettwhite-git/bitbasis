@@ -28,7 +28,7 @@ export function SavingsGoalCalculator() {
   const [contributionAmountUSD, setContributionAmountUSD] = useState(250);
   const [contributionFrequency, setContributionFrequency] = useState('weekly');
   const [expectedGrowthPercent, setExpectedGrowthPercent] = useState(80); // Annual %
-  const [projectionPeriodYears, setProjectionPeriodYears] = useState(1);
+  const [projectionPeriodMonths, setProjectionPeriodMonths] = useState(12);
   const [inflationRatePercent, setInflationRatePercent] = useState(3);
   const [showInflationAdjusted, setShowInflationAdjusted] = useState(true);
   const [targetBtcAmount, setTargetBtcAmount] = useState(0.1);
@@ -68,78 +68,25 @@ export function SavingsGoalCalculator() {
   // --- Call the new hook for progress calculation ---
   const goalProgress = useSavingsGoalData(
     activeGoal
-        ? {
-              startDate: activeGoal.startDate,
-              targetBtcAmount: activeGoal.savedProjection.targetBtcAmount,
-          }
-        : null
-);
+      ? {
+          startDate: activeGoal.startDate,
+          targetBtcAmount: activeGoal.savedProjection.targetBtcAmount,
+        }
+      : null
+  );
 
-  // Calculation logic
-  useEffect(() => {
-    const periodsPerYear = contributionFrequency === 'monthly' ? 12 : 52;
-    const totalPeriods = projectionPeriodYears * periodsPerYear;
-    const periodicGrowthRate = Math.pow(1 + expectedGrowthPercent / 100, 1 / periodsPerYear) - 1;
-
-    // Start from 0, no initial investment
-    let currentValue = 0;
-    let principal = 0;
-    // We might want chart data later, so let's prepare an array
-    // let projectionData = [{ period: 0, value: 0 }]; // Start chart at 0
-
-    for (let i = 1; i <= totalPeriods; i++) {
-      // Add contribution at the start of the period (adjust if needed)
-      currentValue += contributionAmountUSD;
-      principal += contributionAmountUSD;
-      // Apply growth for the period
-      currentValue *= (1 + periodicGrowthRate);
-      // projectionData.push({ period: i, value: currentValue });
-    }
-
-    const finalProjectedValue = currentValue;
-    const finalTotalPrincipal = principal;
-    const finalTotalInterest = finalProjectedValue - finalTotalPrincipal;
-    const roi = finalTotalPrincipal > 0 ? (finalTotalInterest / finalTotalPrincipal) * 100 : 0;
-
-    // Update state
-    setProjectedValueUSD(finalProjectedValue);
-    setTotalPrincipal(finalTotalPrincipal); // This now excludes initial investment
-    setTotalInterest(finalTotalInterest);
-    setRoiPercent(roi);
-    // setChartData(projectionData); // Update chart data state later
-
-    const futureDate = new Date();
-    futureDate.setFullYear(futureDate.getFullYear() + projectionPeriodYears);
-    // setCompletionDate(futureDate);
-
-  }, [
-    // initialInvestmentUSD, // Removed dependency
-    contributionAmountUSD,
-    contributionFrequency,
-    expectedGrowthPercent,
-    projectionPeriodYears
-  ]);
+  // Note: Removed old calculation logic - now using calculateProjection function below
 
   // --- Load Goal from localStorage on Mount ---
   useEffect(() => {
     const savedGoalString = localStorage.getItem('savingsGoal');
     if (savedGoalString) {
       try {
-        const savedGoals = JSON.parse(localStorage.getItem('savingsGoals') || '[]');
         const loadedGoal = JSON.parse(savedGoalString) as SavedGoalData;
         setActiveGoal(loadedGoal);
-        
-        setGoalName(loadedGoal.goalName);
-        // setInitialInvestmentUSD(loadedGoal.savedProjection.initialInvestmentUSD); // Removed
-        setContributionAmountUSD(loadedGoal.savedProjection.contributionAmountUSD);
-        setContributionFrequency(loadedGoal.savedProjection.contributionFrequency);
-        setExpectedGrowthPercent(loadedGoal.savedProjection.expectedGrowthPercent);
-        setProjectionPeriodYears(loadedGoal.savedProjection.projectionPeriodYears);
-        // Potential future: Load saved BTC price and target if we add them to SavedGoalData
-        // Don't set BTC price as we're using the hook: setCurrentBtcPriceUSD(loadedGoal.savedProjection.currentBtcPriceUSD ?? 60000);
-        setTargetBtcAmount(loadedGoal.savedProjection.targetBtcAmount ?? 0.1); // Load saved or default
-        // Optional: Load saved inflation rate if we add it later
-        setInflationRatePercent(loadedGoal.savedProjection.inflationRatePercent ?? 3); // Load saved or default (3%)
+        // Note: We don't populate input fields from saved goal
+        // The inputs remain independent for creating new projections
+        // Only the activeGoal state is used for displaying the saved goal tracker
       } catch (error) {
         console.error("Failed to parse saved savings goal:", error);
         localStorage.removeItem('savingsGoal'); // Clear corrupted data
@@ -149,11 +96,25 @@ export function SavingsGoalCalculator() {
 
   // --- Run Calculation for Interactive Display --- 
   useEffect(() => {
+    // Only run calculation if we have valid data and price is not loading
+    if (priceLoading || currentBtcPriceUSD <= 0 || contributionAmountUSD <= 0 || projectionPeriodMonths <= 0) {
+      // Reset to default values when data is invalid or still loading
+      setProjectedValueUSD(0);
+      setProjectedValueAdjustedUSD(0);
+      setTotalPrincipal(0);
+      setTotalInterest(0);
+      setRoiPercent(0);
+      setProjectionData([]);
+      setEstimatedBtcTargetDate(null);
+      setTargetUsdValue(null);
+      return;
+    }
+
     const results = calculateProjection({
         contributionAmountUSD,
         contributionFrequency,
         expectedGrowthPercent,
-        projectionPeriodYears,
+        projectionPeriodMonths,
         inflationRatePercent,
         targetBtcAmount,
         currentBtcPriceUSD,
@@ -180,11 +141,12 @@ export function SavingsGoalCalculator() {
     contributionAmountUSD,
     contributionFrequency,
     expectedGrowthPercent,
-    projectionPeriodYears,
+    projectionPeriodMonths,
     inflationRatePercent,
     targetBtcAmount,
     currentBtcPriceUSD,
-    startDate
+    startDate,
+    priceLoading
   ]);
 
   // --- Calculate Estimated BTC Target Date for the *Saved* Goal ---
@@ -194,10 +156,11 @@ export function SavingsGoalCalculator() {
       return;
     }
 
-    const { contributionAmountUSD, contributionFrequency, expectedGrowthPercent, projectionPeriodYears, targetBtcAmount, currentBtcPriceUSD } = activeGoal.savedProjection;
+    const { contributionAmountUSD, contributionFrequency, expectedGrowthPercent, projectionPeriodMonths, targetBtcAmount, currentBtcPriceUSD } = activeGoal.savedProjection;
 
     const periodsPerYear = contributionFrequency === 'monthly' ? 12 : 52;
     // Use the full saved projection period to see if target is reachable within that original timeframe
+    const projectionPeriodYears = projectionPeriodMonths / 12;
     const totalPeriods = projectionPeriodYears * periodsPerYear;
     const annualGrowthRate = expectedGrowthPercent / 100;
     const periodicGrowthRate = Math.pow(1 + annualGrowthRate, 1 / periodsPerYear) - 1;
@@ -245,6 +208,7 @@ export function SavingsGoalCalculator() {
   // --- Save Goal Function ---
   const handleSaveGoal = () => {
     console.log('Saving goal to localStorage...');
+    const projectionPeriodYears = projectionPeriodMonths / 12;
     const currentCompletionDate = new Date();
     currentCompletionDate.setFullYear(currentCompletionDate.getFullYear() + projectionPeriodYears);
 
@@ -253,7 +217,7 @@ export function SavingsGoalCalculator() {
       contributionAmountUSD,
       contributionFrequency,
       expectedGrowthPercent,
-      projectionPeriodYears, // Pass this along for saving in savedProjection
+      projectionPeriodMonths, // Pass this along for saving in savedProjection
       inflationRatePercent,
       targetBtcAmount,
       currentBtcPriceUSD,
@@ -271,7 +235,8 @@ export function SavingsGoalCalculator() {
             contributionAmountUSD: contributionAmountUSD,
             contributionFrequency: contributionFrequency,
             expectedGrowthPercent: expectedGrowthPercent,
-            projectionPeriodYears: projectionPeriodYears,
+            projectionPeriodMonths: projectionPeriodMonths,
+            projectionPeriodYears: projectionPeriodYears, // Add for widget compatibility
             targetBtcAmount: targetBtcAmount,         // Save target BTC
             currentBtcPriceUSD: currentBtcPriceUSD,   // Save price context
             inflationRatePercent: inflationRatePercent, // Save inflation rate
@@ -296,8 +261,13 @@ export function SavingsGoalCalculator() {
   // --- Delete Goal Function ---
   const handleDeleteGoal = () => {
       console.log("Deleting goal from localStorage...");
-      localStorage.removeItem('savingsGoal');
-      setActiveGoal(null); // Clear state to hide the tracker
+      try {
+        localStorage.removeItem('savingsGoal');
+        setActiveGoal(null); // Clear state to hide the tracker
+        console.log("Goal deleted successfully");
+      } catch (error) {
+        console.error("Error deleting goal:", error);
+      }
   };
 
   // --- Helper to format date string from ISO ---
@@ -325,7 +295,7 @@ export function SavingsGoalCalculator() {
     setContributionAmountUSD(250);
     setContributionFrequency('weekly');
     setExpectedGrowthPercent(80);
-    setProjectionPeriodYears(1); // Default value
+    setProjectionPeriodMonths(12); // Default value (1 year)
     setInflationRatePercent(3); // Default value
     // Don't set BTC price as we're using the hook now: setCurrentBtcPriceUSD(85000);
     setTargetBtcAmount(0.1); // Default value
@@ -363,19 +333,20 @@ export function SavingsGoalCalculator() {
   }, []);
 
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4"> 
+    <div className="w-full space-y-6">
 
       {/* === Section A: Saved Goal Tracker (Conditional) === */}
       {activeGoal && (
-        <div className="p-6 bg-black rounded-lg border border-primary relative">
+        <div className="p-6 calculator-container-active relative">
             {/* Delete Button - Absolute positioned - Use Trash Icon */}
             <Button 
                 variant="ghost" 
                 onClick={handleDeleteGoal} 
-                className="absolute top-10 right-10 text-bitcoin-orange hover:text-destructive h-auto"
+                className="absolute top-4 right-4 text-bitcoin-orange hover:text-red-400 h-auto p-3 hover:bg-gray-800/70 rounded-lg transition-all duration-200 z-10"
                 aria-label="Delete goal"
+                type="button"
             >
-                <Trash2 className="h-4 w-4" /> {/* User set icon size */}
+                <Trash2 className="h-5 w-5" />
             </Button>
             
             <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
@@ -383,16 +354,16 @@ export function SavingsGoalCalculator() {
                 <div className="md:w-5/12 flex flex-col justify-between">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h2 className="text-xl font-semibold text-foreground">{activeGoal.goalName}</h2>
+                            <h2 className="text-xl font-semibold text-white">{activeGoal.goalName}</h2>
                             <p className="text-xl font-bold text-bitcoin-orange mt-2">
                               {goalProgress.isLoading 
                                 ? "Loading..." 
                                 : `$${formatCurrency(goalProgress.accumulatedBtcSinceStart * activeGoal.savedProjection.currentBtcPriceUSD)}`}
                             </p>
-                            <p className="text-xs text-muted-foreground mt-3">
+                            <p className="text-xs text-gray-400 mt-3">
                                 Target: {activeGoal.savedProjection.targetBtcAmount} BTC
                             </p>
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-xs text-gray-400 mt-1">
                                 ${activeGoal.savedProjection.contributionAmountUSD.toLocaleString()} {activeGoal.savedProjection.contributionFrequency.charAt(0).toUpperCase() + 
                                 activeGoal.savedProjection.contributionFrequency.slice(1)}
                             </p>
@@ -409,11 +380,11 @@ export function SavingsGoalCalculator() {
                               )}
                             </p>
                             <div className="flex items-center justify-end">
-                                <p className="text-xl font-bold mr-2">
+                                <p className="text-xl font-bold mr-2 text-white">
                                     {goalProgress.isLoading ? '...' : `${goalProgress.btcProgressPercent.toFixed(0)}%`}
                                 </p>
                                 {goalProgress.isLoading ? (
-                                    <LoaderCircle className="animate-spin text-muted-foreground h-5 w-5" />
+                                    <LoaderCircle className="animate-spin text-gray-400 h-5 w-5" />
                                 ) : goalProgress.btcProgressPercent >= 100 ? (
                                     <CheckCircle className="text-bitcoin-orange h-6 w-6" />
                                 ) : (
@@ -421,7 +392,7 @@ export function SavingsGoalCalculator() {
                                 )}
                             </div>
                             {activeGoal.estimatedTargetDateISO && (
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="text-xs text-gray-400 mt-1">
                                     {calculateTimeRemaining(activeGoal.estimatedTargetDateISO, new Date(), 'long')}
                                 </p>
                             )}
@@ -429,13 +400,13 @@ export function SavingsGoalCalculator() {
                     </div>
                     
                     <div className="mt-2">
-                        <div className="w-full h-3 bg-muted/70 rounded-full overflow-hidden"> 
+                        <div className="w-full h-3 bg-gray-800/50 rounded-full overflow-hidden"> 
                             <div 
-                                className="h-3 bg-bitcoin-orange rounded-full transition-all duration-700"
+                                className="h-3 bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] rounded-full transition-all duration-700"
                                 style={{ width: goalProgress.isLoading ? '0%' : `${goalProgress.btcProgressPercent}%` }}
                             ></div>
                         </div>
-                        <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                        <div className="flex justify-between text-xs text-gray-400 mt-2">
                             <span>Start: {formatSavedDate(activeGoal.startDate)}</span>
                             <span>Est. Completion: {activeGoal.estimatedTargetDateISO ? formatSavedDate(activeGoal.estimatedTargetDateISO) : 'N/A'}</span>
                         </div>
@@ -443,27 +414,27 @@ export function SavingsGoalCalculator() {
                 </div>
                 
                 {/* Right Container: KPIs */}
-                <div className="md:w-8/12 bg-muted/20 rounded-lg p-4 flex items-center">
+                <div className="md:w-8/12 calculator-input-section p-4 flex items-center">
                     <div className="grid grid-cols-3 w-full">
                         {/* KPI: Projected Value */}
                         <div className="text-center">
-                            <div className="text-lg text-muted-foreground mb-1">Projected Value</div>
-                            <div className="text-xl font-semibold">${formatCurrency(activeGoal.projectedValueAtTarget ?? 0)}</div>
+                            <div className="text-lg text-gray-400 mb-1">Projected Value</div>
+                            <div className="text-xl font-semibold text-white">${formatCurrency(activeGoal.projectedValueAtTarget ?? 0)}</div>
                         </div>
                         
                         {/* KPI: Contribution */}
                         <div className="text-center">
-                            <div className="text-lg text-muted-foreground mb-1">
+                            <div className="text-lg text-gray-400 mb-1">
                                 {activeGoal.savedProjection.contributionFrequency.charAt(0).toUpperCase() + 
                                 activeGoal.savedProjection.contributionFrequency.slice(1)} Contribution
                             </div>
-                            <div className="text-xl font-semibold">${activeGoal.savedProjection.contributionAmountUSD.toLocaleString()}</div>
+                            <div className="text-xl font-semibold text-white">${activeGoal.savedProjection.contributionAmountUSD.toLocaleString()}</div>
                         </div>
                         
                         {/* KPI: ROI */}
                         <div className="text-center">
-                            <div className="text-lg text-muted-foreground mb-1">ROI</div>
-                            <div className="text-lg font-semibold">{(activeGoal.roiAtTarget ?? 0).toFixed(1)}%</div>
+                            <div className="text-lg text-gray-400 mb-1">ROI</div>
+                            <div className="text-lg font-semibold text-white">{(activeGoal.roiAtTarget ?? 0).toFixed(1)}%</div>
                         </div>
                     </div>
                 </div>
@@ -472,77 +443,69 @@ export function SavingsGoalCalculator() {
       )}
 
       {/* === Section B: Interactive Calculator & Goal Setter === */}
-      <div className="pt-4 border-t border-border">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="pt-4 border-t border-gray-700/50">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
            {/* Left Column: Inputs - Wrapped in a styled container */}
-           <div className="md:col-span-2 space-y-4 p-6 rounded-lg border bg-muted/20">
+           <div className="md:col-span-2 space-y-4 p-6 calculator-input-section">
              {/* Put Input Title and Clear Button in a flex container */}
              <div className="flex justify-between items-center mb-4">
-                 <h3 className="text-lg font-medium">Inputs</h3>
-                 <Button variant="outline" size="sm" onClick={handleClearInputs} className="text-xs text-primary">
+                 <h3 className="text-lg font-medium text-white">Inputs</h3>
+                 <Button variant="outline" size="sm" onClick={handleClearInputs} className="text-xs text-bitcoin-orange border-gray-600/50 hover:bg-gray-800/50 hover:border-bitcoin-orange/50">
                       Clear Inputs
                  </Button>
              </div>
              <div>
-                <Label htmlFor="goalName">Goal/Projection Name</Label>
+                <Label htmlFor="goalName" className="text-white">Goal/Projection Name</Label>
                 <Input
                 id="goalName"
                 value={goalName}
                 onChange={(e) => setGoalName(e.target.value)}
                 placeholder="e.g., House Down Payment"
+                className="bg-gray-800/30 border-gray-600/50 text-white placeholder:text-gray-400"
                 />
             </div>
-             {/* Initial Investment - REMOVED */}
-            {/* <div>
-                <Label htmlFor="initialInvestment">Initial Investment ($)</Label>
-                <Input
-                id="initialInvestment"
-                type="number"
-                value={initialInvestmentUSD}
-                onChange={(e) => setInitialInvestmentUSD(parseFloat(e.target.value) || 0)}
-                min="0"
-                />
-            </div> */}
 
             {/* Contribution Amount & Frequency & Start Date in one row */}
-            <div className="flex gap-4 items-end"> {/* Use items-end to align labels nicely */} 
+            <div className="flex gap-4 items-end">
                 {/* Contribution Amount */}
                 <div className='flex-1'>
-                    <Label htmlFor="contributionAmount">Contribution ($)</Label>
+                    <Label htmlFor="contributionAmount" className="text-white">Contribution ($)</Label>
                     <Input
                     id="contributionAmount"
                     type="number"
                     value={contributionAmountUSD}
                     onChange={(e) => setContributionAmountUSD(parseFloat(e.target.value) || 0)}
                     min="0"
+                    className="bg-gray-800/30 border-gray-600/50 text-white"
                     />
                 </div>
                 {/* Frequency */}
                 <div className='flex-1'>
-                    <Label htmlFor="contributionFrequency">Frequency</Label>
+                    <Label htmlFor="contributionFrequency" className="text-white">Frequency</Label>
                     <Select value={contributionFrequency} onValueChange={setContributionFrequency}>
-                        <SelectTrigger id="contributionFrequency">
+                        <SelectTrigger id="contributionFrequency" className="bg-gray-800/30 border-gray-600/50 text-white">
                             <SelectValue placeholder="Select frequency" />
                         </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectContent className="bg-gray-900/95 backdrop-blur-md border-gray-700/50">
+                            <SelectItem value="weekly" className="text-white hover:bg-gray-800/50">Weekly</SelectItem>
+                            <SelectItem value="monthly" className="text-white hover:bg-gray-800/50">Monthly</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
                 {/* Start Date */}
                 <div className='flex-1'>
-                   <Label htmlFor="startDate">Start Date</Label>
+                   <Label htmlFor="startDate" className="text-white">Start Date</Label>
                    <Input
                        id="startDate"
                        type="date"
                        value={formatDateForInput(startDate)}
-                       onChange={(e) => setStartDate(new Date(e.target.value + 'T00:00:00'))} // Ensure correct parsing
+                       onChange={(e) => setStartDate(new Date(e.target.value + 'T00:00:00'))}
+                       className="bg-gray-800/30 border-gray-600/50 text-white"
                    />
                 </div>
             </div>
 
-             {/* BTC Price Input - Add this where appropriate in the UI */}
+             {/* BTC Price Input */}
              <div className="mb-6">
                <BtcPriceInput 
                  customBtcPrice={customBtcPrice}
@@ -555,13 +518,13 @@ export function SavingsGoalCalculator() {
 
              {/* Target BTC Amount */}
              <div>
-                <Label htmlFor="targetBtc">Target BTC Goal Amount</Label>
+                <Label htmlFor="targetBtc" className="text-white">Target BTC Goal Amount</Label>
                 <div className='flex items-center gap-2'>
                     <Slider
                         id="targetBtc"
                         min={0}
-                        max={2} // Max target of 2 BTC
-                        step={0.05} // Step by 0.05 BTC
+                        max={2}
+                        step={0.05}
                         value={[targetBtcAmount]}
                         onValueChange={(value: number[]) => setTargetBtcAmount(value[0] ?? 0)}
                         className='flex-grow'
@@ -570,23 +533,23 @@ export function SavingsGoalCalculator() {
                         type="number"
                         value={targetBtcAmount}
                         onChange={(e) => setTargetBtcAmount(parseFloat(e.target.value) || 0)}
-                        className='w-20 text-right flex-none'
+                        className='w-20 text-right flex-none bg-gray-800/30 border-gray-600/50 text-white'
                         min="0"
-                        max="10" // Allow higher input manually if needed
+                        max="10"
                         step="0.01"
                     />
-                    <span className="text-sm text-muted-foreground min-w-[3ch] text-left">BTC</span>
+                    <span className="text-sm text-gray-400 min-w-[3ch] text-left">BTC</span>
                 </div>
             </div>
 
             {/* Expected Growth Rate */}
             <div>
-                <Label htmlFor="expectedGrowth">Expected Annual Growth (%)</Label>
+                <Label htmlFor="expectedGrowth" className="text-white">Expected Annual Growth (%)</Label>
                 <div className='flex items-center gap-2'>
                     <Slider
                         id="expectedGrowth"
                         min={0}
-                        max={200} // Adjusted max for typical returns
+                        max={200}
                         step={0.5}
                         value={[expectedGrowthPercent]}
                         onValueChange={(value: number[]) => setExpectedGrowthPercent(value[0] ?? 0)}
@@ -596,23 +559,23 @@ export function SavingsGoalCalculator() {
                         type="number"
                         value={expectedGrowthPercent}
                         onChange={(e) => setExpectedGrowthPercent(parseFloat(e.target.value) || 0)}
-                        className='w-20 text-right flex-none'
+                        className='w-20 text-right flex-none bg-gray-800/30 border-gray-600/50 text-white'
                         min="0"
-                        max="100" // Allow higher input but slider is capped
+                        max="100"
                         step="0.5"
                     />
-                    <span className="text-sm text-muted-foreground min-w-[3ch] text-left">%</span>
+                    <span className="text-sm text-gray-400 min-w-[3ch] text-left">%</span>
                 </div>
             </div>
 
-            {/* Inflation Rate - Moved Here */}
+            {/* Inflation Rate */}
             <div>
-               <Label htmlFor="inflationRate">Inflation Rate (%)</Label>
+               <Label htmlFor="inflationRate" className="text-white">Inflation Rate (%)</Label>
                <div className='flex items-center gap-2'>
                    <Slider
                        id="inflationRate"
                        min={0}
-                       max={15} // Cap slider at 15%
+                       max={15}
                        step={0.25}
                        value={[inflationRatePercent]}
                        onValueChange={(value: number[]) => setInflationRatePercent(value[0] ?? 0)}
@@ -622,86 +585,98 @@ export function SavingsGoalCalculator() {
                        type="number"
                        value={inflationRatePercent}
                        onChange={(e) => setInflationRatePercent(parseFloat(e.target.value) || 0)}
-                       className='w-20 text-right flex-none'
+                       className='w-20 text-right flex-none bg-gray-800/30 border-gray-600/50 text-white'
                        min="0"
-                       max="100" // Allow higher input
+                       max="100"
                        step="0.25"
                    />
-                   <span className="text-sm text-muted-foreground min-w-[3ch] text-left">%</span>
+                   <span className="text-sm text-gray-400 min-w-[3ch] text-left">%</span>
                </div>
            </div>
 
             {/* Projection Period */}
             <div>
-                <Label htmlFor="projectionPeriod">Contribution Projection (Years)</Label>
+                <Label htmlFor="projectionPeriod" className="text-white">Contribution Projection (Months)</Label>
                 <div className='flex items-center gap-2'>
                     <Slider
                         id="projectionPeriod"
                         min={1}
-                        max={25} // Increased max period
+                        max={120}
                         step={1}
-                        value={[projectionPeriodYears]}
-                        onValueChange={(value: number[]) => setProjectionPeriodYears(value[0] ?? 1)}
+                        value={[projectionPeriodMonths]}
+                        onValueChange={(value: number[]) => setProjectionPeriodMonths(value[0] ?? 12)}
                         className='flex-grow'
                     />
                     <Input
                         type="number"
-                        value={projectionPeriodYears}
-                        onChange={(e) => setProjectionPeriodYears(parseInt(e.target.value) || 1)}
-                        className='w-20 text-right flex-none'
+                        value={projectionPeriodMonths}
+                        onChange={(e) => setProjectionPeriodMonths(parseInt(e.target.value) || 12)}
+                        className='w-20 text-right flex-none bg-gray-800/30 border-gray-600/50 text-white'
                         min="1"
-                        max="50" // Allow higher input
+                        max="120"
                     />
-                     <span className="text-sm text-muted-foreground min-w-[3ch] text-left">Y</span>
+                     <span className="text-sm text-gray-400 min-w-[3ch] text-left">M</span>
+                </div>
+                
+                {/* Chart Options - Moved here */}
+                <div className="flex items-center space-x-2 mt-3">
+                  <Checkbox 
+                    id="showInflation" 
+                    checked={showInflationAdjusted}
+                    onCheckedChange={(checked) => setShowInflationAdjusted(checked === true)}
+                  />
+                  <Label htmlFor="showInflation" className="text-sm cursor-pointer text-gray-300">
+                    Show inflation-adjusted value in chart
+                  </Label>
                 </div>
             </div>
 
             {/* Save Button at the Bottom */}
             <Button 
               onClick={handleSaveGoal} 
-              className="w-full mt-4"
+              className="w-full mt-4 bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white font-semibold hover:shadow-lg hover:shadow-bitcoin-orange/30 transition-all duration-300"
               variant="default"
             >
               {activeGoal ? 'Update Saved Goal' : 'Save Goal'}
             </Button>
           </div>
 
-          {/* Right Column: Dynamic Outputs & Chart - Wrapped in a styled container */}
-          <div className="md:col-span-3 space-y-2 p-4 rounded-lg border bg-muted/20">
-             <h3 className="text-lg font-medium mb-4">Projection Results</h3>
+          {/* Right Column: Dynamic Outputs & Chart */}
+                     <div className="md:col-span-3 space-y-4 p-6 calculator-output-section">
+             <h3 className="text-lg font-medium mb-4 text-white">Projection Results</h3>
              
-             {/* Dynamic Output KPIs - Refactored into a single container */}
-             <div className="p-6 rounded-lg border border-border/50 bg-card grid grid-cols-3 gap-4">
-                 {/* Est. Time to 0.1 BTC */}
+             {/* Dynamic Output KPIs */}
+             <div className="p-6 calculator-kpi-container grid grid-cols-3 gap-4">
+                 {/* Est. Time to Target BTC */}
                  <div className="text-center flex flex-col items-center justify-center">
-                     <Label className="text-sm text-muted-foreground">Est. Time to 0.1 BTC</Label>
+                     <Label className="text-sm text-gray-400">Est. Time to {targetBtcAmount} BTC</Label>
                      <div className="mt-1">
                          {estimatedBtcTargetDate ? (
                              <>
-                                 <p className="text-lg font-medium mb-1">
+                                 <p className="text-lg font-medium mb-1 text-white">
                                      {estimatedBtcTargetDate.toLocaleDateString('en-US', { 
                                          month: 'short', 
                                          year: 'numeric' 
                                      })}
                                  </p>
-                                 <p className="text-sm text-muted-foreground">
+                                 <p className="text-sm text-gray-400">
                                      Target: ${targetUsdValue ? formatCurrency(targetUsdValue) : 'N/A'}
                                  </p>
                              </>
                          ) : (
-                             <p className="text-lg text-muted-foreground">Not reachable</p>
+                             <p className="text-lg text-gray-400">Not reachable</p>
                          )}
                      </div>
                  </div>
                  
                  {/* Projected Value */}
                  <div className="text-center flex flex-col items-center justify-center">
-                     <Label className="text-sm text-muted-foreground">Projected Value</Label>
+                     <Label className="text-sm text-gray-400">Projected Value</Label>
                      <div className="mt-1">
-                         <p className="text-lg font-medium mb-1">
+                         <p className="text-lg font-medium mb-1 text-white">
                              ${formatCurrency(projectedValueUSD)}
                          </p>
-                         <p className="text-sm text-muted-foreground">
+                         <p className="text-sm text-gray-400">
                              ${formatCurrency(projectedValueAdjustedUSD)} (inflation adj.)
                          </p>
                      </div>
@@ -709,12 +684,12 @@ export function SavingsGoalCalculator() {
                  
                  {/* Return on Investment */}
                  <div className="text-center flex flex-col items-center justify-center">
-                     <Label className="text-sm text-muted-foreground">Return on Investment</Label>
+                     <Label className="text-sm text-gray-400">Return on Investment</Label>
                      <div className="mt-1">
-                         <p className="text-lg font-medium mb-1">
+                         <p className="text-lg font-medium mb-1 text-white">
                              {roiPercent.toFixed(1)}%
                          </p>
-                         <p className="text-sm text-muted-foreground">
+                         <p className="text-sm text-gray-400">
                              Total invested: ${formatCurrency(totalPrincipal)}
                          </p>
                      </div>
@@ -722,30 +697,23 @@ export function SavingsGoalCalculator() {
              </div>
              
              {/* Dynamic Projected Growth Chart Container */}
-             <div className="rounded-lg border border-border/50 bg-card p-4 h-[28rem]">
-                 {projectionData.length > 0 ? (
+             <div className="calculator-chart-container p-4 h-[28rem]">
+                 {priceLoading ? (
+                     <div className="h-full flex items-center justify-center">
+                         <p className="text-gray-400">Loading Bitcoin price...</p>
+                     </div>
+                 ) : projectionData.length > 0 ? (
                      <ProjectionChart 
                          data={projectionData} 
                          showInflationAdjusted={showInflationAdjusted}
                      />
                  ) : (
                      <div className="h-full flex items-center justify-center">
-                         <p className="text-muted-foreground">Adjust inputs to see projection chart</p>
+                         <p className="text-gray-400">Adjust inputs to see projection chart</p>
                      </div>
                  )}
              </div>
-             
-             {/* Chart Options */}
-             <div className="flex items-center space-x-2">
-               <Checkbox 
-                 id="showInflation" 
-                 checked={showInflationAdjusted}
-                 onCheckedChange={(checked) => setShowInflationAdjusted(checked === true)}
-               />
-               <Label htmlFor="showInflation" className="text-sm cursor-pointer">
-                 Show inflation-adjusted value in chart
-               </Label>
-             </div>
+
           </div>
         </div>
       </div>

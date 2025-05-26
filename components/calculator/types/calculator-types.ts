@@ -25,7 +25,7 @@ export interface ChartDataPoint {
 
 // Projection chart data structure
 export interface ProjectionPoint {
-  year: number;
+  month: number;
   nominalValue: number;
   adjustedValue: number;
 }
@@ -40,7 +40,8 @@ export interface SavedGoalData {
     contributionAmountUSD: number;
     contributionFrequency: string;
     expectedGrowthPercent: number;
-    projectionPeriodYears: number;
+    projectionPeriodMonths: number;
+    projectionPeriodYears: number; // For widget compatibility
     targetBtcAmount: number;
     currentBtcPriceUSD: number;
     inflationRatePercent: number;
@@ -58,7 +59,7 @@ export interface CalculateProjectionParams {
   contributionAmountUSD: number;
   contributionFrequency: string;
   expectedGrowthPercent: number;
-  projectionPeriodYears: number;
+  projectionPeriodMonths: number;
   inflationRatePercent: number;
   targetBtcAmount: number;
   currentBtcPriceUSD: number;

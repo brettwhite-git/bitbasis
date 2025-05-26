@@ -196,7 +196,7 @@ export function calculateProjection(params: CalculateProjectionParams): Projecti
     contributionAmountUSD, 
     contributionFrequency, 
     expectedGrowthPercent, 
-    projectionPeriodYears, 
+    projectionPeriodMonths, 
     inflationRatePercent, 
     targetBtcAmount, 
     currentBtcPriceUSD,
@@ -204,6 +204,7 @@ export function calculateProjection(params: CalculateProjectionParams): Projecti
   } = params;
 
   const periodsPerYear = contributionFrequency === 'monthly' ? 12 : 52;
+  const projectionPeriodYears = projectionPeriodMonths / 12;
   const totalPeriodsForChart = projectionPeriodYears * periodsPerYear;
   const annualGrowthRate = expectedGrowthPercent / 100;
   const periodicGrowthRate = Math.pow(1 + annualGrowthRate, 1 / periodsPerYear) - 1;
@@ -224,7 +225,7 @@ export function calculateProjection(params: CalculateProjectionParams): Projecti
   let projectedValueAtTarget: number | null = null;
   let principalAtTarget: number | null = null;
 
-  const dataPoints: ProjectionPoint[] = [{ year: 0, nominalValue: 0, adjustedValue: 0 }];
+  const dataPoints: ProjectionPoint[] = [{ month: 0, nominalValue: 0, adjustedValue: 0 }];
 
   const maxProjectionYears = 100; // Safety limit
   const maxPeriods = maxProjectionYears * periodsPerYear;
@@ -245,24 +246,25 @@ export function calculateProjection(params: CalculateProjectionParams): Projecti
     }
 
     // Capture values at the end of the user's specified projection period
-    if (period === totalPeriodsForChart) {
+    if (period === Math.floor(totalPeriodsForChart)) {
       nominalValueAtPeriodEnd = currentNominalValue;
       principalAtPeriodEnd = principal;
       adjustedValueAtPeriodEnd = currentAdjustedValue;
     }
 
-    // Store data points only within the user's selected projection period for the chart
-    if (period <= totalPeriodsForChart && period % periodsPerYear === 0) { 
-      const currentYear = Math.ceil(period / periodsPerYear);
+    // Store data points for chart - add points at regular intervals based on total periods
+    const intervalForDataPoints = Math.max(1, Math.floor(totalPeriodsForChart / 50)); // Limit to ~50 data points max
+    if (period <= totalPeriodsForChart && (period % intervalForDataPoints === 0 || period === Math.floor(totalPeriodsForChart))) { 
+      const currentMonth = Math.ceil(period / periodsPerYear * 12);
       dataPoints.push({ 
-        year: currentYear, 
+        month: currentMonth, 
         nominalValue: currentNominalValue, 
         adjustedValue: currentAdjustedValue 
       });
     }
 
     // Stop loop early if target is found AND we have passed the chart period
-    if (targetReachedPeriod !== null && period >= totalPeriodsForChart) {
+    if (targetReachedPeriod !== null && period >= Math.floor(totalPeriodsForChart)) {
       break;
     }
 
@@ -288,6 +290,48 @@ export function calculateProjection(params: CalculateProjectionParams): Projecti
     nominalValueAtPeriodEnd = currentNominalValue;
     principalAtPeriodEnd = principal;
     adjustedValueAtPeriodEnd = currentNominalValue / Math.pow(1 + annualInflationRate, projectionPeriodYears);
+  }
+
+  // Add final data point if not already included
+  if (dataPoints.length > 0 && dataPoints[dataPoints.length - 1].month < projectionPeriodMonths) {
+    dataPoints.push({ 
+      month: projectionPeriodMonths, 
+      nominalValue: nominalValueAtPeriodEnd, 
+      adjustedValue: adjustedValueAtPeriodEnd 
+    });
+  }
+
+  // Ensure we have at least a few data points for the chart
+  if (dataPoints.length < 3 && nominalValueAtPeriodEnd > 0) {
+    // Generate evenly spaced data points
+    const pointsToGenerate = Math.min(5, projectionPeriodMonths);
+    const monthInterval = projectionPeriodMonths / pointsToGenerate;
+    
+    dataPoints.length = 1; // Keep only the starting point
+    
+    for (let i = 1; i <= pointsToGenerate; i++) {
+      const monthAtPoint = Math.round(i * monthInterval);
+      const periodAtPoint = Math.round((monthAtPoint / 12) * periodsPerYear);
+      
+      // Calculate values at this point
+      let valueAtPoint = 0;
+      let principalAtPoint = 0;
+      
+      for (let p = 1; p <= periodAtPoint; p++) {
+        valueAtPoint += contributionAmountUSD;
+        principalAtPoint += contributionAmountUSD;
+        valueAtPoint *= (1 + periodicGrowthRate);
+      }
+      
+      const yearsAtPoint = monthAtPoint / 12;
+      const adjustedValueAtPoint = valueAtPoint / Math.pow(1 + annualInflationRate, yearsAtPoint);
+      
+      dataPoints.push({
+        month: monthAtPoint,
+        nominalValue: valueAtPoint,
+        adjustedValue: adjustedValueAtPoint
+      });
+    }
   }
 
   return {
