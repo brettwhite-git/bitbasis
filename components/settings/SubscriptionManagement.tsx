@@ -17,6 +17,11 @@ export function SubscriptionManagement() {
   const [modalOpen, setModalOpen] = useState(false)
   const [downgradeModalOpen, setDowngradeModalOpen] = useState(false)
 
+  // Handle successful cancellation
+  const handleCancellationSuccess = async () => {
+    await refreshStatus()
+  }
+
   if (loading) {
     return (
       <Card className="rounded-lg">
@@ -64,7 +69,7 @@ export function SubscriptionManagement() {
         }
       } else {
         return {
-          status: "Active", 
+          status: "Active",
           description: "$4.99/month • Unlimited transactions",
           badge: { text: "PRO", variant: "default" as const, icon: Crown },
           isLifetime: false,
@@ -88,41 +93,41 @@ export function SubscriptionManagement() {
 
   return (
     <>
-      <Card className="rounded-lg">
-        <CardHeader>
-          <CardTitle className="text-lg">Subscription</CardTitle>
-          <CardDescription>
-            Manage your BitBasis subscription plan and billing.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
+    <Card className="rounded-lg">
+      <CardHeader>
+        <CardTitle className="text-lg">Subscription</CardTitle>
+        <CardDescription>
+          Manage your BitBasis subscription plan and billing.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
                 <h4 className="font-medium">Subscription Plan:</h4>
-                <Badge variant={displayInfo.badge.variant} className="flex items-center gap-1">
-                  {displayInfo.badge.icon && <displayInfo.badge.icon className="h-3 w-3" />}
-                  {displayInfo.badge.text}
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">{displayInfo.description}</p>
-              <p className="text-xs text-muted-foreground">Status: {displayInfo.status}</p>
+              <Badge variant={displayInfo.badge.variant} className="flex items-center gap-1">
+                {displayInfo.badge.icon && <displayInfo.badge.icon className="h-3 w-3" />}
+                {displayInfo.badge.text}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">{displayInfo.description}</p>
+            <p className="text-xs text-muted-foreground">Status: {displayInfo.status}</p>
               
               {/* Show transaction progress for free users in greyed container */}
               {displayInfo.isFree && (
                 <div className="flex items-center px-3 py-2 bg-muted/50 rounded-md border">
                   <TransactionCountDisplay showProgress={true} />
-                </div>
+          </div>
               )}
-            </div>
+        </div>
             <div className="flex gap-2">
               {(displayInfo.isPro || displayInfo.isLifetime) && (
-                <Button 
-                  variant="outline" 
+              <Button 
+                variant="outline"
                   onClick={() => setDowngradeModalOpen(true)}
-                >
+              >
                   Cancel Subscription
-                </Button>
+              </Button>
               )}
               <Button 
                 variant="orange-outline" 
@@ -131,9 +136,9 @@ export function SubscriptionManagement() {
                 {displayInfo.isFree ? 'Upgrade' : 'Manage Subscription'}
               </Button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+                </div>
+              </CardContent>
+            </Card>
 
       {/* Unified Subscription Modal */}
       <SubscriptionModal 
@@ -145,7 +150,7 @@ export function SubscriptionManagement() {
       <DowngradeModal 
         open={downgradeModalOpen} 
         onOpenChange={setDowngradeModalOpen}
-        onSuccess={refreshStatus}
+        onSuccess={handleCancellationSuccess}
       />
     </>
   )

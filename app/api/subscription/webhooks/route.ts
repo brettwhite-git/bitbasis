@@ -22,11 +22,18 @@ const relevantEvents = new Set([
 ])
 
 export async function POST(request: NextRequest) {
+  console.log('🔔 WEBHOOK RECEIVED - START')
+  console.log('Timestamp:', new Date().toISOString())
+  
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
 
+  console.log('Body length:', body.length)
+  console.log('Has signature:', !!signature)
+  console.log('Webhook secret configured:', !!webhookSecret)
+
   if (!signature || !webhookSecret) {
-    console.error('Missing Stripe signature or webhook secret')
+    console.error('❌ Missing Stripe signature or webhook secret')
     return NextResponse.json(
       { error: 'Missing Stripe signature or webhook secret' },
       { status: 400 }
@@ -37,8 +44,11 @@ export async function POST(request: NextRequest) {
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    console.log('✅ Webhook signature verified successfully')
+    console.log('Event type:', event.type)
+    console.log('Event ID:', event.id)
   } catch (error) {
-    console.error('Webhook signature verification failed:', error)
+    console.error('❌ Webhook signature verification failed:', error)
     return NextResponse.json(
       { error: 'Invalid signature' },
       { status: 400 }
@@ -46,35 +56,45 @@ export async function POST(request: NextRequest) {
   }
 
   if (!relevantEvents.has(event.type)) {
-    console.log(`Ignoring irrelevant event: ${event.type}`)
+    console.log(`⏭️ Ignoring irrelevant event: ${event.type}`)
     return NextResponse.json({ received: true })
   }
+
+  console.log(`🎯 Processing relevant event: ${event.type}`)
 
   try {
     switch (event.type) {
       case 'checkout.session.completed':
+        console.log('📝 Handling checkout.session.completed')
         await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session)
         break
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
+        console.log('📝 Handling subscription update/create')
         await handleSubscriptionUpdate(event.data.object as Stripe.Subscription)
         break
       case 'customer.subscription.deleted':
+        console.log('📝 Handling subscription deletion')
         await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
         break
       case 'invoice.payment_succeeded':
+        console.log('📝 Handling invoice payment succeeded')
         await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice)
         break
       case 'invoice.payment_failed':
+        console.log('📝 Handling invoice payment failed')
         await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice)
         break
       default:
-        console.log(`Unhandled event type: ${event.type}`)
+        console.log(`❓ Unhandled event type: ${event.type}`)
     }
 
+    console.log('✅ Webhook processing completed successfully')
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error(`Error processing webhook event ${event.type}:`, error)
+    console.error(`❌ Error processing webhook event ${event.type}:`, error)
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
       { error: 'Webhook processing failed' },
       { status: 500 }
@@ -83,21 +103,30 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-  console.log('Processing checkout session completed:', session.id)
+  console.log('🛒 Processing checkout session completed:', session.id)
+  console.log('Session mode:', session.mode)
+  console.log('Session metadata:', session.metadata)
+  console.log('Session customer:', session.customer)
+  console.log('Session subscription:', session.subscription)
 
   const userId = session.metadata?.user_id
   if (!userId) {
-    console.error('No user_id in checkout session metadata')
+    console.error('❌ No user_id in checkout session metadata')
+    console.error('Available metadata keys:', Object.keys(session.metadata || {}))
     return
   }
 
+  console.log('✅ Found user_id in metadata:', userId)
+
   // Handle different modes
   if (session.mode === 'payment') {
-    // One-time payment (Lifetime)
+    console.log('💰 Processing one-time payment (Lifetime)')
     await handleLifetimePayment(session, userId)
   } else if (session.mode === 'subscription') {
-    // Subscription payment (Pro Monthly)
+    console.log('🔄 Processing subscription payment (Pro Monthly)')
     await handleSubscriptionPayment(session, userId)
+  } else {
+    console.error('❌ Unknown session mode:', session.mode)
   }
 }
 

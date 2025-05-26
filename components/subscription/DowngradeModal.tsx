@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { AlertTriangle, CheckCircle } from "lucide-react"
+import { AlertTriangle } from "lucide-react"
 import { useSubscription } from "@/hooks/use-subscription"
 import { useAuth } from "@/providers/supabase-auth-provider"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
@@ -18,9 +19,10 @@ interface DowngradeModalProps {
 
 export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModalProps) {
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState<'warning' | 'confirm' | 'success'>('warning')
+  const [step, setStep] = useState<'warning' | 'confirm'>('warning')
   const { subscriptionInfo } = useSubscription()
   const { user } = useAuth()
+  const router = useRouter()
 
   const transactionCount = subscriptionInfo?.transaction_count || 0
   const isOverLimit = transactionCount > 50
@@ -120,11 +122,21 @@ export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModal
         throw new Error(errorData.error || 'Failed to cancel subscription')
       }
 
-      setStep('success')
-      // Call the success callback to refresh subscription data
+      // Close modal and redirect to success page
+      onOpenChange(false)
+      
+      // Refresh subscription data immediately after successful cancellation
       if (onSuccess) {
-        onSuccess()
+        await onSuccess()
       }
+      
+      // Determine subscription type for the success page
+      const isLifetime = subscriptionInfo?.subscription_data?.metadata?.type === 'lifetime' || 
+                        subscriptionInfo?.subscription_data?.price_id === process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID
+      const subscriptionType = isLifetime ? 'lifetime' : 'subscription'
+      
+      // Redirect to success page
+      router.push(`/dashboard/subscription/cancelled?type=${subscriptionType}`)
     } catch (error) {
       console.error('Error canceling subscription:', error)
       // Handle error - could show error state
@@ -234,31 +246,7 @@ export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModal
     </>
   )
 
-  const renderSuccessStep = () => (
-    <>
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-green-500" />
-          Subscription Cancelled
-        </DialogTitle>
-        <DialogDescription>
-          Your subscription has been cancelled successfully.
-        </DialogDescription>
-      </DialogHeader>
 
-      <div className="space-y-4">
-        <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-          <p className="text-sm text-green-800 dark:text-green-200">
-            Your subscription has been cancelled immediately. You can re-subscribe anytime to regain access to Pro features.
-          </p>
-        </div>
-
-        <Button onClick={() => onOpenChange(false)} className="w-full">
-          Close
-        </Button>
-      </div>
-    </>
-  )
 
   return (
     <Dialog open={open} onOpenChange={(newOpen) => {
@@ -266,12 +254,12 @@ export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModal
       // Reset step when modal closes
       if (!newOpen) {
         setStep('warning')
+        setLoading(false) // Also reset loading state
       }
     }}>
       <DialogContent className="sm:max-w-md">
         {step === 'warning' && renderWarningStep()}
         {step === 'confirm' && renderConfirmStep()}
-        {step === 'success' && renderSuccessStep()}
       </DialogContent>
     </Dialog>
   )

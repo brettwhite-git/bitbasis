@@ -100,31 +100,31 @@ export async function POST(request: NextRequest) {
           console.log('✅ Database updated with existing customer')
         }
       } else {
-        // Create new Stripe customer
-        const customer = await stripe.customers.create({
-          email: user.email,
-          metadata: {
-            supabase_user_id: user.id,
-          },
+      // Create new Stripe customer
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: {
+          supabase_user_id: user.id,
+        },
+      })
+
+      customerId = customer.id
+      console.log('✅ Created new Stripe customer:', customerId)
+
+      // Save customer ID to database
+      console.log('💾 Saving customer to database...')
+      const { error: upsertError } = await supabase
+        .from('customers')
+        .upsert({
+          id: user.id,
+          stripe_customer_id: customerId,
         })
-
-        customerId = customer.id
-        console.log('✅ Created new Stripe customer:', customerId)
-
-        // Save customer ID to database
-        console.log('💾 Saving customer to database...')
-        const { error: upsertError } = await supabase
-          .from('customers')
-          .upsert({
-            id: user.id,
-            stripe_customer_id: customerId,
-          })
-        
-        if (upsertError) {
-          console.log('❌ Failed to save customer to database:', upsertError.message)
-          throw new Error(`Database error: ${upsertError.message}`)
-        }
-        console.log('✅ Customer saved to database')
+      
+      if (upsertError) {
+        console.log('❌ Failed to save customer to database:', upsertError.message)
+        throw new Error(`Database error: ${upsertError.message}`)
+      }
+      console.log('✅ Customer saved to database')
       }
     }
 

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Crown, MousePointerClick, Star } from "lucide-react"
 import { useSubscription } from "@/hooks/use-subscription"
@@ -8,8 +9,23 @@ import { cn } from "@/lib/utils/utils"
 import { SubscriptionModal } from "./SubscriptionModal"
 
 export function SubscriptionTierBadge() {
-  const { subscriptionInfo, loading } = useSubscription()
+  const { subscriptionInfo, loading, refreshStatus } = useSubscription()
   const [modalOpen, setModalOpen] = useState(false)
+  const searchParams = useSearchParams()
+
+  // Force refresh when returning from cancellation
+  useEffect(() => {
+    const refreshParam = searchParams.get('refresh')
+    if (refreshParam) {
+      console.log('🔄 Detected refresh parameter, forcing subscription status refresh')
+      refreshStatus()
+      
+      // Clean up the URL parameter after refresh
+      const url = new URL(window.location.href)
+      url.searchParams.delete('refresh')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [searchParams, refreshStatus])
 
   if (loading) {
     return (
@@ -56,18 +72,18 @@ export function SubscriptionTierBadge() {
         }
       }
     } else {
-      return {
-        label: 'FREE',
-        icon: null,
+        return {
+          label: 'FREE',
+          icon: null,
         variant: 'secondary' as const,
         useCustomStyle: true,
-        style: {
-          backgroundImage: 'linear-gradient(135deg, #6B7280 0%, #374151 50%, #6B7280 100%)',
-          borderColor: 'rgba(107, 114, 128, 0.5)',
-          color: 'white',
-          boxShadow: '0 4px 12px rgba(107, 114, 128, 0.3)'
+          style: {
+            backgroundImage: 'linear-gradient(135deg, #6B7280 0%, #374151 50%, #6B7280 100%)',
+            borderColor: 'rgba(107, 114, 128, 0.5)',
+            color: 'white',
+            boxShadow: '0 4px 12px rgba(107, 114, 128, 0.3)'
+          }
         }
-      }
     }
   }
 
@@ -92,16 +108,16 @@ export function SubscriptionTierBadge() {
 
         {/* Tier Badge (only show for Pro and Lifetime users) */}
         {!showUpgradeButton && (
-          <Badge
+        <Badge
             variant={tierInfo.variant}
-            className={cn(
+          className={cn(
               "min-w-[75px] inline-flex items-center justify-center rounded-full border shadow-sm transition-none text-xs font-medium px-3",
               tierInfo.label === 'LIFETIME' && "min-w-[90px]"
-            )}
-          >
-            {tierInfo.icon}
-            {tierInfo.label}
-          </Badge>
+          )}
+        >
+          {tierInfo.icon}
+          {tierInfo.label}
+        </Badge>
         )}
       </div>
 

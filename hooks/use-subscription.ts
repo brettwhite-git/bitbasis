@@ -52,6 +52,9 @@ export function useSubscription(): UseSubscriptionReturn {
   }, [user?.id])
 
   const refreshStatus = async () => {
+    // Force a fresh fetch by clearing any potential cache
+    setSubscriptionInfo(null)
+    setLoading(true)
     await fetchSubscriptionStatus()
   }
 
