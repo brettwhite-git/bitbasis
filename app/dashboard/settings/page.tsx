@@ -30,32 +30,40 @@ export default function SettingsPage() {
   ]
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background"> 
-      <main className="flex min-h-[calc(100vh_-_theme(spacing.16))] flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10 bg-background">
-        <div className="mx-auto grid w-full max-w-6xl items-start gap-6">
-          <h1 className="text-3xl font-semibold text-foreground">Settings</h1>
-        </div>
-        <div className="mx-auto grid w-full max-w-6xl items-start gap-6 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
-          <nav className="grid gap-4 text-sm">
-            {menuItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id as SettingsSection)}
-                className={`text-left px-4 py-2 rounded-md transition-colors ${
-                  activeSection === item.id 
-                    ? 'border border-primary text-primary bg-background shadow-sm' // Active state matches orange-outline button
-                    : 'text-muted-foreground hover:text-primary hover:border hover:border-primary/70 hover:bg-primary/5' // Default with similar hover effect
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-          <div className="grid gap-6">
-            {renderSection()} 
+    <div className="w-full max-w-7xl mx-auto px-4 md:px-6 lg:px-8 space-y-6">
+      <div className="w-full">
+        <h1 className="text-3xl font-bold tracking-tight text-white">Settings</h1>
+        <p className="text-gray-400 mt-2">Manage your account preferences and data</p>
+      </div>
+      
+      <div className="grid w-full gap-6 md:grid-cols-[250px_1fr] lg:grid-cols-[280px_1fr]">
+        {/* Navigation Sidebar */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
+          <div className="relative z-10">
+            <h3 className="text-lg font-semibold text-white mb-4">Navigation</h3>
+            <nav className="space-y-2">
+              {menuItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id as SettingsSection)}
+                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-300 ${
+                    activeSection === item.id 
+                      ? 'bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white font-semibold shadow-md shadow-bitcoin-orange/30' 
+                      : 'text-gray-300 hover:text-white hover:bg-gray-800/50 hover:shadow-sm'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
           </div>
         </div>
-      </main>
+
+        {/* Content Area */}
+        <div className="space-y-6 max-w-4xl">
+          {renderSection()} 
+        </div>
+      </div>
     </div>
   )
 }

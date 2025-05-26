@@ -24,26 +24,24 @@ export function SubscriptionManagement() {
 
   if (loading) {
     return (
-      <Card className="rounded-lg">
-        <CardHeader>
-          <CardTitle className="text-lg">Subscription</CardTitle>
-          <CardDescription>Loading subscription details...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse h-20 bg-muted rounded" />
-        </CardContent>
-      </Card>
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
+        <div className="relative z-10">
+          <h3 className="text-lg font-semibold text-white mb-2">Subscription</h3>
+          <p className="text-gray-400 text-sm mb-4">Loading subscription details...</p>
+          <div className="animate-pulse h-20 bg-gray-700/50 rounded" />
+        </div>
+      </div>
     )
   }
 
   if (!subscriptionInfo) {
     return (
-      <Card className="rounded-lg">
-        <CardHeader>
-          <CardTitle className="text-lg">Subscription</CardTitle>
-          <CardDescription>Unable to load subscription information.</CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
+        <div className="relative z-10">
+          <h3 className="text-lg font-semibold text-white mb-2">Subscription</h3>
+          <p className="text-gray-400 text-sm">Unable to load subscription information.</p>
+        </div>
+      </div>
     )
   }
 
@@ -93,52 +91,54 @@ export function SubscriptionManagement() {
 
   return (
     <>
-    <Card className="rounded-lg">
-      <CardHeader>
-        <CardTitle className="text-lg">Subscription</CardTitle>
-        <CardDescription>
-          Manage your BitBasis subscription plan and billing.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
+      <div className="relative z-10 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-2">Subscription</h3>
+          <p className="text-gray-400 text-sm">
+            Manage your BitBasis subscription plan and billing.
+          </p>
+        </div>
+        
         <div className="flex items-center justify-between">
-            <div className="space-y-3">
+          <div className="space-y-3">
             <div className="flex items-center gap-2">
-                <h4 className="font-medium">Subscription Plan:</h4>
+              <h4 className="font-medium text-white">Subscription Plan:</h4>
               <Badge variant={displayInfo.badge.variant} className="flex items-center gap-1">
                 {displayInfo.badge.icon && <displayInfo.badge.icon className="h-3 w-3" />}
                 {displayInfo.badge.text}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{displayInfo.description}</p>
-            <p className="text-xs text-muted-foreground">Status: {displayInfo.status}</p>
+            <p className="text-sm text-gray-400">{displayInfo.description}</p>
+            <p className="text-xs text-gray-400">Status: {displayInfo.status}</p>
               
-              {/* Show transaction progress for free users in greyed container */}
-              {displayInfo.isFree && (
-                <div className="flex items-center px-3 py-2 bg-muted/50 rounded-md border">
-                  <TransactionCountDisplay showProgress={true} />
+            {/* Show transaction progress for free users in greyed container */}
+            {displayInfo.isFree && (
+              <div className="flex items-center px-3 py-2 bg-gray-800/50 rounded-md border border-gray-700/50">
+                <TransactionCountDisplay showProgress={true} />
+              </div>
+            )}
           </div>
-              )}
-        </div>
-            <div className="flex gap-2">
-              {(displayInfo.isPro || displayInfo.isLifetime) && (
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => setModalOpen(true)}
+              className="bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white font-semibold hover:shadow-lg hover:shadow-bitcoin-orange/30 transition-all duration-300"
+            >
+              {displayInfo.isFree ? 'Upgrade' : 'Manage Subscription'}
+            </Button>
+            {(displayInfo.isPro || displayInfo.isLifetime) && (
               <Button 
                 variant="outline"
-                  onClick={() => setDowngradeModalOpen(true)}
+                onClick={() => setDowngradeModalOpen(true)}
+                className="border-gray-600/50 text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-gray-500/50 transition-all duration-300"
               >
-                  Cancel Subscription
+                Cancel Subscription
               </Button>
-              )}
-              <Button 
-                variant="orange-outline" 
-                onClick={() => setModalOpen(true)}
-              >
-                {displayInfo.isFree ? 'Upgrade' : 'Manage Subscription'}
-              </Button>
-            </div>
-                </div>
-              </CardContent>
-            </Card>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
 
       {/* Unified Subscription Modal */}
       <SubscriptionModal 

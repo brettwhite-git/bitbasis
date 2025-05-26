@@ -450,7 +450,12 @@ export function SavingsGoalCalculator() {
              {/* Put Input Title and Clear Button in a flex container */}
              <div className="flex justify-between items-center mb-4">
                  <h3 className="text-lg font-medium text-white">Inputs</h3>
-                 <Button variant="outline" size="sm" onClick={handleClearInputs} className="text-xs text-bitcoin-orange border-gray-600/50 hover:bg-gray-800/50 hover:border-bitcoin-orange/50">
+                 <Button 
+                   variant="outline" 
+                   size="sm" 
+                   onClick={handleClearInputs} 
+                   className="text-xs bg-gradient-to-r from-gray-700 to-gray-800 text-white border-gray-600/50 hover:from-gray-600 hover:to-gray-700 hover:shadow-lg hover:shadow-gray-700/30 transition-all duration-300"
+                 >
                       Clear Inputs
                  </Button>
              </div>

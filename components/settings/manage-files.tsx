@@ -139,51 +139,48 @@ export function ManageFilesSettings() {
   };
 
   return (
-    <Card className="rounded-lg">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Manage Uploaded CSV Files</CardTitle>
-          <Button variant="outline" size="sm" onClick={fetchUploads} disabled={loadingState === 'fetching'}>
-            <RefreshCw className={cn("mr-2 h-4 w-4", loadingState === 'fetching' && "animate-spin")} />
-            Refresh
-          </Button>
+    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-2">Manage Uploaded CSV Files</h3>
+            <p className="text-gray-400 text-sm">
+              View and manage uploaded CSV files.
+            </p>
+          </div>
         </div>
-        <CardDescription>
-          View and manage all previously uploaded CSV files.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {loadingState === 'fetching' && <p className="text-muted-foreground">Loading uploads...</p>}
-        {error && <p className="text-destructive">Error: {error}</p>}
+        
+        {loadingState === 'fetching' && <p className="text-gray-400">Loading uploads...</p>}
+        {error && <p className="text-red-400">Error: {error}</p>}
 
         <Table>
-          <TableCaption>
-            A list of your previously uploaded CSV files.
-            {completedUploads.length === 0 && loadingState !== 'fetching' && " No completed uploads found."}
+          <TableCaption className="text-center">
+            Your uploaded CSV files.
+            {completedUploads.length === 0 && loadingState !== 'fetching' && " No uploads found."}
           </TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead>Filename</TableHead>
-              <TableHead>Upload Date</TableHead>
-              <TableHead>Size</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Rows</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-center">File</TableHead>
+              <TableHead className="text-center">Date</TableHead>
+              <TableHead className="text-center">Size</TableHead>
+              <TableHead className="text-center">Status</TableHead>
+              <TableHead className="text-center">Rows</TableHead>
+              <TableHead className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {completedUploads.map((upload) => (
               <TableRow key={upload.id}>
-                <TableCell className="font-medium truncate max-w-xs">{upload.original_filename}</TableCell>
-                <TableCell>{format(new Date(upload.created_at), 'PP pp')}</TableCell>
-                <TableCell>{formatFileSize(upload.file_size)}</TableCell>
-                <TableCell>
+                <TableCell className="font-medium truncate max-w-xs text-center">{upload.original_filename}</TableCell>
+                <TableCell className="text-center">{format(new Date(upload.created_at), 'PP')}</TableCell>
+                <TableCell className="text-center">{formatFileSize(upload.file_size)}</TableCell>
+                <TableCell className="text-center">
                   <Badge variant={getStatusBadgeVariant(upload.status)}>{upload.status}</Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-center">
                   {upload.imported_row_count ?? '-'} / {upload.row_count ?? 'N/A'}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-center">
                   <Button 
                     variant="ghost"
                     size="icon"
@@ -223,7 +220,7 @@ export function ManageFilesSettings() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 } 
