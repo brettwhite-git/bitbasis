@@ -247,7 +247,7 @@ export function TransactionsTable({
         size="sm"
         onClick={handleImportClick}
         disabled={isLoading || subscriptionLoading}
-        className="h-9 flex items-center justify-center bg-gradient-to-r from-gray-800/50 to-gray-700/50 hover:from-gray-700/60 hover:to-gray-600/60 border-gray-600/50"
+        className="h-9 flex items-center justify-center bg-gray-800/40 border-gray-600/50 hover:bg-gray-700/50"
       >
         <div className="flex items-center justify-center">
           <Upload className="h-4 w-4" />

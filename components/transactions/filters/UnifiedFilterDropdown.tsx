@@ -82,7 +82,7 @@ const SearchInput = ({ searchQuery, onSearchChange }: SearchInputProps) => (
       placeholder="Search transactions..."
       value={searchQuery}
       onChange={(e) => onSearchChange(e.target.value)}
-      className="pl-9"
+      className="pl-9 bg-gray-800/40 border-gray-600/50 hover:bg-gray-700/50 focus:bg-gray-700/50"
     />
     {searchQuery && (
       <Button

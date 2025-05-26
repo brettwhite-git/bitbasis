@@ -63,7 +63,7 @@ export function DashboardSidebar() {
                   href={route.href}
                   className={`flex h-10 items-center ${isOpen ? 'justify-start px-3' : 'justify-center'} rounded-md text-sm font-medium transition-colors ${
                     route.isActive
-                      ? "bg-bitcoin-orange text-white"
+                      ? "bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white shadow-md shadow-bitcoin-orange/20"
                       : "text-gray-300 hover:bg-gray-700/50 hover:text-white"
                   }`}
                 >

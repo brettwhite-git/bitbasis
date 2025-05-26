@@ -75,7 +75,7 @@ export function MobileNav() {
                   href={route.href}
                   className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                     route.isActive
-                      ? "bg-bitcoin-orange text-white"
+                      ? "bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white shadow-md shadow-bitcoin-orange/20"
                       : "text-gray-300 hover:bg-gray-700/50 hover:text-white"
                   }`}
                   onClick={() => setOpen(false)}
