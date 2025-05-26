@@ -21,7 +21,7 @@ export function PerformanceOverview({ user }: PerformanceOverviewProps) {
   return (
     <div className="w-full space-y-6">
       <div className="w-full">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Performance Overview</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-white">Performance Overview</h1>
       </div>
       
       <Tabs 
@@ -33,15 +33,17 @@ export function PerformanceOverview({ user }: PerformanceOverviewProps) {
         <TabsList className="flex w-auto mb-4 bg-transparent p-0 h-auto justify-start gap-x-1 border-b border-border">
           <TabsTrigger 
             value="performance"
-            className="data-[state=active]:bg-bitcoin-orange data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-none rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/50 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border"
+            className="relative overflow-hidden data-[state=active]:bg-gradient-to-r data-[state=active]:from-bitcoin-orange data-[state=active]:to-[#D4A76A] data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-bitcoin-orange/30 data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-all duration-300 rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/20 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border group"
           >
-            Personal Insights
+            <span className="relative z-10">Personal Insights</span>
+            <span className="absolute inset-0 bg-white opacity-0 data-[state=active]:group-hover:opacity-10 transition-opacity duration-100"></span>
           </TabsTrigger>
           <TabsTrigger 
             value="distribution"
-            className="data-[state=active]:bg-bitcoin-orange data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-none rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/50 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border"
+            className="relative overflow-hidden data-[state=active]:bg-gradient-to-r data-[state=active]:from-bitcoin-orange data-[state=active]:to-[#D4A76A] data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-bitcoin-orange/30 data-[state=active]:rounded-t-md px-4 py-2 text-muted-foreground transition-all duration-300 rounded-none shadow-none bg-transparent data-[state=inactive]:hover:bg-muted/20 data-[state=inactive]:hover:text-accent-foreground justify-start mr-2 data-[state=active]:mb-[-1px] data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:border-border group"
           >
-            HODL Distribution
+            <span className="relative z-10">HODL Distribution</span>
+            <span className="absolute inset-0 bg-white opacity-0 data-[state=active]:group-hover:opacity-10 transition-opacity duration-100"></span>
           </TabsTrigger>
         </TabsList>
         
@@ -71,9 +73,9 @@ export function PerformanceOverview({ user }: PerformanceOverviewProps) {
 function TabContentSkeleton() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <Skeleton className="h-[400px]" />
-      <Skeleton className="h-[400px]" />
-      <Skeleton className="h-[300px] lg:col-span-2" />
+      <Skeleton className="h-[400px] bg-gray-700" />
+      <Skeleton className="h-[400px] bg-gray-700" />
+      <Skeleton className="h-[300px] lg:col-span-2 bg-gray-700" />
     </div>
   );
 } 

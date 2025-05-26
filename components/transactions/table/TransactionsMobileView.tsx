@@ -40,7 +40,7 @@ export function TransactionsMobileView({
 
   if (error) {
     return (
-      <div className="border rounded-md p-6 my-4">
+      <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6 my-4">
         <DataTableError 
           colSpan={1} 
           message={`Error loading transactions: ${error}`}
@@ -52,7 +52,7 @@ export function TransactionsMobileView({
 
   if (transactions.length === 0) {
     return (
-      <div className="border rounded-md p-6 my-4">
+      <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6 my-4">
         <DataTableEmpty 
           colSpan={1} 
           message="No transactions found. Add your first transaction to get started."
@@ -62,7 +62,7 @@ export function TransactionsMobileView({
   }
 
   return (
-    <div className="border rounded-md divide-y">
+    <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50 divide-y divide-gray-700/50">
       {transactions.map(transaction => (
         <TransactionRowMobile
           key={transaction.id}

@@ -198,7 +198,7 @@ export function TransactionsTable({
     toast({
       title: "Import Successful",
       description: `Successfully imported ${count} transactions.`,
-      variant: "default",
+      variant: "success" as any,
     });
     
     await refetch();
@@ -247,7 +247,7 @@ export function TransactionsTable({
         size="sm"
         onClick={handleImportClick}
         disabled={isLoading || subscriptionLoading}
-        className="h-9 flex items-center justify-center"
+        className="h-9 flex items-center justify-center bg-gradient-to-r from-gray-800/50 to-gray-700/50 hover:from-gray-700/60 hover:to-gray-600/60 border-gray-600/50"
       >
         <div className="flex items-center justify-center">
           <Upload className="h-4 w-4" />
@@ -280,12 +280,12 @@ export function TransactionsTable({
        subscriptionInfo.subscription_status !== 'trialing' && (
         <>
           {/* Desktop */}
-          <div className="hidden sm:flex items-center px-3 py-2 bg-muted/50 rounded-md border">
+          <div className="hidden sm:flex items-center px-3 py-2 bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm rounded-lg border border-gray-700/50">
             <TransactionCountDisplay showProgress={true} />
           </div>
           
           {/* Mobile */}
-          <div className="flex sm:hidden items-center px-2 py-1 bg-muted/30 rounded text-xs">
+          <div className="flex sm:hidden items-center px-2 py-1 bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm rounded text-xs border border-gray-700/50">
             <TransactionCountDisplay showProgress={false} />
           </div>
         </>
@@ -338,31 +338,33 @@ export function TransactionsTable({
       ) : error ? (
         <DataTableError message={error} onRetry={refetch} colSpan={7} />
       ) : filteredTransactions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="rounded-full bg-muted p-3 mb-2">
-            <Ghost className="h-6 w-6 text-muted-foreground" />
+        <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50 p-8">
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="rounded-full bg-gradient-to-br from-gray-800/30 via-gray-900/40 to-gray-800/30 p-3 mb-2">
+              <Ghost className="h-6 w-6 text-gray-400" />
+            </div>
+            <p className="text-sm text-gray-400 mb-4">
+              {transactions.length === 0
+                ? "No transactions found. Import transactions to get started."
+                : "No transactions match your filters."
+            }
+            </p>
+            {transactions.length === 0 ? (
+              <Button onClick={() => setImportModalOpen(true)}>
+                Import Transactions
+              </Button>
+            ) : (
+              <Button onClick={resetFilters}>
+                Clear Filters
+              </Button>
+            )}
           </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            {transactions.length === 0
-              ? "No transactions found. Import transactions to get started."
-              : "No transactions match your filters."
-          }
-          </p>
-          {transactions.length === 0 ? (
-            <Button onClick={() => setImportModalOpen(true)}>
-              Import Transactions
-            </Button>
-          ) : (
-            <Button onClick={resetFilters}>
-              Clear Filters
-            </Button>
-          )}
         </div>
       ) : (
         <>
           {/* Delete selected button - shown when transactions are selected */}
           {selectedCount > 0 && (
-            <div className="bg-black p-3 px-4 rounded-md flex items-center">
+            <div className="bg-gradient-to-br from-gray-800/40 via-gray-900/50 to-gray-800/40 backdrop-blur-sm p-3 px-4 rounded-xl flex items-center border border-gray-700/50">
               <span className="text-sm font-medium text-white">
                 {selectedCount} {selectedCount === 1 ? 'transaction' : 'transactions'} selected
               </span>
@@ -380,7 +382,7 @@ export function TransactionsTable({
 
           {/* Desktop view */}
           {!isMobile && (
-            <div className="rounded-md border">
+            <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50">
               <Table>
                 <TransactionHeaders
                   sortConfig={sortConfig}

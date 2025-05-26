@@ -52,6 +52,7 @@ const PaginationLink = ({
         variant: isActive ? "outline" : "ghost",
         size,
       }),
+      isActive && "bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white border-bitcoin-orange hover:from-bitcoin-orange/90 hover:to-[#D4A76A]/90",
       className
     )}
     {...props}

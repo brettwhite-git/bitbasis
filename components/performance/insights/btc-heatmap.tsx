@@ -153,7 +153,7 @@ export function BtcHeatmap() {
             {
               from: 0,
               to: 0,
-              color: '#121212', // Changed from #2D3748 to a near-black color
+              color: '#1F2937', // gray-800 - blends with glass morphism background
               name: 'No Activity'
             }
           ]
@@ -165,7 +165,7 @@ export function BtcHeatmap() {
     },
     stroke: {
       width: 1.3,
-      colors: ['#1A202C'] // Background color as hex
+      colors: ['#374151'] // gray-700 - subtle border that complements glass morphism
     },
     title: {
       text: '',

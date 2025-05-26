@@ -145,21 +145,21 @@ export function PreviewStep() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="font-medium text-lg">Preview Transactions</h3>
-        <div className="text-sm text-muted-foreground">
+        <h3 className="font-medium text-lg text-white">Preview Transactions</h3>
+        <div className="text-sm text-gray-400">
           {totalCount} transactions from {currentFile?.name}
         </div>
       </div>
       
       {/* Transaction Limit Warning/Error */}
       {!limitValidation.loading && !limitValidation.allowed && (
-        <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg">
+        <div className="bg-red-500/5 border border-red-500/10 p-4 rounded-xl backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+            <XCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
             <div>
-              <h4 className="font-medium text-destructive">Import Blocked - Transaction Limit Exceeded</h4>
-              <p className="text-sm text-destructive/80 mt-1">{limitValidation.message}</p>
-              <p className="text-sm text-muted-foreground mt-2">
+              <h4 className="font-medium text-red-400">Import Blocked - Transaction Limit Exceeded</h4>
+              <p className="text-sm text-red-300 mt-1">{limitValidation.message}</p>
+              <p className="text-sm text-gray-400 mt-2">
                 Upgrade to Pro ($4.99/month) or Lifetime ($210) for unlimited transactions.
               </p>
             </div>
@@ -168,7 +168,7 @@ export function PreviewStep() {
       )}
       
       {/* Validation Summary */}
-      <div className="bg-black/40 p-3 rounded-lg">
+      <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm p-3 rounded-xl border border-gray-700/30">
         <div className="flex items-center">
           {/* Valid/Icon Status */}
           {!hasIssues ? (
@@ -238,18 +238,18 @@ export function PreviewStep() {
       </div>
 
       {/* Transaction Table */}
-      <ScrollArea className="h-[450px] rounded-md border bg-card">
+      <ScrollArea className="h-[450px] rounded-xl border border-gray-700/30 bg-gradient-to-br from-gray-800/5 via-gray-900/15 to-gray-800/5 backdrop-blur-sm">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/80 border-b border-primary/20">
-              <TableHead className="w-24 sticky top-0 bg-muted/80 z-10 text-center font-semibold">Status</TableHead>
-              <TableHead className="w-40 sticky top-0 bg-muted/80 z-10 text-center font-semibold whitespace-nowrap">Date</TableHead>
-              <TableHead className="w-28 sticky top-0 bg-muted/80 z-10 text-center font-semibold">Type</TableHead>
-              <TableHead className="w-32 sticky top-0 bg-muted/80 z-10 text-center font-semibold whitespace-nowrap">Amount</TableHead>
-              <TableHead className="w-32 sticky top-0 bg-muted/80 z-10 text-center font-semibold whitespace-nowrap">Price</TableHead>
-              <TableHead className="w-32 sticky top-0 bg-muted/80 z-10 text-center font-semibold whitespace-nowrap">Value</TableHead>
-              <TableHead className="w-28 sticky top-0 bg-muted/80 z-10 text-center font-semibold whitespace-nowrap">Fee</TableHead>
-              <TableHead className="w-28 sticky top-0 bg-muted/80 z-10 text-center font-semibold hidden md:table-cell whitespace-nowrap">Exchange</TableHead>
+            <TableRow className="bg-gray-800/30 border-b border-gray-700/50">
+              <TableHead className="w-24 sticky top-0 bg-gray-800/30 z-10 text-center font-semibold text-gray-300">Status</TableHead>
+              <TableHead className="w-40 sticky top-0 bg-gray-800/30 z-10 text-center font-semibold whitespace-nowrap text-gray-300">Date</TableHead>
+              <TableHead className="w-28 sticky top-0 bg-gray-800/30 z-10 text-center font-semibold text-gray-300">Type</TableHead>
+              <TableHead className="w-32 sticky top-0 bg-gray-800/30 z-10 text-center font-semibold whitespace-nowrap text-gray-300">Amount</TableHead>
+              <TableHead className="w-32 sticky top-0 bg-gray-800/30 z-10 text-center font-semibold whitespace-nowrap text-gray-300">Price</TableHead>
+              <TableHead className="w-32 sticky top-0 bg-gray-800/30 z-10 text-center font-semibold whitespace-nowrap text-gray-300">Value</TableHead>
+              <TableHead className="w-28 sticky top-0 bg-gray-800/30 z-10 text-center font-semibold whitespace-nowrap text-gray-300">Fee</TableHead>
+              <TableHead className="w-28 sticky top-0 bg-gray-800/30 z-10 text-center font-semibold hidden md:table-cell whitespace-nowrap text-gray-300">Exchange</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -306,8 +306,8 @@ export function PreviewStep() {
                 <TableRow 
                   key={`tx-${txId || index}`}
                   className={cn(
-                    "border-b border-muted/20",
-                    hasError ? 'bg-destructive/10 hover:bg-destructive/20' : '',
+                    "border-b border-gray-700/30 hover:bg-gray-800/20",
+                    hasError ? 'bg-red-500/10 hover:bg-red-500/20' : '',
                     !hasError && hasWarning ? 'bg-yellow-500/10 hover:bg-yellow-500/20' : ''
                   )}
                 >
@@ -335,7 +335,7 @@ export function PreviewStep() {
             
             {transactions.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-6 text-gray-400">
                   No transactions to display
                 </TableCell>
               </TableRow>
@@ -348,7 +348,7 @@ export function PreviewStep() {
       <div className="flex justify-end mt-4">
         <Button 
           onClick={handleContinue} 
-          className="flex items-center gap-2 px-6"
+          className="flex items-center gap-2 px-6 bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] hover:from-bitcoin-orange/90 hover:to-[#D4A76A]/90 text-white border-0 disabled:opacity-50 disabled:bg-gray-600"
           disabled={shouldDisableContinue}
         >
           Continue
@@ -358,13 +358,13 @@ export function PreviewStep() {
       
       {/* Error notices */}
       {errorCount > 0 && (
-        <div className="bg-destructive/10 p-3 rounded-md text-sm text-destructive mt-2">
+        <div className="bg-red-500/5 p-3 rounded-xl text-sm text-red-400 mt-2 border border-red-500/10 backdrop-blur-sm">
           Please fix all errors before continuing. You may need to edit your CSV file and upload again.
         </div>
       )}
       
       {!limitValidation.loading && !limitValidation.allowed && (
-        <div className="bg-destructive/10 p-3 rounded-md text-sm text-destructive mt-2">
+        <div className="bg-red-500/5 p-3 rounded-xl text-sm text-red-400 mt-2 border border-red-500/10 backdrop-blur-sm">
           Cannot import: This would exceed your transaction limit. Please upgrade your plan to continue.
         </div>
       )}

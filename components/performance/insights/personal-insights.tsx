@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent } from "@/components/ui";
+// Removed Card imports - using glass morphism styling
 import { formatCurrency, formatPercent } from "@/lib/utils/utils";
 import { PerformanceChart, PerformanceFilters, PerformanceContainer } from "../overview/exports";
 import { InvestmentInsights } from "./investment-insights";
@@ -32,38 +32,34 @@ export function PersonalInsights({ performance, orders, isLoading }: PersonalIns
       </div>
       
       <div className="space-y-3 flex flex-col">
-        <Card className="bg-card border-border">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-3 gap-8 pb-4">
-              <ReturnsOverview performance={performance} />
-            </div>
+        <div className="bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm rounded-xl">
+          <div className="grid grid-cols-3 gap-8 pb-4">
+            <ReturnsOverview performance={performance} />
+          </div>
 
-            <div className="border-t border-border my-2"></div>
+          <div className="border-t border-gray-700 my-2"></div>
 
-            <div className="grid grid-cols-3 gap-8 pt-4">
-              <DrawdownMetrics performance={performance} />
-            </div>
-          </CardContent>
-        </Card>
+          <div className="grid grid-cols-3 gap-8 pt-4">
+            <DrawdownMetrics performance={performance} />
+          </div>
+        </div>
         
-        <Card className="bg-card border-border flex-1 flex flex-col">
-          <CardContent className="p-6 flex-1 flex flex-col">
-            <PerformanceContainer className="flex-1 flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground">Performance Over Time</h3>
-                  <p className="text-sm text-muted-foreground">Track your Bitcoin portfolio performance</p>
-                </div>
-                <div className="flex items-center">
-                  <PerformanceFilters />
-                </div>
+        <div className="bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm rounded-xl flex-1 flex flex-col">
+          <PerformanceContainer className="flex-1 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Performance Over Time</h3>
+                <p className="text-sm text-gray-400">Track your Bitcoin portfolio performance</p>
               </div>
-              <div className="w-full flex-1">
-                <PerformanceChart />
+              <div className="flex items-center">
+                <PerformanceFilters />
               </div>
-            </PerformanceContainer>
-          </CardContent>
-        </Card>
+            </div>
+            <div className="w-full flex-1">
+              <PerformanceChart />
+            </div>
+          </PerformanceContainer>
+        </div>
       </div>
     </div>
   );

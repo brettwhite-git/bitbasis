@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui";
+
 import { Button } from "@/components/ui/button";
 import { useSavingsGoalData } from '@/lib/hooks/useSavingsGoalData';
 import { calculateTimeRemaining } from '@/lib/utils/utils';
@@ -88,19 +83,17 @@ export function SavingsGoalWidget({ className }: SavingsGoalWidgetProps) {
   // If no goal is saved, show placeholder
   if (!activeGoal) {
     return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="text-lg">No Savings Goal Set</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
+      <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm ${className || ''}`}>
+        <div className="relative z-10">
+          <h3 className="text-lg font-bold text-white mb-4">No Savings Goal Set</h3>
+          <p className="text-sm text-gray-400 mb-4">
             Set a savings goal to track your progress
           </p>
-          <Button variant="outline" className="mt-4" asChild>
+          <Button variant="outline" asChild>
             <Link href="/dashboard/calculator">Create Goal</Link>
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
@@ -119,24 +112,25 @@ export function SavingsGoalWidget({ className }: SavingsGoalWidgetProps) {
   const formattedTargetSats = targetSatsInMillions.toFixed(1) + 'M';
 
   return (
-    <Card className={className}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-md font-medium text-foreground">{activeGoal.goalName}</CardTitle>
-        <Link href="/dashboard/calculator" className="text-muted-foreground hover:text-foreground transition-colors">
-          <ExternalLink className="h-5 w-5" />
-        </Link>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm ${className || ''}`}>
+      <div className="relative z-10">
+        <div className="flex flex-row items-center justify-between mb-4">
+          <h3 className="text-md font-bold text-white">{activeGoal.goalName}</h3>
+          <Link href="/dashboard/calculator" className="text-gray-400 hover:text-white transition-colors">
+            <ExternalLink className="h-5 w-5" />
+          </Link>
+        </div>
+        <div className="space-y-3">
         {/* Header Section with Current Value and Progress */}
         <div className="flex justify-between items-start">
           <div>
             <div className="text-xl font-bold text-bitcoin-orange">
               <span>{currentSaved}</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-3">
+            <p className="text-xs text-gray-400 mt-3">
               Target: {activeGoal.savedProjection.targetBtcAmount} BTC
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-gray-400 mt-1">
               ${activeGoal.savedProjection.contributionAmountUSD.toLocaleString()} {activeGoal.savedProjection.contributionFrequency.charAt(0).toUpperCase() + 
                 activeGoal.savedProjection.contributionFrequency.slice(1)}
             </p>
@@ -158,7 +152,7 @@ export function SavingsGoalWidget({ className }: SavingsGoalWidgetProps) {
                 {goalProgress.isLoading ? '...' : `${goalProgress.btcProgressPercent.toFixed(0)}%`}
               </p>
               {goalProgress.isLoading ? (
-                <LoaderCircle className="animate-spin text-muted-foreground h-4 w-4" />
+                <LoaderCircle className="animate-spin text-gray-400 h-4 w-4" />
               ) : goalProgress.btcProgressPercent >= 100 ? (
                 <CheckCircle className="text-bitcoin-orange h-5 w-5" />
               ) : (
@@ -166,7 +160,7 @@ export function SavingsGoalWidget({ className }: SavingsGoalWidgetProps) {
               )}
             </div>
             {activeGoal.estimatedTargetDateISO && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-gray-400 mt-1">
                 {calculateTimeRemaining(activeGoal.estimatedTargetDateISO, new Date(), 'long')}
               </p>
             )}
@@ -175,18 +169,19 @@ export function SavingsGoalWidget({ className }: SavingsGoalWidgetProps) {
         
         {/* Progress Bar */}
         <div>
-          <div className="w-full h-2 bg-muted/70 rounded-full overflow-hidden mt-4">
+          <div className="w-full h-2 bg-gray-700/50 rounded-full overflow-hidden mt-4">
             <div 
               className="bg-bitcoin-orange h-2 rounded-full transition-all duration-700" 
               style={{ width: `${goalProgress.btcProgressPercent}%` }}
             ></div>
           </div>
-          <div className="flex justify-between text-xs text-muted-foreground mt-3">
+          <div className="flex justify-between text-xs text-gray-400 mt-3">
             <span>Start: {formatDateCompact(activeGoal.startDate)}</span>
             <span>Est. Completion: {formatDateCompact(activeGoal.estimatedTargetDateISO)}</span>
           </div>
         </div>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 } 

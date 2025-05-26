@@ -33,7 +33,7 @@ export function DateRangePicker({
               id="date"
               variant={"outline"}
               className={cn(
-                "h-10 px-3 py-2 w-[260px] justify-start text-left text-sm font-normal bg-background border-input",
+                "h-10 px-3 py-2 w-[260px] justify-start text-left text-sm font-normal bg-gray-800/30 border-gray-700/50 hover:bg-gray-700/40",
                 !date && "text-muted-foreground"
               )}
             >
@@ -53,7 +53,7 @@ export function DateRangePicker({
               </div>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent className="w-auto p-0 bg-gray-900/90 backdrop-blur-md border-gray-700/50 shadow-2xl" align="start">
             <Calendar
               initialFocus
               mode="range"

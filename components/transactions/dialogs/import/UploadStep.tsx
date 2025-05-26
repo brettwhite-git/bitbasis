@@ -234,27 +234,27 @@ export function UploadStep() {
 
   return (
     <div className="space-y-6">
-      <div className="text-sm">
+      <div className="text-sm text-gray-300">
         Import transactions from a CSV file. Your file should include columns for date, type, 
         asset, amount, and price.
       </div>
       
       <div 
         className={cn(
-          "border-2 border-dashed rounded-md p-8 text-center",
-          dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/20",
+          "border-2 border-dashed rounded-xl p-8 text-center bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm transition-all duration-200",
+          dragActive ? "border-bitcoin-orange bg-bitcoin-orange/5" : "border-gray-600/30",
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
+        <Upload className={cn("h-10 w-10 mx-auto mb-4", dragActive ? "text-bitcoin-orange" : "text-gray-400")} />
         
-        <div className="text-lg font-medium mb-2">
+        <div className="text-lg font-medium mb-2 text-white">
           {currentFile ? currentFile.name : "Drag and drop your CSV file here"}
         </div>
         
-        <div className="text-sm text-muted-foreground mb-4">
+        <div className="text-sm text-gray-400 mb-4">
           {!currentFile && "or"}
         </div>
         
@@ -264,7 +264,7 @@ export function UploadStep() {
             size="lg"
             type="button"
             onClick={() => document.getElementById('csv-upload')?.click()}
-            className="mx-auto"
+            className="mx-auto bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] hover:from-bitcoin-orange/90 hover:to-[#D4A76A]/90 text-white border-0"
           >
             Browse Files
           </Button>
@@ -278,7 +278,7 @@ export function UploadStep() {
         </Label>
       </div>
 
-      <div className="text-xs text-muted-foreground">
+      <div className="text-xs text-gray-400 bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl p-4 border border-gray-700/30">
         <ul className="list-disc pl-4 space-y-1">
           <li>File must be in CSV format</li>
           <li>Maximum file size: 100MB</li>

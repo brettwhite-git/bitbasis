@@ -59,7 +59,11 @@ export function TransactionsActions({
         <AddTransactionDialog 
           onSubmitTransactions={onAddTransactions}
           triggerButton={
-                <Button size="sm" className="h-8" disabled={disabled}>
+                <Button 
+                  size="sm" 
+                  className="h-8 bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] hover:from-bitcoin-orange/90 hover:to-[#D4A76A]/90 text-white border-0" 
+                  disabled={disabled}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Transaction
                 </Button>
@@ -68,7 +72,7 @@ export function TransactionsActions({
           ) : (
             <Button 
               size="sm" 
-              className="h-8" 
+              className="h-8 bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] hover:from-bitcoin-orange/90 hover:to-[#D4A76A]/90 text-white border-0 disabled:opacity-50 disabled:bg-gray-600" 
               disabled={loading || disabled}
               onClick={handleBlockedClick}
             >

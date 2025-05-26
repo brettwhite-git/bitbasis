@@ -1,5 +1,5 @@
 import { formatCurrency } from "@/lib/utils/utils"
-import { SummaryCardBase } from "./summary-card-base"
+import { EnhancedCardBase } from "./enhanced-card-base"
 
 interface CostBasisCardProps {
   totalCostBasis: number
@@ -13,7 +13,7 @@ export function CostBasisCard({
   className 
 }: CostBasisCardProps) {
   return (
-    <SummaryCardBase
+    <EnhancedCardBase
       title="Total Cost Basis"
       value={formatCurrency(totalCostBasis)}
       subtitle={`${totalBtc.toFixed(8)} BTC acquired`}

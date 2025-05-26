@@ -55,13 +55,13 @@ export function MobileNav() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden">
+        <Button variant="ghost" size="icon" className="md:hidden text-gray-300 hover:text-white hover:bg-gray-700/50">
           <Menu className="h-6 w-6" />
           <span className="sr-only">Toggle navigation menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="flex flex-col p-0">
-        <SheetHeader className="border-b border-border/40 px-4 py-2">
+      <SheetContent side="left" className="flex flex-col p-0 bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm border-gray-700/50">
+        <SheetHeader className="border-b border-gray-700/50 px-4 py-2">
           <div className="flex items-center justify-between">
             <Logo />
           </div>
@@ -73,10 +73,10 @@ export function MobileNav() {
               <li key={route.href}>
                 <Link
                   href={route.href}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
+                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                     route.isActive
                       ? "bg-bitcoin-orange text-white"
-                      : "text-muted-foreground hover:bg-secondary hover:text-white"
+                      : "text-gray-300 hover:bg-gray-700/50 hover:text-white"
                   }`}
                   onClick={() => setOpen(false)}
                 >

@@ -30,7 +30,7 @@ export const ReturnsOverview = memo(function ReturnsOverview({ performance }: Re
       {/* Total Return */}
       <div className="flex flex-col">
         <div className="flex justify-between items-center">
-          <div className="text-sm font-medium text-muted-foreground">Total Return</div>
+          <div className="text-sm font-medium text-gray-400">Total Return</div>
           <div className={isPositive(totalReturnPercent) ? "px-4 py-2 bg-success/20 rounded-full text-success text-xs font-medium flex items-center" : "px-4 py-2 bg-error/20 rounded-full text-error text-xs font-medium flex items-center"}>
             {isPositive(totalReturnPercent) ? <TrendingUpIcon className="h-3 w-3 mr-1" /> : <TrendingDownIcon className="h-3 w-3 mr-1" />}
             {formatPercent(totalReturnPercent)}
@@ -44,7 +44,7 @@ export const ReturnsOverview = memo(function ReturnsOverview({ performance }: Re
       {/* 30-Day Return */}
       <div className="flex flex-col">
         <div className="flex justify-between items-center">
-          <div className="text-sm font-medium text-muted-foreground">30-Day Return</div>
+          <div className="text-sm font-medium text-gray-400">30-Day Return</div>
           <div className={isPositive(monthReturnPercent) ? "px-4 py-2 bg-success/20 rounded-full text-success text-xs font-medium flex items-center" : "px-4 py-2 bg-error/20 rounded-full text-error text-xs font-medium flex items-center"}>
             {isPositive(monthReturnPercent) ? <TrendingUpIcon className="h-3 w-3 mr-1" /> : <TrendingDownIcon className="h-3 w-3 mr-1" />}
             {formatPercent(monthReturnPercent)}
@@ -58,7 +58,7 @@ export const ReturnsOverview = memo(function ReturnsOverview({ performance }: Re
       {/* YTD Return */}
       <div className="flex flex-col">
         <div className="flex justify-between items-center">
-          <div className="text-sm font-medium text-muted-foreground">YTD Return</div>
+          <div className="text-sm font-medium text-gray-400">YTD Return</div>
           <div className={isPositive(ytdReturnPercent) ? "px-4 py-2 bg-success/20 rounded-full text-success text-xs font-medium flex items-center" : "px-4 py-2 bg-error/20 rounded-full text-error text-xs font-medium flex items-center"}>
             {isPositive(ytdReturnPercent) ? <TrendingUpIcon className="h-3 w-3 mr-1" /> : <TrendingDownIcon className="h-3 w-3 mr-1" />}
             {formatPercent(ytdReturnPercent)}

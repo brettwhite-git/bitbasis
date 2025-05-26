@@ -50,29 +50,31 @@ export function DashboardSidebar() {
 
   return (
     <div
-      className={`hidden border-r border-border/40 md:block sticky top-16 h-[calc(100vh-4rem)] ${
+      className={`hidden md:block min-h-full ${
         isOpen ? "w-64" : "w-20"
       } transition-all duration-300`}
     >
-      <nav className="flex h-full flex-col py-4">
-        <ul className="flex flex-col items-center gap-3">
-          {routes.map((route) => (
-            <li key={route.href} className="w-full px-2">
-              <Link
-                href={route.href}
-                className={`flex h-10 items-center ${isOpen ? 'justify-start px-3' : 'justify-center'} rounded-md text-sm font-medium ${
-                  route.isActive
-                    ? "bg-bitcoin-orange text-white"
-                    : "text-muted-foreground hover:bg-secondary hover:text-white"
-                }`}
-              >
-                <route.icon className="h-5 w-5" />
-                {isOpen && <span className="ml-3">{route.title}</span>}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <div className="min-h-full bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm rounded-r-xl">
+        <nav className="flex flex-col py-4 min-h-full">
+          <ul className="flex flex-col items-center gap-3">
+            {routes.map((route) => (
+              <li key={route.href} className="w-full px-2">
+                <Link
+                  href={route.href}
+                  className={`flex h-10 items-center ${isOpen ? 'justify-start px-3' : 'justify-center'} rounded-md text-sm font-medium transition-colors ${
+                    route.isActive
+                      ? "bg-bitcoin-orange text-white"
+                      : "text-gray-300 hover:bg-gray-700/50 hover:text-white"
+                  }`}
+                >
+                  <route.icon className="h-5 w-5" />
+                  {isOpen && <span className="ml-3">{route.title}</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
     </div>
   )
 }

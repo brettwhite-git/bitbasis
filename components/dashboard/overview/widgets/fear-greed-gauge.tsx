@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'; // Correct Supabase client import
 import { formatDate, findClosestDateEntry } from '@/lib/utils/utils'; // Updated import path
 
@@ -160,34 +160,36 @@ const FearGreedMultiGauge: React.FC<{ className?: string }> = ({ className }) =>
   }, [supabase]); // Add supabase client to dependency array
 
   return (
-    <Card className={className}>
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-sm font-medium">Fear & Greed Index</CardTitle>
-      </CardHeader>
-      <CardContent className="flex justify-around items-center pt-2">
-        {isLoading ? (
-          <div className="py-6 text-center text-muted-foreground">Loading...</div>
-        ) : error ? (
-          <div className="py-6 text-center text-red-500">{error}</div>
-        ) : (
-          Object.entries(fearGreedData).map(([label, value]) => {
-            const { label: valueLabel } = getFearGreedStyle(value);
-            return (
-              <div key={label} className="text-center flex flex-col items-center">
-                <div className="text-xs text-muted-foreground uppercase mb-2">{label}</div>
-                <div className="relative w-14 h-14"> {/* Container for gauge and text */}
-                  <MiniGauge value={value} />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-base font-medium text-white">{value}</span>
+    <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm ${className || ''}`}>
+      <div className="relative z-10">
+        <div className="pb-4 flex flex-row items-center justify-between">
+          <h3 className="text-sm font-bold text-white">Fear & Greed Index</h3>
+        </div>
+        <div className="flex justify-around items-center">
+          {isLoading ? (
+            <div className="py-6 text-center text-gray-400">Loading...</div>
+          ) : error ? (
+            <div className="py-6 text-center text-red-500">{error}</div>
+          ) : (
+            Object.entries(fearGreedData).map(([label, value]) => {
+              const { label: valueLabel } = getFearGreedStyle(value);
+              return (
+                <div key={label} className="text-center flex flex-col items-center">
+                  <div className="text-xs text-gray-400 uppercase mb-2">{label}</div>
+                  <div className="relative w-14 h-14"> {/* Container for gauge and text */}
+                    <MiniGauge value={value} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-base font-medium text-white">{value}</span>
+                    </div>
                   </div>
+                  <div className="text-xs text-gray-400 mt-2">{valueLabel}</div>
                 </div>
-                <div className="text-xs text-muted-foreground mt-2">{valueLabel}</div>
-              </div>
-            );
-          })
-        )}
-      </CardContent>
-    </Card>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

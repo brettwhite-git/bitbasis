@@ -150,7 +150,7 @@ export function ConfirmationStep() {
         toast({
           title: "Import Successful",
           description: `Successfully imported ${transactions.length} transactions.`,
-          variant: "default",
+          variant: "success" as any,
         });
       }, 100);
       
@@ -186,42 +186,42 @@ export function ConfirmationStep() {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border p-5 space-y-4 bg-background-50">
+      <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/30 p-5 space-y-4">
         <div className="flex items-center gap-3">
-          <FileText className="h-6 w-6 text-primary" />
-          <h3 className="font-medium text-lg">Import Summary</h3>
+          <FileText className="h-6 w-6 text-bitcoin-orange" />
+          <h3 className="font-medium text-lg text-white">Import Summary</h3>
         </div>
         
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="space-y-2">
-            <p className="text-muted-foreground">File</p>
-            <p className="font-medium">{currentFile?.name}</p>
+            <p className="text-gray-400">File</p>
+            <p className="font-medium text-white">{currentFile?.name}</p>
           </div>
           
           <div className="space-y-2">
-            <p className="text-muted-foreground">Total Transactions</p>
-            <p className="font-medium">{totalCount}</p>
+            <p className="text-gray-400">Total Transactions</p>
+            <p className="font-medium text-white">{totalCount}</p>
           </div>
           
           {Object.entries(typeCounts).map(([type, count]) => (
             <div key={type} className="space-y-2">
-              <p className="text-muted-foreground capitalize">{type} Transactions</p>
-              <p className="font-medium">{count}</p>
+              <p className="text-gray-400 capitalize">{type} Transactions</p>
+              <p className="font-medium text-white">{count}</p>
             </div>
           ))}
           
           {warningCount > 0 && (
             <div className="space-y-2">
-              <p className="text-muted-foreground">Warnings</p>
-              <p className="font-medium">{warningCount}</p>
+              <p className="text-gray-400">Warnings</p>
+              <p className="font-medium text-yellow-400">{warningCount}</p>
             </div>
           )}
         </div>
       </div>
       
-      <div className="flex flex-col items-center justify-center py-3 gap-2 text-muted-foreground">
-        <CheckCircle2 className="h-8 w-8 text-primary" />
-        <p className="text-center text-sm">
+      <div className="flex flex-col items-center justify-center py-3 gap-2">
+        <CheckCircle2 className="h-8 w-8 text-bitcoin-orange" />
+        <p className="text-center text-sm text-gray-300">
           Your transactions are ready to be imported.
           <br />
           Click the button below to proceed.
@@ -232,14 +232,14 @@ export function ConfirmationStep() {
         <Button 
           size="lg"
           onClick={handleSubmit}
-          className="w-full"
+          className="w-full bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] hover:from-bitcoin-orange/90 hover:to-[#D4A76A]/90 text-white border-0"
         >
           <Check className="mr-2 h-4 w-4" />
           Confirm Import
         </Button>
       </div>
       
-      <p className="text-xs text-center text-muted-foreground">
+      <p className="text-xs text-center text-gray-400">
         This action cannot be undone. You can delete transactions later if needed.
       </p>
     </div>

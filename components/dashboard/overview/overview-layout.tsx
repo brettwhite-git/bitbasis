@@ -1,12 +1,6 @@
 "use client"
 
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle, 
-} from "@/components/ui"
+
 import { Button } from "@/components/ui/button"
 // Import from the new locations
 import { RecentTransactions } from "./widgets/recent-transactions"
@@ -48,9 +42,9 @@ export function OverviewLayout({ metrics, performance }: DashboardContentProps) 
   const [timeframe, setTimeframe] = useState<"6M" | "1Y">("1Y")
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-6">
       <div className="flex items-center justify-between w-full">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Overview Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-white">Overview Dashboard</h1>
       </div>
       <div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <PortfolioValueCard 
@@ -73,9 +67,9 @@ export function OverviewLayout({ metrics, performance }: DashboardContentProps) 
         />
       </div>
       <div className="grid w-full gap-4 grid-cols-1 md:grid-cols-3">
-        <Card className="col-span-1 md:col-span-2 flex flex-col">
-          <CardHeader className="flex flex-row items-start justify-between pb-2">
-            <CardTitle className="text-left py-1.5">Portfolio Summary</CardTitle>
+        <div className="col-span-1 md:col-span-2 flex flex-col relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
+          <div className="flex flex-row items-start justify-between pb-4">
+            <h3 className="text-xl font-bold text-white">Portfolio Summary</h3>
             <div className="flex items-center gap-2">
               <Button 
                 variant={timeframe === "6M" ? "secondary" : "ghost"} 
@@ -92,13 +86,13 @@ export function OverviewLayout({ metrics, performance }: DashboardContentProps) 
                 1Y
               </Button>
             </div>
-          </CardHeader>
-          <CardContent className="pt-0 flex-grow">
+          </div>
+          <div className="flex-grow">
             <PortfolioSummaryChart 
               timeframe={timeframe}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
         <div className="col-span-1 md:col-span-1 flex flex-col gap-4">
           <SavingsGoalWidget className="h-full" />
           <FearGreedMultiGauge className="h-full" />
@@ -107,15 +101,15 @@ export function OverviewLayout({ metrics, performance }: DashboardContentProps) 
         </div>
       </div>
       <div className="w-full">
-        <Card>
-          <CardHeader className="flex flex-col items-start">
-            <CardTitle className="text-left">Recent Transactions</CardTitle>
-            <CardDescription>Your most recent Bitcoin transactions</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
+          <div className="flex flex-col items-start mb-4">
+            <h3 className="text-xl font-bold text-white">Recent Transactions</h3>
+            <p className="text-sm text-gray-400">Your most recent Bitcoin transactions</p>
+          </div>
+          <div>
             <RecentTransactions />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   )

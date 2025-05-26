@@ -40,10 +40,10 @@ function ImportModalContent() {
     }
     
     return isLoading ? (
-      <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-50">
-        <div className="flex flex-col items-center gap-3 p-6 bg-card rounded-lg border shadow-lg">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm font-medium">{loadingMessages[loadingState] || 'Processing...'}</p>
+      <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-gray-800/20 via-gray-900/40 to-gray-800/20 backdrop-blur-sm rounded-xl border border-gray-700/30 shadow-2xl">
+          <Loader2 className="h-8 w-8 animate-spin text-bitcoin-orange" />
+          <p className="text-sm font-medium text-white">{loadingMessages[loadingState] || 'Processing...'}</p>
         </div>
       </div>
     ) : null
@@ -79,20 +79,20 @@ function ImportModalContent() {
           <React.Fragment key={s.id}>
             <div className="flex flex-col items-center">
               <div 
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${
                   idx <= currentIndex 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted text-muted-foreground'
+                    ? 'bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white' 
+                    : 'bg-gray-800/40 text-gray-400 border border-gray-700/50'
                 }`}
               >
                 {idx + 1}
               </div>
-              <span className="text-xs mt-1">{s.label}</span>
+              <span className={`text-xs mt-1 ${idx <= currentIndex ? 'text-white' : 'text-gray-400'}`}>{s.label}</span>
             </div>
             {idx < steps.length - 1 && (
               <div 
-                className={`h-1 flex-1 mx-2 ${
-                  idx < currentIndex ? 'bg-primary' : 'bg-muted'
+                className={`h-1 flex-1 mx-2 rounded-full ${
+                  idx < currentIndex ? 'bg-gradient-to-r from-bitcoin-orange to-[#D4A76A]' : 'bg-gray-700/50'
                 }`}
               />
             )}
@@ -105,8 +105,8 @@ function ImportModalContent() {
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Import Transactions</DialogTitle>
-        <DialogDescription>
+        <DialogTitle className="text-white">Import Transactions</DialogTitle>
+        <DialogDescription className="text-gray-300">
           Import your transaction data from a CSV file.
         </DialogDescription>
       </DialogHeader>
@@ -115,7 +115,7 @@ function ImportModalContent() {
       
       {/* Error message if any */}
       {error && (
-        <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md mb-4">
+        <div className="bg-red-500/5 text-red-400 text-sm p-3 rounded-xl border border-red-500/10 mb-4 backdrop-blur-sm">
           {error}
         </div>
       )}
@@ -133,7 +133,7 @@ function ImportModalContent() {
             variant="outline" 
             onClick={handleBack}
             disabled={isLoading}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-gray-800/40 border-gray-600/50 hover:bg-gray-700/50 text-white"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -171,7 +171,7 @@ function ModalWithDynamicWidth({ open, onOpenChange }: { open: boolean, onOpenCh
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${modalWidth} max-h-[90vh] overflow-y-auto`}>
+      <DialogContent className={`${modalWidth} max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-800/20 via-gray-900/40 to-gray-800/20 backdrop-blur-md border-gray-700/30 [&>button]:text-gray-400 [&>button]:hover:text-white [&>button]:hover:bg-gray-700/50`}>
         <ImportModalContent />
       </DialogContent>
     </Dialog>

@@ -1,5 +1,5 @@
 import { formatCurrency } from "@/lib/utils/utils"
-import { SummaryCardBase } from "./summary-card-base"
+import { EnhancedCardBase } from "./enhanced-card-base"
 
 interface AverageBuyPriceCardProps {
   averageBuyPrice: number
@@ -11,7 +11,7 @@ export function AverageBuyPriceCard({
   className 
 }: AverageBuyPriceCardProps) {
   return (
-    <SummaryCardBase
+    <EnhancedCardBase
       title="Average Buy Price"
       value={formatCurrency(averageBuyPrice)}
       subtitle="Per Bitcoin"

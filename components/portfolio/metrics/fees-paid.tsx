@@ -1,6 +1,5 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency } from "@/lib/utils/utils"
 
@@ -14,29 +13,29 @@ export function FeesPaid({ totalFees, totalCostBasis, isLoading = false }: FeesP
   const feePercentage = totalCostBasis > 0 ? (totalFees / totalCostBasis) * 100 : 0
   
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Total Fees Paid</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm rounded-xl">
+      <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <h3 className="text-sm font-medium text-gray-400">Total Fees Paid</h3>
+      </div>
+      <div>
         {isLoading ? (
           <div className="space-y-2">
-            <Skeleton className="h-8 w-[120px]" />
-            <Skeleton className="h-4 w-[100px]" />
+            <Skeleton className="h-8 w-[120px] bg-gray-700" />
+            <Skeleton className="h-4 w-[100px] bg-gray-700" />
           </div>
         ) : (
           <>
             <div className="text-2xl font-bold text-bitcoin-orange">
               {formatCurrency(totalFees)}
             </div>
-            <p className="text-xs text-muted-foreground pt-2">
+            <p className="text-xs text-gray-400 pt-2">
               {totalCostBasis > 0 
                 ? `${feePercentage.toFixed(2)}% of total cost basis`
                 : 'No purchases yet'}
             </p>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 } 

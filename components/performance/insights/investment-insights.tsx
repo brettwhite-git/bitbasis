@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui"
+// Removed Card imports - using glass morphism styling
 import { formatCurrency, formatPercent } from "@/lib/utils/utils"
 import type { PerformanceMetrics } from "@/lib/core/portfolio"
 import { calculateDCAPerformance } from "@/lib/core/portfolio"
@@ -195,19 +195,19 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
   }
 
   return (
-    <Card className="h-full w-full flex flex-col bg-card border-border">
-      <CardHeader className="px-6 py-4 pb-2">
-        <CardTitle className="text-xl font-bold text-foreground">Investment Insights</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col px-6 pt-2 pb-4">
+    <div className="h-full w-full flex flex-col bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm rounded-xl">
+      <div className="pb-2">
+        <h3 className="text-xl font-bold text-white">Investment Insights</h3>
+      </div>
+      <div className="flex-1 flex flex-col pt-2">
         {/* Investment Insights */}
         <div className="space-y-6 mb-6">
           {/* Price Comparison */}
           <div className="border-l-[3px] border-bitcoin-orange pl-3 py-1">
             <p className="text-sm font-medium text-bitcoin-orange mb-1">Price Comparison</p>
-            <p className="text-sm font-medium text-foreground mb-1">{priceComparison.message}</p>
+            <p className="text-sm font-medium text-white mb-1">{priceComparison.message}</p>
             {threeMonthAvgPrice > 0 && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-400">
                 3-month average buy price: {formatCurrency(threeMonthAvgPrice)}
               </p>
             )}
@@ -216,7 +216,7 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
           {/* DCA Performance */}
           <div className="border-l-[3px] border-bitcoin-orange pl-3 py-1">
             <p className="text-sm font-medium text-bitcoin-orange mb-1">DCA Strategy Performance</p>
-            <p className="text-sm font-medium text-foreground mb-1">
+            <p className="text-sm font-medium text-white mb-1">
               {Math.abs(dcaPerformance.outperformance) < 1 
                 ? "Your DCA strategy is performing similarly to a lump-sum approach"
                 : dcaPerformance.outperformance > 0
@@ -224,7 +224,7 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
                   : `Your DCA strategy is underperforming lump-sum`
               }
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-400">
               {Math.abs(dcaPerformance.outperformance) >= 1 &&
                 `Performance difference: ${formatPercent(Math.abs(dcaPerformance.outperformance))}`
               }
@@ -234,10 +234,10 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
           {/* Tax Efficiency */}
           <div className="border-l-[3px] border-bitcoin-orange pl-3 py-1">
             <p className="text-sm font-medium text-bitcoin-orange mb-1">Tax Efficiency</p>
-            <p className="text-sm font-medium text-foreground mb-1">
+            <p className="text-sm font-medium text-white mb-1">
               {formatPercent(taxEfficiency.longTermPercent)} of holdings qualify for long-term rates
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-400">
               {taxEfficiency.longTermPercent < 25
                 ? "Most positions are subject to higher short-term rates"
                 : taxEfficiency.longTermPercent < 50
@@ -251,7 +251,7 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
         </div>
         
         {/* Divider after investment insights */}
-        <div className="border-t border-border mb-5"></div>
+        <div className="border-t border-gray-700 mb-5"></div>
         
         <div className="space-y-12 mb-auto">
           {/* Current Price */}
@@ -263,7 +263,7 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
               </div>
               <span className="text-xl font-bold">{formatCurrency(currentPrice)}</span>
             </div>
-            <div className="w-full bg-muted rounded-full h-1.5">
+            <div className="w-full bg-gray-700 rounded-full h-1.5">
               <div 
                 className="bg-gradient-to-r from-bitcoin-orange to-bitcoin-orange h-1.5 rounded-full" 
                 style={{ width: `${getProgressWidth(currentPrice)}%` }}
@@ -280,7 +280,7 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
               </div>
               <span className="text-xl font-bold">{formatCurrency(athPrice)}</span>
             </div>
-            <div className="w-full bg-muted rounded-full h-1.5">
+            <div className="w-full bg-gray-700 rounded-full h-1.5">
               <div 
                 className="bg-gradient-to-r from-bitcoin-orange to-bitcoin-orange h-1.5 rounded-full" 
                 style={{ width: `${getProgressWidth(athPrice)}%` }}
@@ -297,7 +297,7 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
               </div>
               <span className="text-xl font-bold">{formatCurrency(highestBuyPrice)}</span>
             </div>
-            <div className="w-full bg-muted rounded-full h-1.5">
+            <div className="w-full bg-gray-700 rounded-full h-1.5">
               <div 
                 className="bg-gradient-to-r from-bitcoin-orange to-bitcoin-orange h-1.5 rounded-full" 
                 style={{ width: `${getProgressWidth(highestBuyPrice)}%` }}
@@ -314,7 +314,7 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
               </div>
               <span className="text-xl font-bold">{formatCurrency(lowestBuyPrice)}</span>
             </div>
-            <div className="w-full bg-muted rounded-full h-1.5">
+            <div className="w-full bg-gray-700 rounded-full h-1.5">
               <div 
                 className="bg-gradient-to-r from-bitcoin-orange to-bitcoin-orange h-1.5 rounded-full" 
                 style={{ width: `${getProgressWidth(lowestBuyPrice)}%` }}
@@ -331,7 +331,7 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
               </div>
               <span className="text-xl font-bold">{formatCurrency(averageBuyPrice)}</span>
             </div>
-            <div className="w-full bg-muted rounded-full h-1.5">
+            <div className="w-full bg-gray-700 rounded-full h-1.5">
               <div 
                 className="bg-gradient-to-r from-bitcoin-orange to-bitcoin-orange h-1.5 rounded-full" 
                 style={{ width: `${getProgressWidth(averageBuyPrice)}%` }}
@@ -339,7 +339,7 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 } 

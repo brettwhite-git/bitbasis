@@ -13,7 +13,7 @@ import {
 } from "chart.js"
 import { Bar } from "react-chartjs-2"
 import { useSupabase } from "@/components/providers/supabase-provider"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui"
+// Removed Card imports - using glass morphism styling
 
 // Register ChartJS components
 ChartJS.register(
@@ -149,24 +149,22 @@ export function HodlAgeDistribution() {
   }
 
   return (
-    <Card className="h-full bg-card border-border">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-semibold">HODL Age Distribution</CardTitle>
-        <p className="text-sm text-muted-foreground">Bitcoin holdings by time held</p>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="h-[350px] flex items-center justify-center text-foreground">Loading Chart...</div>
-        ) : error ? (
-          <div className="h-[350px] flex items-center justify-center text-error">{error}</div>
-        ) : hodlData.length === 0 ? (
-          <div className="h-[350px] flex items-center justify-center text-muted-foreground">No data available to display.</div>
-        ) : (
-          <div className="h-[350px] w-full">
-            <Bar options={options} data={data} />
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className="h-full bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm rounded-xl">
+      <div className="pb-2 mb-4">
+        <h3 className="text-lg font-semibold text-white">HODL Age Distribution</h3>
+        <p className="text-sm text-gray-400">Bitcoin holdings by time held</p>
+      </div>
+      {isLoading ? (
+        <div className="h-[350px] flex items-center justify-center text-white">Loading Chart...</div>
+      ) : error ? (
+        <div className="h-[350px] flex items-center justify-center text-red-400">{error}</div>
+      ) : hodlData.length === 0 ? (
+        <div className="h-[350px] flex items-center justify-center text-gray-400">No data available to display.</div>
+      ) : (
+        <div className="h-[350px] w-full">
+          <Bar options={options} data={data} />
+        </div>
+      )}
+    </div>
   )
 } 

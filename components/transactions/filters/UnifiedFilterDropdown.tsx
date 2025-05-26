@@ -100,7 +100,7 @@ const SearchInput = ({ searchQuery, onSearchChange }: SearchInputProps) => (
 const FilterOptions = ({ value, onValueChange, options, label }: FilterOptionsProps) => (
   <div className="space-y-2">
     <DropdownMenuLabel className="block">{label}</DropdownMenuLabel>
-    <div className="border rounded-md p-2 max-h-[200px] overflow-y-auto">
+    <div className="bg-gray-800/30 border border-gray-700/50 rounded-md p-2 max-h-[200px] overflow-y-auto">
       <DropdownMenuRadioGroup value={value} onValueChange={onValueChange}>
         {options.map((option) => (
           <CheckRadioItem key={option.value} value={option.value} className="rounded-sm">
@@ -167,22 +167,22 @@ export function UnifiedFilterDropdown({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="relative flex items-center gap-1.5">
-            <FilterIcon className="h-4 w-4" />
-            <span>Filters</span>
+          <Button variant="outline" size="sm" className="relative flex items-center gap-1.5 bg-gray-800/40 border-gray-600/50 hover:bg-gray-700/50 min-w-[90px] justify-center">
+            <FilterIcon className="h-4 w-4 flex-shrink-0" />
+            <span className="flex-shrink-0">Filters</span>
             {activeFiltersCount > 0 && (
               <Badge
                 variant="secondary"
-                className="ml-1 h-5 w-5 rounded-full p-0 text-xs"
+                className="ml-1 h-5 w-5 rounded-full p-0 text-xs bg-bitcoin-orange text-white flex items-center justify-center flex-shrink-0"
               >
                 {activeFiltersCount}
               </Badge>
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-[600px]" align="start">
+        <DropdownMenuContent className="w-[600px] bg-gray-900/90 backdrop-blur-md border-gray-700/50 shadow-2xl" align="start">
           {/* Date Range - Full Width */}
-          <div className="p-2 border-b">
+          <div className="p-2 border-b border-gray-700/50">
             <DropdownMenuLabel>Date Range</DropdownMenuLabel>
             <div className="py-1">
               <DateRangePicker
@@ -218,13 +218,12 @@ export function UnifiedFilterDropdown({
           </div>
 
           {/* Reset Button - Full Width */}
-          <div className="p-2 border-t">
+          <div className="p-2 border-t border-gray-700/50">
             <Button
-              variant="outline"
               size="sm"
               onClick={onReset}
               disabled={activeFiltersCount === 0}
-              className="w-full"
+              className="w-full bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] hover:from-bitcoin-orange/90 hover:to-[#D4A76A]/90 text-white border-0 disabled:opacity-50 disabled:bg-gray-600"
             >
               Reset All Filters
             </Button>

@@ -258,17 +258,17 @@ export function AddTransactionDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-5xl p-0 overflow-hidden">
-        <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+      <DialogContent className="max-w-5xl p-0 overflow-hidden bg-gradient-to-br from-gray-800/20 via-gray-900/40 to-gray-800/20 backdrop-blur-md border-gray-700/50">
+        <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground text-gray-400 hover:text-white">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </DialogClose>
         <div className="flex w-full">
           {/* Form Section */}
-          <div className="w-1/2 p-6 border-r">
+          <div className="w-1/2 p-6 border-r border-gray-700/50">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold">{getTransactionTitle(currentType)}</h2>
-              <p className="text-sm text-muted-foreground mt-1">
+              <h2 className="text-xl font-semibold text-white">{getTransactionTitle(currentType)}</h2>
+              <p className="text-sm text-gray-300 mt-1">
                 {getTransactionDescription(currentType)}
               </p>
             </div>
@@ -486,7 +486,7 @@ export function AddTransactionDialog({
               )}
               
               {/* Footer note */}
-              <p className="text-xs text-muted-foreground mt-4">
+              <p className="text-xs text-gray-400 mt-4">
                 After you click on save, this entry will be added to your transactions.
               </p>
               
@@ -497,13 +497,14 @@ export function AddTransactionDialog({
                   onClick={() => setOpen(false)} 
                   disabled={isSubmitting}
                   type="button"
+                  className="bg-gray-800/40 border-gray-600/50 hover:bg-gray-700/50 text-white"
                 >
                   Cancel
                 </Button>
                 <Button 
                   type="submit"
                   disabled={!isValid || isLoading || isSubmitting}
-                  className="bg-[#F7931A] hover:bg-[#E78219]"
+                  className="bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] hover:from-bitcoin-orange/90 hover:to-[#D4A76A]/90 text-white border-0"
                 >
                   Save and proceed
                 </Button>
@@ -516,12 +517,12 @@ export function AddTransactionDialog({
             {stagedTransactions.length > 0 ? (
               <>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold">Staged Transactions ({stagedTransactions.length})</h3>
+                  <h3 className="text-lg font-semibold text-white">Staged Transactions ({stagedTransactions.length})</h3>
                   <Button 
                     onClick={handleSubmitAll} 
                     disabled={isLoading || isSubmitting}
                     size="sm"
-                    className="bg-[#F7931A] hover:bg-[#E78219]"
+                    className="bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] hover:from-bitcoin-orange/90 hover:to-[#D4A76A]/90 text-white border-0"
                   >
                     {isSubmitting ? (
                       <span className="flex items-center">
@@ -538,18 +539,18 @@ export function AddTransactionDialog({
                     )}
                   </Button>
                 </div>
-                <ScrollArea className="h-[400px] rounded-md border p-2">
+                <ScrollArea className="h-[400px] rounded-xl border border-gray-700/30 p-2 bg-gradient-to-br from-gray-800/5 via-gray-900/15 to-gray-800/5 backdrop-blur-sm">
                   <div className="space-y-2">
                     {stagedTransactions.map((transaction) => (
                       <div 
                         key={transaction.tempId} 
-                        className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-slate-900 border"
+                        className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm border border-gray-700/30"
                       >
                         <div className="grid grid-cols-1 gap-1">
-                          <span className="font-medium">
+                          <span className="font-medium text-white">
                             {new Date(transaction.date).toLocaleString()} - {transaction.type.toUpperCase()}
                           </span>
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-sm text-gray-300">
                             {transaction.btcAmount && `${transaction.btcAmount} BTC`}
                             {transaction.usdAmount && ` ($${transaction.usdAmount})`}
                             {transaction.price && ` at $${transaction.price}/BTC`}
@@ -562,7 +563,7 @@ export function AddTransactionDialog({
                           onClick={() => handleRemoveStaged(transaction.tempId)}
                           disabled={isLoading || isSubmitting}
                           aria-label="Remove staged transaction"
-                          className="h-8 w-8"
+                          className="h-8 w-8 hover:bg-gray-700/50 text-gray-400 hover:text-white"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -572,10 +573,12 @@ export function AddTransactionDialog({
                 </ScrollArea>
               </>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-                <PlusCircle className="h-12 w-12 mb-3 text-muted-foreground/50" />
-                <h3 className="text-lg font-medium mb-1">No Staged Transactions</h3>
-                <p className="text-sm max-w-xs">
+              <div className="h-full flex flex-col items-center justify-center text-center">
+                <div className="rounded-full bg-gradient-to-br from-gray-800/30 via-gray-900/40 to-gray-800/30 p-3 mb-3">
+                  <PlusCircle className="h-12 w-12 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium mb-1 text-white">No Staged Transactions</h3>
+                <p className="text-sm max-w-xs text-gray-400">
                   Add transactions using the form on the left. They will appear here before final submission.
                 </p>
               </div>

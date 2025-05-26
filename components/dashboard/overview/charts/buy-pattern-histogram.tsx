@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { cn } from "@/lib/utils/utils";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -137,26 +137,28 @@ const BuyPatternHistogram: React.FC<{ className?: string }> = ({ className }) =>
   };
 
   return (
-    <Card className={cn("flex flex-col", className)}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Weekly Buy Pattern</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col justify-end flex-grow pb-4">
-        {loading ? (
-          <div className="flex items-center justify-center h-24 w-full">
-            <Skeleton className="h-full w-full bg-gray-700" />
-          </div>
-        ) : error ? (
-          <div className="flex items-center justify-center h-22 w-full text-red-500 text-sm">
-            {error}
-          </div>
-        ) : (
-          <div className="h-32 w-full">
-            <Bar options={options} data={data} />
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm flex flex-col ${className || ''}`}>
+      <div className="relative z-10 flex flex-col h-full">
+        <div className="pb-4">
+          <h3 className="text-sm font-bold text-white">Weekly Buy Pattern</h3>
+        </div>
+        <div className="flex flex-col justify-end flex-grow">
+          {loading ? (
+            <div className="flex items-center justify-center h-24 w-full">
+              <Skeleton className="h-full w-full bg-gray-700" />
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-22 w-full text-red-500 text-sm">
+              {error}
+            </div>
+          ) : (
+            <div className="h-32 w-full">
+              <Bar options={options} data={data} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

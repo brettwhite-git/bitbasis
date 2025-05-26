@@ -1,4 +1,4 @@
-import { SummaryCardBase } from "./summary-card-base"
+import { EnhancedCardBase } from "./enhanced-card-base"
 
 interface HodlTimeCardProps {
   hodlTime: number
@@ -10,7 +10,7 @@ export function HodlTimeCard({
   className 
 }: HodlTimeCardProps) {
   return (
-    <SummaryCardBase
+    <EnhancedCardBase
       title="HODL Time"
       value={`${hodlTime} days`}
       subtitle="Weighted Average"

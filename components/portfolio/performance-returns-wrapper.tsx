@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+
 import { CumulativeReturns } from "./performance/cumulative-returns"
 import { CompoundGrowth } from "./performance/compound-growth"
 import { ReturnsTable } from "./performance/returns-table"
@@ -26,10 +26,8 @@ export function PerformanceReturnsWrapper() {
   }
   
   return (
-    <Card>
-      <CardHeader className="pb-0">
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm rounded-xl">
+      <div className="space-y-6">
         {/* Returns Table (Cost Basis Method Comparison) */}
         <ReturnsTable />
 
@@ -38,8 +36,8 @@ export function PerformanceReturnsWrapper() {
 
         {/* Compound Growth Rate Table */}
         <CompoundGrowth data={data.compoundGrowth} />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 

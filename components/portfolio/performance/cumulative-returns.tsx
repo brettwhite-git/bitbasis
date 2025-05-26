@@ -25,9 +25,9 @@ interface CumulativeReturnsProps {
 
 export function CumulativeReturns({ data }: CumulativeReturnsProps) {
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-      <div className="p-6">
-        <h3 className="text-sm font-medium mb-4">
+    <div className="bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm rounded-xl">
+      <div>
+        <h3 className="text-sm font-medium mb-4 text-white">
           Cumulative Returns
           <TooltipProvider delayDuration={0}>
             <Tooltip>

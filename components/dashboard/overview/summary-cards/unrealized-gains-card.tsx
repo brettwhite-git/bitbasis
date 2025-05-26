@@ -1,5 +1,5 @@
 import { formatCurrency, formatPercent } from "@/lib/utils/utils"
-import { SummaryCardBase } from "./summary-card-base"
+import { EnhancedCardBase } from "./enhanced-card-base"
 
 interface UnrealizedGainsCardProps {
   unrealizedGain: number
@@ -21,7 +21,7 @@ export function UnrealizedGainsCard({
   const subtitle = `${unrealizedGainPercent >= 0 ? '+' : ''}${formatPercent(unrealizedGainPercent)} ROI`
   
   return (
-    <SummaryCardBase
+    <EnhancedCardBase
       title="Unrealized Gains"
       value={displayValue}
       subtitle={subtitle}

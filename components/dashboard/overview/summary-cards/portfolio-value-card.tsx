@@ -1,5 +1,5 @@
 import { formatCurrency, formatPercent } from "@/lib/utils/utils"
-import { SummaryCardBase } from "./summary-card-base"
+import { EnhancedCardBase } from "./enhanced-card-base"
 
 interface PortfolioValueCardProps {
   currentValue: number
@@ -17,7 +17,7 @@ export function PortfolioValueCard({
     'No monthly data'
   
   return (
-    <SummaryCardBase
+    <EnhancedCardBase
       title="Portfolio Value"
       value={formatCurrency(currentValue)}
       subtitle={subtitle}

@@ -47,7 +47,7 @@ export const DrawdownMetrics = memo(function DrawdownMetrics({ performance }: Dr
       {/* Days Since ATH */}
       <div className="flex flex-col">
         <div className="flex justify-between items-center">
-          <div className="text-sm font-medium text-muted-foreground">Days Since ATH</div>
+          <div className="text-sm font-medium text-gray-400">Days Since ATH</div>
           <div className="px-4 py-2 bg-error/20 rounded-full text-error text-xs font-medium flex items-center">
             <TrendingDownIcon className="h-3 w-3 mr-1" />
             {formatPercent(metrics.drawdownFromATHPercent)}
@@ -55,7 +55,7 @@ export const DrawdownMetrics = memo(function DrawdownMetrics({ performance }: Dr
         </div>
         <div>
           <div className="text-2xl font-bold text-error">{metrics.daysSinceATH}</div>
-          <div className="text-xs text-muted-foreground mt-1">
+          <div className="text-xs text-gray-400 mt-1">
             Since {formatDateLong(metrics.athDate)}
           </div>
         </div>
@@ -64,7 +64,7 @@ export const DrawdownMetrics = memo(function DrawdownMetrics({ performance }: Dr
       {/* Drawdown from ATH */}
       <div className="flex flex-col">
         <div className="flex justify-between items-center">
-          <div className="text-sm font-medium text-muted-foreground">ATH Drawdown</div>
+          <div className="text-sm font-medium text-gray-400">ATH Drawdown</div>
           <div className="px-4 py-2 bg-error/20 rounded-full text-error text-xs font-medium flex items-center">
             <TrendingDownIcon className="h-3 w-3 mr-1" />
             {formatPercent(metrics.drawdownFromATHPercent)}
@@ -72,7 +72,7 @@ export const DrawdownMetrics = memo(function DrawdownMetrics({ performance }: Dr
         </div>
         <div>
           <div className="text-2xl font-bold text-error">{formatCurrency(metrics.drawdownFromATHAmount)}</div>
-          <div className="text-xs text-muted-foreground mt-1">
+          <div className="text-xs text-gray-400 mt-1">
             From Portfolio ATH
           </div>
         </div>
@@ -81,7 +81,7 @@ export const DrawdownMetrics = memo(function DrawdownMetrics({ performance }: Dr
       {/* Max Drawdown */}
       <div className="flex flex-col">
         <div className="flex justify-between items-center">
-          <div className="text-sm font-medium text-muted-foreground">Max Drawdown</div>
+          <div className="text-sm font-medium text-gray-400">Max Drawdown</div>
           <div className="px-4 py-2 bg-error/20 rounded-full text-error text-xs font-medium flex items-center">
             <TrendingDownIcon className="h-3 w-3 mr-1" />
             {formatPercent(metrics.maxDrawdownPercent)}
@@ -89,7 +89,7 @@ export const DrawdownMetrics = memo(function DrawdownMetrics({ performance }: Dr
         </div>
         <div>
           <div className="text-2xl font-bold text-error">{formatCurrency(metrics.maxDrawdownAmount)}</div>
-          <div className="text-xs text-muted-foreground mt-1">Portfolio Peak to Trough</div>
+          <div className="text-xs text-gray-400 mt-1">Portfolio Peak to Trough</div>
         </div>
       </div>
     </>
