@@ -12,25 +12,34 @@ import {
 } from '@/lib/utils/portfolio-utils'
 
 /**
- * Calculates the weighted average HODL time of Bitcoin holdings
+ * Calculates HODL time as days since last sell, or days since first buy if no sells
  */
 function calculateWeightedHodlTime(orders: Order[], currentDate: Date): number {
-  let totalBTC = 0
-  let weightedDaysSum = 0
-
-  // Process only buy orders
-  orders
-    .filter(order => order.type === 'buy' && order.received_btc_amount)
-    .forEach(order => {
-      const purchaseDate = new Date(order.date)
-      const daysHeld = Math.floor((currentDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24))
-      const amount = order.received_btc_amount || 0
-
-      totalBTC += amount
-      weightedDaysSum += amount * daysHeld
-    })
-
-  return totalBTC > 0 ? Math.round(weightedDaysSum / totalBTC) : 0
+  // Find the most recent sell order
+  const sellOrders = orders
+    .filter(order => order.type === 'sell')
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  
+  const lastSell = sellOrders[0]
+  
+  if (lastSell) {
+    // If there's a sell, calculate days since last sell
+    const lastSellDate = new Date(lastSell.date)
+    return Math.floor((currentDate.getTime() - lastSellDate.getTime()) / (1000 * 60 * 60 * 24))
+  } else {
+    // If no sells, calculate days since first buy
+    const buyOrders = orders
+      .filter(order => order.type === 'buy')
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    
+    const firstBuy = buyOrders[0]
+    if (firstBuy) {
+      const firstBuyDate = new Date(firstBuy.date)
+      return Math.floor((currentDate.getTime() - firstBuyDate.getTime()) / (1000 * 60 * 60 * 24))
+    }
+  }
+  
+  return 0
 }
 
 /**

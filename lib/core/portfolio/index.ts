@@ -26,7 +26,8 @@ export {
   calculateShortTermHoldings,
   calculateLongTermHoldings,
   calculatePortfolioMetrics,
-  getPortfolioMetrics
+  getPortfolioMetrics,
+  getOrdersData
 } from './metrics';
 
 // Export from cost-basis.ts
@@ -49,6 +50,11 @@ export {
   calculateRealizedGain,
   getTaxClassification
 } from './tax';
+
+// Export from tax-calculator.ts
+export {
+  calculateTaxLiability
+} from './tax-calculator';
 
 // Note: Temporary re-exports from old module are now removed as they are directly
 // exported from the new modules. This ensures backward compatibility.

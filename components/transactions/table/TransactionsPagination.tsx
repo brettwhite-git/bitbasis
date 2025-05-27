@@ -1,15 +1,8 @@
 "use client"
 
 import * as React from "react"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
 
 interface TransactionsPaginationProps {
   currentPage: number
@@ -84,50 +77,51 @@ export function TransactionsPagination({
   }
 
   return (
-    <Pagination className="justify-end">
-      <PaginationContent>
-        <PaginationItem>
-          <PaginationPrevious
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              handlePageChange(currentPage - 1)
-            }}
-            className={disabled || currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-          />
-        </PaginationItem>
+    <div className="flex items-center justify-end">
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={disabled || currentPage === 1}
+          className="gap-1 pl-2.5"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span>Previous</span>
+        </Button>
         
         {getPageNumbers().map((page, index) => (
-          <PaginationItem key={index}>
+          <React.Fragment key={index}>
             {page === 'ellipsis' ? (
-              <PaginationEllipsis />
+              <span className="flex h-9 w-9 items-center justify-center">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">More pages</span>
+              </span>
             ) : (
-              <PaginationLink
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  handlePageChange(page as number)
-                }}
-                isActive={currentPage === page}
-                className={disabled ? "pointer-events-none" : ""}
+              <Button
+                variant={currentPage === page ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => handlePageChange(page as number)}
+                disabled={disabled}
+                className="h-9 w-9 p-0"
               >
                 {page}
-              </PaginationLink>
+              </Button>
             )}
-          </PaginationItem>
+          </React.Fragment>
         ))}
         
-        <PaginationItem>
-          <PaginationNext
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              handlePageChange(currentPage + 1)
-            }}
-            className={disabled || currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-          />
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={disabled || currentPage === totalPages}
+          className="gap-1 pr-2.5"
+        >
+          <span>Next</span>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
   )
 } 

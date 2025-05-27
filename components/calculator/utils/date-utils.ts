@@ -8,8 +8,11 @@
 export const getDurationDetails = (duration: string): { months: number, years: number, label: string } => {
   switch (duration) {
     case '1_month': return { months: 1, years: 1/12, label: '1 Month' };
+    case '3_month': return { months: 3, years: 0.25, label: '3 Months' };
     case '6_month': return { months: 6, years: 0.5, label: '6 Months' };
+    case '2_year': return { months: 24, years: 2, label: '2 Years' };
     case '3_year': return { months: 36, years: 3, label: '3 Years' };
+    case '4_year': return { months: 48, years: 4, label: '4 Years' };
     case '5_year': return { months: 60, years: 5, label: '5 Years' };
     case '10_year': return { months: 120, years: 10, label: '10 Years' };
     case '1_year':

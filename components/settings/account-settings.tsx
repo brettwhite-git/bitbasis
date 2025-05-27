@@ -21,10 +21,11 @@ import { CheckCircle, ShieldCheck, InfoIcon } from "lucide-react"
 import Link from "next/link"
 import { SubscriptionManagement } from "./SubscriptionManagement"
 import { useAuth } from "@/providers/supabase-auth-provider"
+import { useTaxMethod } from "@/providers/tax-method-provider"
 
 export function AccountSettings() {
   const { user } = useAuth()
-  const [costBasisMethod, setCostBasisMethod] = useState("fifo")
+  const { taxMethod, setTaxMethod } = useTaxMethod()
 
   return (
     <div className="grid gap-6">
@@ -64,7 +65,7 @@ export function AccountSettings() {
             </p>
           </div>
           
-          <RadioGroup value={costBasisMethod} onValueChange={setCostBasisMethod} className="space-y-4">
+          <RadioGroup value={taxMethod} onValueChange={setTaxMethod} className="space-y-4">
             <div className="flex items-start space-x-3">
               <RadioGroupItem value="fifo" id="fifo" className="mt-1" />
               <div className="grid gap-1.5 flex-1">

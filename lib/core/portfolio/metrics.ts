@@ -230,6 +230,28 @@ export function calculatePortfolioMetrics(
 }
 
 /**
+ * Fetches orders data from Supabase
+ */
+export async function getOrdersData(
+  userId: string,
+  supabase: SupabaseClient<Database>
+): Promise<Order[]> {
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id, date, type, received_btc_amount, buy_fiat_amount, service_fee, service_fee_currency, sell_btc_amount, received_fiat_amount, price')
+      .eq('user_id', userId)
+      .order('date', { ascending: true })
+
+    if (error) throw error
+    return (data || []) as Order[]
+  } catch (error) {
+    console.error('Error fetching orders data:', error)
+    return []
+  }
+}
+
+/**
  * Fetches portfolio metrics from Supabase and calculates derived metrics
  */
 export async function getPortfolioMetrics(
@@ -271,11 +293,29 @@ export async function getPortfolioMetrics(
     // Calculate core metrics using only buy/sell orders
     const coreMetrics = calculatePortfolioMetrics(orders as any, currentPrice)
 
-    // For the tax liability calculation, we'll use imports from other modules
-    // This will be properly integrated when we refactor the tax module
-    // For now, we'll provide placeholder values
-    const potentialTaxLiabilityST = 0
-    const potentialTaxLiabilityLT = 0
+    // Calculate tax liability based on unrealized gains and holdings classification
+    const shortTermHoldings = calculateShortTermHoldings(orders as any)
+    const longTermHoldings = calculateLongTermHoldings(orders as any)
+    const totalHoldings = shortTermHoldings + longTermHoldings
+    
+    let potentialTaxLiabilityST = 0
+    let potentialTaxLiabilityLT = 0
+    
+    if (coreMetrics.unrealizedGain > 0 && totalHoldings > 0) {
+      // Calculate tax rates (these should eventually come from user settings)
+      const SHORT_TERM_TAX_RATE = 0.37 // 37% for short-term capital gains
+      const LONG_TERM_TAX_RATE = 0.20  // 20% for long-term capital gains
+      
+      // Calculate proportional unrealized gains
+      const shortTermRatio = shortTermHoldings / totalHoldings
+      const longTermRatio = longTermHoldings / totalHoldings
+      
+      const shortTermUnrealizedGain = coreMetrics.unrealizedGain * shortTermRatio
+      const longTermUnrealizedGain = coreMetrics.unrealizedGain * longTermRatio
+      
+      potentialTaxLiabilityST = shortTermUnrealizedGain * SHORT_TERM_TAX_RATE
+      potentialTaxLiabilityLT = longTermUnrealizedGain * LONG_TERM_TAX_RATE
+    }
 
     // Calculate transfer metrics
     const totalSent = transfers
@@ -290,8 +330,8 @@ export async function getPortfolioMetrics(
 
     return {
       ...coreMetrics,
-      shortTermHoldings: calculateShortTermHoldings(orders as any),
-      longTermHoldings: calculateLongTermHoldings(orders as any),
+      shortTermHoldings,
+      longTermHoldings,
       sendReceiveMetrics: {
         totalSent,
         totalReceived,

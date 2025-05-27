@@ -6,6 +6,7 @@ import { MobileNav } from "@/components/shared/mobile-nav"
 import { SidebarProvider } from "@/components/shared/sidebar-provider"
 import { SubscriptionTierBadge } from "@/components/subscription/SubscriptionTierBadge"
 import { PaymentRecoveryBanner } from "@/components/subscription/PaymentRecoveryBanner"
+import { TaxMethodProvider } from "@/providers/tax-method-provider"
 
 export default function DashboardLayout({
   children,
@@ -13,8 +14,9 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <SidebarProvider>
-      <div className="relative flex min-h-screen flex-col text-gray-300 overflow-x-hidden isolate">
+    <TaxMethodProvider>
+      <SidebarProvider>
+        <div className="relative flex min-h-screen flex-col text-gray-300 overflow-x-hidden isolate">
         {/* Global Background Gradient & Grid */}
         <div 
           className="fixed inset-0 z-[-2] bg-gradient-to-b from-[#0F1116] via-[#171923] to-[#13151D]"
@@ -57,6 +59,7 @@ export default function DashboardLayout({
         </div>
       </div>
     </SidebarProvider>
+    </TaxMethodProvider>
   )
 }
 

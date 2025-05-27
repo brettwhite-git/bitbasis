@@ -1,7 +1,7 @@
 "use client"
 
-
 import { Button } from "@/components/ui/button"
+import { useTaxLiability } from "@/lib/hooks/useTaxLiability"
 // Import from the new locations
 import { RecentTransactions } from "./widgets/recent-transactions"
 import { PortfolioSummaryChart } from "./charts/portfolio-summary-chart"
@@ -14,6 +14,7 @@ import { CostBasisCard } from "./summary-cards/cost-basis-card"
 import { UnrealizedGainsCard } from "./summary-cards/unrealized-gains-card"
 import { AverageBuyPriceCard } from "./summary-cards/average-buy-price-card"
 import { HodlTimeCard } from "./summary-cards/hodl-time-card"
+import { TaxLiabilityCard } from "./summary-cards/tax-liability-card"
 
 interface DashboardContentProps {
   metrics: {
@@ -23,6 +24,10 @@ interface DashboardContentProps {
     unrealizedGain: number
     unrealizedGainPercent: number
     averageBuyPrice: number
+    potentialTaxLiabilityST: number
+    potentialTaxLiabilityLT: number
+    shortTermHoldings: number
+    longTermHoldings: number
   }
   performance: {
     allTimeHigh: {
@@ -36,17 +41,25 @@ interface DashboardContentProps {
     }
     hodlTime: number
   }
+
 }
 
 export function OverviewLayout({ metrics, performance }: DashboardContentProps) {
   const [timeframe, setTimeframe] = useState<"6M" | "1Y">("1Y")
+  
+  // Calculate tax liability based on selected method
+  const taxLiability = useTaxLiability({
+    unrealizedGain: metrics.unrealizedGain,
+    shortTermHoldings: metrics.shortTermHoldings,
+    longTermHoldings: metrics.longTermHoldings
+  })
 
   return (
     <div className="w-full space-y-6">
       <div className="flex items-center justify-between w-full">
         <h1 className="text-3xl font-bold tracking-tight text-white">Overview Dashboard</h1>
       </div>
-      <div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+      <div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <PortfolioValueCard 
           currentValue={metrics.currentValue}
           monthPercentChange={performance.cumulative.month?.percent ?? null}
@@ -64,6 +77,11 @@ export function OverviewLayout({ metrics, performance }: DashboardContentProps) 
         />
         <HodlTimeCard 
           hodlTime={performance.hodlTime}
+        />
+        <TaxLiabilityCard 
+          totalTaxLiability={taxLiability.totalLiability}
+          shortTermLiability={taxLiability.shortTermLiability}
+          longTermLiability={taxLiability.longTermLiability}
         />
       </div>
       <div className="grid w-full gap-4 grid-cols-1 md:grid-cols-3">

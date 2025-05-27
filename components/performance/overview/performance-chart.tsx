@@ -13,7 +13,7 @@ import {
   ChartOptions,
 } from "chart.js"
 import { Line } from "react-chartjs-2"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui"
+import { Button } from "@/components/ui/button"
 import { usePortfolioHistory } from "@/lib/hooks/usePortfolioHistory"
 
 // Register ChartJS components
@@ -79,15 +79,43 @@ function ChartFilters() {
   const { period, setPeriod } = useChartContext();
 
   return (
-    <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-[300px]">
-      <TabsList variant="compact" className="grid-cols-5">
-        <TabsTrigger value="1Y" variant="compact">1Y</TabsTrigger>
-        <TabsTrigger value="2Y" variant="compact">2Y</TabsTrigger>
-        <TabsTrigger value="3Y" variant="compact">3Y</TabsTrigger>
-        <TabsTrigger value="5Y" variant="compact">5Y</TabsTrigger>
-        <TabsTrigger value="ALL" variant="compact">ALL</TabsTrigger>
-      </TabsList>
-    </Tabs>
+    <div className="flex items-center gap-2">
+      <Button
+        variant={period === "1Y" ? "secondary" : "ghost"}
+        size="sm"
+        onClick={() => setPeriod("1Y")}
+      >
+        1Y
+      </Button>
+      <Button
+        variant={period === "2Y" ? "secondary" : "ghost"}
+        size="sm"
+        onClick={() => setPeriod("2Y")}
+      >
+        2Y
+      </Button>
+      <Button
+        variant={period === "3Y" ? "secondary" : "ghost"}
+        size="sm"
+        onClick={() => setPeriod("3Y")}
+      >
+        3Y
+      </Button>
+      <Button
+        variant={period === "5Y" ? "secondary" : "ghost"}
+        size="sm"
+        onClick={() => setPeriod("5Y")}
+      >
+        5Y
+      </Button>
+      <Button
+        variant={period === "ALL" ? "secondary" : "ghost"}
+        size="sm"
+        onClick={() => setPeriod("ALL")}
+      >
+        ALL
+      </Button>
+    </div>
   )
 }
 

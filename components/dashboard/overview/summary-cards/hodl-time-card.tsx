@@ -13,7 +13,7 @@ export function HodlTimeCard({
     <EnhancedCardBase
       title="HODL Time"
       value={`${hodlTime} days`}
-      subtitle="Weighted Average"
+      subtitle="Since Last Sell"
       className={className}
     />
   )
