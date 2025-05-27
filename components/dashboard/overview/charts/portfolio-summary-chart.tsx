@@ -15,7 +15,7 @@ import {
 } from "chart.js"
 import { Line } from "react-chartjs-2"
 import { Button } from "@/components/ui/button"
-import { useSupabase } from "@/components/providers/supabase-provider"
+import { usePortfolioHistory } from "@/lib/hooks/usePortfolioHistory"
 import { createPortfolioSummaryTooltipConfig } from "@/lib/utils/chart-tooltip-config"
 
 // Register ChartJS components
@@ -30,194 +30,36 @@ ChartJS.register(
   Filler
 )
 
-// Updated interface to match 'orders' table structure and needed fields
-interface Order {
-  date: string
-  type: 'buy' | 'sell' // Updated type to lowercase as per DB constraint
-  received_btc_amount: number | null // For buys
-  sell_btc_amount: number | null // For sells
-  buy_fiat_amount: number | null // For cost basis on buys
-  service_fee: number | null // For cost basis on buys
-  price: number // Needed for calculating value
-}
-
-interface MonthlyData {
-  month: string // YYYY-MM format
-  portfolioValue: number
-  costBasis: number
-  cumulativeBTC: number
-  averagePrice: number
-}
-
-// Updated function signature to accept currentPrice parameter
-async function fetchData() {
-  // Calculate date range based on timeframe
-  const end = new Date()
-  const start = new Date()
-  start.setMonth(end.getMonth() - (timeframe === "6M" ? 6 : 12))
-
-  // Format dates for query
-  const startStr = start.toISOString()
-  const endStr = end.toISOString()
-
-  // Fetch orders
-  const ordersResult = await supabase
-    .from('orders')
-    .select('date, type, received_btc_amount, sell_btc_amount, buy_fiat_amount, service_fee, price')
-    .order('date', { ascending: true })
-
-  // Fetch the current BTC price
-  const { data: priceData, error: priceError } = await supabase
-    .from('spot_price')
-    .select('price_usd')
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  if (priceError) {
-    console.error('Error fetching current price:', priceError)
-    return
-  }
-
-  const currentPrice = priceData?.price_usd || 0
-
-  if (ordersResult.error) {
-    console.error('Error fetching orders:', ordersResult.error)
-    return
-  }
-
-  // Calculate monthly data with orders and current price
-  if (ordersResult.data) {
-    const calculatedData = calculateMonthlyData(ordersResult.data, currentPrice)
-    setMonthlyData(calculatedData)
-  }
-}
-
-// Modified to accept currentPrice parameter and update current month
-function calculateMonthlyData(orders: Order[], currentPrice: number): MonthlyData[] {
-  // Sort orders by date
-  const sortedOrders = [...orders].sort((a, b) => // Renamed variable
-    new Date(a.date).getTime() - new Date(b.date).getTime()
-  )
-
-  const monthlyData = new Map<string, MonthlyData>()
-  let cumulativeBTC = 0
-  let cumulativeCostBasis = 0
-  let lastPrice = currentPrice // Use currentPrice as fallback
-
-  // Get min and max dates to fill in all months
-  if (sortedOrders.length === 0) return [] // Renamed variable
-  
-  const firstOrder = sortedOrders[0] // Renamed variable
-  const lastOrder = sortedOrders[sortedOrders.length - 1] // Renamed variable
-  
-  if (!firstOrder?.date || !lastOrder?.date) return [] // Renamed variable
-  
-  const startDate = new Date(firstOrder.date) // Renamed variable
-  const currentDate = new Date()
-  
-  // Fill in all months between start date and current date
-  const start = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
-  const end = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-  
-  let currentMonth = start
-  while (currentMonth <= end) {
-    const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`
-    monthlyData.set(monthKey, {
-      month: monthKey,
-      portfolioValue: 0,
-      costBasis: cumulativeCostBasis,
-      cumulativeBTC: cumulativeBTC,
-      averagePrice: lastPrice
-    })
-    currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
-  }
-
-  // Process each order
-  sortedOrders.forEach(order => { // Renamed variable and parameter
-    const date = new Date(order.date)
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-    lastPrice = order.price
-    
-    // Adjust cumulative BTC and cost basis based on order type
-    if (order.type === 'buy') {
-      cumulativeBTC += order.received_btc_amount || 0
-      // Cost basis includes fiat amount + service fee for buys
-      cumulativeCostBasis += (order.buy_fiat_amount || 0) + (order.service_fee || 0)
-    } else if (order.type === 'sell') {
-      cumulativeBTC -= order.sell_btc_amount || 0
-      // Sells don't add to cost basis in this calculation method (FIFO/LIFO logic would be elsewhere)
-    }
-
-    let monthData = monthlyData.get(monthKey)
-    if (!monthData) {
-      monthData = {
-        month: monthKey,
-        portfolioValue: 0,
-        costBasis: cumulativeCostBasis,
-        cumulativeBTC: cumulativeBTC,
-        averagePrice: order.price
-      }
-      monthlyData.set(monthKey, monthData)
-    } else {
-      monthData.costBasis = cumulativeCostBasis
-      monthData.cumulativeBTC = cumulativeBTC
-      monthData.averagePrice = order.price
-    }
-    
-    // Use the most recent price for the portfolio value calculation for the month
-    monthData.portfolioValue = monthData.cumulativeBTC * monthData.averagePrice 
-  })
-
-  // Convert map to array and sort by month
-  const monthlyDataArray = Array.from(monthlyData.values())
-    .sort((a, b) => a.month.localeCompare(b.month))
-
-  // Fill forward values for months with no transactions
-  let lastValidData: MonthlyData | null = null
-  const result = monthlyDataArray.map(data => {
-    if (data.portfolioValue === 0 && lastValidData) {
-      return {
-        ...data,
-        portfolioValue: lastValidData.cumulativeBTC * data.averagePrice,
-        costBasis: lastValidData.costBasis,
-        cumulativeBTC: lastValidData.cumulativeBTC,
-        averagePrice: data.averagePrice
-      }
-    }
-    if (data.portfolioValue > 0) {
-      lastValidData = { ...data }
-    }
-    return data
-  })
-
-  // Update the current month with the current price
-  const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
-  const currentMonthIndex = result.findIndex(data => data.month === currentMonthKey)
-  
-  if (currentMonthIndex !== -1) {
-    const currentMonthData = result[currentMonthIndex]
-    // Update the current month's price and portfolio value
-    result[currentMonthIndex] = {
-      ...currentMonthData,
-      averagePrice: currentPrice,
-      portfolioValue: currentMonthData.cumulativeBTC * currentPrice
-    }
-    console.log(`Updated current month (${currentMonthKey}) with price: ${currentPrice}, value: ${currentMonthData.cumulativeBTC * currentPrice}`)
-  }
-  
-  return result
-}
-
 interface PortfolioSummaryChartProps {
   timeframe: "6M" | "1Y"
 }
 
 export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps) {
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
-  const { supabase } = useSupabase()
+  const { data: portfolioHistory, loading, error } = usePortfolioHistory()
 
-  // Chart options - moved inside component to access monthlyData
+  // Filter data based on selected timeframe
+  const filteredData = (() => {
+    if (!portfolioHistory || portfolioHistory.length === 0) return [];
+    
+    const now = new Date();
+    let startDate: Date;
+
+    switch (timeframe) {
+      case "6M":
+        startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+        break;
+      case "1Y":
+        startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+        break;
+      default:
+        return portfolioHistory;
+    }
+
+    const startMonthKey = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+    return portfolioHistory.filter(point => point.month >= startMonthKey);
+  })();
+
+  // Chart options
   const options: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -235,7 +77,7 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
           pointStyle: "circle",
         },
       },
-      tooltip: createPortfolioSummaryTooltipConfig(monthlyData),
+      tooltip: createPortfolioSummaryTooltipConfig(filteredData),
     },
     scales: {
       x: {
@@ -257,101 +99,73 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
         ticks: {
           color: "#9ca3af",
           callback: function(value) {
+            if (typeof value !== 'number') return '';
             return `$${value.toLocaleString()}`
           },
+          autoSkip: true,
+          maxTicksLimit: 8,
+          includeBounds: true
         },
-        min: 0, // Start from 0
-        beginAtZero: true // Ensure axis starts at 0
+        min: 0,
+        beginAtZero: true,
+        grace: 0
       }
     },
   }
 
-  useEffect(() => {
-    async function fetchData() {
-      // Calculate date range based on timeframe
-      const end = new Date()
-      const start = new Date()
-      start.setMonth(end.getMonth() - (timeframe === "6M" ? 6 : 12))
-
-      // Format dates for query
-      const startStr = start.toISOString()
-      const endStr = end.toISOString()
-
-      // Fetch orders
-      const ordersResult = await supabase
-        .from('orders')
-        .select('date, type, received_btc_amount, sell_btc_amount, buy_fiat_amount, service_fee, price')
-        .order('date', { ascending: true })
-
-      // Fetch the current BTC price
-      const { data: priceData, error: priceError } = await supabase
-        .from('spot_price')
-        .select('price_usd')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (priceError) {
-        console.error('Error fetching current price:', priceError)
-        return
-      }
-
-      const currentPrice = priceData?.price_usd || 0
-
-      if (ordersResult.error) {
-        console.error('Error fetching orders:', ordersResult.error)
-        return
-      }
-
-      // Calculate monthly data with orders and current price
-      if (ordersResult.data) {
-        const calculatedData = calculateMonthlyData(ordersResult.data, currentPrice)
-        setMonthlyData(calculatedData)
-      }
-    }
-
-    fetchData()
-  }, [supabase, timeframe])
-
-  // Filter data based on selected period
-  const filteredData = (() => {
-    const monthsToShow = timeframe === "6M" ? 6 : 12
-    return monthlyData.slice(-monthsToShow)
-  })()
-
   const data = {
     labels: filteredData.map(d => {
-      const [year, month] = (d.month || '').split('-')
-      if (!year || !month) return ''
-      const date = new Date(parseInt(year), parseInt(month) - 1)
-      const formattedMonth = date.toLocaleDateString('en-US', { month: 'short' })
-      const formattedYear = `'${date.toLocaleDateString('en-US', { year: '2-digit' })}`
-      return `${formattedMonth} ${formattedYear}`
+      const [year, month] = (d.month || '').split('-');
+      if (!year || !month) return '';
+      const date = new Date(parseInt(year), parseInt(month) - 1);
+      const formattedMonth = date.toLocaleDateString('en-US', { month: 'short' });
+      const formattedYear = `'${date.toLocaleDateString('en-US', { year: '2-digit' })}`;
+      return `${formattedMonth} ${formattedYear}`;
     }),
     datasets: [
       {
         label: "Portfolio Value",
-        data: filteredData.map(d => d.portfolioValue),
+        data: filteredData.map(d => d?.portfolioValue ?? null),
         borderColor: "#F7931A", // Bitcoin Orange
         backgroundColor: "rgba(247, 147, 26, 0.2)", // Semi-transparent Bitcoin Orange
         pointBackgroundColor: "#F7931A", // Solid color for tooltip indicator
         pointBorderColor: "#F7931A", // Solid color for tooltip indicator
         tension: 0.4,
         fill: true,
-        pointRadius: 4 // Hide points for smoother area look
+        pointRadius: 4,
+        pointBorderWidth: 1,
+        spanGaps: true,
       },
       {
         label: "Cost Basis",
-        data: filteredData.map(d => d.costBasis),
+        data: filteredData.map(d => d?.costBasis ?? null),
         borderColor: "#3b82f6", // Blue-500
         backgroundColor: "rgba(59, 130, 246, 0.2)", // Semi-transparent Blue
         pointBackgroundColor: "#3b82f6", // Solid color for tooltip indicator
         pointBorderColor: "#3b82f6", // Solid color for tooltip indicator
         tension: 0.4,
         fill: true,
-        pointRadius: 4 // Hide points for smoother area look
+        pointRadius: 4,
+        pointBorderWidth: 1,
+        spanGaps: true,
       }
     ],
+  }
+
+  if (loading) {
+    return (
+      <div className="relative h-full w-full flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-bitcoin-orange border-opacity-50 rounded-full border-t-transparent"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="relative h-full w-full flex items-center justify-center">
+        <p className="text-red-500">{error.message}</p>
+      </div>
+    )
   }
 
   return (
