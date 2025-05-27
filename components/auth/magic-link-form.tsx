@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
 import { Turnstile } from "@marsidev/react-turnstile"
@@ -19,7 +18,6 @@ export function MagicLinkForm() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
-  const [termsAccepted, setTermsAccepted] = useState(false)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const turnstileRef = useRef(null)
   const { signInWithMagicLink } = useAuth()
@@ -40,12 +38,6 @@ export function MagicLinkForm() {
 
     if (!email) {
       setError('Please enter your email')
-      setIsLoading(false)
-      return
-    }
-
-    if (!termsAccepted) {
-      setError('You must accept the terms and conditions')
       setIsLoading(false)
       return
     }
@@ -143,29 +135,6 @@ export function MagicLinkForm() {
                 />
               </div>
               
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="terms" 
-                  checked={termsAccepted}
-                  onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-                  disabled={isLoading}
-                  className="border-gray-700 data-[state=checked]:bg-bitcoin-orange data-[state=checked]:border-bitcoin-orange"
-                />
-                <Label 
-                  htmlFor="terms" 
-                  className="text-sm leading-none text-gray-400 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  I agree to the{" "}
-                  <Link href="/terms" className="text-bitcoin-orange hover:underline">
-                    terms and conditions
-                  </Link>
-                  {" "}and{" "}
-                  <Link href="/privacy" className="text-bitcoin-orange hover:underline">
-                    privacy policy
-                  </Link>
-                </Label>
-              </div>
-              
               <div className="flex justify-center my-4">
                 <Turnstile
                   ref={turnstileRef}
@@ -185,7 +154,7 @@ export function MagicLinkForm() {
               <Button
                 type="submit"
                 className="w-full relative overflow-hidden bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white font-semibold shadow-lg hover:shadow-bitcoin-orange/30 transform hover:-translate-y-px transition-all duration-300 group"
-                disabled={isLoading || !captchaToken || !termsAccepted}
+                disabled={isLoading || !captchaToken}
               >
                 <span className="relative z-10">
                   {isLoading ? (

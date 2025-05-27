@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    const { terms_version, privacy_version, acceptance_method } = await request.json();
+    const { terms_version, privacy_version, acceptance_method, acceptance_type = 'signup' } = await request.json();
     const userAgent = request.headers.get('user-agent') || '';
     
     // Get client IP - this is just a basic implementation
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
         acceptance_method,
         ip_address: ip,
         user_agent: userAgent,
-        acceptance_type: 'login', // Assuming this is for login, adjust if needed
+        acceptance_type,
       });
 
     if (insertError) {

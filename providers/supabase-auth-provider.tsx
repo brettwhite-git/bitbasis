@@ -62,6 +62,9 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
               
               // Only refresh and redirect on new sign in
               if (event === 'SIGNED_IN') {
+                // Terms acceptance is now handled server-side in the auth callback
+                // This ensures it happens reliably before the user reaches the dashboard
+                
                 await router.refresh()
                 router.push('/dashboard')
               }
@@ -93,8 +96,8 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
 
   const signUp = async (email: string) => {
     try {
-      // Direct redirect to dashboard is more reliable
-      const redirectUrl = `${window.location.origin}/dashboard`;
+      // Redirect to auth callback first, then to dashboard
+      const redirectUrl = `${window.location.origin}/auth/callback?next=/dashboard`;
       
       console.log('Signup redirect URL:', redirectUrl);
       
@@ -117,9 +120,8 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
       const isLocalhost = window.location.hostname === 'localhost' || 
                          window.location.hostname === '127.0.0.1';
       
-      // Direct redirect to dashboard is more reliable for magic links
-      // This works in both local and production environments
-      const redirectUrl = `${window.location.origin}/dashboard`;
+      // Redirect to auth callback first, then to dashboard
+      const redirectUrl = `${window.location.origin}/auth/callback?next=/dashboard`;
       
       console.log('Magic link redirect URL:', redirectUrl);
       

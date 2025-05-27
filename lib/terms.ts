@@ -2,7 +2,10 @@
  * Track user's acceptance of terms and privacy policy
  * This should be called after user has checked the terms checkbox and is authenticated
  */
-export async function trackTermsAcceptance(method: 'checkbox' | 'button' = 'checkbox'): Promise<boolean> {
+export async function trackTermsAcceptance(
+  method: 'checkbox' | 'button' = 'checkbox',
+  acceptanceType: 'signup' | 'login' | 'update' = 'signup'
+): Promise<boolean> {
   try {
     // Get current versions - in production these would come from a config or database
     // These are hardcoded here for simplicity
@@ -17,7 +20,8 @@ export async function trackTermsAcceptance(method: 'checkbox' | 'button' = 'chec
       body: JSON.stringify({
         terms_version: termsVersion,
         privacy_version: privacyVersion,
-        acceptance_method: method
+        acceptance_method: method,
+        acceptance_type: acceptanceType
       })
     });
 
