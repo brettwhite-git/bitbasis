@@ -61,7 +61,7 @@ export function AccountSettings() {
           <div>
             <h3 className="text-lg font-semibold text-white mb-2">Cost Basis Method</h3>
             <p className="text-gray-400 text-sm">
-              Select your preferred method for calculating cost basis
+              Select your preferred method for showing your tax liability in the overview dashboard.
             </p>
           </div>
           

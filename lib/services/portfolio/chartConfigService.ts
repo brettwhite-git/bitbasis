@@ -10,6 +10,10 @@ import {
   ChartDataOptions
 } from "./types"
 import { ChartOptions } from "chart.js"
+import { 
+  createPortfolioSummaryTooltipConfig, 
+  createPerformanceTooltipConfig 
+} from "@/lib/utils/chart-tooltip-config"
 
 export class ChartConfigServiceImpl implements ChartConfigService {
   /**
@@ -64,42 +68,7 @@ export class ChartConfigServiceImpl implements ChartConfigService {
             pointStyle: "circle",
           },
         },
-        tooltip: {
-          mode: "index",
-          intersect: false,
-          backgroundColor: "rgba(0, 0, 0, 0.8)",
-          titleColor: "#fff",
-          bodyColor: "#fff",
-          borderColor: "#F7931A",
-          borderWidth: 1,
-          padding: 10,
-          callbacks: {
-            title: function(tooltipItems) {
-              // Return the formatted date for the title
-              if (tooltipItems.length > 0) {
-                const index = tooltipItems[0]?.dataIndex;
-                if (index !== undefined && data[index] && data[index].date) {
-                  const date = new Date(data[index].date);
-                  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                }
-              }
-              return '';
-            },
-            label: function(context) {
-              const value = context.parsed.y;
-              if (value == null) return '';
-              
-              const formattedValue = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              }).format(value);
-              
-              return `${context.dataset.label}: ${formattedValue}`;
-            }
-          }
-        },
+        tooltip: createPortfolioSummaryTooltipConfig(data),
       },
       scales: {
         x: {
@@ -238,19 +207,7 @@ export class ChartConfigServiceImpl implements ChartConfigService {
             pointStyle: "circle",
           },
         },
-        tooltip: {
-          mode: "index",
-          intersect: false,
-          callbacks: {
-            label: function(context) {
-              const value = context.parsed.y
-              if (value === null || typeof value === 'undefined') {
-                return `${context.dataset.label}: N/A`
-              }
-              return `${context.dataset.label}: $${value.toLocaleString()}`
-            }
-          }
-        },
+        tooltip: createPerformanceTooltipConfig(),
       },
       scales: {
         x: {

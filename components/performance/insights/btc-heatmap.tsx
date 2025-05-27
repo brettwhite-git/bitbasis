@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import dynamic from 'next/dynamic'
 import { useSupabase } from "@/components/providers/supabase-provider"
 import { ApexOptions } from 'apexcharts'
+import { createBtcHeatmapTooltipConfig } from "@/lib/utils/chart-tooltip-config"
 
 // Dynamically import ApexCharts with no SSR to avoid window is not defined errors
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false })
@@ -206,29 +207,7 @@ export function BtcHeatmap() {
         }
       }
     },
-    tooltip: {
-      theme: 'dark',
-      custom: ({ series, seriesIndex, dataPointIndex, w }) => {
-        const data = w.config.series[seriesIndex].data[dataPointIndex];
-        const year = w.config.series[seriesIndex].name;
-        const month = data.x;
-        const buys = data.buys || 0;
-        const sells = data.sells || 0;
-        const net = data.net;
-        
-        return `
-          <div class="px-3 py-2 bg-gray-800 rounded shadow">
-            <div class="text-white font-semibold mb-1">${month} ${year}</div>
-            <div class="grid grid-cols-2 gap-x-4">
-              <div class="text-white">Buys:</div>
-              <div style="color: #F7931A">${buys}</div>
-              <div class="text-white">Sells:</div>
-              <div style="color: #E53E3E">${sells}</div>
-            </div>
-          </div>
-        `;
-      }
-    }
+    tooltip: createBtcHeatmapTooltipConfig()
   }
 
   // Return loading state if no data yet

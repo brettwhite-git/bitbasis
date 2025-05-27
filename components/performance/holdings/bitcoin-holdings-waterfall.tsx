@@ -13,6 +13,7 @@ import {
 } from "chart.js"
 import { Bar } from "react-chartjs-2"
 import { useSupabase } from "@/components/providers/supabase-provider"
+import { createBitcoinHoldingsTooltipConfig } from "@/lib/utils/chart-tooltip-config"
 // Removed Card imports - using glass morphism styling
 
 // Register ChartJS components
@@ -119,32 +120,7 @@ const options: ChartOptions<"bar"> = {
     legend: {
       display: false,
     },
-    tooltip: {
-      titleColor: "#FFFFFF",
-      bodyColor: "#FFFFFF",
-      callbacks: {
-        label: function(context: any) {
-          if (!context.raw) return [];
-          const range = context.raw as number[];
-          if (!Array.isArray(range) || range.length < 2) return [];
-          
-          // Ensure we have valid numbers
-          const start = range[0] ?? 0;
-          const end = range[1] ?? 0;
-          const value = end - start;
-          
-          return [
-            `Change: ${formatBTC(value)}`,
-            `Total: ${formatBTC(end)}`
-          ];
-        },
-        title: function(context: any[]) {
-          const label = context?.[0]?.label;
-          if (typeof label !== 'string') return '';
-          return `Year: ${label}`;
-        }
-      }
-    },
+    tooltip: createBitcoinHoldingsTooltipConfig(),
   },
   scales: {
     x: {

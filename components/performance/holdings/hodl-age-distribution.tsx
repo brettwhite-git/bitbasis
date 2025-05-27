@@ -13,6 +13,7 @@ import {
 } from "chart.js"
 import { Bar } from "react-chartjs-2"
 import { useSupabase } from "@/components/providers/supabase-provider"
+import { createHodlAgeTooltipConfig } from "@/lib/utils/chart-tooltip-config"
 // Removed Card imports - using glass morphism styling
 
 // Register ChartJS components
@@ -70,14 +71,7 @@ const options: ChartOptions<"bar"> = {
     legend: {
       display: false
     },
-    tooltip: {
-      callbacks: {
-        label: function(context) {
-          const btc = context.raw as number
-          return `${btc.toFixed(8)} BTC`
-        }
-      }
-    },
+    tooltip: createHodlAgeTooltipConfig(),
   },
   scales: {
     x: {

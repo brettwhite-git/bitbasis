@@ -18,6 +18,7 @@ import { Chart as ReactChart } from "react-chartjs-2"
 import { COLORS } from "../utils/color-constants" // Adjusted import path
 import { ChartDataPoint } from "../types/calculator-types" // Adjusted import path
 import { formatBTC, formatCurrency, formatNumber } from "../utils/format-utils" // Adjusted import path
+import { createInvestmentAccumulationTooltipConfig } from "@/lib/utils/chart-tooltip-config"
 
 // Register ChartJS components
 ChartJS.register(
@@ -145,60 +146,7 @@ export function InvestmentChart({ chartData, title, bitcoinUnit, showInflationAd
           }
         }
       },
-      tooltip: {
-        backgroundColor: COLORS.background,
-        titleColor: COLORS.foreground,
-        bodyColor: COLORS.foreground,
-        padding: 12,
-        callbacks: {
-          label: function(context: any) {
-            let label = context.dataset.label || '';
-            if (label) {
-              label += ': ';
-            }
-            if (context.dataset.yAxisID === 'y1') {
-              label += formatCurrency(context.parsed.y);
-            } else {
-              const value = context.parsed.y;
-              const btc = value / 100000000;
-              if (label.includes('Total Accumulated')) {
-                label += `${formatNumber(value)} sats (${formatBTC(btc)} BTC)`;
-              } else if (label.includes('Sats Stacked')) {
-                label += bitcoinUnit === 'satoshi'
-                  ? `${formatNumber(value)} sats`
-                  : `${formatBTC(btc)} BTC`;
-              } else {
-                label += formatNumber(value) + ' sats';
-              }
-            }
-            return label;
-          },
-          footer: function(tooltipItems: any) {
-            const pointIndex = tooltipItems[0]?.dataIndex;
-            if (pointIndex === undefined || !chartData || !chartData[pointIndex]) {
-              return 'Total: N/A';
-            }
-
-            const point = chartData[pointIndex];
-            const totalSats = point.accumulatedSats;
-            const totalBtc = totalSats / 100000000;
-            const estValue = point.cumulativeUsdValue;
-
-            return [
-              `Total: ${formatNumber(totalSats)} sats (${formatBTC(totalBtc)} BTC)`,
-              `Est. Value: ${formatCurrency(estValue)}`,
-            ];
-          },
-          title: (tooltipItems: any) => {
-            const pointIndex = tooltipItems[0]?.dataIndex;
-            if (pointIndex !== undefined && chartData && chartData[pointIndex]) {
-              const point = chartData[pointIndex];
-              return `${point.date} (Est. Price: ${formatCurrency(point.estimatedBtcPrice)})`;
-            }
-            return tooltipItems[0]?.label || '';
-          }
-        },
-      },
+      tooltip: createInvestmentAccumulationTooltipConfig(chartData, bitcoinUnit),
     },
   };
 
@@ -209,6 +157,8 @@ export function InvestmentChart({ chartData, title, bitcoinUnit, showInflationAd
         label: 'Total Accumulated',
         data: chartData.map(point => point.accumulatedSats),
         backgroundColor: COLORS.bitcoinOrange,
+        pointBackgroundColor: COLORS.bitcoinOrange, // Solid color for tooltip indicator
+        pointBorderColor: COLORS.bitcoinOrange, // Solid color for tooltip indicator
         type: 'bar' as const,
         stack: 'Stack 0',
         order: 2,
@@ -217,6 +167,8 @@ export function InvestmentChart({ chartData, title, bitcoinUnit, showInflationAd
         label: 'Sats Stacked This Period',
         data: chartData.map(point => point.periodicSats),
         backgroundColor: COLORS.satStacked, // Use the new blue color from constants
+        pointBackgroundColor: COLORS.satStacked, // Solid color for tooltip indicator
+        pointBorderColor: COLORS.satStacked, // Solid color for tooltip indicator
         type: 'bar' as const,
         stack: 'Stack 0',
         order: 3,
@@ -226,6 +178,8 @@ export function InvestmentChart({ chartData, title, bitcoinUnit, showInflationAd
         data: chartData.map(point => point.cumulativeUsdValue || 0),
         backgroundColor: 'transparent',
         borderColor: COLORS.success,
+        pointBackgroundColor: COLORS.success, // Solid color for tooltip indicator
+        pointBorderColor: COLORS.success, // Solid color for tooltip indicator
         borderWidth: 2,
         type: 'line' as const,
         yAxisID: 'y1',

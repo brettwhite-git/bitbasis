@@ -14,6 +14,7 @@ import {
   ChartOptions,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import { createBuyPatternTooltipConfig } from "@/lib/utils/chart-tooltip-config";
 
 // Register Chart.js components
 ChartJS.register(
@@ -41,13 +42,7 @@ const BuyPatternHistogram: React.FC<{ className?: string }> = ({ className }) =>
       legend: {
         display: false // Hide legend
       },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            return `${context.parsed.y} buys on ${dayLabels[context.dataIndex]}`;
-          }
-        }
-      },
+      tooltip: createBuyPatternTooltipConfig(),
     },
     scales: {
       x: {

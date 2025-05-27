@@ -16,6 +16,7 @@ import {
 import { Line } from "react-chartjs-2"
 import { Button } from "@/components/ui/button"
 import { useSupabase } from "@/components/providers/supabase-provider"
+import { createPortfolioSummaryTooltipConfig } from "@/lib/utils/chart-tooltip-config"
 
 // Register ChartJS components
 ChartJS.register(
@@ -208,63 +209,6 @@ function calculateMonthlyData(orders: Order[], currentPrice: number): MonthlyDat
   return result
 }
 
-// Chart options
-const options: ChartOptions<"line"> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: {
-    mode: "index",
-    intersect: false,
-  },
-  plugins: {
-    legend: {
-      position: "bottom",
-      labels: {
-        color: "#fff",
-        padding: 10,
-        usePointStyle: true,
-        pointStyle: "circle",
-      },
-    },
-    tooltip: {
-      mode: "index",
-      intersect: false,
-      callbacks: {
-        label: function(context) {
-          return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`
-        }
-      }
-    },
-  },
-  scales: {
-    x: {
-      grid: {
-        display: false,
-        color: "#374151",
-      },
-      ticks: {
-        color: "#9ca3af",
-      },
-    },
-    y: {
-      type: 'linear',
-      display: true,
-      position: 'left',
-      grid: {
-        color: "#374151",
-      },
-      ticks: {
-        color: "#9ca3af",
-        callback: function(value) {
-          return `$${value.toLocaleString()}`
-        },
-      },
-      min: 0, // Start from 0
-      beginAtZero: true // Ensure axis starts at 0
-    }
-  },
-}
-
 interface PortfolioSummaryChartProps {
   timeframe: "6M" | "1Y"
 }
@@ -272,6 +216,55 @@ interface PortfolioSummaryChartProps {
 export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps) {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
   const { supabase } = useSupabase()
+
+  // Chart options - moved inside component to access monthlyData
+  const options: ChartOptions<"line"> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: "index",
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          color: "#fff",
+          padding: 10,
+          usePointStyle: true,
+          pointStyle: "circle",
+        },
+      },
+      tooltip: createPortfolioSummaryTooltipConfig(monthlyData),
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+          color: "#374151",
+        },
+        ticks: {
+          color: "#9ca3af",
+        },
+      },
+      y: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+        grid: {
+          color: "#374151",
+        },
+        ticks: {
+          color: "#9ca3af",
+          callback: function(value) {
+            return `$${value.toLocaleString()}`
+          },
+        },
+        min: 0, // Start from 0
+        beginAtZero: true // Ensure axis starts at 0
+      }
+    },
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -341,6 +334,8 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
         data: filteredData.map(d => d.portfolioValue),
         borderColor: "#F7931A", // Bitcoin Orange
         backgroundColor: "rgba(247, 147, 26, 0.2)", // Semi-transparent Bitcoin Orange
+        pointBackgroundColor: "#F7931A", // Solid color for tooltip indicator
+        pointBorderColor: "#F7931A", // Solid color for tooltip indicator
         tension: 0.4,
         fill: true,
         pointRadius: 4 // Hide points for smoother area look
@@ -350,6 +345,8 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
         data: filteredData.map(d => d.costBasis),
         borderColor: "#3b82f6", // Blue-500
         backgroundColor: "rgba(59, 130, 246, 0.2)", // Semi-transparent Blue
+        pointBackgroundColor: "#3b82f6", // Solid color for tooltip indicator
+        pointBorderColor: "#3b82f6", // Solid color for tooltip indicator
         tension: 0.4,
         fill: true,
         pointRadius: 4 // Hide points for smoother area look

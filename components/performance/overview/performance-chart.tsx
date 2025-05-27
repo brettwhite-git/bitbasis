@@ -15,6 +15,7 @@ import {
 import { Line } from "react-chartjs-2"
 import { Button } from "@/components/ui/button"
 import { usePortfolioHistory } from "@/lib/hooks/usePortfolioHistory"
+import { createPerformanceTooltipConfig } from "@/lib/utils/chart-tooltip-config"
 
 // Register ChartJS components
 ChartJS.register(
@@ -171,19 +172,7 @@ function Chart() {
           pointStyle: "circle",
         },
       },
-      tooltip: {
-        mode: "index",
-        intersect: false,
-        callbacks: {
-          label: function(context) {
-            const value = context.parsed.y;
-            if (value === null || typeof value === 'undefined') {
-              return `${context.dataset.label}: N/A`;
-            }
-            return `${context.dataset.label}: $${value.toLocaleString()}`;
-          }
-        }
-      },
+      tooltip: createPerformanceTooltipConfig(),
     },
     scales: {
       x: {
@@ -233,11 +222,11 @@ function Chart() {
         data: filteredData.map(d => d?.portfolioValue ?? null),
         borderColor: "#F7931A", // Bitcoin Orange
         backgroundColor: "rgba(247, 147, 26, 0.2)", // Semi-transparent Bitcoin Orange
+        pointBackgroundColor: "#F7931A", // Solid color for tooltip indicator
+        pointBorderColor: "#F7931A", // Solid color for tooltip indicator
         tension: 0.4,
         fill: true,
         pointRadius: 4,
-        pointBackgroundColor: "rgba(247, 147, 26, 0.2)",
-        pointBorderColor: "#F7931A",
         pointBorderWidth: 1,
         spanGaps: true,
       },
@@ -246,11 +235,11 @@ function Chart() {
         data: filteredData.map(d => d?.costBasis ?? null),
         borderColor: "#3B82F6", // Blue
         backgroundColor: "rgba(59, 130, 246, 0.2)", // Semi-transparent Blue
+        pointBackgroundColor: "#3B82F6", // Solid color for tooltip indicator
+        pointBorderColor: "#3B82F6", // Solid color for tooltip indicator
         tension: 0.4,
         fill: true,
         pointRadius: 4,
-        pointBackgroundColor: "rgba(59, 130, 246, 0.2)",
-        pointBorderColor: "#3B82F6",
         pointBorderWidth: 1,
         spanGaps: true,
       }
