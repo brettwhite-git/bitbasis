@@ -6,7 +6,6 @@
 export { BasePortfolioChart } from './base-chart'
 
 // Specific chart implementations
-export { PortfolioSummaryChart } from './portfolio-summary-chart'
 export { 
   PerformanceChart, 
   PerformanceFilters, 

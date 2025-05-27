@@ -39,84 +39,59 @@ export class PortfolioDataServiceImpl implements PortfolioDataService {
   }
 
   /**
-   * Fetches the current BTC spot price
+   * Gets current Bitcoin price from spot_price table
    */
   async getCurrentPrice(source: string = 'coinpaprika'): Promise<number> {
     try {
       const { data, error } = await this.supabase
         .from('spot_price')
-        .select('price_usd, updated_at')
-        .order('updated_at', { ascending: false })
+        .select('price_usd')
+        .order('date', { ascending: false })
         .limit(1)
         .single()
 
-      if (error) throw error
-      if (!data) throw new Error('No price data available')
+      if (error) {
+        console.warn('Error fetching current price from database:', error)
+        return 0
+      }
 
-      return data.price_usd
+      return data?.price_usd || 0
     } catch (error) {
-      console.error('Error fetching current price:', error)
-      // Default to 0 or throw an error based on your error handling strategy
+      console.error('Error in getCurrentPrice:', error)
       return 0
     }
   }
 
   /**
-   * Fetches and processes portfolio data for charts
+   * Gets chart data for performance charts
    */
   async getChartData(userId: string, options: ChartDataOptions): Promise<PortfolioDataPoint[]> {
     try {
-      // Fetch orders
-      const { data: orders, error } = await this.supabase
+      // Get current price
+      const currentPrice = await this.getCurrentPrice()
+      
+      // Get user's orders
+      const { data: rawOrders, error } = await this.supabase
         .from('orders')
-        .select('id, date, type, received_btc_amount, buy_fiat_amount, service_fee, service_fee_currency, sell_btc_amount, received_fiat_amount, price')
+        .select('*')
         .eq('user_id', userId)
         .order('date', { ascending: true })
 
-      if (error) throw error
-      if (!orders || orders.length === 0) return []
+      if (error) {
+        console.error('Error fetching orders:', error)
+        return []
+      }
 
-      // Normalize the order data to ensure type safety
-      const normalizedOrders = this.normalizeOrderData(orders)
-
-      // Get current price for up-to-date portfolio valuation
-      const currentPrice = await this.getCurrentPrice()
-
-      // Process orders into portfolio data points
-      const processedData = this.processOrdersData(normalizedOrders, currentPrice)
+      // Normalize and process the data
+      const orders = this.normalizeOrderData(rawOrders || [])
+      const processedData = this.processOrdersData(orders, currentPrice)
       
-      // Filter based on time range
+      // Apply filters and options
       const filteredData = this.filterByTimeRange(processedData, options.timeRange)
-      
-      // Apply any additional data processing based on options
       return this.applyDataOptions(filteredData, options)
-    } catch (error) {
-      console.error('Error fetching chart data:', error)
-      return []
-    }
-  }
-
-  /**
-   * Gets monthly data for summary chart using the new MonthlyPortfolioCalculator
-   */
-  async getMonthlyData(userId: string, timeRange: '6M' | '1Y'): Promise<PortfolioDataPoint[]> {
-    try {
-      // Use the new monthly calculator
-      const calculator = new MonthlyPortfolioCalculator(this.supabase)
-      const monthlyData = await calculator.calculateMonthlyData(userId, { timeRange })
-      
-      // Convert MonthlyPortfolioData to PortfolioDataPoint format
-      return monthlyData.map(data => ({
-        date: data.date,
-        month: data.month,
-        portfolioValue: data.portfolioValue,
-        costBasis: data.costBasis,
-        cumulativeBTC: data.cumulativeBTC,
-        btcPrice: data.btcPrice
-      }))
       
     } catch (error) {
-      console.error('Error fetching monthly data:', error)
+      console.error('Error in getChartData:', error)
       return []
     }
   }

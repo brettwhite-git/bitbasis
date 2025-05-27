@@ -65,11 +65,6 @@ export interface PortfolioDataService {
    * Gets the latest spot price
    */
   getCurrentPrice(source?: string): Promise<number>
-  
-  /**
-   * Calculates monthly aggregated data for portfolio summary chart
-   */
-  getMonthlyData(userId: string, timeRange: '6M' | '1Y'): Promise<PortfolioDataPoint[]>
 }
 
 /**
