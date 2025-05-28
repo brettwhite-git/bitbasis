@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { formatBTC, formatCurrency, formatDate } from "@/lib/utils/format"
 import { TransactionHistoryAccordion } from "./transaction-history-accordion"
+import { useBitcoinPrice } from "@/lib/hooks/useBitcoinPrice"
 
 interface UnifiedTransaction {
   id: string
@@ -70,6 +71,9 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
 }: TransactionHistoryRowProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   
+  // Get current Bitcoin price for PNL calculations
+  const { price: currentBitcoinPrice, loading: priceLoading } = useBitcoinPrice()
+  
   // Helper functions
   const getTransactionBadge = (type: string) => {
     const variants = {
@@ -87,6 +91,8 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
     )
   }
 
+  // Note: getTermBadge function available for accordion/utility use
+  // Term information removed from main row but available in accordion details and via Term filter
   const getTermBadge = (date: string, type: string) => {
     if (type !== 'buy' && type !== 'sell') return null
     
@@ -146,11 +152,6 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
           {getTransactionBadge(transaction.type)}
         </TableCell>
         
-        {/* Term */}
-        <TableCell className="text-center px-4">
-          {getTermBadge(transaction.date, transaction.type) || "-"}
-        </TableCell>
-        
         {/* From */}
         <TableCell className="text-center px-4">
           <span className="text-sm">
@@ -174,10 +175,16 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
         <TableCell className="text-center px-4">
           {transaction.sent_amount && transaction.sent_currency ? (
             <span className="text-sm font-medium">
-              {transaction.sent_currency === 'BTC' 
-                ? formatBTC(transaction.sent_amount)
-                : formatCurrency(transaction.sent_amount)
-              }
+              {(() => {
+                // Net amount that actually got exchanged for BTC (sent_amount - fee_amount)
+                const sentAmount = transaction.sent_amount
+                const feeAmount = transaction.fee_amount || 0
+                const netExchangedAmount = sentAmount - feeAmount
+                
+                return transaction.sent_currency === 'BTC' 
+                  ? formatBTC(netExchangedAmount)
+                  : formatCurrency(netExchangedAmount)
+              })()}
             </span>
           ) : (
             <span className="text-sm text-gray-500">-</span>
@@ -200,12 +207,50 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
         
         {/* PNL - Placeholder for now */}
         <TableCell className="hidden md:table-cell text-center px-4">
-          <span className="text-xs text-gray-500">-</span>
+          <span className={(() => {
+            // Calculate PNL: current value - adjusted cost basis (sent_amount) (only for buy transactions)
+            if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+              const currentValue = transaction.received_amount * currentBitcoinPrice
+              const adjustedCostBasis = transaction.sent_amount
+              const pnl = currentValue - adjustedCostBasis
+              return pnl >= 0 ? "text-green-400 text-xs font-medium" : "text-red-400 text-xs font-medium"
+            }
+            return "text-xs text-gray-500"
+          })()}>
+            {(() => {
+              if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+                const currentValue = transaction.received_amount * currentBitcoinPrice
+                const adjustedCostBasis = transaction.sent_amount
+                const pnl = currentValue - adjustedCostBasis
+                return `${pnl >= 0 ? '+' : ''}${formatCurrency(pnl)}`
+              }
+              return priceLoading ? "..." : "-"
+            })()}
+          </span>
         </TableCell>
         
         {/* Gain % - Placeholder for now */}
         <TableCell className="hidden md:table-cell text-center px-4">
-          <span className="text-xs text-gray-500">-</span>
+          <span className={(() => {
+            // Calculate Gain %: ((current value - adjusted cost basis) / adjusted cost basis) * 100 (only for buy transactions)
+            if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+              const currentValue = transaction.received_amount * currentBitcoinPrice
+              const adjustedCostBasis = transaction.sent_amount
+              const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
+              return gainPercent >= 0 ? "text-green-400 text-xs font-medium" : "text-red-400 text-xs font-medium"
+            }
+            return "text-xs text-gray-500"
+          })()}>
+            {(() => {
+              if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+                const currentValue = transaction.received_amount * currentBitcoinPrice
+                const adjustedCostBasis = transaction.sent_amount
+                const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
+                return `${gainPercent >= 0 ? '+' : ''}${gainPercent.toFixed(1)}%`
+              }
+              return priceLoading ? "..." : "-"
+            })()}
+          </span>
         </TableCell>
         
         {/* Balance - Placeholder for now */}
@@ -265,7 +310,7 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
       {/* Accordion Details Row */}
       {isExpanded && (
         <TableRow>
-          <TableCell colSpan={14} className="p-0 border-0">
+          <TableCell colSpan={13} className="p-0 border-0">
             <TransactionHistoryAccordion transaction={transaction} />
           </TableCell>
         </TableRow>

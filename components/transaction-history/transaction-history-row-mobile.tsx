@@ -129,10 +129,16 @@ export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMo
               <div className="text-sm">
                 <span className="text-muted-foreground text-xs">Sent: </span>
                 <span className="font-medium">
-                  {transaction.sent_currency === 'BTC' 
-                    ? `${formatBTC(transaction.sent_amount, 8, false)} ${transaction.sent_currency}`
-                    : `${formatCurrency(transaction.sent_amount, 2, false)} ${transaction.sent_currency}`
-                  }
+                  {(() => {
+                    // Fiat value: net amount that actually got exchanged for BTC (sent_amount - fee_amount)
+                    const sentAmount = transaction.sent_amount
+                    const feeAmount = transaction.fee_amount || 0
+                    const fiatValue = sentAmount - feeAmount
+                    
+                    return transaction.sent_currency === 'BTC' 
+                      ? `${formatBTC(fiatValue, 8, false)} ${transaction.sent_currency}`
+                      : `${formatCurrency(fiatValue)} ${transaction.sent_currency}`
+                  })()}
                 </span>
               </div>
             )}
@@ -144,7 +150,7 @@ export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMo
                 <span className="font-medium">
                   {transaction.received_currency === 'BTC' 
                     ? `${formatBTC(transaction.received_amount, 8, false)} ${transaction.received_currency}`
-                    : `${formatCurrency(transaction.received_amount, 2, false)} ${transaction.received_currency}`
+                    : `${formatCurrency(transaction.received_amount)} ${transaction.received_currency}`
                   }
                 </span>
               </div>

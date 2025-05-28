@@ -113,13 +113,6 @@ export const TransactionHistoryHeaders = memo(function TransactionHistoryHeaders
         {/* Transaction Type */}
         {renderSortableHeader('type', 'Type', 'w-[100px]')}
         
-        {/* Term - for buy/sell only */}
-        <TableHead className="w-[80px] text-center">
-          <div className="flex items-center justify-center font-semibold text-xs">
-            Term
-          </div>
-        </TableHead>
-        
         {/* From - source address/name */}
         {renderSortableHeader('from_address_name', 'From', 'w-[140px]')}
         
