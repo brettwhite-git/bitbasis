@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, LineChart, PieChart, Settings, History, Calculator } from "lucide-react"
+import { LayoutDashboard, LineChart, PieChart, Settings, History, Calculator, Database } from "lucide-react"
 import { useSidebar } from "./sidebar-provider"
 
 export function DashboardSidebar() {
@@ -33,6 +33,12 @@ export function DashboardSidebar() {
       icon: History,
       href: "/dashboard/transactions",
       isActive: pathname === "/dashboard/transactions",
+    },
+    {
+      title: "Transaction History",
+      icon: Database,
+      href: "/dashboard/transaction-history",
+      isActive: pathname === "/dashboard/transaction-history",
     },
     {
       title: "Calculator",

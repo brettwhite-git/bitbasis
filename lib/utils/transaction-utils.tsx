@@ -20,13 +20,13 @@ export type TransactionType = 'buy' | 'sell' | 'deposit' | 'withdrawal';
 export function getTransactionIcon(type: string) {
   switch (type.toLowerCase()) {
     case 'buy':
-      return <CircleArrowRight className="mr-1 h-4 w-4" />;
+      return <CircleArrowRight className="h-4 w-4" />;
     case 'sell':
-      return <CircleArrowLeft className="mr-1 h-4 w-4" />;
+      return <CircleArrowLeft className="h-4 w-4" />;
     case 'deposit':
-      return <CircleArrowDown className="mr-1 h-4 w-4" />;
+      return <CircleArrowDown className="h-4 w-4" />;
     case 'withdrawal':
-      return <CircleArrowUp className="mr-1 h-4 w-4" />;
+      return <CircleArrowUp className="h-4 w-4" />;
     default:
       return null;
   }

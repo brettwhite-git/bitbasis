@@ -7,7 +7,7 @@ import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Logo } from "@/components/logo"
-import { LayoutDashboard, LineChart, PieChart, Settings, History, Calculator } from "lucide-react"
+import { LayoutDashboard, LineChart, PieChart, Settings, History, Calculator, Database } from "lucide-react"
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
@@ -43,6 +43,12 @@ export function MobileNav() {
       icon: History,
       href: "/dashboard/transactions",
       isActive: pathname === "/dashboard/transactions",
+    },
+    {
+      title: "Transaction History",
+      icon: Database,
+      href: "/dashboard/transaction-history",
+      isActive: pathname === "/dashboard/transaction-history",
     },
     {
       title: "Settings",
