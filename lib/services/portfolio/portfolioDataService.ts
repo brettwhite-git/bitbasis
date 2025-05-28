@@ -46,7 +46,7 @@ export class PortfolioDataServiceImpl implements PortfolioDataService {
       const { data, error } = await this.supabase
         .from('spot_price')
         .select('price_usd')
-        .order('date', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(1)
         .single()
 

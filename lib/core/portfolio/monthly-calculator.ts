@@ -106,6 +106,8 @@ export class MonthlyPortfolioCalculator {
       const startDateStr = startDate.toISOString().split('T')[0]
       const endDateStr = endDate.toISOString().split('T')[0]
       
+      console.log(`🔍 MonthlyCalculator: Fetching historical prices from ${startDateStr} to ${endDateStr}`)
+      
       // Query the btc_monthly_close table directly
       // Note: Using 'any' cast because btc_monthly_close is not in generated types yet
       const { data, error } = await (this.supabase as any)
@@ -116,7 +118,7 @@ export class MonthlyPortfolioCalculator {
         .order('date', { ascending: true })
 
       if (error) {
-        console.warn('Error fetching historical prices from btc_monthly_close:', error)
+        console.warn('❌ Error fetching historical prices from btc_monthly_close:', error)
         return new Map()
       }
 
@@ -128,11 +130,12 @@ export class MonthlyPortfolioCalculator {
         priceMap.set(monthKey, parseFloat(row.close))
       })
 
-      console.log(`Fetched ${data?.length || 0} historical prices from btc_monthly_close table`)
+      console.log(`✅ MonthlyCalculator: Fetched ${data?.length || 0} historical prices from btc_monthly_close table`)
+      console.log(`📊 MonthlyCalculator: Price map keys:`, Array.from(priceMap.keys()).slice(0, 5))
       return priceMap
       
     } catch (error) {
-      console.warn('Error fetching historical prices, falling back to empty map:', error)
+      console.warn('❌ Error fetching historical prices, falling back to empty map:', error)
       return new Map()
     }
   }
@@ -238,6 +241,7 @@ export class MonthlyPortfolioCalculator {
       let btcPrice: number
       if (isCurrentMonth) {
         btcPrice = currentPrice
+        console.log(`💰 MonthlyCalculator: Using current price for ${monthKey}: $${btcPrice.toLocaleString()}`)
       } else {
         btcPrice = historicalPrices.get(monthKey) || 0
         // If no historical price available, try to use the most recent available price
@@ -245,6 +249,7 @@ export class MonthlyPortfolioCalculator {
           const availablePrices = Array.from(historicalPrices.values())
           btcPrice = availablePrices[availablePrices.length - 1] || 0
         }
+        console.log(`📈 MonthlyCalculator: Using historical price for ${monthKey}: $${btcPrice.toLocaleString()} (from btc_monthly_close)`)
       }
 
       // Calculate portfolio value
