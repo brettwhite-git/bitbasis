@@ -10,7 +10,7 @@ import {
 /**
  * Transaction types supported by the application
  */
-export type TransactionType = 'buy' | 'sell' | 'deposit' | 'withdrawal';
+export type TransactionType = 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest';
 
 /**
  * Get the appropriate icon component for a transaction type
@@ -27,6 +27,8 @@ export function getTransactionIcon(type: string) {
       return <CircleArrowDown className="h-4 w-4" />;
     case 'withdrawal':
       return <CircleArrowUp className="h-4 w-4" />;
+    case 'interest':
+      return <CircleArrowDown className="h-4 w-4" />;
     default:
       return null;
   }

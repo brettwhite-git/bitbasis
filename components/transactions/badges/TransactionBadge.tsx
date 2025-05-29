@@ -9,49 +9,65 @@ import { TransactionBadgeProps } from "@/types/transactions"
  * A badge component that displays a transaction type with appropriate styling and icon
  */
 export function TransactionBadge({ type, className }: TransactionBadgeProps) {
-  // Get inline styles based on type
+  // Get inline styles based on type - modern dark theme with glowing edges
   const getInlineStyles = () => {
     switch (type.toLowerCase()) {
       case 'buy':
         return {
-          backgroundImage: 'linear-gradient(to right, rgba(247, 147, 26, 0.9), rgba(247, 147, 26, 0.7))',
+          backgroundColor: 'rgba(247, 147, 26, 0.05)',
           borderColor: 'rgba(247, 147, 26, 0.4)',
-          color: 'white'
+          color: 'rgba(247, 147, 26, 0.85)',
+          boxShadow: '0 0 8px rgba(247, 147, 26, 0.05)'
         };
       case 'sell':
         return {
-          backgroundImage: 'linear-gradient(to right, rgba(239, 68, 68, 0.9), rgba(248, 113, 113, 0.7))',
+          backgroundColor: 'rgba(239, 68, 68, 0.05)',
           borderColor: 'rgba(239, 68, 68, 0.4)',
-          color: 'white'
+          color: 'rgba(239, 68, 68, 0.85)',
+          boxShadow: '0 0 8px rgba(239, 68, 68, 0.05)'
         };
       case 'deposit':
         return {
-          backgroundImage: 'linear-gradient(to right, rgba(34, 197, 94, 0.9), rgba(74, 222, 128, 0.7))',
+          backgroundColor: 'rgba(34, 197, 94, 0.05)',
           borderColor: 'rgba(34, 197, 94, 0.4)',
-          color: 'white'
+          color: 'rgba(34, 197, 94, 0.85)',
+          boxShadow: '0 0 8px rgba(34, 197, 94, 0.05)'
         };
       case 'withdrawal':
         return {
-          backgroundImage: 'linear-gradient(to right, rgba(59, 130, 246, 0.9), rgba(96, 165, 250, 0.7))',
+          backgroundColor: 'rgba(59, 130, 246, 0.05)',
           borderColor: 'rgba(59, 130, 246, 0.4)',
-          color: 'white'
+          color: 'rgba(59, 130, 246, 0.85)',
+          boxShadow: '0 0 8px rgba(59, 130, 246, 0.05)'
+        };
+      case 'interest':
+        return {
+          backgroundColor: 'rgba(168, 85, 247, 0.05)',
+          borderColor: 'rgba(168, 85, 247, 0.4)',
+          color: 'rgba(168, 85, 247, 0.85)',
+          boxShadow: '0 0 8px rgba(168, 85, 247, 0.05)'
         };
       default:
         return {};
     }
+  };
+
+  // Capitalize first letter only
+  const formatText = (text: string) => {
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
   };
   
   return (
     <Badge
       variant="outline"
       className={cn(
-        "min-w-[100px] inline-flex items-center justify-center rounded-full border shadow-sm transition-none px-2 gap-1",
+        "inline-flex items-center justify-center rounded-full border shadow-sm transition-all duration-200 px-3 py-1 gap-1.5 font-medium text-sm",
         className
       )}
       style={getInlineStyles()}
     >
       {getTransactionIcon(type)}
-      {type.toUpperCase()}
+      {formatText(type)}
     </Badge>
   )
 } 

@@ -140,10 +140,10 @@ export const TransactionHistoryHeaders = memo(function TransactionHistoryHeaders
           </div>
         </TableHead>
         
-        {/* PNL - Profit & Loss (coming soon) */}
+        {/* Gain/Income - Profit & Loss (coming soon) */}
         <TableHead className="hidden md:table-cell w-[100px] text-center">
           <div className="flex items-center justify-center font-semibold text-xs">
-            PNL
+            Gain/Income
           </div>
         </TableHead>
         

@@ -4,7 +4,14 @@ import { useState, memo } from "react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChevronDown, ChevronUp, MoreHorizontal, Edit, Copy, Trash2 } from "lucide-react"
+import { 
+  ChevronDown, 
+  ChevronUp, 
+  MoreHorizontal, 
+  Edit, 
+  Copy, 
+  Trash2
+} from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +21,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { formatBTC, formatCurrency } from "@/lib/utils/format"
 import { TransactionHistoryAccordion } from "./transaction-history-accordion"
+import { TransactionBadge } from "@/components/transactions/badges/TransactionBadge"
+import { TransactionType } from "@/lib/utils/transaction-utils"
 
 interface UnifiedTransaction {
   id: string
@@ -61,20 +70,8 @@ export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMo
   const [isExpanded, setIsExpanded] = useState(false)
   
   // Helper functions
-  const getTransactionBadge = (type: string) => {
-    const variants = {
-      buy: "bg-green-900/50 text-green-400 border-green-700/50",
-      sell: "bg-red-900/50 text-red-400 border-red-700/50",
-      deposit: "bg-blue-900/50 text-blue-400 border-blue-700/50",
-      withdrawal: "bg-orange-900/50 text-orange-400 border-orange-700/50",
-      interest: "bg-purple-900/50 text-purple-400 border-purple-700/50"
-    }
-    
-    return (
-      <Badge className={`${variants[type as keyof typeof variants]} text-xs font-medium min-w-[100px] inline-flex items-center justify-center px-2`}>
-        {type.toUpperCase()}
-      </Badge>
-    )
+  const getTransactionBadge = (type: TransactionType) => {
+    return <TransactionBadge type={type} />
   }
 
   const getTermBadge = (date: string, type: string) => {
@@ -119,7 +116,7 @@ export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMo
         {/* Main content */}
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
-            {getTransactionBadge(transaction.type)}
+            {getTransactionBadge(transaction.type as TransactionType)}
             {getTermBadge(transaction.date, transaction.type)}
           </div>
           

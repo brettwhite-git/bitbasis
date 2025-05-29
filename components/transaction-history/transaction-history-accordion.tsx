@@ -48,83 +48,21 @@ export function TransactionHistoryAccordion({ transaction }: TransactionHistoryA
   }
 
   const getBlockExplorerUrl = (hash: string) => {
-    return `https://blockstream.info/tx/${hash}`
+    return `https://mempool.space/tx/${hash}`
+  }
+
+  const getAddressExplorerUrl = (address: string) => {
+    return `https://mempool.space/address/${address}`
+  }
+
+  // Utility function to truncate hash/address with first few chars...last few chars format
+  const truncateHashOrAddress = (value: string, startChars: number = 8, endChars: number = 8) => {
+    if (value.length <= startChars + endChars) return value
+    return `${value.substring(0, startChars)}...${value.substring(value.length - endChars)}`
   }
 
   const renderBuyAccordion = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-[2fr_2fr_2fr_1fr] gap-8">
-      {/* Cost Basis Details */}
-      <div className="space-y-4 p-4 rounded-lg bg-gray-800/20 border border-gray-700/20">
-        <h4 className="font-semibold text-white">Cost Basis Details</h4>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-400">Adjusted Cost Basis:</span>
-            <span className="text-white">
-              {formatCurrency(transaction.sent_amount || 0)}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Current Value:</span>
-            <span className="text-white">
-              {(() => {
-                // Calculate current value: received BTC amount * current spot price
-                if (transaction.received_amount && currentBitcoinPrice && !priceLoading) {
-                  const currentValue = transaction.received_amount * currentBitcoinPrice
-                  return formatCurrency(currentValue)
-                }
-                return priceLoading ? "Loading..." : "-"
-              })()}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">PNL:</span>
-            <span className={(() => {
-              // Calculate PNL: current value - adjusted cost basis (sent_amount)
-              if (transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-                const currentValue = transaction.received_amount * currentBitcoinPrice
-                const adjustedCostBasis = transaction.sent_amount
-                const pnl = currentValue - adjustedCostBasis
-                return pnl >= 0 ? "text-green-400" : "text-red-400"
-              }
-              return "text-white"
-            })()}>
-              {(() => {
-                if (transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-                  const currentValue = transaction.received_amount * currentBitcoinPrice
-                  const adjustedCostBasis = transaction.sent_amount
-                  const pnl = currentValue - adjustedCostBasis
-                  return `${pnl >= 0 ? '+' : ''}${formatCurrency(pnl)}`
-                }
-                return priceLoading ? "Loading..." : "-"
-              })()}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Gain %:</span>
-            <span className={(() => {
-              // Calculate Gain %: ((current value - adjusted cost basis) / adjusted cost basis) * 100
-              if (transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-                const currentValue = transaction.received_amount * currentBitcoinPrice
-                const adjustedCostBasis = transaction.sent_amount
-                const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
-                return gainPercent >= 0 ? "text-green-400" : "text-red-400"
-              }
-              return "text-white"
-            })()}>
-              {(() => {
-                if (transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-                  const currentValue = transaction.received_amount * currentBitcoinPrice
-                  const adjustedCostBasis = transaction.sent_amount
-                  const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
-                  return `${gainPercent >= 0 ? '+' : ''}${gainPercent.toFixed(2)}%`
-                }
-                return priceLoading ? "Loading..." : "-"
-              })()}
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* Transaction Details */}
       <div className="space-y-4 p-4 rounded-lg bg-gray-800/20 border border-gray-700/20">
         <h4 className="font-semibold text-white">Transaction Details</h4>
@@ -157,6 +95,79 @@ export function TransactionHistoryAccordion({ transaction }: TransactionHistoryA
           <div className="flex justify-between">
             <span className="text-gray-400">Adjusted Cost Basis:</span>
             <span className="text-white">{formatCurrency(transaction.sent_amount || 0)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Cost Basis Details */}
+      <div className="space-y-4 p-4 rounded-lg bg-gray-800/20 border border-gray-700/20">
+        <h4 className="font-semibold text-white">Cost Basis Details</h4>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-400">Adjusted Cost Basis:</span>
+            <span className="text-white">
+              {formatCurrency(transaction.sent_amount || 0)}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-400">Current Value:</span>
+            <span className="text-white">
+              {(() => {
+                // Calculate current value: received BTC amount * current spot price
+                if (transaction.received_amount && currentBitcoinPrice && !priceLoading) {
+                  const currentValue = transaction.received_amount * currentBitcoinPrice
+                  return formatCurrency(currentValue)
+                }
+                return priceLoading ? "Loading..." : "-"
+              })()}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-400">Gain/Income:</span>
+            <span className={(() => {
+              // Calculate Gain/Income: current value - adjusted cost basis (sent_amount)
+              if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+                const currentValue = transaction.received_amount * currentBitcoinPrice
+                const adjustedCostBasis = transaction.sent_amount
+                const gainIncome = currentValue - adjustedCostBasis
+                return gainIncome >= 0 ? "text-green-400" : "text-red-400"
+              }
+              return "text-gray-500"
+            })()}>
+              {(() => {
+                // Calculate Gain/Income: current value - adjusted cost basis (sent_amount)
+                if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+                  const currentValue = transaction.received_amount * currentBitcoinPrice
+                  const adjustedCostBasis = transaction.sent_amount
+                  const gainIncome = currentValue - adjustedCostBasis
+                  return `${gainIncome >= 0 ? '+' : ''}${formatCurrency(gainIncome)}`
+                }
+                return priceLoading ? "..." : "-"
+              })()}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-400">Gain %:</span>
+            <span className={(() => {
+              // Calculate Gain %: ((current value - adjusted cost basis) / adjusted cost basis) * 100
+              if (transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+                const currentValue = transaction.received_amount * currentBitcoinPrice
+                const adjustedCostBasis = transaction.sent_amount
+                const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
+                return gainPercent >= 0 ? "text-green-400" : "text-red-400"
+              }
+              return "text-white"
+            })()}>
+              {(() => {
+                if (transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+                  const currentValue = transaction.received_amount * currentBitcoinPrice
+                  const adjustedCostBasis = transaction.sent_amount
+                  const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
+                  return `${gainPercent >= 0 ? '+' : ''}${gainPercent.toFixed(2)}%`
+                }
+                return priceLoading ? "Loading..." : "-"
+              })()}
+            </span>
           </div>
         </div>
       </div>
@@ -250,15 +261,20 @@ export function TransactionHistoryAccordion({ transaction }: TransactionHistoryA
         <h4 className="font-semibold text-white">Transfer Details</h4>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-400">Cost Basis:</span>
-            <span className="text-white">
-              {formatCurrency(transaction.received_cost_basis || transaction.sent_cost_basis || 0)}
-            </span>
-          </div>
-          <div className="flex justify-between">
             <span className="text-gray-400">Asset Price at Transaction:</span>
             <span className="text-white">{formatCurrency(transaction.price || 0)}</span>
           </div>
+          
+          <div className="flex justify-between">
+            <span className="text-gray-400">Amount:</span>
+            <span className="text-white">
+              {(() => {
+                const amount = transaction.type === 'deposit' ? transaction.received_amount : transaction.sent_amount
+                return amount ? `${formatBTC(amount, 8, false)} ${transaction.asset}` : "-"
+              })()}
+            </span>
+          </div>
+          
           <div className="flex justify-between">
             <span className="text-gray-400">Network Fee:</span>
             <span className="text-white">
@@ -268,100 +284,173 @@ export function TransactionHistoryAccordion({ transaction }: TransactionHistoryA
               }
             </span>
           </div>
+          
+          <div className="flex justify-between">
+            <span className="text-gray-400">Network Fee (Fiat):</span>
+            <span className="text-white">
+              {(() => {
+                // Calculate network fee in fiat: fee_amount * asset_price
+                if (transaction.fee_amount && transaction.price) {
+                  const feeInFiat = transaction.fee_amount * transaction.price
+                  return formatCurrency(feeInFiat)
+                }
+                return "-"
+              })()}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Network Information */}
       <div className="space-y-4 p-4 rounded-lg bg-gray-800/20 border border-gray-700/20">
         <h4 className="font-semibold text-white">Network Information</h4>
-        <div className="space-y-2 text-sm">
-          {transaction.transaction_hash && (
-            <div className="space-y-1">
-              <span className="text-gray-400">Transaction Hash:</span>
-              <div className="flex items-center gap-2">
-                <code className="text-xs bg-gray-800 px-2 py-1 rounded font-mono">
-                  {transaction.transaction_hash.substring(0, 16)}...
-                </code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={() => copyToClipboard(transaction.transaction_hash!)}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={() => window.open(getBlockExplorerUrl(transaction.transaction_hash!), '_blank')}
-                >
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          {/* From Column */}
+          <div className="space-y-2">
+            {transaction.from_address ? (
+              <div className="space-y-1">
+                <span className="text-gray-400">From:</span>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs bg-gray-800 px-2 py-1 rounded font-mono">
+                    {truncateHashOrAddress(transaction.from_address!)}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => copyToClipboard(transaction.from_address!)}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => window.open(getAddressExplorerUrl(transaction.from_address!), '_blank')}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </div>
+                {transaction.from_address_name && (
+                  <div className="text-xs text-gray-500 ml-1">
+                    {transaction.from_address_name}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="space-y-1">
+                <span className="text-gray-400">From:</span>
+                <span className="text-gray-500 text-xs">No address available</span>
+              </div>
+            )}
+            
+            {/* Transaction Hash under From */}
+            {transaction.transaction_hash && (
+              <div className="space-y-1 pt-2 border-t border-gray-700/30">
+                <span className="text-gray-400">Transaction Hash:</span>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs bg-gray-800 px-2 py-1 rounded font-mono">
+                    {truncateHashOrAddress(transaction.transaction_hash!)}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => copyToClipboard(transaction.transaction_hash!)}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => window.open(getBlockExplorerUrl(transaction.transaction_hash!), '_blank')}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
           
-          {transaction.from_address && (
-            <div className="space-y-1">
-              <span className="text-gray-400">From Address:</span>
-              <div className="flex items-center gap-2">
-                <code className="text-xs bg-gray-800 px-2 py-1 rounded font-mono">
-                  {transaction.from_address.substring(0, 16)}...
-                </code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={() => copyToClipboard(transaction.from_address!)}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
+          {/* To Column */}
+          <div className="space-y-2">
+            {transaction.to_address ? (
+              <div className="space-y-1">
+                <span className="text-gray-400">To:</span>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs bg-gray-800 px-2 py-1 rounded font-mono">
+                    {truncateHashOrAddress(transaction.to_address!)}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => copyToClipboard(transaction.to_address!)}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => window.open(getAddressExplorerUrl(transaction.to_address!), '_blank')}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </div>
+                {transaction.to_address_name && (
+                  <div className="text-xs text-gray-500 ml-1">
+                    {transaction.to_address_name}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-          
-          {transaction.to_address && (
-            <div className="space-y-1">
-              <span className="text-gray-400">To Address:</span>
-              <div className="flex items-center gap-2">
-                <code className="text-xs bg-gray-800 px-2 py-1 rounded font-mono">
-                  {transaction.to_address.substring(0, 16)}...
-                </code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={() => copyToClipboard(transaction.to_address!)}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
+            ) : (
+              <div className="space-y-1">
+                <span className="text-gray-400">To:</span>
+                <span className="text-gray-500 text-xs">No address available</span>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Transaction Metadata - 3rd column */}
+      {/* Tax Information - Third column */}
       <div className="space-y-4 p-4 rounded-lg bg-gray-800/20 border border-gray-700/20">
-        <h4 className="font-semibold text-white">Transaction Metadata</h4>
+        <h4 className="font-semibold text-white">Tax Information</h4>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-400">Transaction Type:</span>
-            <span className="text-white capitalize">{transaction.type}</span>
+            <span className="text-gray-400">Taxable Event:</span>
+            <span className="text-green-400">No</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400">Asset:</span>
-            <span className="text-white">{transaction.asset}</span>
+            <span className="text-gray-400">Tax Category:</span>
+            <span className="text-white">N/A (not taxable)</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400">Date:</span>
-            <span className="text-white">{new Date(transaction.date).toLocaleDateString()}</span>
+            <span className="text-gray-400">Cost Basis Impact:</span>
+            <span className="text-white">
+              {(() => {
+                if (transaction.type === 'deposit') {
+                  return "None (no cost basis)"
+                } else if (transaction.type === 'withdrawal') {
+                  return "Potential disposal"
+                } else {
+                  return "N/A"
+                }
+              })()}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-400">Record Keeping:</span>
+            <span className="text-white">
+              {transaction.transaction_hash ? "Hash available" : "Manual record"}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Notes Column - 4th column */}
+      {/* Notes Column - Fourth column */}
       <div className="space-y-4 p-4 rounded-lg bg-gray-800/20 border border-gray-700/20">
         <h4 className="font-semibold text-white">Notes</h4>
         <div className="text-sm">

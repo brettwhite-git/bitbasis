@@ -24,6 +24,8 @@ import {
 import { formatBTC, formatCurrency, formatDate } from "@/lib/utils/format"
 import { TransactionHistoryAccordion } from "./transaction-history-accordion"
 import { useBitcoinPrice } from "@/lib/hooks/useBitcoinPrice"
+import { TransactionBadge } from "@/components/transactions/badges/TransactionBadge"
+import { TransactionType } from "@/lib/utils/transaction-utils"
 
 interface UnifiedTransaction {
   id: string
@@ -62,7 +64,7 @@ interface TransactionHistoryRowProps {
 
 /**
  * Enhanced transaction history row with condensed structure and accordion details
- * Structure: [✓] [Date] [Type] [Term] [From] [To] [Amount] [PNL] [Gain] [Balance] [⚙️] [▼]
+ * Structure: [✓] [Date] [Type] [Term] [From] [To] [Amount] [Gain/Income] [Gain] [Balance] [⚙️] [▼]
  */
 export const TransactionHistoryRow = memo(function TransactionHistoryRow({
   transaction,
@@ -71,24 +73,12 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
 }: TransactionHistoryRowProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   
-  // Get current Bitcoin price for PNL calculations
+  // Get current Bitcoin price for Gain/Income calculations
   const { price: currentBitcoinPrice, loading: priceLoading } = useBitcoinPrice()
   
   // Helper functions
-  const getTransactionBadge = (type: string) => {
-    const variants = {
-      buy: "bg-green-900/50 text-green-400 border-green-700/50",
-      sell: "bg-red-900/50 text-red-400 border-red-700/50",
-      deposit: "bg-blue-900/50 text-blue-400 border-blue-700/50",
-      withdrawal: "bg-orange-900/50 text-orange-400 border-orange-700/50",
-      interest: "bg-purple-900/50 text-purple-400 border-purple-700/50"
-    }
-    
-    return (
-      <Badge className={`${variants[type as keyof typeof variants]} text-xs font-medium min-w-[100px] inline-flex items-center justify-center px-2`}>
-        {type.toUpperCase()}
-      </Badge>
-    )
+  const getTransactionBadge = (type: TransactionType) => {
+    return <TransactionBadge type={type} />
   }
 
   // Note: getTermBadge function available for accordion/utility use
@@ -149,7 +139,7 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
         
         {/* Type */}
         <TableCell className="text-center px-4">
-          {getTransactionBadge(transaction.type)}
+          {getTransactionBadge(transaction.type as TransactionType)}
         </TableCell>
         
         {/* From */}
@@ -212,15 +202,15 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
           )}
         </TableCell>
         
-        {/* PNL - Placeholder for now */}
-        <TableCell className="hidden md:table-cell text-center px-4">
-          <span className={(() => {
-            // Calculate PNL: current value - adjusted cost basis (sent_amount) (only for buy transactions)
+        {/* Gain/Income - Placeholder for now */}
+        <TableCell className="hidden md:table-cell w-[100px] text-center">
+          <div className={(() => {
+            // Calculate Gain/Income: current value - adjusted cost basis (sent_amount) (only for buy transactions)
             if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
               const currentValue = transaction.received_amount * currentBitcoinPrice
               const adjustedCostBasis = transaction.sent_amount
-              const pnl = currentValue - adjustedCostBasis
-              return pnl >= 0 ? "text-green-400 text-xs font-medium" : "text-red-400 text-xs font-medium"
+              const gainIncome = currentValue - adjustedCostBasis
+              return gainIncome >= 0 ? "text-green-400 text-xs font-medium" : "text-red-400 text-xs font-medium"
             }
             return "text-xs text-gray-500"
           })()}>
@@ -228,12 +218,12 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
               if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
                 const currentValue = transaction.received_amount * currentBitcoinPrice
                 const adjustedCostBasis = transaction.sent_amount
-                const pnl = currentValue - adjustedCostBasis
-                return `${pnl >= 0 ? '+' : ''}${formatCurrency(pnl)}`
+                const gainIncome = currentValue - adjustedCostBasis
+                return `${gainIncome >= 0 ? '+' : ''}${formatCurrency(gainIncome)}`
               }
               return priceLoading ? "..." : "-"
             })()}
-          </span>
+          </div>
         </TableCell>
         
         {/* Gain % - Placeholder for now */}
