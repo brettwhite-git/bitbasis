@@ -179,11 +179,14 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
                 // Net amount that actually got exchanged for BTC (sent_amount - fee_amount)
                 const sentAmount = transaction.sent_amount
                 const feeAmount = transaction.fee_amount || 0
-                const netExchangedAmount = sentAmount - feeAmount
+                const netExchangedAmount = Math.abs(sentAmount - feeAmount) // Ensure positive value
                 
-                return transaction.sent_currency === 'BTC' 
+                const formattedValue = transaction.sent_currency === 'BTC' 
                   ? formatBTC(netExchangedAmount)
                   : formatCurrency(netExchangedAmount)
+                
+                // Always show as negative for sent amounts
+                return `-${formattedValue}`
               })()}
             </span>
           ) : (
@@ -195,10 +198,14 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
         <TableCell className="text-center px-4">
           {transaction.received_amount && transaction.received_currency ? (
             <span className="text-sm font-medium">
-              {transaction.received_currency === 'BTC' 
-                ? formatBTC(transaction.received_amount)
-                : formatCurrency(transaction.received_amount)
-              }
+              {(() => {
+                const formattedValue = transaction.received_currency === 'BTC' 
+                  ? formatBTC(transaction.received_amount)
+                  : formatCurrency(transaction.received_amount)
+                
+                // Always show as positive for received amounts
+                return `+${formattedValue}`
+              })()}
             </span>
           ) : (
             <span className="text-sm text-gray-500">-</span>

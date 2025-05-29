@@ -6,7 +6,7 @@ interface BitcoinPriceData {
   updated_at: string;
 }
 
-export function useBitcoinPrice(defaultPrice: number = 85000, refreshInterval: number = 60000) {
+export function useBitcoinPrice(defaultPrice: number = 100000, refreshInterval: number = 240000) {
   const [price, setPrice] = useState<number>(0); // Start with 0 to force loading
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

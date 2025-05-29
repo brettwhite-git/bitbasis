@@ -133,11 +133,14 @@ export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMo
                     // Fiat value: net amount that actually got exchanged for BTC (sent_amount - fee_amount)
                     const sentAmount = transaction.sent_amount
                     const feeAmount = transaction.fee_amount || 0
-                    const fiatValue = sentAmount - feeAmount
+                    const fiatValue = Math.abs(sentAmount - feeAmount) // Ensure positive value
                     
-                    return transaction.sent_currency === 'BTC' 
+                    const formattedValue = transaction.sent_currency === 'BTC' 
                       ? `${formatBTC(fiatValue, 8, false)} ${transaction.sent_currency}`
                       : `${formatCurrency(fiatValue)} ${transaction.sent_currency}`
+                    
+                    // Always show as negative for sent amounts
+                    return `-${formattedValue}`
                   })()}
                 </span>
               </div>
@@ -148,10 +151,14 @@ export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMo
               <div className="text-sm">
                 <span className="text-muted-foreground text-xs">Received: </span>
                 <span className="font-medium">
-                  {transaction.received_currency === 'BTC' 
-                    ? `${formatBTC(transaction.received_amount, 8, false)} ${transaction.received_currency}`
-                    : `${formatCurrency(transaction.received_amount)} ${transaction.received_currency}`
-                  }
+                  {(() => {
+                    const formattedValue = transaction.received_currency === 'BTC' 
+                      ? `${formatBTC(transaction.received_amount, 8, false)} ${transaction.received_currency}`
+                      : `${formatCurrency(transaction.received_amount)} ${transaction.received_currency}`
+                    
+                    // Always show as positive for received amounts
+                    return `+${formattedValue}`
+                  })()}
                 </span>
               </div>
             )}
