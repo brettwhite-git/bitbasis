@@ -23,35 +23,8 @@ import { formatBTC, formatCurrency } from "@/lib/utils/format"
 import { TransactionHistoryAccordion } from "./transaction-history-accordion"
 import { TransactionBadge } from "@/components/transactions/badges/TransactionBadge"
 import { TransactionType } from "@/lib/utils/transaction-utils"
-
-interface UnifiedTransaction {
-  id: string
-  created_at: string
-  updated_at: string
-  user_id: string
-  date: string
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
-  asset: string
-  sent_amount: number | null
-  sent_currency: string | null
-  sent_cost_basis: number | null
-  from_address: string | null
-  from_address_name: string | null
-  to_address: string | null
-  to_address_name: string | null
-  received_amount: number | null
-  received_currency: string | null
-  received_cost_basis: number | null
-  fee_amount: number | null
-  fee_currency: string | null
-  fee_cost_basis: number | null
-  realized_return: number | null
-  fee_realized_return: number | null
-  transaction_hash: string | null
-  comment: string | null
-  price: number | null
-  csv_upload_id: string | null
-}
+import { useEditDrawer } from "./edit-drawer-provider"
+import { UnifiedTransaction } from "@/types/transactions"
 
 interface TransactionHistoryRowMobileProps {
   transaction: UnifiedTransaction
@@ -68,6 +41,7 @@ export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMo
   onSelect
 }: TransactionHistoryRowMobileProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const { openDrawer } = useEditDrawer()
   
   // Helper functions
   const getTransactionBadge = (type: TransactionType) => {
@@ -97,6 +71,10 @@ export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMo
 
   const toggleExpand = () => {
     setIsExpanded(prev => !prev)
+  }
+
+  const handleEditTransaction = () => {
+    openDrawer(transaction)
   }
 
   return (
@@ -175,7 +153,7 @@ export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMo
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleEditTransaction}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>

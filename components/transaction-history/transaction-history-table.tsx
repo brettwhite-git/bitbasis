@@ -46,40 +46,14 @@ import { TransactionHistoryHeaders } from "./transaction-history-headers"
 import { TransactionHistoryRow } from "./transaction-history-row"
 import { TransactionHistoryMobileView } from "./transaction-history-mobile-view"
 
+// Import the unified add transaction wizard
+import { AddTransactionWizard } from "@/components/add-transaction-wizard/add-transaction-wizard"
+
 // Import utilities
 import { formatBTC, formatCurrency, formatDate } from "@/lib/utils/format"
+import { UnifiedTransaction } from '@/types/transactions'
 
 // Types for our unified transaction (simplified for now)
-interface UnifiedTransaction {
-  id: string
-  created_at: string
-  updated_at: string
-  user_id: string
-  date: string
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
-  asset: string
-  sent_amount: number | null
-  sent_currency: string | null
-  sent_cost_basis: number | null
-  from_address: string | null
-  from_address_name: string | null
-  to_address: string | null
-  to_address_name: string | null
-  received_amount: number | null
-  received_currency: string | null
-  received_cost_basis: number | null
-  fee_amount: number | null
-  fee_currency: string | null
-  fee_cost_basis: number | null
-  realized_return: number | null
-  fee_realized_return: number | null
-  transaction_hash: string | null
-  comment: string | null
-  price: number | null
-  csv_upload_id: string | null
-}
-
-// Sort configuration
 interface SortConfig {
   column: keyof UnifiedTransaction
   direction: 'asc' | 'desc'
@@ -847,14 +821,8 @@ export function TransactionHistoryTable() {
   // Action buttons
   const actionButtons = (
     <div className="flex items-center justify-end gap-2">
-      {/* Add Transaction Button */}
-      <Button 
-        size="sm" 
-        className="h-8 bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] hover:from-bitcoin-orange/90 hover:to-[#D4A76A]/90 text-white border-0"
-      >
-        <CirclePlus className="mr-2 h-4 w-4" />
-        Add Transaction
-      </Button>
+      {/* Add Transaction Wizard */}
+      <AddTransactionWizard onTransactionsAdded={fetchTransactions} />
       
       {/* Import Button */}
       <Button

@@ -26,35 +26,8 @@ import { TransactionHistoryAccordion } from "./transaction-history-accordion"
 import { useBitcoinPrice } from "@/lib/hooks/useBitcoinPrice"
 import { TransactionBadge } from "@/components/transactions/badges/TransactionBadge"
 import { TransactionType } from "@/lib/utils/transaction-utils"
-
-interface UnifiedTransaction {
-  id: string
-  created_at: string
-  updated_at: string
-  user_id: string
-  date: string
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
-  asset: string
-  sent_amount: number | null
-  sent_currency: string | null
-  sent_cost_basis: number | null
-  from_address: string | null
-  from_address_name: string | null
-  to_address: string | null
-  to_address_name: string | null
-  received_amount: number | null
-  received_currency: string | null
-  received_cost_basis: number | null
-  fee_amount: number | null
-  fee_currency: string | null
-  fee_cost_basis: number | null
-  realized_return: number | null
-  fee_realized_return: number | null
-  transaction_hash: string | null
-  comment: string | null
-  price: number | null
-  csv_upload_id: string | null
-}
+import { useEditDrawer } from './edit-drawer-provider'
+import { UnifiedTransaction } from '@/types/transactions'
 
 interface TransactionHistoryRowProps {
   transaction: UnifiedTransaction
@@ -64,7 +37,7 @@ interface TransactionHistoryRowProps {
 
 /**
  * Enhanced transaction history row with condensed structure and accordion details
- * Structure: [✓] [Date] [Type] [Term] [From] [To] [Amount] [Gain/Income] [Gain] [Balance] [⚙️] [▼]
+ * Structure: [✓] [Date] [Type] [Term] [From] [To] [Amount] [Gain/Income] [Gain] [⚙️] [▼]
  */
 export const TransactionHistoryRow = memo(function TransactionHistoryRow({
   transaction,
@@ -72,9 +45,8 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
   onSelect
 }: TransactionHistoryRowProps) {
   const [isExpanded, setIsExpanded] = useState(false)
-  
-  // Get current Bitcoin price for Gain/Income calculations
   const { price: currentBitcoinPrice, loading: priceLoading } = useBitcoinPrice()
+  const { openDrawer } = useEditDrawer()
   
   // Helper functions
   const getTransactionBadge = (type: TransactionType) => {
@@ -107,6 +79,10 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded)
+  }
+
+  const handleEditTransaction = () => {
+    openDrawer(transaction)
   }
 
   return (
@@ -250,11 +226,6 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
           </span>
         </TableCell>
         
-        {/* Balance - Placeholder for now */}
-        <TableCell className="hidden lg:table-cell text-center px-4">
-          <span className="text-xs text-gray-500">-</span>
-        </TableCell>
-        
         {/* Accordion Toggle */}
         <TableCell className="text-center px-4">
           <Button
@@ -286,7 +257,7 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleEditTransaction}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Transaction
               </DropdownMenuItem>
@@ -307,7 +278,7 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
       {/* Accordion Details Row */}
       {isExpanded && (
         <TableRow>
-          <TableCell colSpan={13} className="p-0 border-0">
+          <TableCell colSpan={12} className="p-0 border-0">
             <TransactionHistoryAccordion transaction={transaction} />
           </TableCell>
         </TableRow>

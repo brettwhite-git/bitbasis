@@ -50,7 +50,7 @@ interface TransactionHistoryHeadersProps {
 
 /**
  * Enhanced transaction history table headers with new condensed structure
- * Based on our vision: [✓] [Date] [Type] [Term] [From] [To] [Amount] [PNL] [Gain] [Balance] [⚙️] [▼]
+ * Based on our vision: [✓] [Date] [Type] [Term] [From] [To] [Amount] [PNL] [Gain] [⚙️] [▼]
  */
 export const TransactionHistoryHeaders = memo(function TransactionHistoryHeaders({
   sortConfig,
@@ -151,13 +151,6 @@ export const TransactionHistoryHeaders = memo(function TransactionHistoryHeaders
         <TableHead className="hidden md:table-cell w-[100px] text-center">
           <div className="flex items-center justify-center font-semibold text-xs">
             Gain %
-          </div>
-        </TableHead>
-        
-        {/* Balance - Running BTC balance (coming soon) */}
-        <TableHead className="hidden lg:table-cell w-[120px] text-center">
-          <div className="flex items-center justify-center font-semibold text-xs">
-            Balance
           </div>
         </TableHead>
         
