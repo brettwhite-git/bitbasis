@@ -33,6 +33,7 @@ interface TransactionHistoryRowProps {
   transaction: UnifiedTransaction
   isSelected: boolean
   onSelect: () => void
+  onDelete?: () => void
 }
 
 /**
@@ -42,7 +43,8 @@ interface TransactionHistoryRowProps {
 export const TransactionHistoryRow = memo(function TransactionHistoryRow({
   transaction,
   isSelected,
-  onSelect
+  onSelect,
+  onDelete
 }: TransactionHistoryRowProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { price: currentBitcoinPrice, loading: priceLoading } = useBitcoinPrice()
@@ -118,6 +120,27 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
           {getTransactionBadge(transaction.type as TransactionType)}
         </TableCell>
         
+        {/* Sent Amount */}
+        <TableCell className="text-center px-4">
+          {transaction.sent_amount && transaction.sent_currency ? (
+            <span className="text-sm font-medium">
+              {(() => {
+                // Full sent amount (not subtracting fees)
+                const sentAmount = transaction.sent_amount
+                
+                const formattedValue = transaction.sent_currency === 'BTC' 
+                  ? formatBTC(sentAmount)
+                  : formatCurrency(sentAmount)
+                
+                // Always show as negative for sent amounts
+                return `-${formattedValue}`
+              })()}
+            </span>
+          ) : (
+            <span className="text-sm text-gray-500">-</span>
+          )}
+        </TableCell>
+        
         {/* From */}
         <TableCell className="text-center px-4">
           <span className="text-sm">
@@ -135,29 +158,6 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
           <span className="text-sm">
             {transaction.to_address_name || "-"}
           </span>
-        </TableCell>
-        
-        {/* Sent Amount */}
-        <TableCell className="text-center px-4">
-          {transaction.sent_amount && transaction.sent_currency ? (
-            <span className="text-sm font-medium">
-              {(() => {
-                // Net amount that actually got exchanged for BTC (sent_amount - fee_amount)
-                const sentAmount = transaction.sent_amount
-                const feeAmount = transaction.fee_amount || 0
-                const netExchangedAmount = Math.abs(sentAmount - feeAmount) // Ensure positive value
-                
-                const formattedValue = transaction.sent_currency === 'BTC' 
-                  ? formatBTC(netExchangedAmount)
-                  : formatCurrency(netExchangedAmount)
-                
-                // Always show as negative for sent amounts
-                return `-${formattedValue}`
-              })()}
-            </span>
-          ) : (
-            <span className="text-sm text-gray-500">-</span>
-          )}
         </TableCell>
         
         {/* Received Amount */}
@@ -181,10 +181,10 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
         {/* Gain/Income - Placeholder for now */}
         <TableCell className="hidden md:table-cell w-[100px] text-center">
           <div className={(() => {
-            // Calculate Gain/Income: current value - adjusted cost basis (sent_amount) (only for buy transactions)
+            // Calculate Gain/Income: current value - adjusted cost basis (sent_amount + fee_amount) (only for buy transactions)
             if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
               const currentValue = transaction.received_amount * currentBitcoinPrice
-              const adjustedCostBasis = transaction.sent_amount
+              const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
               const gainIncome = currentValue - adjustedCostBasis
               return gainIncome >= 0 ? "text-green-400 text-xs font-medium" : "text-red-400 text-xs font-medium"
             }
@@ -193,7 +193,7 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
             {(() => {
               if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
                 const currentValue = transaction.received_amount * currentBitcoinPrice
-                const adjustedCostBasis = transaction.sent_amount
+                const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
                 const gainIncome = currentValue - adjustedCostBasis
                 return `${gainIncome >= 0 ? '+' : ''}${formatCurrency(gainIncome)}`
               }
@@ -208,7 +208,7 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
             // Calculate Gain %: ((current value - adjusted cost basis) / adjusted cost basis) * 100 (only for buy transactions)
             if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
               const currentValue = transaction.received_amount * currentBitcoinPrice
-              const adjustedCostBasis = transaction.sent_amount
+              const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
               const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
               return gainPercent >= 0 ? "text-green-400 text-xs font-medium" : "text-red-400 text-xs font-medium"
             }
@@ -217,7 +217,7 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
             {(() => {
               if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
                 const currentValue = transaction.received_amount * currentBitcoinPrice
-                const adjustedCostBasis = transaction.sent_amount
+                const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
                 const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
                 return `${gainPercent >= 0 ? '+' : ''}${gainPercent.toFixed(1)}%`
               }
@@ -266,7 +266,7 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
                 Duplicate Transaction
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-400">
+              <DropdownMenuItem className="text-red-400" onClick={onDelete}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete Transaction
               </DropdownMenuItem>

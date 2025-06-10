@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { SupabaseAuthProvider } from "@/providers/supabase-auth-provider"
 import SupabaseProvider from "@/components/providers/supabase-provider"
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as SonnerToaster } from "sonner"
 import "./globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
@@ -30,6 +31,12 @@ export default function RootLayout({
             <SupabaseAuthProvider>
               {children}
               <Toaster />
+              <SonnerToaster 
+                position="bottom-right"
+                theme="dark"
+                richColors
+                closeButton
+              />
             </SupabaseAuthProvider>
           </SupabaseProvider>
         </ThemeProvider>

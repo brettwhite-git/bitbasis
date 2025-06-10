@@ -34,7 +34,7 @@ import { Calendar } from "@/components/ui/calendar"
 
 // Import hooks that we'll need
 import { useIsMobile } from "@/lib/hooks/use-mobile"
-import { useToast } from "@/lib/hooks/use-toast"
+import { toast } from 'sonner'
 
 // Import existing components we can reuse
 import { DataTableEmpty } from "@/components/shared/data-table/DataTableEmpty"
@@ -49,9 +49,23 @@ import { TransactionHistoryMobileView } from "./transaction-history-mobile-view"
 // Import the unified add transaction wizard
 import { AddTransactionWizard } from "@/components/add-transaction-wizard/add-transaction-wizard"
 
-// Import utilities
-import { formatBTC, formatCurrency, formatDate } from "@/lib/utils/format"
+// Import the new unified import wizard
+import { ImportWizard } from "@/components/import"
+
+// Import utilities - removed unused format imports
 import { UnifiedTransaction } from '@/types/transactions'
+
+// Import confirmation dialog components
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 // Types for our unified transaction (simplified for now)
 interface SortConfig {
@@ -83,7 +97,14 @@ export function TransactionHistoryTable() {
 
   // Hooks
   const isMobile = useIsMobile()
-  const { toast } = useToast()
+
+  // Delete state
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [transactionsToDelete, setTransactionsToDelete] = useState<string[]>([])
+
+  // Import wizard state
+  const [importWizardOpen, setImportWizardOpen] = useState(false)
 
   // Fetch transactions
   const fetchTransactions = async () => {
@@ -111,6 +132,15 @@ export function TransactionHistoryTable() {
   useEffect(() => {
     fetchTransactions()
   }, [])
+
+  // Handle import success
+  const handleImportSuccess = (count: number) => {
+    toast.success("Import Complete", {
+      description: `Successfully imported ${count} transaction${count === 1 ? '' : 's'}`,
+    })
+    fetchTransactions() // Refresh the transaction list
+    setImportWizardOpen(false) // Close the import wizard
+  }
 
   // Filter logic
   const filteredTransactions = React.useMemo(() => {
@@ -829,6 +859,7 @@ export function TransactionHistoryTable() {
         variant="outline"
         size="sm"
         className="h-9 flex items-center justify-center bg-gray-800/40 border-gray-600/50 hover:bg-gray-700/50"
+        onClick={() => setImportWizardOpen(true)}
       >
         <div className="flex items-center justify-center">
           <Upload className="h-4 w-4" />
@@ -837,6 +868,71 @@ export function TransactionHistoryTable() {
       </Button>
     </div>
   )
+
+  // Delete functions
+  const deleteTransactions = async (transactionIds: string[]) => {
+    if (transactionIds.length === 0) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch('/api/transaction-history', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transactionIds
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete transactions')
+      }
+
+      // Log the result for debugging
+      console.log('Delete API response:', result)
+
+      // Use deletedCount from API or fallback to the number we tried to delete
+      const deletedCount = result.deletedCount ?? transactionIds.length
+
+      // Success
+      toast.success("Transactions Deleted", {
+        description: `Successfully deleted ${deletedCount} transaction${deletedCount === 1 ? '' : 's'}`,
+      })
+
+      // Clear selections and refresh data
+      setSelectedTransactions(new Set())
+      await fetchTransactions()
+
+    } catch (error) {
+      console.error('Error deleting transactions:', error)
+      toast.error("Delete Failed", {
+        description: error instanceof Error ? error.message : 'Failed to delete transactions',
+      })
+    } finally {
+      setIsDeleting(false)
+      setDeleteDialogOpen(false)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    const selectedIds = Array.from(selectedTransactions)
+    if (selectedIds.length === 0) return
+
+    setTransactionsToDelete(selectedIds)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleSingleDelete = async (transactionId: string) => {
+    setTransactionsToDelete([transactionId])
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    await deleteTransactions(transactionsToDelete)
+  }
 
   // Loading state
   if (isLoading) {
@@ -849,6 +945,13 @@ export function TransactionHistoryTable() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Import Wizard for loading state */}
+        <ImportWizard
+          open={importWizardOpen}
+          onOpenChange={setImportWizardOpen}
+          onImportSuccess={handleImportSuccess}
+        />
       </div>
     )
   }
@@ -864,6 +967,13 @@ export function TransactionHistoryTable() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Import Wizard for error state */}
+        <ImportWizard
+          open={importWizardOpen}
+          onOpenChange={setImportWizardOpen}
+          onImportSuccess={handleImportSuccess}
+        />
       </div>
     )
   }
@@ -890,6 +1000,13 @@ export function TransactionHistoryTable() {
             </p>
           </div>
         </div>
+
+        {/* Import Wizard for empty state */}
+        <ImportWizard
+          open={importWizardOpen}
+          onOpenChange={setImportWizardOpen}
+          onImportSuccess={handleImportSuccess}
+        />
       </div>
     )
   }
@@ -921,6 +1038,13 @@ export function TransactionHistoryTable() {
             </Button>
           </div>
         </div>
+
+        {/* Import Wizard for filtered empty state */}
+        <ImportWizard
+          open={importWizardOpen}
+          onOpenChange={setImportWizardOpen}
+          onImportSuccess={handleImportSuccess}
+        />
       </div>
     )
   }
@@ -944,18 +1068,16 @@ export function TransactionHistoryTable() {
           <Button
             variant="destructive"
             size="sm"
-            onClick={() => {
-              toast({
-                title: "Feature Coming Soon",
-                description: "Delete functionality will be implemented in the next phase.",
-                variant: "default",
-              })
-            }}
+            onClick={handleBulkDelete}
             className="flex items-center gap-1 h-7 px-2 text-xs"
-            disabled={selectedTransactions.size === 0}
+            disabled={selectedTransactions.size === 0 || isDeleting}
           >
-            <Trash2 className="h-3 w-3" />
-            <span>Delete Selected</span>
+            {isDeleting ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Trash2 className="h-3 w-3" />
+            )}
+            <span>{isDeleting ? 'Deleting...' : 'Delete Selected'}</span>
           </Button>
         </div>
         
@@ -983,6 +1105,7 @@ export function TransactionHistoryTable() {
                   transaction={transaction}
                   isSelected={selectedTransactions.has(transaction.id)}
                   onSelect={() => toggleSelection(transaction.id)}
+                  onDelete={() => handleSingleDelete(transaction.id)}
                 />
               ))}
             </TableBody>
@@ -996,11 +1119,54 @@ export function TransactionHistoryTable() {
           transactions={paginatedTransactions}
           selectedTransactions={selectedTransactions}
           toggleSelection={toggleSelection}
+          onDelete={handleSingleDelete}
         />
       )}
 
       {/* Advanced pagination component */}
       {paginationSection}
+
+      {/* Confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-gradient-to-br from-gray-800/90 via-gray-900/95 to-gray-800/90 backdrop-blur-md border-gray-700/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Delete Transactions</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-300">
+              Are you sure you want to delete {transactionsToDelete.length} transaction{transactionsToDelete.length === 1 ? '' : 's'}? 
+              This action cannot be undone and will permanently remove the transaction data from your portfolio.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              disabled={isDeleting}
+              className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Import Wizard */}
+      <ImportWizard
+        open={importWizardOpen}
+        onOpenChange={setImportWizardOpen}
+        onImportSuccess={handleImportSuccess}
+      />
     </div>
   )
 } 

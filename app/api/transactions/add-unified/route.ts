@@ -88,6 +88,7 @@ export async function POST(request: Request) {
     const currentPrice = await getCurrentBTCPrice();
 
     // Transform and prepare transactions for database insertion
+    console.log('Debug: Processing transactions with csv_upload_id:', validatedTransactions[0]?.csv_upload_id)
     const dbTransactions = validatedTransactions.map(transaction => {
       const dbTransaction: any = {
         user_id: user.id,
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
         asset: transaction.asset || 'BTC',
         price: transaction.price || currentPrice,
         comment: transaction.comment || null,
+        csv_upload_id: transaction.csv_upload_id || null, // Include CSV upload ID for tracking
       };
 
       // Map transaction-specific fields based on type

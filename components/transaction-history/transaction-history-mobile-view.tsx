@@ -35,6 +35,7 @@ interface TransactionHistoryMobileViewProps {
   transactions: UnifiedTransaction[]
   selectedTransactions: Set<string>
   toggleSelection: (id: string) => void
+  onDelete: (id: string) => void
 }
 
 /**
@@ -43,7 +44,8 @@ interface TransactionHistoryMobileViewProps {
 export function TransactionHistoryMobileView({
   transactions,
   selectedTransactions,
-  toggleSelection
+  toggleSelection,
+  onDelete
 }: TransactionHistoryMobileViewProps) {
   if (transactions.length === 0) {
     return (
@@ -63,6 +65,7 @@ export function TransactionHistoryMobileView({
           transaction={transaction}
           isSelected={selectedTransactions.has(transaction.id)}
           onSelect={() => toggleSelection(transaction.id)}
+          onDelete={() => onDelete(transaction.id)}
         />
       ))}
     </div>

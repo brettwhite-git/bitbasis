@@ -14,6 +14,7 @@ const baseTransactionSchema = z.object({
     return num;
   }),
   comment: z.string().optional().nullable(),
+  csv_upload_id: z.string().uuid().optional().nullable(), // For CSV import tracking
 })
 
 // Buy transaction schema

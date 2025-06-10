@@ -113,6 +113,13 @@ export const TransactionHistoryHeaders = memo(function TransactionHistoryHeaders
         {/* Transaction Type */}
         {renderSortableHeader('type', 'Type', 'w-[100px]')}
         
+        {/* Sent Amount - what was sent out */}
+        <TableHead className="w-[120px] text-center">
+          <div className="flex items-center justify-center font-semibold text-xs">
+            Sent
+          </div>
+        </TableHead>
+        
         {/* From - source address/name */}
         {renderSortableHeader('from_address_name', 'From', 'w-[140px]')}
         
@@ -125,13 +132,6 @@ export const TransactionHistoryHeaders = memo(function TransactionHistoryHeaders
         
         {/* To - destination address/name */}
         {renderSortableHeader('to_address_name', 'To', 'w-[140px]')}
-        
-        {/* Sent Amount - what was sent out */}
-        <TableHead className="w-[120px] text-center">
-          <div className="flex items-center justify-center font-semibold text-xs">
-            Sent
-          </div>
-        </TableHead>
         
         {/* Received Amount - what was received */}
         <TableHead className="w-[120px] text-center">

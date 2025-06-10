@@ -30,6 +30,7 @@ interface TransactionHistoryRowMobileProps {
   transaction: UnifiedTransaction
   isSelected: boolean
   onSelect: () => void
+  onDelete?: () => void
 }
 
 /**
@@ -38,7 +39,8 @@ interface TransactionHistoryRowMobileProps {
 export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMobile({
   transaction,
   isSelected,
-  onSelect
+  onSelect,
+  onDelete
 }: TransactionHistoryRowMobileProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { openDrawer } = useEditDrawer()
@@ -105,14 +107,12 @@ export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMo
                 <span className="text-muted-foreground text-xs">Sent: </span>
                 <span className="font-medium">
                   {(() => {
-                    // Fiat value: net amount that actually got exchanged for BTC (sent_amount - fee_amount)
+                    // Fiat value: full sent amount (not subtracting fees)
                     const sentAmount = transaction.sent_amount
-                    const feeAmount = transaction.fee_amount || 0
-                    const fiatValue = Math.abs(sentAmount - feeAmount) // Ensure positive value
                     
                     const formattedValue = transaction.sent_currency === 'BTC' 
-                      ? `${formatBTC(fiatValue, 8, false)} ${transaction.sent_currency}`
-                      : `${formatCurrency(fiatValue)} ${transaction.sent_currency}`
+                      ? `${formatBTC(sentAmount, 8, false)} ${transaction.sent_currency}`
+                      : `${formatCurrency(sentAmount)} ${transaction.sent_currency}`
                     
                     // Always show as negative for sent amounts
                     return `-${formattedValue}`
@@ -162,7 +162,7 @@ export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMo
                 Duplicate
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-400">
+              <DropdownMenuItem className="text-red-400" onClick={onDelete}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </DropdownMenuItem>

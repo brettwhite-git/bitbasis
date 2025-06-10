@@ -47,11 +47,9 @@ export function TransactionHistoryAccordion({ transaction }: TransactionHistoryA
             <span className="text-gray-400">Fiat Value:</span>
             <span className="text-white">
               {(() => {
-                // Fiat value = sent_amount - fee_amount (net amount exchanged for BTC)
+                // Fiat value = sent_amount (full fiat amount paid)
                 const sentAmount = transaction.sent_amount || 0
-                const feeAmount = transaction.fee_amount || 0
-                const fiatValue = sentAmount - feeAmount
-                return formatCurrency(fiatValue)
+                return formatCurrency(sentAmount)
               })()}
             </span>
           </div>
@@ -66,7 +64,15 @@ export function TransactionHistoryAccordion({ transaction }: TransactionHistoryA
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Adjusted Cost Basis:</span>
-            <span className="text-white">{formatCurrency(transaction.sent_amount || 0)}</span>
+            <span className="text-white">
+              {(() => {
+                // Adjusted cost basis = sent_amount + fee_amount (total cost to acquire BTC)
+                const sentAmount = transaction.sent_amount || 0
+                const feeAmount = transaction.fee_amount || 0
+                const adjustedCostBasis = sentAmount + feeAmount
+                return formatCurrency(adjustedCostBasis)
+              })()}
+            </span>
           </div>
         </div>
       </div>
@@ -78,7 +84,13 @@ export function TransactionHistoryAccordion({ transaction }: TransactionHistoryA
           <div className="flex justify-between">
             <span className="text-gray-400">Adjusted Cost Basis:</span>
             <span className="text-white">
-              {formatCurrency(transaction.sent_amount || 0)}
+              {(() => {
+                // Adjusted cost basis = sent_amount + fee_amount (total cost to acquire BTC)
+                const sentAmount = transaction.sent_amount || 0
+                const feeAmount = transaction.fee_amount || 0
+                const adjustedCostBasis = sentAmount + feeAmount
+                return formatCurrency(adjustedCostBasis)
+              })()}
             </span>
           </div>
           <div className="flex justify-between">
@@ -96,21 +108,21 @@ export function TransactionHistoryAccordion({ transaction }: TransactionHistoryA
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Gain/Income:</span>
-            <span className={(() => {
-              // Calculate Gain/Income: current value - adjusted cost basis (sent_amount)
-              if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-                const currentValue = transaction.received_amount * currentBitcoinPrice
-                const adjustedCostBasis = transaction.sent_amount
-                const gainIncome = currentValue - adjustedCostBasis
-                return gainIncome >= 0 ? "text-green-400" : "text-red-400"
-              }
-              return "text-gray-500"
-            })()}>
-              {(() => {
-                // Calculate Gain/Income: current value - adjusted cost basis (sent_amount)
+            <span className=              {(() => {
+                // Calculate Gain/Income: current value - adjusted cost basis (sent_amount + fee_amount)
                 if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
                   const currentValue = transaction.received_amount * currentBitcoinPrice
-                  const adjustedCostBasis = transaction.sent_amount
+                  const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
+                  const gainIncome = currentValue - adjustedCostBasis
+                  return gainIncome >= 0 ? "text-green-400" : "text-red-400"
+                }
+                return "text-gray-500"
+              })()}>
+              {(() => {
+                // Calculate Gain/Income: current value - adjusted cost basis (sent_amount + fee_amount)
+                if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+                  const currentValue = transaction.received_amount * currentBitcoinPrice
+                  const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
                   const gainIncome = currentValue - adjustedCostBasis
                   return `${gainIncome >= 0 ? '+' : ''}${formatCurrency(gainIncome)}`
                 }
@@ -120,20 +132,20 @@ export function TransactionHistoryAccordion({ transaction }: TransactionHistoryA
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Gain %:</span>
-            <span className={(() => {
-              // Calculate Gain %: ((current value - adjusted cost basis) / adjusted cost basis) * 100
-              if (transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-                const currentValue = transaction.received_amount * currentBitcoinPrice
-                const adjustedCostBasis = transaction.sent_amount
-                const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
-                return gainPercent >= 0 ? "text-green-400" : "text-red-400"
-              }
-              return "text-white"
-            })()}>
+            <span className=              {(() => {
+                // Calculate Gain %: ((current value - adjusted cost basis) / adjusted cost basis) * 100
+                if (transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+                  const currentValue = transaction.received_amount * currentBitcoinPrice
+                  const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
+                  const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
+                  return gainPercent >= 0 ? "text-green-400" : "text-red-400"
+                }
+                return "text-white"
+              })()}>
               {(() => {
                 if (transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
                   const currentValue = transaction.received_amount * currentBitcoinPrice
-                  const adjustedCostBasis = transaction.sent_amount
+                  const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
                   const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
                   return `${gainPercent >= 0 ? '+' : ''}${gainPercent.toFixed(2)}%`
                 }
