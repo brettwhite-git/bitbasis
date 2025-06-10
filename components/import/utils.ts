@@ -86,8 +86,49 @@ export function transformCSVData(
       }
     })
 
-    return transaction
+    // Post-process to handle negative values appropriately
+    const normalizedTransaction = normalizeAmountsForTransactionType(transaction)
+
+    return normalizedTransaction
   })
+}
+
+// Normalize amounts based on transaction type and common CSV export patterns
+function normalizeAmountsForTransactionType(transaction: UnifiedTransaction): UnifiedTransaction {
+  // Handle withdrawal transactions with negative sent_amount (common in CSV exports)
+  if (transaction.type === 'withdrawal') {
+    // If sent_amount is negative, make it positive (withdrawals should have positive sent amounts)
+    if (transaction.sent_amount && transaction.sent_amount < 0) {
+      transaction.sent_amount = Math.abs(transaction.sent_amount)
+    }
+  }
+
+  // Handle deposit transactions with negative received_amount (less common but possible)
+  if (transaction.type === 'deposit') {
+    // If received_amount is negative, make it positive (deposits should have positive received amounts)
+    if (transaction.received_amount && transaction.received_amount < 0) {
+      transaction.received_amount = Math.abs(transaction.received_amount)
+    }
+  }
+
+  // Always make fee amounts positive (fees are always costs, never negative)
+  if (transaction.fee_amount && transaction.fee_amount < 0) {
+    transaction.fee_amount = Math.abs(transaction.fee_amount)
+  }
+
+  // Handle cases where exchanges export withdrawals as negative received_amount instead of positive sent_amount
+  if (transaction.type === 'withdrawal' && !transaction.sent_amount && transaction.received_amount && transaction.received_amount < 0) {
+    transaction.sent_amount = Math.abs(transaction.received_amount)
+    transaction.received_amount = null
+  }
+
+  // Handle cases where exchanges export deposits as negative sent_amount instead of positive received_amount  
+  if (transaction.type === 'deposit' && !transaction.received_amount && transaction.sent_amount && transaction.sent_amount < 0) {
+    transaction.received_amount = Math.abs(transaction.sent_amount)
+    transaction.sent_amount = null
+  }
+
+  return transaction
 }
 
 // Parse date from various formats

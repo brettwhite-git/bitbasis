@@ -48,6 +48,12 @@ import type { ColumnMapping, TransactionFieldType } from './import-context'
  * - Currency patterns: "currency", "asset", "symbol", "coin", "token"
  * - Address patterns: "address", "wallet", with directional context
  * - Exchange patterns: "exchange", "platform", "source", "provider", "service"
+ * - Source/Destination: "source", "destination" treated as aliases for "from", "to"
+ * 
+ * SPECIAL HANDLING:
+ * - Fiat amount columns are ignored (calculated dynamically from BTC amount × price)
+ * - Negative values in amount columns are detected and handled for withdrawals
+ * - Positive/negative mixed columns are mapped to received_amount with conversion logic
  */
 
 // Define available transaction fields with their labels and descriptions
@@ -135,6 +141,13 @@ export function MappingStep() {
     // Amount patterns (after fee detection)
     if (name.includes('amount') || name.includes('quantity') || name.includes('size') || 
         name.includes('value') || name.includes('volume') || name.includes('total')) {
+      
+      // Skip fiat amount columns for deposits/withdrawals - we calculate dynamically
+      if (name.includes('fiat') || name.includes('usd') || name.includes('eur') || 
+          name.includes('market') || name.includes('dollar')) {
+        return { field: null, confidence: 0.1 } // Low confidence = likely to be ignored
+      }
+      
       // Try to determine if it's sent or received based on context
       if (name.includes('sent') || name.includes('sold') || name.includes('debit') || 
           name.includes('pay') || name.includes('spend') || name.includes('out') ||
@@ -146,9 +159,20 @@ export function MappingStep() {
           name.includes('to') || name.includes('deposit')) {
         return { field: 'received_amount', confidence: 0.8 }
       }
+      
+      // Check sample values for negative/positive pattern (deposits/withdrawals)
+      if (sampleValues.length > 0) {
+        const hasNegative = sampleValues.some(val => val.toString().includes('-'))
+        const hasPositive = sampleValues.some(val => !val.toString().includes('-') && parseFloat(val) > 0)
+        
+        // If we see both positive and negative values, this is likely a combined deposit/withdrawal column
+        if (hasNegative && hasPositive) {
+          return { field: 'received_amount', confidence: 0.85 } // Will handle negative conversion in parsing
+        }
+      }
+      
       // Check for common exchange-specific terms
-      if (name.includes('base') || name.includes('fiat') || name.includes('usd') || 
-          name.includes('eur') || name.includes('quote')) {
+      if (name.includes('base') || name.includes('quote')) {
         return { field: 'sent_amount', confidence: 0.7 }
       }
       if (name.includes('crypto') || name.includes('btc') || name.includes('bitcoin')) {
