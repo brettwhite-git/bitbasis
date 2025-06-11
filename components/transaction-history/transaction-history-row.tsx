@@ -24,7 +24,7 @@ import {
 import { formatBTC, formatCurrency, formatDate } from "@/lib/utils/format"
 import { TransactionHistoryAccordion } from "./transaction-history-accordion"
 import { useBitcoinPrice } from "@/lib/hooks/useBitcoinPrice"
-import { TransactionBadge } from "@/components/transactions/badges/TransactionBadge"
+import { TransactionBadge } from "@/components/shared/badges"
 import { TransactionType } from "@/lib/utils/transaction-utils"
 import { useEditDrawer } from './edit-drawer-provider'
 import { UnifiedTransaction } from '@/types/transactions'

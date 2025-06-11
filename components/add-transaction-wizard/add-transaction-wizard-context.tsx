@@ -6,7 +6,8 @@ import {
   NewTransaction, 
   StagedTransaction, 
   WizardStep, 
-  AddTransactionWizardContext 
+  AddTransactionWizardContext,
+  TransactionWizardData 
 } from '@/types/add-transaction'
 
 interface AddTransactionWizardProviderProps {
@@ -82,7 +83,7 @@ export function AddTransactionWizardProvider({
   onClose 
 }: AddTransactionWizardProviderProps) {
   const [currentStep, setCurrentStep] = useState<WizardStep>('type')
-  const [transactionData, setTransactionData] = useState<Partial<NewTransaction>>({
+  const [transactionData, setTransactionData] = useState<TransactionWizardData>({
     date: new Date().toISOString().slice(0, 16), // Default to current date/time
     asset: 'BTC',
     type: 'buy',
@@ -141,7 +142,7 @@ export function AddTransactionWizardProvider({
   }, [currentStep])
 
   // Data management functions
-  const updateTransactionData = useCallback((data: Partial<NewTransaction>) => {
+  const updateTransactionData = useCallback((data: Partial<TransactionWizardData>) => {
     setTransactionData(prev => ({ ...prev, ...data }))
     setErrors({}) // Clear errors when data changes
   }, [])
@@ -197,8 +198,8 @@ export function AddTransactionWizardProvider({
       // Load into current transaction data, excluding temp fields
       const { tempId: _, created_at: __, ...transactionDataToLoad } = transaction
       
-      // Use type assertion to handle the discriminated union
-      setTransactionData(transactionDataToLoad as any)
+      // Properly handle the discriminated union by ensuring type safety
+      setTransactionData(transactionDataToLoad)
       
       // Go to details step
       setCurrentStep('details')
@@ -245,7 +246,7 @@ export function AddTransactionWizardProvider({
       })
 
       // Submit to API
-      const response = await fetch('/api/transactions/add-unified', {
+              const response = await fetch('/api/transaction-history/add-unified', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

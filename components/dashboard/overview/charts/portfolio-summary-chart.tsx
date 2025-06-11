@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -35,29 +35,26 @@ interface PortfolioSummaryChartProps {
 }
 
 export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps) {
-  const { data: portfolioHistory, loading, error } = usePortfolioHistory()
+  const { data: allPortfolioData, loading, error } = usePortfolioHistory()
 
-  // Filter data based on selected timeframe
-  const filteredData = (() => {
-    if (!portfolioHistory || portfolioHistory.length === 0) return [];
+  // Filter data based on timeframe
+  const portfolioData = useMemo(() => {
+    if (!allPortfolioData || allPortfolioData.length === 0) return []
     
-    const now = new Date();
-    let startDate: Date;
-
-    switch (timeframe) {
-      case "6M":
-        startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-        break;
-      case "1Y":
-        startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-        break;
-      default:
-        return portfolioHistory;
+    const now = new Date()
+    let cutoffDate: Date
+    
+    if (timeframe === '6M') {
+      cutoffDate = new Date(now.getFullYear(), now.getMonth() - 6, 1)
+    } else { // '1Y'
+      cutoffDate = new Date(now.getFullYear(), now.getMonth() - 11, 1)
     }
-
-    const startMonthKey = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
-    return portfolioHistory.filter(point => point.month >= startMonthKey);
-  })();
+    
+    return allPortfolioData.filter(dataPoint => {
+      const pointDate = new Date(dataPoint.date)
+      return pointDate >= cutoffDate
+    })
+  }, [allPortfolioData, timeframe])
 
   // Chart options
   const options: ChartOptions<"line"> = {
@@ -77,7 +74,7 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
           pointStyle: "circle",
         },
       },
-      tooltip: createPortfolioSummaryTooltipConfig(filteredData),
+      tooltip: createPortfolioSummaryTooltipConfig(portfolioData),
     },
     scales: {
       x: {
@@ -114,10 +111,8 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
   }
 
   const data = {
-    labels: filteredData.map(d => {
-      const [year, month] = (d.month || '').split('-');
-      if (!year || !month) return '';
-      const date = new Date(parseInt(year), parseInt(month) - 1);
+    labels: portfolioData.map(d => {
+      const date = new Date(d.date);
       const formattedMonth = date.toLocaleDateString('en-US', { month: 'short' });
       const formattedYear = `'${date.toLocaleDateString('en-US', { year: '2-digit' })}`;
       return `${formattedMonth} ${formattedYear}`;
@@ -125,7 +120,7 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
     datasets: [
       {
         label: "Portfolio Value",
-        data: filteredData.map(d => d?.portfolioValue ?? null),
+        data: portfolioData.map(d => d.portfolioValue),
         borderColor: "#F7931A", // Bitcoin Orange
         backgroundColor: "rgba(247, 147, 26, 0.2)", // Semi-transparent Bitcoin Orange
         pointBackgroundColor: "#F7931A", // Solid color for tooltip indicator
@@ -138,7 +133,7 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
       },
       {
         label: "Cost Basis",
-        data: filteredData.map(d => d?.costBasis ?? null),
+        data: portfolioData.map(d => d.costBasis),
         borderColor: "#3b82f6", // Blue-500
         backgroundColor: "rgba(59, 130, 246, 0.2)", // Semi-transparent Blue
         pointBackgroundColor: "#3b82f6", // Solid color for tooltip indicator

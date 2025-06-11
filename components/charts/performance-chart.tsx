@@ -54,85 +54,29 @@ export function PerformanceContainer({ children, className = "" }: { children: R
 
 // Main chart component
 export function PerformanceChart({
-  data: initialData,
-  options,
   height = 300,
   width = "100%",
-  className = "",
-  showMovingAverages = true,
-  showCostBasis = true
-}: PerformanceChartProps) {
+  className = ""
+}: {
+  height?: number
+  width?: string
+  className?: string
+}) {
   const { period } = useChartContext()
-  const [data, setData] = useState<PortfolioDataPoint[]>(initialData || [])
-  const [loading, setLoading] = useState<boolean>(!initialData)
-  const [error, setError] = useState<string | null>(null)
-  const { supabase } = useSupabase()
-  
-  // Initialize services
-  const dataService = new PortfolioDataServiceImpl(supabase)
-  const configService = new ChartConfigServiceImpl()
-
-  // Fetch data if not provided
-  useEffect(() => {
-    if (initialData && initialData.length > 0) {
-      setData(initialData)
-      setLoading(false)
-      return
-    }
-
-    async function fetchChartData() {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        // Get auth user data
-        const { data: authData } = await supabase.auth.getUser()
-        if (!authData.user) {
-          setError("User not authenticated")
-          setLoading(false)
-          return
-        }
-        
-        // Configure chart options
-        const chartOptions: ChartDataOptions = {
-          timeRange: period,
-          includeMovingAverages: showMovingAverages,
-          movingAveragePeriods: [3, 6], // 3 month and 6 month MAs
-          resolution: 'medium'
-        }
-        
-        // Fetch portfolio data
-        const chartData = await dataService.getChartData(
-          authData.user.id,
-          chartOptions
-        )
-        
-        setData(chartData)
-      } catch (err) {
-        console.error("Error fetching performance data:", err)
-        setError("Failed to load chart data")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchChartData()
-  }, [supabase, period, initialData, dataService, showMovingAverages])
-
-  // Create chart configuration
-  const chartOptions: ChartDataOptions = {
-    timeRange: period,
-    includeMovingAverages: showMovingAverages,
-  }
-  
-  const chartConfig = data.length > 0
-    ? configService.createPerformanceChartConfig(data, chartOptions)
-    : null
+  const { data, loading, error } = usePortfolioData(period)
 
   if (error) {
     return (
       <div className="flex items-center justify-center h-60 bg-black/10 rounded-md">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500">{error.message}</p>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-60 bg-black/10 rounded-md">
+        <div className="animate-spin h-8 w-8 border-4 border-bitcoin-orange border-opacity-50 rounded-full border-t-transparent"></div>
       </div>
     )
   }
@@ -140,7 +84,6 @@ export function PerformanceChart({
   return (
     <BasePortfolioChart
       data={data}
-      options={chartOptions}
       height={height}
       width={width}
       className={className}

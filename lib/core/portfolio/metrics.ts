@@ -1,35 +1,52 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
 import { 
-  Order,
   PortfolioMetrics,
   ExtendedPortfolioMetrics
 } from './types'
 
 /**
- * Calculates total BTC holdings from buy/sell orders only
- * Formula: Sum of (buy orders received BTC - sell orders BTC)
+ * Unified Transaction type for the new schema
  */
-export function calculateTotalBTC(orders: Order[]): number {
-  return orders.reduce((total, order) => {
-    if (order.type === 'buy' && order.received_btc_amount) {
-      return total + order.received_btc_amount
-    } else if (order.type === 'sell' && order.sell_btc_amount) {
-      return total - order.sell_btc_amount
+export interface UnifiedTransaction {
+  id: number
+  date: string
+  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
+  sent_amount: number | null
+  sent_currency: string | null
+  received_amount: number | null
+  received_currency: string | null
+  fee_amount: number | null
+  fee_currency: string | null
+  price: number | null
+  from_address_name: string | null
+  to_address_name: string | null
+}
+
+/**
+ * Calculates total BTC holdings from buy/sell transactions only
+ * Formula: Sum of (buy transactions received_amount - sell transactions sent_amount)
+ */
+export function calculateTotalBTC(transactions: UnifiedTransaction[]): number {
+  return transactions.reduce((total, transaction) => {
+    if (transaction.type === 'buy' && transaction.received_amount) {
+      return total + transaction.received_amount
+    } else if (transaction.type === 'sell' && transaction.sent_amount) {
+      return total - transaction.sent_amount
     }
     return total
   }, 0)
 }
 
 /**
- * Calculates total cost basis from buy orders only
- * Formula: Sum of (buy_fiat_amount + service_fee) for all buy orders
+ * Calculates total cost basis from buy transactions only
+ * Formula: Sum of (sent_amount + fee_amount_usd) for all buy transactions
  */
-export function calculateCostBasis(orders: Order[]): number {
-  return orders.reduce((total, order) => {
-    if (order.type === 'buy') {
-      const buyAmount = order.buy_fiat_amount || 0
-      const serviceFee = (order.service_fee_currency === 'USD' ? order.service_fee : 0) || 0
+export function calculateCostBasis(transactions: UnifiedTransaction[]): number {
+  return transactions.reduce((total, transaction) => {
+    if (transaction.type === 'buy') {
+      const buyAmount = transaction.sent_amount || 0
+      const serviceFee = (transaction.fee_currency === 'USD' ? transaction.fee_amount : 0) || 0
       return total + buyAmount + serviceFee
     }
     return total
@@ -37,13 +54,20 @@ export function calculateCostBasis(orders: Order[]): number {
 }
 
 /**
- * Calculates total fees from all orders
- * Formula: Sum of all service fees in USD
+ * Calculates total fees from all transactions
+ * Formula: Sum of all fees in USD (convert BTC fees to USD using price)
  */
-export function calculateTotalFees(orders: Order[]): number {
-  return orders.reduce((total, order) => {
-    const serviceFee = (order.service_fee_currency === 'USD' ? order.service_fee : 0) || 0
-    return total + serviceFee
+export function calculateTotalFees(transactions: UnifiedTransaction[]): number {
+  return transactions.reduce((total, transaction) => {
+    if (!transaction.fee_amount) return total
+    
+    if (transaction.fee_currency === 'USD') {
+      return total + transaction.fee_amount
+    } else if (transaction.fee_currency === 'BTC' && transaction.price) {
+      // Convert BTC fees to USD using transaction price
+      return total + (transaction.fee_amount * transaction.price)
+    }
+    return total
   }, 0)
 }
 
@@ -57,40 +81,24 @@ export function calculateUnrealizedGains(totalBtc: number, currentPrice: number,
 }
 
 /**
- * Calculates average buy price with HIFO method
- * Formula: Uses the highest cost basis purchases first when calculating average cost
+ * Calculates average buy price using buy transactions
+ * Formula: Total cost basis / Total BTC purchased
  */
-export function calculateAverageBuyPrice(orders: Order[]): number {
-  const buyOrders = orders.filter(order => order.type === 'buy')
+export function calculateAverageBuyPrice(transactions: UnifiedTransaction[]): number {
+  const buyTransactions = transactions.filter(t => t.type === 'buy')
   
-  // If no buy orders, return 0
-  if (buyOrders.length === 0) return 0
+  if (buyTransactions.length === 0) return 0
 
-  // Process holdings similar to HIFO method
-  let btcHoldings: {
-    amount: number, 
-    costBasis: number,
-    pricePerCoin: number
-  }[] = []
+  let totalCostBasis = 0
+  let totalBtcBought = 0
 
-  buyOrders.forEach(order => {
-    if (order.received_btc_amount && order.buy_fiat_amount && order.price != null) {
-      const fee = (order.service_fee && order.service_fee_currency === 'USD') ? order.service_fee : 0
-      const costBasisPerBuy = order.buy_fiat_amount + fee
-
-      btcHoldings.push({
-        amount: order.received_btc_amount,
-        costBasis: costBasisPerBuy,
-        pricePerCoin: order.price
-      })
+  buyTransactions.forEach(transaction => {
+    if (transaction.received_amount && transaction.sent_amount) {
+      const fee = (transaction.fee_amount && transaction.fee_currency === 'USD') ? transaction.fee_amount : 0
+      totalCostBasis += transaction.sent_amount + fee
+      totalBtcBought += transaction.received_amount
     }
   })
-
-  // Sort by price per coin (highest first) to implement HIFO
-  btcHoldings.sort((a, b) => b.pricePerCoin - a.pricePerCoin)
-
-  const totalCostBasis = btcHoldings.reduce((sum, h) => sum + h.costBasis, 0)
-  const totalBtcBought = btcHoldings.reduce((sum, h) => sum + h.amount, 0)
   
   return totalBtcBought > 0 ? totalCostBasis / totalBtcBought : 0
 }
@@ -98,25 +106,25 @@ export function calculateAverageBuyPrice(orders: Order[]): number {
 /**
  * Calculates short-term holdings (< 1 year)
  */
-export function calculateShortTermHoldings(orders: Order[]): number {
+export function calculateShortTermHoldings(transactions: UnifiedTransaction[]): number {
   const oneYearAgo = new Date()
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
   
   let shortTermHoldings = 0
   
-  orders.forEach(order => {
-    const txDate = new Date(order.date)
+  transactions.forEach(transaction => {
+    const txDate = new Date(transaction.date)
     const isShortTerm = txDate > oneYearAgo
 
-    if (order.type === 'buy' && order.received_btc_amount) {
+    if (transaction.type === 'buy' && transaction.received_amount) {
       if (isShortTerm) {
-        shortTermHoldings += order.received_btc_amount
+        shortTermHoldings += transaction.received_amount
       }
-    } else if (order.type === 'sell' && order.sell_btc_amount) {
-      const amount = order.sell_btc_amount
+    } else if (transaction.type === 'sell' && transaction.sent_amount) {
+      const amount = transaction.sent_amount
       // Deduct sells proportionally from short term holdings
-      const totalHoldings = shortTermHoldings
-      if (totalHoldings > 0) {
+      if (shortTermHoldings > 0) {
+        const totalHoldings = shortTermHoldings
         shortTermHoldings -= amount * (shortTermHoldings / totalHoldings)
       }
     }
@@ -128,25 +136,25 @@ export function calculateShortTermHoldings(orders: Order[]): number {
 /**
  * Calculates long-term holdings (>= 1 year)
  */
-export function calculateLongTermHoldings(orders: Order[]): number {
+export function calculateLongTermHoldings(transactions: UnifiedTransaction[]): number {
   const oneYearAgo = new Date()
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
   
   let longTermHoldings = 0
   
-  orders.forEach(order => {
-    const txDate = new Date(order.date)
+  transactions.forEach(transaction => {
+    const txDate = new Date(transaction.date)
     const isLongTerm = txDate <= oneYearAgo
 
-    if (order.type === 'buy' && order.received_btc_amount) {
+    if (transaction.type === 'buy' && transaction.received_amount) {
       if (isLongTerm) {
-        longTermHoldings += order.received_btc_amount
+        longTermHoldings += transaction.received_amount
       }
-    } else if (order.type === 'sell' && order.sell_btc_amount) {
-      const amount = order.sell_btc_amount
+    } else if (transaction.type === 'sell' && transaction.sent_amount) {
+      const amount = transaction.sent_amount
       // Deduct sells proportionally from long term holdings
-      const totalHoldings = longTermHoldings
-      if (totalHoldings > 0) {
+      if (longTermHoldings > 0) {
+        const totalHoldings = longTermHoldings
         longTermHoldings -= amount * (longTermHoldings / totalHoldings)
       }
     }
@@ -156,16 +164,16 @@ export function calculateLongTermHoldings(orders: Order[]): number {
 }
 
 /**
- * Calculates core portfolio metrics based on buy/sell orders
- * @param orders Array of buy/sell orders
+ * Calculates core portfolio metrics based on buy/sell transactions
+ * @param transactions Array of unified transactions
  * @param currentPrice Current Bitcoin price in USD
  * @returns Portfolio metrics including total BTC, cost basis, gains, etc.
  */
 export function calculatePortfolioMetrics(
-  orders: Order[],
+  transactions: UnifiedTransaction[],
   currentPrice: number
 ): PortfolioMetrics {
-  if (!orders.length) {
+  if (!transactions.length) {
     return {
       totalBtc: 0,
       totalCostBasis: 0,
@@ -178,31 +186,30 @@ export function calculatePortfolioMetrics(
     }
   }
 
-  // Process buy/sell orders
+  // Process buy/sell transactions
   let totalBtc = 0
   let totalCostBasis = 0
   let totalFees = 0
 
-  orders.forEach(order => {
-    if (order.type === 'buy' && order.received_btc_amount) {
+  transactions.forEach(transaction => {
+    if (transaction.type === 'buy' && transaction.received_amount && transaction.sent_amount) {
       // Add BTC from buy
-      totalBtc += order.received_btc_amount
+      totalBtc += transaction.received_amount
       
-      // Add to cost basis (including fees)
-      if (order.buy_fiat_amount) {
-        totalCostBasis += order.buy_fiat_amount
+      // Add to cost basis (fiat amount + USD fees)
+      totalCostBasis += transaction.sent_amount
+      
+      if (transaction.fee_amount && transaction.fee_currency === 'USD') {
+        totalCostBasis += transaction.fee_amount
+        totalFees += transaction.fee_amount
       }
-      if (order.service_fee && order.service_fee_currency === 'USD') {
-        totalCostBasis += order.service_fee
-        totalFees += order.service_fee
-      }
-    } else if (order.type === 'sell' && order.sell_btc_amount) {
+    } else if (transaction.type === 'sell' && transaction.sent_amount) {
       // Subtract BTC from sell
-      totalBtc -= order.sell_btc_amount
+      totalBtc -= transaction.sent_amount
 
       // Add sell fees to total fees
-      if (order.service_fee && order.service_fee_currency === 'USD') {
-        totalFees += order.service_fee
+      if (transaction.fee_amount && transaction.fee_currency === 'USD') {
+        totalFees += transaction.fee_amount
       }
     }
   })
@@ -225,51 +232,57 @@ export function calculatePortfolioMetrics(
     unrealizedGain,
     unrealizedGainPercent,
     averageBuyPrice,
-    totalTransactions: orders.length
+    totalTransactions: transactions.filter(t => t.type === 'buy' || t.type === 'sell').length
   }
 }
 
 /**
- * Fetches orders data from Supabase
+ * Fetches transactions data from unified transactions table
  */
-export async function getOrdersData(
+export async function getTransactionsData(
   userId: string,
   supabase: SupabaseClient<Database>
-): Promise<Order[]> {
+): Promise<UnifiedTransaction[]> {
   try {
     const { data, error } = await supabase
-      .from('orders')
-      .select('id, date, type, received_btc_amount, buy_fiat_amount, service_fee, service_fee_currency, sell_btc_amount, received_fiat_amount, price')
+      .from('transactions')
+      .select(`
+        id, date, type, 
+        sent_amount, sent_currency,
+        received_amount, received_currency,
+        fee_amount, fee_currency,
+        price, from_address_name, to_address_name
+      `)
       .eq('user_id', userId)
       .order('date', { ascending: true })
 
     if (error) throw error
-    return (data || []) as Order[]
+    return (data || []) as UnifiedTransaction[]
   } catch (error) {
-    console.error('Error fetching orders data:', error)
+    console.error('Error fetching transactions data:', error)
     return []
   }
 }
 
 /**
- * Fetches portfolio metrics from Supabase and calculates derived metrics
+ * Fetches portfolio metrics from Supabase using unified transactions table
  */
 export async function getPortfolioMetrics(
   userId: string,
   supabase: SupabaseClient<Database>
 ): Promise<ExtendedPortfolioMetrics> {
   try {
-    // Get all transactions from orders and transfers tables AND price
-    const [ordersResult, transfersResult, priceResult] = await Promise.all([
+    // Get all transactions and current BTC price
+    const [transactionsResult, priceResult] = await Promise.all([
       supabase
-        .from('orders')
-        // Fetch necessary columns for both core metrics and cost basis calculation
-        .select('id, date, type, received_btc_amount, buy_fiat_amount, service_fee, service_fee_currency, sell_btc_amount, received_fiat_amount, price') 
-        .eq('user_id', userId)
-        .order('date', { ascending: true }),
-      supabase
-        .from('transfers')
-        .select('*') // Keep '*' for transfers for now
+        .from('transactions')
+        .select(`
+          id, date, type,
+          sent_amount, sent_currency,
+          received_amount, received_currency, 
+          fee_amount, fee_currency,
+          price, from_address_name, to_address_name
+        `)
         .eq('user_id', userId)
         .order('date', { ascending: true }),
       supabase
@@ -280,22 +293,20 @@ export async function getPortfolioMetrics(
         .single()
     ])
 
-    if (ordersResult.error) throw ordersResult.error
-    if (transfersResult.error) throw transfersResult.error
+    if (transactionsResult.error) throw transactionsResult.error
     if (priceResult.error) throw priceResult.error
 
-    const orders = ordersResult.data || []
-    const transfers = transfersResult.data || []
+    const transactions = transactionsResult.data || []
     
     if (!priceResult.data) throw new Error('No Bitcoin price available')
     const currentPrice = priceResult.data.price_usd
 
-    // Calculate core metrics using only buy/sell orders
-    const coreMetrics = calculatePortfolioMetrics(orders as any, currentPrice)
+    // Calculate core metrics using only buy/sell transactions
+    const coreMetrics = calculatePortfolioMetrics(transactions as UnifiedTransaction[], currentPrice)
 
     // Calculate tax liability based on unrealized gains and holdings classification
-    const shortTermHoldings = calculateShortTermHoldings(orders as any)
-    const longTermHoldings = calculateLongTermHoldings(orders as any)
+    const shortTermHoldings = calculateShortTermHoldings(transactions as UnifiedTransaction[])
+    const longTermHoldings = calculateLongTermHoldings(transactions as UnifiedTransaction[])
     const totalHoldings = shortTermHoldings + longTermHoldings
     
     let potentialTaxLiabilityST = 0
@@ -317,14 +328,14 @@ export async function getPortfolioMetrics(
       potentialTaxLiabilityLT = longTermUnrealizedGain * LONG_TERM_TAX_RATE
     }
 
-    // Calculate transfer metrics
-    const totalSent = transfers
+    // Calculate transfer metrics using deposit/withdrawal transactions
+    const totalSent = transactions
       .filter(t => t.type === 'withdrawal')
-      .reduce((total, t) => total + (t.amount_btc || 0), 0)
+      .reduce((total, t) => total + (t.sent_amount || 0), 0)
     
-    const totalReceived = transfers
+    const totalReceived = transactions
       .filter(t => t.type === 'deposit')
-      .reduce((total, t) => total + (t.amount_btc || 0), 0)
+      .reduce((total, t) => total + (t.received_amount || 0), 0)
 
     const netTransfers = totalReceived - totalSent
 
@@ -359,4 +370,14 @@ export async function getPortfolioMetrics(
       potentialTaxLiabilityLT: 0
     }
   }
+}
+
+// Legacy function - keeping for backward compatibility during migration
+export async function getOrdersData(
+  userId: string,
+  supabase: SupabaseClient<Database>
+): Promise<any[]> {
+  console.warn('getOrdersData is deprecated. Use getTransactionsData instead.')
+  const transactions = await getTransactionsData(userId, supabase)
+  return transactions.filter(t => t.type === 'buy' || t.type === 'sell')
 }

@@ -4,6 +4,7 @@ import { Database } from '@/types/supabase';
 import { getPerformanceMetrics } from '@/lib/core/portfolio/performance';
 import { getPortfolioMetrics } from '@/lib/core/portfolio/metrics';
 import { PerformanceMetrics } from '@/lib/core/portfolio/types';
+import { UnifiedTransaction } from '@/types/transactions';
 import { useToast } from '@/lib/hooks/use-toast';
 
 export interface PerformanceData {
@@ -12,7 +13,7 @@ export interface PerformanceData {
     shortTermHoldings: number;
     longTermHoldings: number;
   };
-  orders: any[] | null;
+  transactions: UnifiedTransaction[] | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -21,7 +22,7 @@ export function usePerformanceData(userId: string): PerformanceData {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [performance, setPerformance] = useState<PerformanceData['performance'] | null>(null);
-  const [orders, setOrders] = useState<any[] | null>(null);
+  const [transactions, setTransactions] = useState<UnifiedTransaction[] | null>(null);
   const { toast } = useToast();
   const supabase = createClientComponentClient<Database>();
 
@@ -37,15 +38,15 @@ export function usePerformanceData(userId: string): PerformanceData {
         setIsLoading(true);
         setError(null);
         
-        // Fetch orders
-        const { data: ordersData, error: ordersError } = await supabase
-          .from('orders')
+        // Fetch transactions (replaces orders)
+        const { data: transactionsData, error: transactionsError } = await supabase
+          .from('transactions')
           .select('*')
           .eq('user_id', userId)
           .order('date', { ascending: true });
         
-        if (ordersError) throw ordersError;
-        setOrders(ordersData || []);
+        if (transactionsError) throw transactionsError;
+        setTransactions(transactionsData || []);
         
         // Fetch both performance metrics in parallel
         const [extendedMetrics, performanceMetrics] = await Promise.all([
@@ -109,7 +110,7 @@ export function usePerformanceData(userId: string): PerformanceData {
       hodlTime: 0,
       currentPrice: 0,
     },
-    orders,
+    transactions,
     isLoading,
     error
   };

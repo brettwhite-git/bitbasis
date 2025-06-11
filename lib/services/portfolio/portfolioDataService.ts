@@ -70,21 +70,22 @@ export class PortfolioDataServiceImpl implements PortfolioDataService {
       // Get current price
       const currentPrice = await this.getCurrentPrice()
       
-      // Get user's orders
-      const { data: rawOrders, error } = await this.supabase
-        .from('orders')
+      // Get user's transactions (buy/sell only)
+      const { data: rawTransactions, error } = await this.supabase
+        .from('transactions')
         .select('*')
         .eq('user_id', userId)
+        .in('type', ['buy', 'sell'])
         .order('date', { ascending: true })
 
       if (error) {
-        console.error('Error fetching orders:', error)
+        console.error('Error fetching transactions:', error)
         return []
       }
 
       // Normalize and process the data
-      const orders = this.normalizeOrderData(rawOrders || [])
-      const processedData = this.processOrdersData(orders, currentPrice)
+      const transactions = this.normalizeTransactionData(rawTransactions || [])
+      const processedData = this.processTransactionsData(transactions, currentPrice)
       
       // Apply filters and options
       const filteredData = this.filterByTimeRange(processedData, options.timeRange)

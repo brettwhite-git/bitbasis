@@ -1,42 +1,286 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { ExternalLink } from "lucide-react"
-import { getTransactions } from "@/lib/supabase/supabase"
-import { formatCurrency, formatBTC } from "@/lib/utils/utils"
-import type { Database } from "@/types/supabase"
-import { TransactionBadge } from "@/components/transactions/badges/TransactionBadge"
-import { TermBadge } from "@/components/transactions/badges/TermBadge"
+import { useState, useEffect, memo } from "react"
+import { ExternalLink, ChevronDown, ChevronUp } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table"
+import { formatBTC, formatCurrency } from "@/lib/utils/format"
+import { TransactionBadge } from "@/components/shared/badges"
+import { UnifiedTransaction } from "@/types/transactions"
+import { TransactionType } from "@/lib/utils/transaction-utils"
+import { useBitcoinPrice } from "@/lib/hooks/useBitcoinPrice"
+import { TransactionHistoryAccordion } from "@/components/transaction-history/transaction-history-accordion"
+import { TransactionHistoryMobileView } from "@/components/transaction-history/transaction-history-mobile-view"
+import { EditDrawerProvider } from "@/components/transaction-history/edit-drawer-provider"
+import Link from "next/link"
 
-// Update the interface to match what getTransactions returns
-interface UnifiedTransaction {
-  id: string
-  date: string
-  type: 'Buy' | 'Sell' | 'Deposit' | 'Withdrawal' | 'buy' | 'sell' | 'deposit' | 'withdrawal'
-  asset: string
-  btc_amount: number | null
-  usd_value: number | null
-  fee_usd: number | null
-  price_at_tx: number | null
-  exchange: string | null
-  network_fee_btc?: number | null
-  txid?: string | null
-}
+// Import data table components for loading/error states
+import { DataTableLoading } from "@/components/shared/data-table/DataTableLoading"
+import { DataTableError } from "@/components/shared/data-table/DataTableError"
 
-// Add type for getTransactions response
-interface TransactionsResponse {
-  data: UnifiedTransaction[] | null
-  error: Error | null
-}
+/**
+ * Simplified headers for recent transactions (no selection, no actions)
+ */
+const RecentTransactionsHeaders = memo(function RecentTransactionsHeaders() {
+  return (
+    <TableHeader>
+      <TableRow>
+        {/* Date - shows date on top, time below */}
+        <TableHead className="w-[120px] text-center">
+          <div className="flex items-center justify-center font-semibold text-xs">
+            Date
+          </div>
+        </TableHead>
+        
+        {/* Transaction Type */}
+        <TableHead className="w-[100px] text-center">
+          <div className="flex items-center justify-center font-semibold text-xs">
+            Type
+          </div>
+        </TableHead>
+        
+        {/* Sent Amount - what was sent out */}
+        <TableHead className="w-[120px] text-center">
+          <div className="flex items-center justify-center font-semibold text-xs">
+            Sent
+          </div>
+        </TableHead>
+        
+        {/* From - source address/name */}
+        <TableHead className="w-[140px] text-center">
+          <div className="flex items-center justify-center font-semibold text-xs">
+            From
+          </div>
+        </TableHead>
+        
+        {/* Flow Arrow */}
+        <TableHead className="w-[40px] text-center">
+          <div className="flex items-center justify-center font-semibold text-xs">
+            {/* Empty column for flow arrow */}
+          </div>
+        </TableHead>
+        
+        {/* To - destination address/name */}
+        <TableHead className="w-[140px] text-center">
+          <div className="flex items-center justify-center font-semibold text-xs">
+            To
+          </div>
+        </TableHead>
+        
+        {/* Received Amount - what was received */}
+        <TableHead className="w-[120px] text-center">
+          <div className="flex items-center justify-center font-semibold text-xs">
+            Received
+          </div>
+        </TableHead>
+        
+        {/* Gain/Income - Profit & Loss */}
+        <TableHead className="hidden md:table-cell w-[100px] text-center">
+          <div className="flex items-center justify-center font-semibold text-xs">
+            Gain/Income
+          </div>
+        </TableHead>
+        
+        {/* Gain - Percentage gain/loss */}
+        <TableHead className="hidden md:table-cell w-[100px] text-center">
+          <div className="flex items-center justify-center font-semibold text-xs">
+            Gain %
+          </div>
+        </TableHead>
+        
+        {/* Accordion toggle column */}
+        <TableHead className="w-[60px] text-center">
+          <div className="flex items-center justify-center font-semibold text-xs">
+            Details
+          </div>
+        </TableHead>
+      </TableRow>
+    </TableHeader>
+  )
+})
+
+/**
+ * Simplified row for recent transactions (no selection, no actions)
+ */
+const RecentTransactionRow = memo(function RecentTransactionRow({
+  transaction
+}: {
+  transaction: UnifiedTransaction
+}) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const { price: currentBitcoinPrice, loading: priceLoading } = useBitcoinPrice()
+  
+  const getTransactionBadge = (type: TransactionType) => {
+    return <TransactionBadge type={type} />
+  }
+
+  const toggleExpanded = () => {
+    setIsExpanded(!isExpanded)
+  }
+
+  return (
+    <>
+      {/* Main Row */}
+      <TableRow className="group hover:bg-gray-800/20">
+        {/* Date - date on top, time below */}
+        <TableCell className="text-center px-4">
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">
+              {new Date(transaction.date).toLocaleDateString()}
+            </span>
+            <span className="text-xs text-gray-400">
+              {new Date(transaction.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+        </TableCell>
+        
+        {/* Type */}
+        <TableCell className="text-center px-4">
+          {getTransactionBadge(transaction.type as TransactionType)}
+        </TableCell>
+        
+        {/* Sent Amount */}
+        <TableCell className="text-center px-4">
+          {transaction.sent_amount && transaction.sent_currency ? (
+            <span className="text-sm font-medium">
+              {(() => {
+                const sentAmount = transaction.sent_amount
+                const formattedValue = transaction.sent_currency === 'BTC' 
+                  ? formatBTC(sentAmount)
+                  : formatCurrency(sentAmount)
+                return `-${formattedValue}`
+              })()}
+            </span>
+          ) : (
+            <span className="text-sm text-gray-500">-</span>
+          )}
+        </TableCell>
+        
+        {/* From */}
+        <TableCell className="text-center px-4">
+          <span className="text-sm">
+            {transaction.from_address_name || "-"}
+          </span>
+        </TableCell>
+        
+        {/* Flow Arrow */}
+        <TableCell className="text-center px-2">
+          <span className="text-gray-400 text-sm">→</span>
+        </TableCell>
+        
+        {/* To */}
+        <TableCell className="text-center px-4">
+          <span className="text-sm">
+            {transaction.to_address_name || "-"}
+          </span>
+        </TableCell>
+        
+        {/* Received Amount */}
+        <TableCell className="text-center px-4">
+          {transaction.received_amount && transaction.received_currency ? (
+            <span className="text-sm font-medium">
+              {(() => {
+                const formattedValue = transaction.received_currency === 'BTC' 
+                  ? formatBTC(transaction.received_amount)
+                  : formatCurrency(transaction.received_amount)
+                return `+${formattedValue}`
+              })()}
+            </span>
+          ) : (
+            <span className="text-sm text-gray-500">-</span>
+          )}
+        </TableCell>
+        
+        {/* Gain/Income */}
+        <TableCell className="hidden md:table-cell w-[100px] text-center">
+          <div className={(() => {
+            if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+              const currentValue = transaction.received_amount * currentBitcoinPrice
+              const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
+              const gainIncome = currentValue - adjustedCostBasis
+              return gainIncome >= 0 ? "text-green-400 text-xs font-medium" : "text-red-400 text-xs font-medium"
+            }
+            return "text-xs text-gray-500"
+          })()}>
+            {(() => {
+              if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+                const currentValue = transaction.received_amount * currentBitcoinPrice
+                const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
+                const gainIncome = currentValue - adjustedCostBasis
+                return `${gainIncome >= 0 ? '+' : ''}${formatCurrency(gainIncome)}`
+              }
+              return priceLoading ? "..." : "-"
+            })()}
+          </div>
+        </TableCell>
+        
+        {/* Gain % */}
+        <TableCell className="hidden md:table-cell text-center px-4">
+          <span className={(() => {
+            if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+              const currentValue = transaction.received_amount * currentBitcoinPrice
+              const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
+              const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
+              return gainPercent >= 0 ? "text-green-400 text-xs font-medium" : "text-red-400 text-xs font-medium"
+            }
+            return "text-xs text-gray-500"
+          })()}>
+            {(() => {
+              if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
+                const currentValue = transaction.received_amount * currentBitcoinPrice
+                const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
+                const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
+                return `${gainPercent >= 0 ? '+' : ''}${gainPercent.toFixed(1)}%`
+              }
+              return priceLoading ? "..." : "-"
+            })()}
+          </span>
+        </TableCell>
+        
+        {/* Accordion Toggle */}
+        <TableCell className="text-center px-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={toggleExpanded}
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? "Collapse details" : "Expand details"}
+          >
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+        </TableCell>
+      </TableRow>
+      
+      {/* Accordion Details Row */}
+      {isExpanded && (
+        <TableRow>
+          <TableCell colSpan={10} className="px-0 py-0">
+            <div className="border-t border-gray-700/50">
+              <TransactionHistoryAccordion transaction={transaction} />
+            </div>
+          </TableCell>
+        </TableRow>
+      )}
+    </>
+  )
+})
 
 export function RecentTransactions() {
   const [transactions, setTransactions] = useState<UnifiedTransaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  // Store current date once when component mounts for consistent calculations
-  const [currentDate] = useState<Date>(new Date())
 
   useEffect(() => {
     const loadTransactions = async () => {
@@ -44,76 +288,29 @@ export function RecentTransactions() {
         setIsLoading(true)
         setError(null)
 
-        // Use the shared getTransactions function
-        // Remove the incorrect type assertion
-        const result = await getTransactions()
+        const response = await fetch('/api/transaction-history')
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch transactions: ${response.status}`)
+        }
+
+        const result = await response.json()
         
         if (result.error) {
-          throw result.error
+          throw new Error(result.error)
         }
 
-        // Check if data exists and contains orders/transfers
-        if (result.data && (result.data.orders || result.data.transfers)) {
-          // Combine orders and transfers into one array
-          const combined = [
-            ...(result.data.orders || []).map(tx => ({ ...tx, type: tx.type || 'unknown' })), // Ensure type exists
-            ...(result.data.transfers || []).map(tx => ({ ...tx, type: tx.type || 'unknown' })), // Ensure type exists
-          ];
-
-          // Sort by date descending (most recent first)
-          combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-          // Map to UnifiedTransaction interface (ensure optional fields)
-          const unifiedData = combined.map(tx => {
-            const isOrder = ['Buy', 'Sell', 'buy', 'sell'].includes(tx.type);
-            const isTransfer = ['Deposit', 'Withdrawal', 'deposit', 'withdrawal'].includes(tx.type);
-
-            let btc_amount: number | null = null;
-            let usd_value: number | null = null;
-            let fee_usd: number | null = null;
-            let network_fee_btc: number | null = null;
-            let txid: string | null = null;
-            let exchange: string | null = null;
-
-            if (isOrder) {
-              // Explicitly cast to the expected Order type (adjust if type name differs)
-              const order = tx as Database['public']['Tables']['orders']['Row']; 
-              btc_amount = order.received_btc_amount ?? order.sell_btc_amount ?? null;
-              usd_value = order.buy_fiat_amount ?? order.received_fiat_amount ?? null;
-              fee_usd = order.service_fee ?? null;
-              exchange = order.exchange ?? null;
-              // Orders don't have network_fee_btc or txid directly in this structure
-            } else if (isTransfer) {
-               // Explicitly cast to the expected Transfer type (adjust if type name differs)
-              const transfer = tx as Database['public']['Tables']['transfers']['Row'];
-              btc_amount = transfer.amount_btc ?? null;
-              usd_value = transfer.amount_fiat ?? null;
-              network_fee_btc = transfer.fee_amount_btc ?? null;
-              txid = transfer.hash ?? null;
-              // Transfers don't have service_fee or exchange directly
-            }
-
-            return {
-              id: String(tx.id), // Ensure ID is string
-              date: tx.date,
-              type: tx.type as UnifiedTransaction['type'], // Assume type is validated upstream or default
-              asset: tx.asset || 'BTC', // Assume BTC if missing
-              price_at_tx: tx.price ?? null,
-              btc_amount, // Use mapped value
-              usd_value, // Use mapped value
-              fee_usd, // Use mapped value
-              exchange, // Use mapped value
-              network_fee_btc, // Use mapped value
-              txid, // Use mapped value
-            } as UnifiedTransaction;
-          });
-
-          // Take only the 5 most recent transactions
-          setTransactions(unifiedData.slice(0, 5))
-        } else {
-          // Handle case where data is empty or missing orders/transfers
-          setTransactions([]);
-        }
+        // Handle both possible response formats and limit to 5
+        const transactionData = result.data || result.transactions || []
+        
+        // Sort by date (newest first) and limit to 5
+        const sortedTransactions = transactionData
+          .sort((a: UnifiedTransaction, b: UnifiedTransaction) => 
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+          )
+          .slice(0, 5)
+        
+        setTransactions(sortedTransactions)
 
       } catch (err) {
         console.error('Failed to load recent transactions:', err)
@@ -127,102 +324,68 @@ export function RecentTransactions() {
   }, [])
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-[300px]">Loading transactions...</div>
-  }
-
-  if (error) {
     return (
-      <div className="flex justify-center items-center h-[300px] text-red-500">
-        {error}
+      <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50">
+        <DataTableLoading colSpan={10} />
       </div>
     )
   }
 
-  // Render the table structure mirroring TransactionsTable
+  if (error) {
+    return (
+      <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50">
+        <DataTableError message={error} colSpan={10} />
+      </div>
+    )
+  }
+
+  if (transactions.length === 0) {
+    return (
+      <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50">
+        <div className="flex flex-col justify-center items-center h-[300px] text-muted-foreground">
+          <div className="text-center">
+            <p className="text-sm font-medium">No transactions yet</p>
+            <p className="text-xs mt-1">Transactions will appear here once you add them</p>
+            <Button variant="outline" size="sm" className="mt-4" asChild>
+              <Link href="/transaction-history">
+                Add Transactions
+                <ExternalLink className="ml-2 h-3 w-3" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          {/* Mirror columns from TransactionsTable */}
-          <TableRow>
-            <TableHead className="text-center w-[80px]">Date</TableHead>
-            <TableHead className="text-center w-[125px]">Type</TableHead>
-            <TableHead className="text-center w-[80px]">Term</TableHead>
-            <TableHead className="text-center w-[80px]">Amount (BTC)</TableHead>
-            <TableHead className="hidden md:table-cell text-center w-[80px]">Price (BTC/USD)</TableHead>
-            <TableHead className="text-center w-[80px]">Amount (USD)</TableHead>
-            <TableHead className="hidden md:table-cell text-center w-[80px]">Fees (USD)</TableHead>
-            <TableHead className="hidden lg:table-cell text-center w-[80px]">Exchange</TableHead>
-            <TableHead className="hidden lg:table-cell text-center w-[80px]">Fees (BTC)</TableHead>
-            <TableHead className="hidden lg:table-cell text-center w-[60px]">TXID</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {transactions.map((transaction) => (
-            <TableRow key={transaction.id}>
-              {/* Mirror cell rendering from TransactionsTable */}
-              <TableCell className="text-center px-4">
-                {new Date(transaction.date).toLocaleString(undefined, {
-                  year: 'numeric',
-                  month: 'numeric',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </TableCell>
-              <TableCell className="text-center">
-                <TransactionBadge type={transaction.type} />
-              </TableCell>
-              <TableCell className="text-center">
-                {transaction.type?.toLowerCase() === "buy" || transaction.type?.toLowerCase() === "sell" ? (
-                  <TermBadge date={transaction.date} currentDate={currentDate} />
-                ) : (
-                  "-"
-                )}
-              </TableCell>
-              <TableCell className="text-center">
-                {formatBTC(transaction.btc_amount, false)}
-              </TableCell>
-              <TableCell className="hidden md:table-cell text-center">
-                {transaction.price_at_tx !== null ? formatCurrency(transaction.price_at_tx) : '-'}
-              </TableCell>
-              <TableCell className="text-center">
-                {transaction.usd_value !== null ? formatCurrency(transaction.usd_value) : '-'}
-              </TableCell>
-              <TableCell className="hidden md:table-cell text-center">
-                {transaction.fee_usd !== null ? formatCurrency(transaction.fee_usd) : '-'}
-              </TableCell>
-              <TableCell className="hidden lg:table-cell text-center">
-                {transaction.exchange 
-                  ? transaction.exchange.charAt(0).toUpperCase() + transaction.exchange.slice(1).toLowerCase()
-                  : "-"}
-              </TableCell>
-              <TableCell className="hidden lg:table-cell text-center">
-                 {/* Display Network Fee BTC */}
-                {transaction.network_fee_btc && transaction.network_fee_btc !== 0 
-                  ? formatBTC(transaction.network_fee_btc, false) 
-                  : "-"}
-              </TableCell>
-              <TableCell className="hidden lg:table-cell text-center">
-                {/* Display TXID link */}
-                {transaction.txid ? (
-                  <a 
-                    href={`https://mempool.space/tx/${transaction.txid}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center text-blue-500 hover:text-blue-700"
-                    title="View transaction on Mempool.space"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                ) : (
-                  "-"
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <EditDrawerProvider>
+      <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50">
+        {/* Desktop Table View */}
+        <div className="hidden md:block">
+          <Table>
+            <RecentTransactionsHeaders />
+            <TableBody>
+              {transactions.map((transaction) => (
+                <RecentTransactionRow
+                  key={transaction.id}
+                  transaction={transaction}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Mobile View - reuse existing component but with no selection/delete */}
+        <div className="md:hidden">
+          <TransactionHistoryMobileView
+            transactions={transactions}
+            selectedTransactions={new Set()}
+            toggleSelection={() => {}} // No selection in preview
+            onDelete={() => {}} // No delete in preview
+          />
+        </div>
+      </div>
+    </EditDrawerProvider>
   )
 } 

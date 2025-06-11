@@ -51,7 +51,7 @@ export function PerformanceOverview({ user }: PerformanceOverviewProps) {
           <Suspense fallback={<TabContentSkeleton />}>
             <PersonalInsights 
               performance={performanceData.performance}
-              orders={performanceData.orders || []}
+              transactions={performanceData.transactions || []}
               isLoading={performanceData.isLoading}
             />
           </Suspense>

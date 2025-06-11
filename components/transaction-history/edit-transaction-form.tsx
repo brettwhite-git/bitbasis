@@ -127,7 +127,7 @@ export function EditTransactionForm({ transaction }: EditTransactionFormProps) {
         date: new Date(data.date).toISOString(),
       }
 
-      const response = await fetch(`/api/transactions/${transaction.id}`, {
+      const response = await fetch(`/api/transaction-history/${transaction.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

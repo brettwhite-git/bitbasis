@@ -1,4 +1,5 @@
-import { getPortfolioMetrics, getPerformanceMetrics } from "@/lib/core/portfolio"
+import { getPortfolioMetrics } from "@/lib/core/portfolio/metrics"
+import { getPerformanceMetrics } from "@/lib/core/portfolio/performance"
 import { OverviewLayout } from "@/components/dashboard/overview/overview-layout"
 import { requireAuth } from "@/lib/auth/server-auth"
 

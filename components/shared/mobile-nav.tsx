@@ -41,14 +41,8 @@ export function MobileNav() {
     {
       title: "Transactions",
       icon: History,
-      href: "/dashboard/transactions",
-      isActive: pathname === "/dashboard/transactions",
-    },
-    {
-      title: "Transaction History",
-      icon: Database,
       href: "/dashboard/transaction-history",
-      isActive: pathname === "/dashboard/transaction-history",
+      isActive: pathname === "/dashboard/transaction-history" || pathname === "/dashboard/transactions",
     },
     {
       title: "Settings",

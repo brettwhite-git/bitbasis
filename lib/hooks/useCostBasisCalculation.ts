@@ -27,6 +27,20 @@ export interface UseCostBasisCalculationResult {
   refetch: () => void
 }
 
+// Unified transaction type for the new schema
+interface UnifiedTransaction {
+  id: number
+  date: string
+  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
+  sent_amount: number | null
+  sent_currency: string | null
+  received_amount: number | null
+  received_currency: string | null
+  fee_amount: number | null
+  fee_currency: string | null
+  price: number | null
+}
+
 export function useCostBasisCalculation(
   initialMethod: CostBasisMethod = 'HIFO'
 ): UseCostBasisCalculationResult {
@@ -35,7 +49,7 @@ export function useCostBasisCalculation(
   const [error, setError] = useState<Error | null>(null)
   const [method, setMethod] = useState<CostBasisMethod>(initialMethod)
   const [userId, setUserId] = useState<string | null>(null)
-  const [orders, setOrders] = useState<any[]>([])
+  const [transactions, setTransactions] = useState<UnifiedTransaction[]>([])
   const [currentPrice, setCurrentPrice] = useState<number>(0)
   
   const supabase = createClientComponentClient<Database>()
@@ -63,7 +77,7 @@ export function useCostBasisCalculation(
     fetchSession()
   }, [supabase])
 
-  // Fetch orders and price data
+  // Fetch transactions and price data
   useEffect(() => {
     const fetchData = async () => {
       if (!userId) {
@@ -72,13 +86,13 @@ export function useCostBasisCalculation(
 
       try {
         setLoading(true)
-        console.log('useCostBasisCalculation: Fetching orders and price for user:', userId)
+        console.log('useCostBasisCalculation: Fetching transactions and price for user:', userId)
         
-        // Fetch orders and price in parallel
-        const [ordersResult, priceResult] = await Promise.all([
+        // Fetch transactions and price in parallel
+        const [transactionsResult, priceResult] = await Promise.all([
           supabase
-            .from('orders')
-            .select('id, date, type, received_btc_amount, buy_fiat_amount, service_fee, service_fee_currency, sell_btc_amount, received_fiat_amount, price')
+            .from('transactions')
+            .select('id, date, type, sent_amount, sent_currency, received_amount, received_currency, fee_amount, fee_currency, price')
             .eq('user_id', userId)
             .order('date', { ascending: true }),
           supabase
@@ -89,17 +103,17 @@ export function useCostBasisCalculation(
             .single()
         ])
 
-        if (ordersResult.error) throw ordersResult.error
+        if (transactionsResult.error) throw transactionsResult.error
         if (priceResult.error) throw priceResult.error
 
-        const fetchedOrders = ordersResult.data || []
+        const fetchedTransactions = transactionsResult.data || []
         if (!priceResult.data) throw new Error('No Bitcoin price available')
         
-        setOrders(fetchedOrders)
+        setTransactions(fetchedTransactions)
         setCurrentPrice(priceResult.data.price_usd)
         
         // Perform initial calculation
-        await calculateWithMethod(fetchedOrders, priceResult.data.price_usd, method)
+        await calculateWithMethod(fetchedTransactions, priceResult.data.price_usd, method)
       } catch (err) {
         console.error('useCostBasisCalculation: Error fetching data:', err)
         setError(err instanceof Error ? err : new Error('Failed to fetch data'))
@@ -113,19 +127,35 @@ export function useCostBasisCalculation(
 
   // Recalculate when method changes
   useEffect(() => {
-    if (orders.length > 0 && currentPrice > 0) {
-      calculateWithMethod(orders, currentPrice, method)
+    if (transactions.length > 0 && currentPrice > 0) {
+      calculateWithMethod(transactions, currentPrice, method)
     }
   }, [method])
 
-  const calculateWithMethod = async (orders: any[], price: number, method: CostBasisMethod) => {
+  const calculateWithMethod = async (transactions: UnifiedTransaction[], price: number, method: CostBasisMethod) => {
     try {
       console.log(`useCostBasisCalculation: Calculating using ${method} method`)
       if (!userId) {
         throw new Error('User ID is required')
       }
       
-      const result = await calculateCostBasis(userId, method, orders, price)
+      // Transform unified transactions to legacy order format for calculateCostBasis function
+      const legacyOrders = transactions
+        .filter(tx => tx.type === 'buy' || tx.type === 'sell')
+        .map(tx => ({
+          id: tx.id,
+          date: tx.date,
+          type: tx.type,
+          received_btc_amount: tx.type === 'buy' ? tx.received_amount : null,
+          buy_fiat_amount: tx.type === 'buy' ? tx.sent_amount : null,
+          service_fee: tx.fee_amount && tx.fee_currency === 'USD' ? tx.fee_amount : null,
+          service_fee_currency: tx.fee_currency === 'USD' ? 'USD' : null,
+          sell_btc_amount: tx.type === 'sell' ? tx.sent_amount : null,
+          received_fiat_amount: tx.type === 'sell' ? tx.received_amount : null,
+          price: tx.price
+        }))
+      
+      const result = await calculateCostBasis(userId, method, legacyOrders, price)
       setData(result)
     } catch (err) {
       console.error(`useCostBasisCalculation: Error calculating ${method}:`, err)
@@ -144,11 +174,11 @@ export function useCostBasisCalculation(
     if (!userId) return
     
     try {
-      // Fetch orders and price in parallel
-      const [ordersResult, priceResult] = await Promise.all([
+      // Fetch transactions and price in parallel
+      const [transactionsResult, priceResult] = await Promise.all([
         supabase
-          .from('orders')
-          .select('id, date, type, received_btc_amount, buy_fiat_amount, service_fee, service_fee_currency, sell_btc_amount, received_fiat_amount, price')
+          .from('transactions')
+          .select('id, date, type, sent_amount, sent_currency, received_amount, received_currency, fee_amount, fee_currency, price')
           .eq('user_id', userId)
           .order('date', { ascending: true }),
         supabase
@@ -159,17 +189,17 @@ export function useCostBasisCalculation(
           .single()
       ])
 
-      if (ordersResult.error) throw ordersResult.error
+      if (transactionsResult.error) throw transactionsResult.error
       if (priceResult.error) throw priceResult.error
 
-      const fetchedOrders = ordersResult.data || []
+      const fetchedTransactions = transactionsResult.data || []
       if (!priceResult.data) throw new Error('No Bitcoin price available')
       
-      setOrders(fetchedOrders)
+      setTransactions(fetchedTransactions)
       setCurrentPrice(priceResult.data.price_usd)
       
       // Perform calculation
-      await calculateWithMethod(fetchedOrders, priceResult.data.price_usd, method)
+      await calculateWithMethod(fetchedTransactions, priceResult.data.price_usd, method)
     } catch (err) {
       console.error('useCostBasisCalculation: Error in refetch:', err)
       setError(err instanceof Error ? err : new Error('Failed to refetch data'))

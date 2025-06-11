@@ -91,7 +91,7 @@ async function testSupabaseConnection() {
     // Test basic connection
     console.log('\n2. Testing basic connection...')
     const { data: testData, error: testError } = await testClient
-      .from('orders')
+      .from('transactions')
       .select('count')
       .limit(1)
 
@@ -108,7 +108,7 @@ async function testSupabaseConnection() {
     // Test table structure
     console.log('\n3. Testing table structure...')
     const { data: tableInfo, error: tableError } = await testClient
-      .from('orders')
+      .from('transactions')
       .select('*')
       .limit(0)
 
@@ -159,12 +159,10 @@ export interface Transaction {
 
 // Use client-side client for authenticated operations
 export async function insertTransactions({ 
-  orders, 
-  transfers,
+  transactions,
   csvUploadId
 }: { 
-  orders: Database['public']['Tables']['orders']['Insert'][], 
-  transfers: Database['public']['Tables']['transfers']['Insert'][],
+  transactions: Database['public']['Tables']['transactions']['Insert'][],
   csvUploadId?: string
 }) {
   const supabase = createClientComponentClient<Database>()
@@ -181,47 +179,33 @@ export async function insertTransactions({
       return { data: null, error: { message: 'Please sign in to continue' } }
     }
 
-    // If csvUploadId is provided, add it to all orders and transfers
+    // If csvUploadId is provided, add it to all transactions
     if (csvUploadId) {
-      orders = orders.map(order => ({ ...order, csv_upload_id: csvUploadId }))
-      transfers = transfers.map(transfer => ({ ...transfer, csv_upload_id: csvUploadId }))
+      transactions = transactions.map(transaction => ({ ...transaction, csv_upload_id: csvUploadId }))
     }
 
-    // Insert orders and transfers in parallel
-    const [ordersResult, transfersResult] = await Promise.all([
-      orders.length > 0 ? supabase.from('orders').insert(orders).select() : Promise.resolve({ data: [], error: null }),
-      transfers.length > 0 ? supabase.from('transfers').insert(transfers).select() : Promise.resolve({ data: [], error: null })
-    ])
+    // Insert transactions
+    const { data: transactionsData, error: transactionsError } = await supabase
+      .from('transactions')
+      .insert(transactions)
+      .select()
 
-    if (ordersResult.error) {
-      console.error('Orders insert error:', ordersResult.error)
+    if (transactionsError) {
+      console.error('Transactions insert error:', transactionsError)
       return { 
         data: null, 
         error: { 
-          message: ordersResult.error.message || 'Failed to insert orders',
-          details: ordersResult.error.details,
-          hint: ordersResult.error.hint,
-          code: ordersResult.error.code
-        } 
-      }
-    }
-
-    if (transfersResult.error) {
-      console.error('Transfers insert error:', transfersResult.error)
-      return { 
-        data: null, 
-        error: { 
-          message: transfersResult.error.message || 'Failed to insert transfers',
-          details: transfersResult.error.details,
-          hint: transfersResult.error.hint,
-          code: transfersResult.error.code
+          message: transactionsError.message || 'Failed to insert transactions',
+          details: transactionsError.details,
+          hint: transactionsError.hint,
+          code: transactionsError.code
         } 
       }
     }
 
     // If csvUploadId was provided, update the csv_uploads entry with status and counts
     if (csvUploadId) {
-      const importedRowCount = (ordersResult.data?.length || 0) + (transfersResult.data?.length || 0)
+      const importedRowCount = transactionsData?.length || 0
       await updateCSVUploadStatus(csvUploadId, 'completed', {
         importedRowCount
       })
@@ -229,8 +213,7 @@ export async function insertTransactions({
 
     return { 
       data: { 
-        orders: ordersResult.data || [], 
-        transfers: transfersResult.data || [] 
+        transactions: transactionsData || []
       }, 
       error: null 
     }
@@ -264,39 +247,30 @@ export async function getTransactions() {
 
   if (authError || !authData.user) {
     console.error('Auth error or no user:', authError)
-    return { data: { orders: [], transfers: [] }, error: authError || new Error('Not authenticated') }
+    return { data: { transactions: [] }, error: authError || new Error('Not authenticated') }
   }
 
   const userId = authData.user.id
 
   try {
-    const [ordersResult, transfersResult] = await Promise.all([
-      supabase
-        .from('orders')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true }),
-      supabase
-        .from('transfers')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true })
-    ])
+    const { data: transactionsData, error: transactionsError } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: true })
 
-    if (ordersResult.error) throw ordersResult.error
-    if (transfersResult.error) throw transfersResult.error
+    if (transactionsError) throw transactionsError
 
     return {
       data: {
-        orders: ordersResult.data || [],
-        transfers: transfersResult.data || []
+        transactions: transactionsData || []
       },
       error: null
     }
   } catch (error) {
     console.error('Error fetching transactions:', error)
     return { 
-      data: { orders: [], transfers: [] }, 
+      data: { transactions: [] }, 
       error: error as PostgrestError 
     }
   }
@@ -483,9 +457,8 @@ export async function deleteCSVUpload(csvUploadId: string) {
       console.warn(`CSV upload ${csvUploadId} has no filename, deleting DB entry only.`)
     }
 
-    // 2. Delete associated orders and transfers first (optional, depending on RLS/cascade)
-    // await supabase.from('orders').delete().eq('csv_upload_id', csvUploadId)
-    // await supabase.from('transfers').delete().eq('csv_upload_id', csvUploadId)
+    // 2. Delete associated transactions first (CASCADE should handle this, but being explicit)
+    await supabase.from('transactions').delete().eq('csv_upload_id', csvUploadId)
     
     // 3. Delete the entry from the csv_uploads table
     const { error: deleteDbError } = await supabase

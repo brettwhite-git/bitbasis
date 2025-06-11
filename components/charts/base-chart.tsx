@@ -15,10 +15,7 @@ import {
   ChartData,
 } from "chart.js"
 import { Line } from "react-chartjs-2"
-import { BaseChartProps, ChartDataOptions } from "@/lib/services/portfolio/types"
-import { useSupabase } from "@/components/providers/supabase-provider"
-import { PortfolioDataServiceImpl } from "@/lib/services/portfolio/portfolioDataService"
-import { ChartConfigServiceImpl } from "@/lib/services/portfolio/chartConfigService"
+import { PortfolioDataPoint } from "@/lib/services/portfolio/unifiedPortfolioDataService"
 
 // Register ChartJS components
 ChartJS.register(
@@ -32,108 +29,162 @@ ChartJS.register(
   Filler
 )
 
-// Define a type that can handle either ChartDataOptions or a Chart.js config
-interface ChartJsConfig {
-  data: ChartData<'line'>;
-  options: ChartOptions<'line'>;
+interface BasePortfolioChartProps {
+  data: PortfolioDataPoint[]
+  height?: number
+  width?: string
+  className?: string
 }
 
 export function BasePortfolioChart({
-  data: initialData = [],
-  options: chartOptions,
+  data = [],
   height = 300,
   width = "100%",
   className = "",
-}: BaseChartProps) {
-  const [chartData, setChartData] = useState<any>(initialData)
-  const [chartConfig, setChartConfig] = useState<ChartJsConfig | null>(null)
-  const [loading, setLoading] = useState<boolean>(initialData && initialData.length > 0 ? false : true)
-  const { supabase } = useSupabase()
+}: BasePortfolioChartProps) {
+  const [chartConfig, setChartConfig] = useState<{
+    data: ChartData<'line'>
+    options: ChartOptions<'line'>
+  } | null>(null)
 
-  // Initialize services
-  const dataService = new PortfolioDataServiceImpl(supabase)
-  const configService = new ChartConfigServiceImpl()
-
+  // Generate chart configuration from data
   useEffect(() => {
-    if (initialData && initialData.length > 0) {
-      // If data is provided, just use it
-      setChartData(initialData)
-      setLoading(false)
-    }
-  }, [initialData])
-
-  // Effect to configure chart when data is available
-  useEffect(() => {
-    if (!chartData || chartData.length === 0) return
-
-    // Use the provided chart options if available
-    if (chartOptions) {
-      // Check if this is a chart.js config with data and options properties
-      if (typeof chartOptions === 'object' && 'data' in chartOptions && 'options' in chartOptions) {
-        // It's a Chart.js config object
-        setChartConfig(chartOptions as ChartJsConfig)
-      } else {
-        // It's ChartDataOptions, so generate config
-        try {
-          const generatedConfig = configService.createSummaryChartConfig(chartData)
-          setChartConfig(generatedConfig)
-        } catch (error) {
-          console.error("Error generating chart config from options:", error)
-          setChartConfig(createDefaultConfig(chartData))
-        }
-      }
+    if (!data || data.length === 0) {
+      setChartConfig(null)
       return
     }
 
-    // If no specific config provided, use the ChartConfigService
-    try {
-      const generatedConfig = configService.createSummaryChartConfig(chartData)
-      setChartConfig(generatedConfig)
-    } catch (error) {
-      console.error("Error generating chart config:", error)
-      setChartConfig(createDefaultConfig(chartData))
-    }
-  }, [chartData, chartOptions, configService])
-
-  // Default config fallback
-  const createDefaultConfig = (data: any[]): ChartJsConfig => {
-    return {
+    const config = {
       data: {
-        labels: data.map((d: any) => d.month || ''),
+        labels: data.map(d => {
+          const date = new Date(d.date)
+          const formattedMonth = date.toLocaleDateString('en-US', { month: 'short' })
+          const formattedYear = `'${date.toLocaleDateString('en-US', { year: '2-digit' })}`
+          return `${formattedMonth} ${formattedYear}`
+        }),
         datasets: [
           {
-            label: "Value",
-            data: data.map((d: any) => d.portfolioValue || 0),
-            borderColor: "#F7931A",
+            label: "Portfolio Value",
+            data: data.map(d => d.portfolioValue),
+            borderColor: "#F7931A", // Bitcoin Orange
             backgroundColor: "rgba(247, 147, 26, 0.2)",
+            pointBackgroundColor: "#F7931A",
+            pointBorderColor: "#F7931A",
+            tension: 0.4,
+            fill: true,
+            pointRadius: 4,
+            pointBorderWidth: 1,
+            spanGaps: true,
+          },
+          {
+            label: "Cost Basis",
+            data: data.map(d => d.costBasis),
+            borderColor: "#3b82f6", // Blue-500
+            backgroundColor: "rgba(59, 130, 246, 0.2)",
+            pointBackgroundColor: "#3b82f6",
+            pointBorderColor: "#3b82f6",
+            tension: 0.4,
+            fill: true,
+            pointRadius: 4,
+            pointBorderWidth: 1,
+            spanGaps: true,
           }
         ]
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "index" as const,
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            position: "bottom" as const,
+            labels: {
+              color: "#fff",
+              padding: 10,
+              usePointStyle: true,
+              pointStyle: "circle" as const,
+            },
+          },
+          tooltip: {
+            mode: "index" as const,
+            intersect: false,
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            titleColor: "#fff",
+            bodyColor: "#fff",
+            borderColor: "#F7931A",
+            borderWidth: 1,
+            displayColors: true,
+            callbacks: {
+              title: function(context: any) {
+                return context[0]?.label || ''
+              },
+              label: function(context: any) {
+                const label = context.dataset.label || ''
+                const value = context.parsed.y
+                return `${label}: $${value.toLocaleString()}`
+              }
+            }
+          },
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false,
+              color: "#374151",
+            },
+            ticks: {
+              color: "#9ca3af",
+            },
+          },
+          y: {
+            type: 'linear' as const,
+            display: true,
+            position: 'left' as const,
+            grid: {
+              color: "#374151",
+            },
+            ticks: {
+              color: "#9ca3af",
+              callback: function(value: any) {
+                if (typeof value !== 'number') return ''
+                return `$${value.toLocaleString()}`
+              },
+              autoSkip: true,
+              maxTicksLimit: 8,
+              includeBounds: true
+            },
+            min: 0,
+            beginAtZero: true,
+            grace: 0
+          }
+        },
       }
     }
-  }
 
-  if (loading) {
+    setChartConfig(config)
+  }, [data])
+
+  if (!data || data.length === 0) {
     return (
       <div 
-        className={`flex items-center justify-center bg-black/20 animate-pulse ${className}`}
+        className={`flex items-center justify-center bg-black/10 rounded-md ${className}`}
         style={{ height, width }}
       >
-        <p className="text-muted-foreground">Loading chart data...</p>
+        <p className="text-muted-foreground">No portfolio data available</p>
       </div>
     )
   }
 
-  if (!chartConfig || !chartData || chartData.length === 0) {
+  if (!chartConfig) {
     return (
       <div 
-        className={`flex items-center justify-center bg-black/10 ${className}`}
+        className={`flex items-center justify-center bg-black/20 animate-pulse rounded-md ${className}`}
         style={{ height, width }}
       >
-        <p className="text-muted-foreground">No data available</p>
+        <div className="animate-spin h-8 w-8 border-4 border-bitcoin-orange border-opacity-50 rounded-full border-t-transparent"></div>
       </div>
     )
   }

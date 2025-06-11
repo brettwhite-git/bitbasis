@@ -1,7 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useTaxLiability } from "@/lib/hooks/useTaxLiability"
+import { useBitcoinPrice } from "@/lib/hooks/useBitcoinPrice"
+import { useDashboardTaxLiability } from "@/lib/hooks/useDashboardTaxLiability"
 // Import from the new locations
 import { RecentTransactions } from "./widgets/recent-transactions"
 import { PortfolioSummaryChart } from "./charts/portfolio-summary-chart"
@@ -47,12 +48,11 @@ interface DashboardContentProps {
 export function OverviewLayout({ metrics, performance }: DashboardContentProps) {
   const [timeframe, setTimeframe] = useState<"6M" | "1Y">("1Y")
   
-  // Calculate tax liability based on selected method
-  const taxLiability = useTaxLiability({
-    unrealizedGain: metrics.unrealizedGain,
-    shortTermHoldings: metrics.shortTermHoldings,
-    longTermHoldings: metrics.longTermHoldings
-  })
+  // Get current Bitcoin price for tax calculations
+  const { price: currentPrice } = useBitcoinPrice()
+  
+  // Calculate tax liability that responds to method changes
+  const taxLiability = useDashboardTaxLiability(currentPrice)
 
   return (
     <div className="w-full space-y-6">
@@ -122,7 +122,7 @@ export function OverviewLayout({ metrics, performance }: DashboardContentProps) 
         <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
           <div className="flex flex-col items-start mb-4">
             <h3 className="text-xl font-bold text-white">Recent Transactions</h3>
-            <p className="text-sm text-gray-400">Your most recent Bitcoin transactions</p>
+            
           </div>
           <div>
             <RecentTransactions />

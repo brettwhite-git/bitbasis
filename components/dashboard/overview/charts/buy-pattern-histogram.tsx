@@ -70,41 +70,41 @@ const BuyPatternHistogram: React.FC<{ className?: string }> = ({ className }) =>
       setLoading(true);
       setError(null);
 
-      const { data: orders, error: fetchError } = await supabase
-        .from('orders')
+      const { data: transactions, error: fetchError } = await supabase
+        .from('transactions')
         .select('date')
         .eq('type', 'buy');
 
-      console.log("[BuyPatternHistogram] Fetch result:", { orders, fetchError });
+      console.log("[BuyPatternHistogram] Fetch result:", { transactions, fetchError });
 
       if (fetchError) {
-        console.error("[BuyPatternHistogram] Error fetching buy orders:", fetchError);
+        console.error("[BuyPatternHistogram] Error fetching buy transactions:", fetchError);
         setError("Failed to load buy pattern data.");
         setLoading(false);
         return;
       }
 
-      if (!orders || orders.length === 0) {
-        console.log("[BuyPatternHistogram] No buy orders found.");
+      if (!transactions || transactions.length === 0) {
+        console.log("[BuyPatternHistogram] No buy transactions found.");
         setDayCounts([0, 0, 0, 0, 0, 0, 0]);
         setLoading(false);
         return;
       }
 
       // Process the data
-      console.log(`[BuyPatternHistogram] Processing ${orders.length} buy orders.`);
+      console.log(`[BuyPatternHistogram] Processing ${transactions.length} buy transactions.`);
       const counts = Array(7).fill(0);
-      orders.forEach(order => {
+      transactions.forEach(transaction => {
         try {
-          const date = new Date(order.date);
+          const date = new Date(transaction.date);
           const dayIndex = date.getDay();
           if (dayIndex >= 0 && dayIndex <= 6) {
             counts[dayIndex]++;
           } else {
-            console.warn(`[BuyPatternHistogram] Invalid day index ${dayIndex} for date: ${order.date}`);
+            console.warn(`[BuyPatternHistogram] Invalid day index ${dayIndex} for date: ${transaction.date}`);
           }
         } catch (e) {
-          console.warn(`[BuyPatternHistogram] Invalid date format found: ${order.date}`, e);
+          console.warn(`[BuyPatternHistogram] Invalid date format found: ${transaction.date}`, e);
         }
       });
 

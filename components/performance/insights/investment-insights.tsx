@@ -1,7 +1,8 @@
 // Removed Card imports - using glass morphism styling
 import { formatCurrency, formatPercent } from "@/lib/utils/utils"
-import type { PerformanceMetrics } from "@/lib/core/portfolio"
-import { calculateDCAPerformance } from "@/lib/core/portfolio"
+import type { PerformanceMetrics } from "@/lib/core/portfolio/types"
+import { calculateDCAPerformance } from "@/lib/core/portfolio/performance"
+import { UnifiedTransaction } from "@/types/transactions"
 import { 
   CircleArrowRightIcon,
   CircleFadingArrowUp,
@@ -17,10 +18,10 @@ interface ExtendedPerformanceMetrics extends PerformanceMetrics {
 
 interface InvestmentInsightsProps {
   performance: ExtendedPerformanceMetrics
-  orders: any[]
+  transactions: UnifiedTransaction[]
 }
 
-export function InvestmentInsights({ performance, orders }: InvestmentInsightsProps) {
+export function InvestmentInsights({ performance, transactions }: InvestmentInsightsProps) {
   // Extract values from performance
   const currentPrice = performance.currentPrice ?? 0
   const averageBuyPrice = performance.averageBuyPrice ?? 0
@@ -39,17 +40,17 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
     let totalBtc = 0
     let totalFiat = 0
     
-    // Filter and calculate average for last 3 months of buys
-    orders.forEach(order => {
-      const orderDate = new Date(order.date)
+    // Filter and calculate average for last 3 months of buys using new schema
+    transactions.forEach(transaction => {
+      const transactionDate = new Date(transaction.date)
       if (
-        order.type === 'buy' && 
-        orderDate >= threeMonthsAgo &&
-        order.received_btc_amount &&
-        order.buy_fiat_amount
+        transaction.type === 'buy' && 
+        transactionDate >= threeMonthsAgo &&
+        transaction.received_amount &&
+        transaction.sent_amount
       ) {
-        totalBtc += order.received_btc_amount
-        totalFiat += order.buy_fiat_amount
+        totalBtc += transaction.received_amount
+        totalFiat += transaction.sent_amount
       }
     })
     
@@ -99,7 +100,7 @@ export function InvestmentInsights({ performance, orders }: InvestmentInsightsPr
 
   // Calculate DCA vs Lump Sum Performance
   const calculateDCAInsight = () => {
-    const { dcaReturn, lumpSumReturn, outperformance } = calculateDCAPerformance(orders, currentPrice)
+    const { dcaReturn, lumpSumReturn, outperformance } = calculateDCAPerformance(transactions, currentPrice)
     
     if (Math.abs(outperformance) < 1) {
       return {

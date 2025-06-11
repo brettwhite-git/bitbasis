@@ -22,6 +22,7 @@ export { DashboardSidebar } from "./shared/sidebar"
 export { SidebarProvider } from "./shared/sidebar-provider"
 export * from "./shared/mobile-nav"
 export * from "./shared/user-nav"
+export * from "./shared/badges"
 
 // Other Components
 export * from "./logo"

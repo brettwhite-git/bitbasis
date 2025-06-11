@@ -139,7 +139,7 @@ export function ConfirmationStep() {
       setLoadingState('importing')
       setImportStatus('storing')
       
-      const response = await fetch('/api/transactions/add-unified', {
+      const response = await fetch('/api/transaction-history/add-unified', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { formatBTC, formatCurrency } from "@/lib/utils/format"
 import { TransactionHistoryAccordion } from "./transaction-history-accordion"
-import { TransactionBadge } from "@/components/transactions/badges/TransactionBadge"
+import { TransactionBadge } from "@/components/shared/badges"
 import { TransactionType } from "@/lib/utils/transaction-utils"
 import { useEditDrawer } from "./edit-drawer-provider"
 import { UnifiedTransaction } from "@/types/transactions"

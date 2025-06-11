@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '@/providers/supabase-auth-provider'; // Use custom auth provider
-import type { Database } from '@/lib/test.database.types'; // Use the generated types
+import type { Database } from '@/types/supabase'; // Use the correct generated types
 
 // Define the structure for the input goal data (subset of SavedGoalData)
 interface SavingsGoalInput {
@@ -62,10 +62,10 @@ export function useSavingsGoalData(goal: SavingsGoalInput | null): SavingsGoalDa
         // --- Log user ID being used ---
         console.log('Querying with User ID:', userId, 'Start Date:', startDate);
 
-        // Fetch relevant buy and sell transactions since the goal start date
+        // Fetch relevant buy and sell transactions since the goal start date using unified transactions table
         const { data: transactions, error: fetchError } = await supabase
-          .from('orders')
-          .select('type, received_btc_amount, sell_btc_amount')
+          .from('transactions')
+          .select('type, sent_amount, sent_currency, received_amount, received_currency')
           .eq('user_id', userId)
           .in('type', ['buy', 'sell'])
           .gte('date', startDate)
@@ -79,13 +79,15 @@ export function useSavingsGoalData(goal: SavingsGoalInput | null): SavingsGoalDa
           throw new Error(`Failed to fetch transaction data: ${fetchError.message}`);
         }
 
-        // Calculate accumulated BTC (more robustly)
+        // Calculate accumulated BTC using unified schema
         let accumulatedBtc = 0;
         transactions?.forEach(tx => {
-          if (tx.type === 'buy') {
-            accumulatedBtc += (parseFloat(String(tx.received_btc_amount)) || 0);
-          } else if (tx.type === 'sell') {
-            accumulatedBtc -= (parseFloat(String(tx.sell_btc_amount)) || 0);
+          if (tx.type === 'buy' && tx.received_currency === 'BTC') {
+            // For buy transactions, received_amount is the BTC received
+            accumulatedBtc += (parseFloat(String(tx.received_amount)) || 0);
+          } else if (tx.type === 'sell' && tx.sent_currency === 'BTC') {
+            // For sell transactions, sent_amount is the BTC sold
+            accumulatedBtc -= (parseFloat(String(tx.sent_amount)) || 0);
           }
         });
 

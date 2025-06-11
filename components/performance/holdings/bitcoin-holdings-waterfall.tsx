@@ -26,13 +26,15 @@ ChartJS.register(
   Legend
 )
 
-// Interface to match orders table structure
-interface Order {
+// Interface to match unified transactions table structure
+interface Transaction {
   date: string
-  type: 'buy' | 'sell'
-  received_btc_amount: number | null // For buys
-  sell_btc_amount: number | null // For sells
-  price: number // Needed for calculations
+  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
+  sent_amount: number | null
+  sent_currency: string | null
+  received_amount: number | null
+  received_currency: string | null
+  price: number | null // Needed for calculations
 }
 
 interface YearlyHolding {
@@ -46,23 +48,23 @@ interface WaterfallDataPoint {
   end: number
 }
 
-function calculateBitcoinByYear(orders: Order[]): YearlyHolding[] {
+function calculateBitcoinByYear(transactions: Transaction[]): YearlyHolding[] {
   const yearlyData = new Map<string, number>()
 
-  // Sort orders by date
-  const sortedOrders = [...orders].sort((a, b) => 
+  // Sort transactions by date
+  const sortedTransactions = [...transactions].sort((a, b) => 
     new Date(a.date).getTime() - new Date(b.date).getTime()
   )
 
   // Calculate BTC holdings by year
-  sortedOrders.forEach(order => {
-    const year = new Date(order.date).getFullYear().toString()
+  sortedTransactions.forEach(transaction => {
+    const year = new Date(transaction.date).getFullYear().toString()
     const currentBTC = yearlyData.get(year) || 0
 
-    if (order.type === 'buy') {
-      yearlyData.set(year, currentBTC + (order.received_btc_amount || 0))
-    } else if (order.type === 'sell') {
-      yearlyData.set(year, currentBTC - (order.sell_btc_amount || 0))
+    if (transaction.type === 'buy' && transaction.received_currency === 'BTC') {
+      yearlyData.set(year, currentBTC + (transaction.received_amount || 0))
+    } else if (transaction.type === 'sell' && transaction.sent_currency === 'BTC') {
+      yearlyData.set(year, currentBTC - (transaction.sent_amount || 0))
     }
   })
 
@@ -166,32 +168,33 @@ export function BitcoinHoldingsWaterfall() {
   const { supabase } = useSupabase()
 
   useEffect(() => {
-    async function fetchOrders() {
+    async function fetchTransactions() {
       setIsLoading(true)
       setError(null)
       
-      // Fetch from 'orders' table and select necessary columns
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select('date, type, received_btc_amount, sell_btc_amount, price')
+      // Fetch from 'transactions' table and select necessary columns
+      const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select('date, type, sent_amount, sent_currency, received_amount, received_currency, price')
+        .in('type', ['buy', 'sell']) // Only include buy and sell transactions for this chart
         .order('date', { ascending: true })
 
       if (error) {
-        console.error('Error fetching orders:', error)
+        console.error('Error fetching transactions:', error)
         setError('Failed to load data. Please try again later.')
         setIsLoading(false)
         return
       }
 
-      if (orders && orders.length > 0) {
-        const calculatedData = calculateBitcoinByYear(orders)
+      if (transactions && transactions.length > 0) {
+        const calculatedData = calculateBitcoinByYear(transactions)
         setYearlyHoldings(calculatedData)
         
         // Convert to waterfall data format
         const waterfallPoints = convertToWaterfallData(calculatedData)
         setWaterfallData(waterfallPoints)
       } else {
-        console.log("No orders found.")
+        console.log("No transactions found.")
         setError('No transaction data available.')
         setYearlyHoldings([])
         setWaterfallData([])
@@ -200,7 +203,7 @@ export function BitcoinHoldingsWaterfall() {
       setIsLoading(false)
     }
 
-    fetchOrders()
+    fetchTransactions()
   }, [supabase])
 
   const data = {

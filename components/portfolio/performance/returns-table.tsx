@@ -11,7 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useSupabase } from "@/components/providers/supabase-provider"
-import { calculateCostBasis } from "@/lib/core/portfolio"
+import { calculateCostBasis } from "@/lib/core/portfolio/cost-basis"
 
 type CostBasisResult = {
   totalCostBasis: number
@@ -26,6 +26,20 @@ type CostBasisResult = {
 
 type SortField = 'method' | 'totalBtc' | 'costBasis' | 'averageCost' | 'realizedGains' | 'unrealizedGain' | 'unrealizedGainPercent' | 'taxLiabilityST' | 'taxLiabilityLT' | 'totalTaxLiability'
 type SortConfig = { field: SortField, direction: 'asc' | 'desc' }
+
+// Unified transaction type
+interface UnifiedTransaction {
+  id: number
+  date: string
+  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
+  sent_amount: number | null
+  sent_currency: string | null
+  received_amount: number | null
+  received_currency: string | null
+  fee_amount: number | null
+  fee_currency: string | null
+  price: number | null
+}
 
 export function ReturnsTable() {
   const { supabase } = useSupabase()
@@ -103,6 +117,24 @@ export function ReturnsTable() {
     })
   }
 
+  // Transform unified transactions to legacy order format for calculateCostBasis function
+  const transformTransactionsToLegacyOrders = (transactions: UnifiedTransaction[]) => {
+    return transactions
+      .filter(tx => tx.type === 'buy' || tx.type === 'sell')
+      .map(tx => ({
+        id: tx.id,
+        date: tx.date,
+        type: tx.type,
+        received_btc_amount: tx.type === 'buy' ? tx.received_amount : null,
+        buy_fiat_amount: tx.type === 'buy' ? tx.sent_amount : null,
+        service_fee: tx.fee_amount && tx.fee_currency === 'USD' ? tx.fee_amount : null,
+        service_fee_currency: tx.fee_currency === 'USD' ? 'USD' : null,
+        sell_btc_amount: tx.type === 'sell' ? tx.sent_amount : null,
+        received_fiat_amount: tx.type === 'sell' ? tx.received_amount : null,
+        price: tx.price
+      }))
+  }
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -118,7 +150,7 @@ export function ReturnsTable() {
         }
 
         // 2. Fetch necessary data in parallel
-        const [priceResult, ordersResult] = await Promise.all([
+        const [priceResult, transactionsResult] = await Promise.all([
           // Fetch latest price
           supabase
             .from('spot_price')
@@ -126,26 +158,29 @@ export function ReturnsTable() {
             .order('updated_at', { ascending: false })
             .limit(1)
             .single(),
-          // Fetch user orders with specific columns
+          // Fetch user transactions with specific columns
           supabase
-            .from('orders')
-            .select('id, date, type, received_btc_amount, buy_fiat_amount, service_fee, service_fee_currency, sell_btc_amount, received_fiat_amount, price')
+            .from('transactions')
+            .select('id, date, type, sent_amount, sent_currency, received_amount, received_currency, fee_amount, fee_currency, price')
             .eq('user_id', user.id)
             .order('date', { ascending: true })
         ])
         
         // Check for errors
         if (priceResult.error) throw priceResult.error
-        if (ordersResult.error) throw ordersResult.error
+        if (transactionsResult.error) throw transactionsResult.error
         if (!priceResult.data) throw new Error('No Bitcoin price data available')
 
         const currentPrice = priceResult.data.price_usd
-        const orders = ordersResult.data || []
+        const transactions = transactionsResult.data || []
 
-        // 3. Calculate results for each method using the fetched data
-        const fifo = await calculateCostBasis(user.id, 'FIFO', orders, currentPrice)
-        const lifo = await calculateCostBasis(user.id, 'LIFO', orders, currentPrice)
-        const average = await calculateCostBasis(user.id, 'HIFO', orders, currentPrice)
+        // Transform transactions to legacy order format
+        const legacyOrders = transformTransactionsToLegacyOrders(transactions)
+
+        // 3. Calculate results for each method using the transformed data
+        const fifo = await calculateCostBasis(user.id, 'FIFO', legacyOrders, currentPrice)
+        const lifo = await calculateCostBasis(user.id, 'LIFO', legacyOrders, currentPrice)
+        const average = await calculateCostBasis(user.id, 'HIFO', legacyOrders, currentPrice)
 
         setFifoResults(fifo)
         setLifoResults(lifo)

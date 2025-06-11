@@ -6,7 +6,7 @@ import type { Database } from "@/types/supabase"
 import { UnifiedTransaction } from '@/types/transactions'
 
 /**
- * A hook for fetching transaction data from Supabase
+ * A hook for fetching transaction data from the unified transactions table
  */
 export function useTransactions() {
   const [transactions, setTransactions] = useState<UnifiedTransaction[]>([])
@@ -21,57 +21,58 @@ export function useTransactions() {
       try {
         const supabase = createClientComponentClient<Database>()
         
-        // Fetch orders and transfers in parallel
-        const [ordersResult, transfersResult] = await Promise.all([
-          supabase
-            .from('orders')
-            .select('*')
-            .order('date', { ascending: false }),
-          supabase
-            .from('transfers')
-            .select('*')
-            .order('date', { ascending: false })
-        ])
+        // Fetch from unified transactions table
+        const { data: transactionsData, error: transactionsError } = await supabase
+          .from('transactions')
+          .select('*')
+          .order('date', { ascending: false })
 
-        if (ordersResult.error) throw ordersResult.error
-        if (transfersResult.error) throw transfersResult.error
+        if (transactionsError) throw transactionsError
 
-        // Map orders to unified format
-        const mappedOrders = (ordersResult.data || []).map(order => ({
-          id: `order-${order.id}`,
-          date: order.date,
-          type: order.type === 'buy' ? 'buy' : 'sell',
-          asset: order.asset,
-          btc_amount: order.type === 'buy' ? order.received_btc_amount : order.sell_btc_amount,
-          usd_value: order.type === 'buy' ? order.buy_fiat_amount : order.received_fiat_amount,
-          fee_usd: order.service_fee,
-          price_at_tx: order.price,
-          exchange: order.exchange,
-          network_fee_btc: null,
-          txid: null
-        }))
+        // Map database transactions to unified format
+        const mappedTransactions = (transactionsData || []).map(tx => {
+          // Determine primary BTC amount based on transaction type
+          let btc_amount: number | null = null
+          let usd_value: number | null = null
 
-        // Map transfers to unified format
-        const mappedTransfers = (transfersResult.data || []).map(transfer => ({
-          id: `transfer-${transfer.id}`,
-          date: transfer.date,
-          type: transfer.type === 'withdrawal' ? 'withdrawal' : 'deposit',
-          asset: transfer.asset || 'BTC',
-          btc_amount: transfer.amount_btc,
-          usd_value: transfer.amount_fiat,
-          fee_usd: transfer.fee_amount_btc ? transfer.fee_amount_btc * (transfer.price || 0) : null,
-          price_at_tx: transfer.price,
-          exchange: null,
-          network_fee_btc: transfer.fee_amount_btc,
-          txid: transfer.hash
-        }))
+          switch (tx.type) {
+            case 'buy':
+              btc_amount = tx.received_amount
+              usd_value = tx.sent_amount
+              break
+            case 'sell':
+              btc_amount = tx.sent_amount
+              usd_value = tx.received_amount
+              break
+            case 'deposit':
+              btc_amount = tx.received_amount
+              usd_value = tx.received_amount && tx.price ? tx.received_amount * tx.price : null
+              break
+            case 'withdrawal':
+              btc_amount = tx.sent_amount
+              usd_value = tx.sent_amount && tx.price ? tx.sent_amount * tx.price : null
+              break
+            default:
+              btc_amount = tx.received_amount || tx.sent_amount
+              usd_value = null
+          }
 
-        // Combine all transactions
-        const allTransactions = [...mappedOrders, ...mappedTransfers].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        )
+          return {
+            id: `tx-${tx.id}`,
+            date: tx.date,
+            type: tx.type as 'buy' | 'sell' | 'deposit' | 'withdrawal',
+            asset: tx.asset,
+            btc_amount,
+            usd_value,
+            fee_usd: tx.fee_currency === 'USD' ? tx.fee_amount : null,
+            price_at_tx: tx.price,
+            exchange: tx.from_address_name || tx.to_address_name,
+            network_fee_btc: tx.fee_currency === 'BTC' ? tx.fee_amount : null,
+            txid: tx.transaction_hash
+          }
+        })
 
-        setTransactions(allTransactions)
+        setTransactions(mappedTransactions)
       } catch (err: any) {
         console.error('Error fetching transactions:', err)
         setError(err.message || 'Failed to load transactions')
@@ -90,57 +91,58 @@ export function useTransactions() {
       
       const supabase = createClientComponentClient<Database>()
       
-      // Fetch orders and transfers in parallel
-      const [ordersResult, transfersResult] = await Promise.all([
-        supabase
-          .from('orders')
-          .select('*')
-          .order('date', { ascending: false }),
-        supabase
-          .from('transfers')
-          .select('*')
-          .order('date', { ascending: false })
-      ])
+      // Fetch from unified transactions table
+      const { data: transactionsData, error: transactionsError } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('date', { ascending: false })
 
-      if (ordersResult.error) throw ordersResult.error
-      if (transfersResult.error) throw transfersResult.error
+      if (transactionsError) throw transactionsError
 
-      // Map orders to unified format
-      const mappedOrders = (ordersResult.data || []).map(order => ({
-        id: `order-${order.id}`,
-        date: order.date,
-        type: order.type === 'buy' ? 'buy' : 'sell',
-        asset: order.asset,
-        btc_amount: order.type === 'buy' ? order.received_btc_amount : order.sell_btc_amount,
-        usd_value: order.type === 'buy' ? order.buy_fiat_amount : order.received_fiat_amount,
-        fee_usd: order.service_fee,
-        price_at_tx: order.price,
-        exchange: order.exchange,
-        network_fee_btc: null,
-        txid: null
-      }))
+      // Map database transactions to unified format
+      const mappedTransactions = (transactionsData || []).map(tx => {
+        // Determine primary BTC amount based on transaction type
+        let btc_amount: number | null = null
+        let usd_value: number | null = null
 
-      // Map transfers to unified format
-      const mappedTransfers = (transfersResult.data || []).map(transfer => ({
-        id: `transfer-${transfer.id}`,
-        date: transfer.date,
-        type: transfer.type === 'withdrawal' ? 'withdrawal' : 'deposit',
-        asset: transfer.asset || 'BTC',
-        btc_amount: transfer.amount_btc,
-        usd_value: transfer.amount_fiat,
-        fee_usd: transfer.fee_amount_btc ? transfer.fee_amount_btc * (transfer.price || 0) : null,
-        price_at_tx: transfer.price,
-        exchange: null,
-        network_fee_btc: transfer.fee_amount_btc,
-        txid: transfer.hash
-      }))
+        switch (tx.type) {
+          case 'buy':
+            btc_amount = tx.received_amount
+            usd_value = tx.sent_amount
+            break
+          case 'sell':
+            btc_amount = tx.sent_amount
+            usd_value = tx.received_amount
+            break
+          case 'deposit':
+            btc_amount = tx.received_amount
+            usd_value = tx.received_amount && tx.price ? tx.received_amount * tx.price : null
+            break
+          case 'withdrawal':
+            btc_amount = tx.sent_amount
+            usd_value = tx.sent_amount && tx.price ? tx.sent_amount * tx.price : null
+            break
+          default:
+            btc_amount = tx.received_amount || tx.sent_amount
+            usd_value = null
+        }
 
-      // Combine all transactions
-      const allTransactions = [...mappedOrders, ...mappedTransfers].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      )
+        return {
+          id: `tx-${tx.id}`,
+          date: tx.date,
+          type: tx.type as 'buy' | 'sell' | 'deposit' | 'withdrawal',
+          asset: tx.asset,
+          btc_amount,
+          usd_value,
+          fee_usd: tx.fee_currency === 'USD' ? tx.fee_amount : null,
+          price_at_tx: tx.price,
+          exchange: tx.from_address_name || tx.to_address_name,
+          network_fee_btc: tx.fee_currency === 'BTC' ? tx.fee_amount : null,
+          txid: tx.transaction_hash
+        }
+      })
 
-      setTransactions(allTransactions)
+      setTransactions(mappedTransactions)
     } catch (err: any) {
       console.error('Error refetching transactions:', err)
       setError(err.message || 'Failed to refresh transactions')

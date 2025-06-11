@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { transactionSchema } from '@/types/add-transaction';
 
 /**
- * POST /api/transactions/add-unified
+ * POST /api/transaction-history/add-unified
  * 
  * Adds new transactions to the unified transactions table
  * 
@@ -221,7 +221,7 @@ export async function POST(request: Request) {
     });
     
   } catch (error: any) {
-    console.error('API Error - /api/transactions/add-unified:', error);
+    console.error('API Error - /api/transaction-history/add-unified:', error);
     
     return NextResponse.json(
       { 

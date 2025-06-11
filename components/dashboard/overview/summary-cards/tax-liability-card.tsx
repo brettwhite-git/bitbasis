@@ -1,5 +1,6 @@
 import { EnhancedCardBase } from "./enhanced-card-base"
 import { useTaxMethod } from "@/providers/tax-method-provider"
+import { formatCurrency } from "@/lib/utils/utils"
 
 interface TaxLiabilityCardProps {
   totalTaxLiability: number
@@ -16,15 +17,6 @@ export function TaxLiabilityCard({
 }: TaxLiabilityCardProps) {
   const { taxMethod } = useTaxMethod()
   
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
-
   const methodLabel = taxMethod.toUpperCase()
   const subtitle = totalTaxLiability > 0 
     ? `${methodLabel} | ST: ${formatCurrency(shortTermLiability)} | LT: ${formatCurrency(longTermLiability)}`

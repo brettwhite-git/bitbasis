@@ -1,7 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
 import { 
-  Order,
   PerformanceMetrics,
   DCAPerformanceResult
 } from './types'
@@ -11,16 +10,32 @@ import {
   calculateCAGR 
 } from '@/lib/utils/portfolio-utils'
 
+// Unified Transaction type matching the new schema
+interface UnifiedTransaction {
+  id: number
+  date: string
+  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
+  sent_amount: number | null
+  sent_currency: string | null
+  received_amount: number | null
+  received_currency: string | null
+  fee_amount: number | null
+  fee_currency: string | null
+  price: number | null
+  from_address_name: string | null
+  to_address_name: string | null
+}
+
 /**
  * Calculates HODL time as days since last sell, or days since first buy if no sells
  */
-function calculateWeightedHodlTime(orders: Order[], currentDate: Date): number {
-  // Find the most recent sell order
-  const sellOrders = orders
-    .filter(order => order.type === 'sell')
+function calculateWeightedHodlTime(transactions: UnifiedTransaction[], currentDate: Date): number {
+  // Find the most recent sell transaction
+  const sellTransactions = transactions
+    .filter(transaction => transaction.type === 'sell')
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   
-  const lastSell = sellOrders[0]
+  const lastSell = sellTransactions[0]
   
   if (lastSell) {
     // If there's a sell, calculate days since last sell
@@ -28,11 +43,11 @@ function calculateWeightedHodlTime(orders: Order[], currentDate: Date): number {
     return Math.floor((currentDate.getTime() - lastSellDate.getTime()) / (1000 * 60 * 60 * 24))
   } else {
     // If no sells, calculate days since first buy
-    const buyOrders = orders
-      .filter(order => order.type === 'buy')
+    const buyTransactions = transactions
+      .filter(transaction => transaction.type === 'buy')
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     
-    const firstBuy = buyOrders[0]
+    const firstBuy = buyTransactions[0]
     if (firstBuy) {
       const firstBuyDate = new Date(firstBuy.date)
       return Math.floor((currentDate.getTime() - firstBuyDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -45,17 +60,17 @@ function calculateWeightedHodlTime(orders: Order[], currentDate: Date): number {
 /**
  * Calculates DCA performance vs lump sum performance
  */
-export function calculateDCAPerformance(orders: Order[], currentPrice: number): DCAPerformanceResult {
-  // Filter to get only buy orders from the last 6 months
+export function calculateDCAPerformance(transactions: UnifiedTransaction[], currentPrice: number): DCAPerformanceResult {
+  // Filter to get only buy transactions from the last 6 months
   const sixMonthsAgo = new Date()
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
   
-  const recentBuyOrders = orders.filter(order => 
-    order.type === 'buy' && 
-    new Date(order.date) >= sixMonthsAgo
+  const recentBuyTransactions = transactions.filter(transaction => 
+    transaction.type === 'buy' && 
+    new Date(transaction.date) >= sixMonthsAgo
   )
 
-  if (recentBuyOrders.length === 0) {
+  if (recentBuyTransactions.length === 0) {
     return {
       dcaReturn: 0,
       lumpSumReturn: 0,
@@ -67,10 +82,10 @@ export function calculateDCAPerformance(orders: Order[], currentPrice: number): 
   let totalInvested = 0
   let totalBtcBought = 0
   
-  recentBuyOrders.forEach(order => {
-    if (order.buy_fiat_amount && order.received_btc_amount) {
-      totalInvested += order.buy_fiat_amount
-      totalBtcBought += order.received_btc_amount
+  recentBuyTransactions.forEach(transaction => {
+    if (transaction.sent_amount && transaction.received_amount) {
+      totalInvested += transaction.sent_amount
+      totalBtcBought += transaction.received_amount
     }
   })
 
@@ -79,8 +94,8 @@ export function calculateDCAPerformance(orders: Order[], currentPrice: number): 
   const dcaReturn = totalInvested > 0 ? ((currentValue - totalInvested) / totalInvested) * 100 : 0
 
   // Calculate hypothetical lump sum performance
-  const firstOrder = recentBuyOrders[0]
-  const lumpSumBtc = firstOrder && firstOrder.price ? totalInvested / firstOrder.price : 0
+  const firstTransaction = recentBuyTransactions[0]
+  const lumpSumBtc = firstTransaction && firstTransaction.price ? totalInvested / firstTransaction.price : 0
   const lumpSumValue = lumpSumBtc * currentPrice
   const lumpSumReturn = totalInvested > 0 ? ((lumpSumValue - totalInvested) / totalInvested) * 100 : 0
 
@@ -99,11 +114,17 @@ export async function getPerformanceMetrics(
   supabase: SupabaseClient<Database>
 ): Promise<PerformanceMetrics> {
   try {
-    // Fetch all necessary data in parallel
-    const [ordersResult, priceResult, athResult] = await Promise.all([
+    // Fetch all necessary data in parallel using unified transactions table
+    const [transactionsResult, priceResult, athResult] = await Promise.all([
       supabase
-        .from('orders')
-        .select('date, type, received_btc_amount, buy_fiat_amount, service_fee, service_fee_currency, sell_btc_amount, received_fiat_amount, price') // Select specific columns
+        .from('transactions')
+        .select(`
+          id, date, type,
+          sent_amount, sent_currency,
+          received_amount, received_currency, 
+          fee_amount, fee_currency,
+          price, from_address_name, to_address_name
+        `)
         .eq('user_id', userId)
         .order('date', { ascending: true }),
       supabase
@@ -120,21 +141,21 @@ export async function getPerformanceMetrics(
         .single()
     ])
 
-    if (ordersResult.error) throw ordersResult.error
+    if (transactionsResult.error) throw transactionsResult.error
     if (priceResult.error) throw priceResult.error
     if (athResult.error && athResult.error.code !== 'PGRST116') { // Ignore 'Not found' for ATH
       throw athResult.error
     }
 
-    const orders = ordersResult.data || []
+    const transactions = transactionsResult.data || []
     if (!priceResult.data) throw new Error('No Bitcoin price data available')
     const currentPrice = priceResult.data.price_usd
     const lastUpdated = priceResult.data.updated_at
     const marketAthPrice = athResult.data?.price_usd ?? 0
     const marketAthDate = athResult.data?.ath_date ?? 'N/A'
 
-    if (orders.length === 0) {
-      // Handle case with no orders gracefully
+    if (transactions.length === 0) {
+      // Handle case with no transactions gracefully
       return {
         cumulative: {
           total: { percent: 0, dollar: 0 },
@@ -164,19 +185,19 @@ export async function getPerformanceMetrics(
     let currentBtc = 0
     let currentInvestment = 0 // Total USD spent on buys
 
-    // Calculate historical portfolio value and investment
-    orders.forEach(order => {
-      const orderDate = new Date(order.date)
+    // Calculate historical portfolio value and investment using unified schema
+    transactions.forEach(transaction => {
+      const transactionDate = new Date(transaction.date)
       let btcChange = 0
       let investmentChange = 0
 
-      if (order.type === 'buy' && order.received_btc_amount) {
-        btcChange = order.received_btc_amount
+      if (transaction.type === 'buy' && transaction.received_amount) {
+        btcChange = transaction.received_amount
         // Investment includes buy amount + USD service fee
-        const fee = (order.service_fee && order.service_fee_currency === 'USD') ? order.service_fee : 0
-        investmentChange = (order.buy_fiat_amount || 0) + fee
-      } else if (order.type === 'sell' && order.sell_btc_amount) {
-        btcChange = -order.sell_btc_amount
+        const fee = (transaction.fee_amount && transaction.fee_currency === 'USD') ? transaction.fee_amount : 0
+        investmentChange = (transaction.sent_amount || 0) + fee
+      } else if (transaction.type === 'sell' && transaction.sent_amount) {
+        btcChange = -transaction.sent_amount
         // Sells reduce BTC but don't change the *initial* investment amount directly
         // Realized gains handle the profit/loss aspect
       }
@@ -185,10 +206,10 @@ export async function getPerformanceMetrics(
       currentInvestment += investmentChange
       
       // Use the price at the time of the transaction for historical value
-      const valueAtTx = currentBtc * (order.price || 0)
+      const valueAtTx = currentBtc * (transaction.price || 0)
 
       portfolioHistory.push({
-        date: orderDate,
+        date: transactionDate,
         btc: currentBtc,
         usdValue: valueAtTx,
         investment: currentInvestment
@@ -460,8 +481,8 @@ export async function getPerformanceMetrics(
       }
     });
 
-    // Calculate average, lowest, and highest buy prices from orders
-    const buyOrders = orders.filter(order => order.type === 'buy' && order.received_btc_amount && order.price);
+    // Calculate average, lowest, and highest buy prices from transactions
+    const buyTransactions = transactions.filter(transaction => transaction.type === 'buy' && transaction.received_amount && transaction.price);
     
     // Calculate average buy price as total cost basis / total BTC
     const averageBuyPrice = totalInvestment > 0 && currentBtc > 0 
@@ -472,11 +493,11 @@ export async function getPerformanceMetrics(
     let lowestBuyPrice = Infinity;
     let highestBuyPrice = 0;
     
-    if (buyOrders.length > 0) {
-      buyOrders.forEach(order => {
-        if (order.price) {
-          lowestBuyPrice = Math.min(lowestBuyPrice, order.price);
-          highestBuyPrice = Math.max(highestBuyPrice, order.price);
+    if (buyTransactions.length > 0) {
+      buyTransactions.forEach(transaction => {
+        if (transaction.price) {
+          lowestBuyPrice = Math.min(lowestBuyPrice, transaction.price);
+          highestBuyPrice = Math.max(highestBuyPrice, transaction.price);
         }
       });
     } else {
@@ -582,7 +603,7 @@ export async function getPerformanceMetrics(
         portfolioATH: maxDrawdownPortfolioATH,
         portfolioLow: maxDrawdownPortfolioLow
       },
-      hodlTime: calculateWeightedHodlTime(orders as any, today),
+      hodlTime: calculateWeightedHodlTime(transactions as any, today),
       currentPrice,
       averageBuyPrice,
       lowestBuyPrice: lowestBuyPrice === Infinity ? 0 : lowestBuyPrice,

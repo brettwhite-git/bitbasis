@@ -31,7 +31,15 @@ interface HodlAgeData {
   btcAmount: number
 }
 
-function calculateHodlAgeDistribution(orders: any[]): HodlAgeData[] {
+// Interface for unified transaction
+interface Transaction {
+  date: string
+  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
+  received_amount: number | null
+  received_currency: string | null
+}
+
+function calculateHodlAgeDistribution(transactions: Transaction[]): HodlAgeData[] {
   const now = new Date()
   const hodlAgeMap = new Map<string, number>()
   
@@ -39,11 +47,11 @@ function calculateHodlAgeDistribution(orders: any[]): HodlAgeData[] {
   const ageRanges = ['< 1 Year', '1-2 Years', '2-3 Years', '3-5 Years', '5+ Years']
   ageRanges.forEach(range => hodlAgeMap.set(range, 0))
 
-  // Process buy orders
-  orders.forEach(order => {
-    if (order.type === 'buy' && order.received_btc_amount) {
-      const orderDate = new Date(order.date)
-      const yearsDiff = (now.getTime() - orderDate.getTime()) / (365 * 24 * 60 * 60 * 1000)
+  // Process buy transactions
+  transactions.forEach(transaction => {
+    if (transaction.type === 'buy' && transaction.received_currency === 'BTC' && transaction.received_amount) {
+      const transactionDate = new Date(transaction.date)
+      const yearsDiff = (now.getTime() - transactionDate.getTime()) / (365 * 24 * 60 * 60 * 1000)
       
       let ageRange: string
       if (yearsDiff < 1) ageRange = '< 1 Year'
@@ -52,7 +60,7 @@ function calculateHodlAgeDistribution(orders: any[]): HodlAgeData[] {
       else if (yearsDiff < 5) ageRange = '3-5 Years'
       else ageRange = '5+ Years'
       
-      hodlAgeMap.set(ageRange, (hodlAgeMap.get(ageRange) || 0) + order.received_btc_amount)
+      hodlAgeMap.set(ageRange, (hodlAgeMap.get(ageRange) || 0) + transaction.received_amount)
     }
   })
 
@@ -108,15 +116,16 @@ export function HodlAgeDistribution() {
       setError(null)
       
       try {
-        const { data: orders, error } = await supabase
-          .from('orders')
-          .select('date, type, received_btc_amount')
+        const { data: transactions, error } = await supabase
+          .from('transactions')
+          .select('date, type, received_amount, received_currency')
+          .eq('type', 'buy') // Only need buy transactions for this chart
           .order('date', { ascending: true })
 
         if (error) throw error
 
-        if (orders) {
-          const calculatedData = calculateHodlAgeDistribution(orders)
+        if (transactions) {
+          const calculatedData = calculateHodlAgeDistribution(transactions)
           setHodlData(calculatedData)
         }
       } catch (err: any) {

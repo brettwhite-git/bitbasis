@@ -235,11 +235,65 @@ export type StagedTransaction = NewTransaction & {
   created_at: string
 }
 
-// Wizard context type
+// Flexible wizard data type that allows any combination of fields during editing
+// This solves the discriminated union problem by being more permissive during wizard state management
+export type TransactionWizardData = {
+  // Always allow the discriminating field
+  type?: NewTransaction['type']
+  
+  // Core fields that all transactions can have
+  id?: string
+  date?: string
+  asset?: string
+  price?: number
+  comment?: string | null
+  csv_upload_id?: string | null
+  
+  // Amount fields (any transaction might use these)
+  sent_amount?: number
+  sent_currency?: string
+  received_amount?: number
+  received_currency?: string
+  fee_amount?: number | null
+  fee_currency?: string | null
+  
+  // Address fields (for deposits/withdrawals)
+  from_address?: string | null
+  from_address_name?: string | null
+  to_address?: string | null
+  to_address_name?: string | null
+  transaction_hash?: string | null
+  
+  // Allow any other string keys for flexibility during development
+  [key: string]: any
+}
+
+// Updated wizard context type
 export interface AddTransactionWizardContext {
   currentStep: WizardStep
-  transactionData: Partial<NewTransaction>
+  transactionData: TransactionWizardData
   stagedTransactions: StagedTransaction[]
   isSubmitting: boolean
   errors: Record<string, string>
+  
+  // Navigation
+  goToStep: (step: WizardStep) => void
+  nextStep: () => void
+  prevStep: () => void
+  
+  // Data management
+  updateTransactionData: (data: Partial<TransactionWizardData>) => void
+  clearTransactionData: () => void
+  
+  // Staging
+  addToStaging: (transaction: NewTransaction) => void
+  removeFromStaging: (tempId: string) => void
+  clearStaging: () => void
+  editStagedTransaction: (tempId: string) => void
+  
+  // Submission
+  submitTransactions: () => Promise<void>
+  
+  // Reset
+  resetWizard: () => void
 } 

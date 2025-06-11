@@ -9,12 +9,14 @@ import { createBtcHeatmapTooltipConfig } from "@/lib/utils/chart-tooltip-config"
 // Dynamically import ApexCharts with no SSR to avoid window is not defined errors
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
-// Updated interface to match 'orders' table structure
-interface Order {
+// Updated interface to match unified transactions table structure
+interface Transaction {
   date: string
-  type: 'buy' | 'sell'
-  received_btc_amount: number | null // For buys
-  sell_btc_amount: number | null // For sells
+  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
+  sent_amount: number | null
+  sent_currency: string | null
+  received_amount: number | null
+  received_currency: string | null
 }
 
 // Interface for the heatmap data structure
@@ -25,13 +27,13 @@ interface HeatmapData {
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-// Function to process orders and calculate monthly buy/sell balances
-function calculateMonthlyTransactions(orders: Order[]): HeatmapData[] {
+// Function to process transactions and calculate monthly buy/sell balances
+function calculateMonthlyTransactions(transactions: Transaction[]): HeatmapData[] {
   const yearMonthData = new Map<string, Map<string, { buys: number, sells: number }>>()
   
-  // Process each order
-  orders.forEach(order => {
-    const date = new Date(order.date)
+  // Process each transaction
+  transactions.forEach(transaction => {
+    const date = new Date(transaction.date)
     const year = date.getFullYear().toString()
     const month = MONTHS[date.getMonth()] as string // Assert month as string since we know MONTHS array is fixed
     
@@ -47,10 +49,10 @@ function calculateMonthlyTransactions(orders: Order[]): HeatmapData[] {
     
     const currentStats = monthlyData.get(month)!
     
-    // Count buys and sells separately
-    if (order.type === 'buy' && order.received_btc_amount) {
+    // Count buys and sells separately using unified schema
+    if (transaction.type === 'buy' && transaction.received_currency === 'BTC' && transaction.received_amount) {
       currentStats.buys += 1
-    } else if (order.type === 'sell' && order.sell_btc_amount) {
+    } else if (transaction.type === 'sell' && transaction.sent_currency === 'BTC' && transaction.sent_amount) {
       currentStats.sells += 1
     }
     
@@ -92,35 +94,36 @@ export function BtcHeatmap() {
   const { supabase } = useSupabase()
 
   useEffect(() => {
-    async function fetchOrders() {
-      // Fetch from 'orders' table and select necessary columns
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select('date, type, received_btc_amount, sell_btc_amount')
+    async function fetchTransactions() {
+      // Fetch from 'transactions' table and select necessary columns
+      const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select('date, type, sent_amount, sent_currency, received_amount, received_currency')
+        .in('type', ['buy', 'sell']) // Only include buy and sell transactions for this chart
         .order('date', { ascending: true })
 
       if (error) {
-        console.error('Error fetching orders:', error)
+        console.error('Error fetching transactions:', error)
         return
       }
 
-      // Ensure orders is not null before calculating
-      if (orders && orders.length > 0) {
-        // Filter and validate order types to match the 'buy' | 'sell' union type
-        const validOrders = orders.filter(
-          (order): order is Order => 
-            order.type === 'buy' || order.type === 'sell'
+      // Ensure transactions is not null before calculating
+      if (transactions && transactions.length > 0) {
+        // Filter and validate transaction types to match the 'buy' | 'sell' union type
+        const validTransactions = transactions.filter(
+          (transaction): transaction is Transaction => 
+            transaction.type === 'buy' || transaction.type === 'sell'
         )
         
-        const calculatedData = calculateMonthlyTransactions(validOrders)
+        const calculatedData = calculateMonthlyTransactions(validTransactions)
         setHeatmapData(calculatedData)
       } else {
-        console.log("No orders found.")
-        setHeatmapData([]) // Set empty data if no orders
+        console.log("No transactions found.")
+        setHeatmapData([]) // Set empty data if no transactions
       }
     }
 
-    fetchOrders()
+    fetchTransactions()
   }, [supabase])
 
   // Chart options for the heatmap

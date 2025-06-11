@@ -10,15 +10,16 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
 
 // Simplified Order interface for monthly calculations
-export interface MonthlyOrder {
+export interface MonthlyTransaction {
   id: number
   date: string
   type: 'buy' | 'sell'
-  received_btc_amount: number | null
-  buy_fiat_amount: number | null
-  service_fee: number | null
-  service_fee_currency: string | null
-  sell_btc_amount: number | null
+  sent_amount: number | null
+  sent_currency: string | null
+  received_amount: number | null
+  received_currency: string | null
+  fee_amount: number | null
+  fee_currency: string | null
   price: number | null
 }
 
@@ -52,12 +53,12 @@ export class MonthlyPortfolioCalculator {
     options: MonthlyCalculatorOptions = {}
   ): Promise<MonthlyPortfolioData[]> {
     try {
-      // Fetch user orders
-      const orders = await this.fetchUserOrders(userId)
-      if (!orders.length) return []
+      // Fetch user transactions
+      const transactions = await this.fetchUserTransactions(userId)
+      if (!transactions.length) return []
 
       // Get date range for calculation
-      const { startDate, endDate } = this.getDateRange(orders, options.timeRange)
+      const { startDate, endDate } = this.getDateRange(transactions, options.timeRange)
       
       // Fetch historical BTC prices for the date range
       const historicalPrices = await this.fetchHistoricalPrices(startDate, endDate)
@@ -66,7 +67,7 @@ export class MonthlyPortfolioCalculator {
       const currentPrice = await this.getCurrentPrice()
       
       // Calculate monthly data
-      return this.processMonthlyData(orders, historicalPrices, currentPrice, startDate, endDate)
+      return this.processMonthlyData(transactions, historicalPrices, currentPrice, startDate, endDate)
     } catch (error) {
       console.error('Error calculating monthly portfolio data:', error)
       return []
@@ -74,27 +75,29 @@ export class MonthlyPortfolioCalculator {
   }
 
   /**
-   * Fetches user orders sorted by date
+   * Fetches user transactions sorted by date
    */
-  private async fetchUserOrders(userId: string): Promise<MonthlyOrder[]> {
+  private async fetchUserTransactions(userId: string): Promise<MonthlyTransaction[]> {
     const { data, error } = await this.supabase
-      .from('orders')
-      .select('id, date, type, received_btc_amount, buy_fiat_amount, service_fee, service_fee_currency, sell_btc_amount, price')
+      .from('transactions')
+      .select('id, date, type, sent_amount, sent_currency, received_amount, received_currency, fee_amount, fee_currency, price')
       .eq('user_id', userId)
+      .in('type', ['buy', 'sell'])
       .order('date', { ascending: true })
 
     if (error) throw error
     
-    return (data || []).map(order => ({
-      id: order.id,
-      date: order.date,
-      type: order.type as 'buy' | 'sell',
-      received_btc_amount: order.received_btc_amount,
-      buy_fiat_amount: order.buy_fiat_amount,
-      service_fee: order.service_fee,
-      service_fee_currency: order.service_fee_currency,
-      sell_btc_amount: order.sell_btc_amount,
-      price: order.price
+    return (data || []).map(transaction => ({
+      id: transaction.id,
+      date: transaction.date,
+      type: transaction.type as 'buy' | 'sell',
+      sent_amount: transaction.sent_amount,
+      sent_currency: transaction.sent_currency,
+      received_amount: transaction.received_amount,
+      received_currency: transaction.received_currency,
+      fee_amount: transaction.fee_amount,
+      fee_currency: transaction.fee_currency,
+      price: transaction.price
     }))
   }
 
@@ -158,7 +161,7 @@ export class MonthlyPortfolioCalculator {
   /**
    * Determines the date range for calculations
    */
-  private getDateRange(orders: MonthlyOrder[], timeRange?: string): { startDate: Date, endDate: Date } {
+  private getDateRange(transactions: MonthlyTransaction[], timeRange?: string): { startDate: Date, endDate: Date } {
     const now = new Date()
     const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0) // Last day of current month
     
@@ -168,13 +171,13 @@ export class MonthlyPortfolioCalculator {
       const monthsBack = this.getMonthsBack(timeRange)
       startDate = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1)
     } else {
-      // Use first order date
-      const firstOrder = orders[0]
-      if (!firstOrder) {
+      // Use first transaction date
+      const firstTransaction = transactions[0]
+      if (!firstTransaction) {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1)
       } else {
-        const firstOrderDate = new Date(firstOrder.date)
-        startDate = new Date(firstOrderDate.getFullYear(), firstOrderDate.getMonth(), 1)
+        const firstTransactionDate = new Date(firstTransaction.date)
+        startDate = new Date(firstTransactionDate.getFullYear(), firstTransactionDate.getMonth(), 1)
       }
     }
 
@@ -199,7 +202,7 @@ export class MonthlyPortfolioCalculator {
    * Processes orders and calculates monthly portfolio data
    */
   private processMonthlyData(
-    orders: MonthlyOrder[],
+    transactions: MonthlyTransaction[],
     historicalPrices: Map<string, number>,
     currentPrice: number,
     startDate: Date,
@@ -218,21 +221,23 @@ export class MonthlyPortfolioCalculator {
       const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`
       const isCurrentMonth = monthKey === currentMonthKey
       
-      // Process orders for this month
-      const monthOrders = orders.filter(order => {
-        const orderDate = new Date(order.date)
-        return orderDate.getFullYear() === currentMonth.getFullYear() && 
-               orderDate.getMonth() === currentMonth.getMonth()
+      // Process transactions for this month
+      const monthTransactions = transactions.filter(transaction => {
+        const transactionDate = new Date(transaction.date)
+        return transactionDate.getFullYear() === currentMonth.getFullYear() && 
+               transactionDate.getMonth() === currentMonth.getMonth()
       })
 
-      // Update cumulative values with this month's orders
-      monthOrders.forEach(order => {
-        if (order.type === 'buy') {
-          cumulativeBTC += order.received_btc_amount || 0
-          cumulativeCostBasis += (order.buy_fiat_amount || 0) + 
-                                (order.service_fee && order.service_fee_currency === 'USD' ? order.service_fee : 0)
-        } else if (order.type === 'sell') {
-          cumulativeBTC -= order.sell_btc_amount || 0
+      // Update cumulative values with this month's transactions
+      monthTransactions.forEach(transaction => {
+        if (transaction.type === 'buy') {
+          // For buy: received_amount = BTC, sent_amount = USD + fee_amount (USD)
+          cumulativeBTC += transaction.received_amount || 0
+          const feeAmount = (transaction.fee_amount && transaction.fee_currency === 'USD') ? transaction.fee_amount : 0
+          cumulativeCostBasis += (transaction.sent_amount || 0) + feeAmount
+        } else if (transaction.type === 'sell') {
+          // For sell: sent_amount = BTC sold
+          cumulativeBTC -= transaction.sent_amount || 0
           // Note: We don't subtract from cost basis on sells - this maintains the original investment amount
         }
       })

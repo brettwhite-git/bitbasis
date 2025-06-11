@@ -7,17 +7,18 @@ import { InvestmentInsights } from "./investment-insights";
 import { ArrowUpIcon, ArrowDownIcon, TrendingUpIcon, TrendingDownIcon } from "lucide-react";
 import { ReturnsOverview } from "../overview/exports";
 import { DrawdownMetrics } from "./drawdown-metrics";
-import { PerformanceMetrics } from "@/lib/core/portfolio";
+import { PerformanceMetrics } from "@/lib/core/portfolio/types";
 import { PerformanceData } from "@/hooks/usePerformanceData";
+import { UnifiedTransaction } from "@/types/transactions";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PersonalInsightsProps {
   performance: PerformanceData['performance'];
-  orders: any[];
+  transactions: UnifiedTransaction[];
   isLoading: boolean;
 }
 
-export function PersonalInsights({ performance, orders, isLoading }: PersonalInsightsProps) {
+export function PersonalInsights({ performance, transactions, isLoading }: PersonalInsightsProps) {
   if (isLoading) {
     return <PersonalInsightsSkeleton />;
   }
@@ -27,7 +28,7 @@ export function PersonalInsights({ performance, orders, isLoading }: PersonalIns
       <div className="lg:row-span-1 flex">
         <InvestmentInsights 
           performance={performance}
-          orders={orders} 
+          transactions={transactions} 
         />
       </div>
       
