@@ -127,13 +127,15 @@ export function InvestmentChart({ chartData, title, bitcoinUnit, showInflationAd
     },
     plugins: {
       legend: {
-        position: 'top' as const,
+        position: 'bottom' as const,
         align: 'center' as const,
         labels: {
           color: COLORS.chartText,
           padding: 20,
           boxWidth: 15,
           boxHeight: 15,
+          usePointStyle: true,
+          pointStyle: 'circle',
           generateLabels: function(chart: any) {
             const originalLabels = ChartJS.defaults.plugins.legend.labels.generateLabels(chart);
             return originalLabels.sort((a, b) => {

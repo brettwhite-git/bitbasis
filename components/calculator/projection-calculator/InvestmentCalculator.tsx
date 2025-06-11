@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+
 import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
 import { InvestmentChart } from "./InvestmentChart"
@@ -323,48 +323,37 @@ export function InvestmentCalculator() {
 
                     {/* Bitcoin Unit */}
                     <div>
-                      <Label className="text-base mb-3 block text-white">Bitcoin Unit</Label>
-                      <RadioGroup value={bitcoinUnit} onValueChange={(value) => setBitcoinUnit(value as BitcoinUnit)} className="grid grid-cols-2 gap-3 mt-0">
-                        <div className="flex items-center">
-                          <RadioGroupItem value="bitcoin" id="bitcoin" className="peer sr-only" />
-                          <Label
-                            htmlFor="bitcoin"
-                            className="relative overflow-hidden flex-1 cursor-pointer rounded-md border border-gray-600/50 bg-gray-800/30 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-gradient-to-r peer-data-[state=checked]:from-bitcoin-orange peer-data-[state=checked]:to-[#D4A76A] peer-data-[state=checked]:text-white peer-data-[state=checked]:shadow-md peer-data-[state=checked]:shadow-bitcoin-orange/30 text-center transition-all duration-300 group"
-                          >
-                            <span className="relative z-10">Bitcoin</span>
-                            <span className="absolute inset-0 bg-white opacity-0 peer-data-[state=checked]:group-hover:opacity-10 transition-opacity duration-100"></span>
-                          </Label>
-                        </div>
-                        <div className="flex items-center">
-                          <RadioGroupItem value="satoshi" id="satoshi" className="peer sr-only" />
-                          <Label
-                            htmlFor="satoshi"
-                            className="relative overflow-hidden flex-1 cursor-pointer rounded-md border border-gray-600/50 bg-gray-800/30 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-gradient-to-r peer-data-[state=checked]:from-bitcoin-orange peer-data-[state=checked]:to-[#D4A76A] peer-data-[state=checked]:text-white peer-data-[state=checked]:shadow-md peer-data-[state=checked]:shadow-bitcoin-orange/30 text-center transition-all duration-300 group"
-                          >
-                            <span className="relative z-10">Satoshi</span>
-                            <span className="absolute inset-0 bg-white opacity-0 peer-data-[state=checked]:group-hover:opacity-10 transition-opacity duration-100"></span>
-                          </Label>
-                        </div>
-                      </RadioGroup>
+                      <Label className="text-base mb-2 block text-white">Bitcoin Unit</Label>
+                      <Select value={bitcoinUnit} onValueChange={(value) => setBitcoinUnit(value as BitcoinUnit)}>
+                        <SelectTrigger className="h-10 bg-gray-800/30 border-gray-600/50 text-white">
+                          <SelectValue placeholder="Select bitcoin unit" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900/95 backdrop-blur-md border-gray-700/50">
+                          <SelectItem value="bitcoin" className="text-white hover:bg-gray-800/50">Bitcoin</SelectItem>
+                          <SelectItem value="satoshi" className="text-white hover:bg-gray-800/50">Satoshi</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Buying Frequency */}
                     <div>
-                      <Label className="text-base mb-3 block text-white">Buying Frequency</Label>
-                      <RadioGroup value={frequency} onValueChange={setFrequency} className="grid grid-cols-4 gap-3 mt-0">
-                        {["daily", "weekly", "monthly", "yearly"].map((period) => (
-                          <div key={`freq-${period}`} className="flex items-center">
-                            <RadioGroupItem value={period} id={`freq-${period}`} className="peer sr-only" />
-                            <Label
-                              htmlFor={`freq-${period}`}
-                              className="relative overflow-hidden flex-1 cursor-pointer rounded-md border border-gray-600/50 bg-gray-800/30 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700/50 peer-data-[state=checked]:border-bitcoin-orange peer-data-[state=checked]:bg-gradient-to-r peer-data-[state=checked]:from-bitcoin-orange peer-data-[state=checked]:to-[#D4A76A] peer-data-[state=checked]:text-white peer-data-[state=checked]:shadow-md peer-data-[state=checked]:shadow-bitcoin-orange/30 text-center capitalize transition-all duration-300 group"
+                      <Label className="text-base mb-2 block text-white">Buying Frequency</Label>
+                      <Select value={frequency} onValueChange={setFrequency}>
+                        <SelectTrigger className="h-10 bg-gray-800/30 border-gray-600/50 text-white">
+                          <SelectValue placeholder="Select buying frequency" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900/95 backdrop-blur-md border-gray-700/50">
+                          {["daily", "weekly", "monthly", "yearly"].map((period) => (
+                            <SelectItem 
+                              key={`freq-${period}`} 
+                              value={period} 
+                              className="text-white hover:bg-gray-800/50"
                             >
-                              <span className="relative z-10">{getFrequencyDetails(period).label}</span>
-                              <span className="absolute inset-0 bg-white opacity-0 peer-data-[state=checked]:group-hover:opacity-10 transition-opacity duration-100"></span>
-                            </Label>
-                          </div>
-                        ))}
-                      </RadioGroup>
+                              {getFrequencyDetails(period).label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Conditional Input based on Goal Type */}

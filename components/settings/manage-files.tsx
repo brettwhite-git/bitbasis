@@ -1,13 +1,16 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 import { getCSVUploads, deleteCSVUpload } from '@/lib/supabase/supabase';
 import { useAuth } from '@/providers/supabase-auth-provider';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
     Table, 
     TableBody, 
-    TableCaption, 
     TableCell, 
     TableHead, 
     TableHeader, 
@@ -24,21 +27,39 @@ import {
     AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, RefreshCw } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@/components/ui/form"
+import { 
+  Trash2, 
+  RefreshCw, 
+  Search, 
+  FileText, 
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  XCircle
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from "@/lib/hooks/use-toast";
 import { cn } from "@/lib/utils/utils";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 
-// We need to import UploadedCSV type from the import component
-// Instead of importing from components/import/lib/types, let's define it here to avoid circular dependencies
-// The actual type is from Database["public"]["Tables"]["csv_uploads"]["Row"]
+// Form schema for file management filters
+const fileFilterSchema = z.object({
+  searchTerm: z.string().default(""),
+  statusFilter: z.enum(["all", "completed", "processing", "error"]).default("all"),
+})
+
+type FileFilterFormValues = z.infer<typeof fileFilterSchema>
+
+// CSV Upload type definition
 type UploadedCSV = {
   id: string;
   user_id: string;
@@ -61,7 +82,7 @@ function formatFileSize(bytes: number | null | undefined): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-type LoadingState = 'idle' | 'fetching' | 'deleting';
+type LoadingState = 'idle' | 'fetching' | 'deleting' | 'refreshing';
 
 export function ManageFilesSettings() {
   const { user } = useAuth();
@@ -74,14 +95,54 @@ export function ManageFilesSettings() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [uploadToDelete, setUploadToDelete] = useState<UploadedCSV | null>(null);
 
-  const fetchUploads = useCallback(async () => {
+  // Initialize form for filters
+  const form = useForm<FileFilterFormValues>({
+    resolver: zodResolver(fileFilterSchema),
+    defaultValues: {
+      searchTerm: "",
+      statusFilter: "all",
+    },
+    mode: "onChange", // Only validate on change, not on every render
+  })
+
+  // Get form values efficiently without causing re-renders
+  const searchTerm = form.watch("searchTerm")
+  const statusFilter = form.watch("statusFilter")
+
+  // Memoize filtered uploads to prevent unnecessary recalculations
+  const filteredUploads = useMemo(() => {
+    let filtered = uploads;
+
+    // Apply search filter
+    if (searchTerm && searchTerm.trim()) {
+      filtered = filtered.filter(upload => 
+        upload.original_filename.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter && statusFilter !== "all") {
+      filtered = filtered.filter(upload => upload.status === statusFilter);
+    }
+
+    return filtered;
+  }, [uploads, searchTerm, statusFilter]);
+
+  const fetchUploads = useCallback(async (isRefresh = false) => {
     if (!userId) return;
-    setLoadingState('fetching');
+    setLoadingState(isRefresh ? 'refreshing' : 'fetching');
     setError(null);
     try {
       const { data, error } = await getCSVUploads();
       if (error) throw error;
       setUploads(data || []);
+      
+      if (isRefresh) {
+        toast({ 
+          title: "Refreshed", 
+          description: "File list has been updated.",
+        });
+      }
     } catch (err) {
       console.error("Failed to fetch CSV uploads:", err);
       const message = err instanceof Error ? err.message : "Could not load previous uploads.";
@@ -97,14 +158,12 @@ export function ManageFilesSettings() {
     fetchUploads();
   }, [fetchUploads]);
 
-  const completedUploads = uploads.filter(upload => upload.status === 'completed');
-
-  const handleDeleteClick = (upload: UploadedCSV) => {
+  const handleDeleteClick = useCallback((upload: UploadedCSV) => {
     setUploadToDelete(upload);
     setShowConfirmDialog(true);
-  };
+  }, []);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!uploadToDelete) return;
 
     setLoadingState('deleting');
@@ -113,7 +172,12 @@ export function ManageFilesSettings() {
       const { error } = await deleteCSVUpload(uploadToDelete.id);
       if (error) throw error;
       
-      toast({ title: "Success", description: `Deleted file: ${uploadToDelete.original_filename}` });
+      toast({ 
+        title: "File Deleted", 
+        description: `Successfully deleted ${uploadToDelete.original_filename}`,
+      });
+      
+      // Update uploads state by removing the deleted item
       setUploads(prev => prev.filter(up => up.id !== uploadToDelete.id));
       
     } catch (err) {
@@ -126,9 +190,19 @@ export function ManageFilesSettings() {
       setShowConfirmDialog(false);
       setUploadToDelete(null);
     }
-  };
+  }, [uploadToDelete, toast]);
 
-  const getStatusBadgeVariant = (status: UploadedCSV['status']): "default" | "secondary" | "destructive" | "outline" => {
+  const getStatusIcon = useCallback((status: UploadedCSV['status']) => {
+    switch (status) {
+      case 'completed': return <CheckCircle2 className="h-3.5 w-3.5" />;
+      case 'processing': 
+      case 'pending': return <Clock className="h-3.5 w-3.5" />;
+      case 'error': return <XCircle className="h-3.5 w-3.5" />;
+      default: return <FileText className="h-3.5 w-3.5" />;
+    }
+  }, []);
+
+  const getStatusBadgeVariant = useCallback((status: UploadedCSV['status']): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case 'completed': return 'default';
       case 'processing':
@@ -136,84 +210,230 @@ export function ManageFilesSettings() {
       case 'error': return 'destructive';
       default: return 'outline';
     }
-  };
+  }, []);
+
+  const getStatusColor = useCallback((status: UploadedCSV['status']) => {
+    switch (status) {
+      case 'completed': return 'text-green-400';
+      case 'processing': 
+      case 'pending': return 'text-yellow-400';
+      case 'error': return 'text-red-400';
+      default: return 'text-gray-400';
+    }
+  }, []);
+
+  // Memoize total size calculation
+  const totalSize = useMemo(() => {
+    return uploads.reduce((sum, upload) => sum + (upload.file_size || 0), 0);
+  }, [uploads]);
 
   return (
     <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
       <div className="relative z-10">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-white mb-2">Manage Uploaded CSV Files</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">File Management</h3>
             <p className="text-gray-400 text-sm">
-              View and manage uploaded CSV files.
+              View, search, and manage your uploaded CSV files.
             </p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchUploads(true)}
+            disabled={loadingState === 'refreshing'}
+            className="bg-gray-800/50 border-gray-600/50 text-white hover:bg-gray-700/50"
+          >
+            <RefreshCw className={cn("h-4 w-4 mr-2", loadingState === 'refreshing' && "animate-spin")} />
+            Refresh
+          </Button>
         </div>
-        
-        {loadingState === 'fetching' && <p className="text-gray-400">Loading uploads...</p>}
-        {error && <p className="text-red-400">Error: {error}</p>}
 
-        <Table>
-          <TableCaption className="text-center">
-            Your uploaded CSV files.
-            {completedUploads.length === 0 && loadingState !== 'fetching' && " No uploads found."}
-          </TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-center">File</TableHead>
-              <TableHead className="text-center">Date</TableHead>
-              <TableHead className="text-center">Size</TableHead>
-              <TableHead className="text-center">Status</TableHead>
-              <TableHead className="text-center">Rows</TableHead>
-              <TableHead className="text-center">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {completedUploads.map((upload) => (
-              <TableRow key={upload.id}>
-                <TableCell className="font-medium truncate max-w-xs text-center">{upload.original_filename}</TableCell>
-                <TableCell className="text-center">{format(new Date(upload.created_at), 'PP')}</TableCell>
-                <TableCell className="text-center">{formatFileSize(upload.file_size)}</TableCell>
-                <TableCell className="text-center">
-                  <Badge variant={getStatusBadgeVariant(upload.status)}>{upload.status}</Badge>
-                </TableCell>
-                <TableCell className="text-center">
-                  {upload.imported_row_count ?? '-'} / {upload.row_count ?? 'N/A'}
-                </TableCell>
-                <TableCell className="text-center">
-                  <Button 
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteClick(upload)}
-                    disabled={loadingState === 'deleting'}
-                    aria-label="Delete upload"
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        {/* Search and Filter Form */}
+        <Form {...form}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <FormField
+              control={form.control}
+              name="searchTerm"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white">Search Files</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search by filename..."
+                        className="pl-8 bg-gray-800/30 border-gray-600/50 text-white placeholder:text-gray-400"
+                        {...field}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormDescription className="text-gray-400">
+                    Filter files by filename
+                  </FormDescription>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="statusFilter"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white">Filter by Status</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="flex h-10 w-full rounded-md border border-gray-600/50 bg-gray-800/30 px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="completed">Completed</option>
+                      <option value="processing">Processing</option>
+                      <option value="error">Error</option>
+                    </select>
+                  </FormControl>
+                  <FormDescription className="text-gray-400">
+                    Show files by status
+                  </FormDescription>
+                </FormItem>
+              )}
+            />
+          </div>
+        </Form>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert className="mb-4 bg-red-900/20 border-red-800/50">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="text-red-300">
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Loading State */}
+        {loadingState === 'fetching' && (
+          <div className="space-y-3">
+            <Skeleton className="h-12 w-full bg-gray-800/50" />
+            <Skeleton className="h-12 w-full bg-gray-800/50" />
+            <Skeleton className="h-12 w-full bg-gray-800/50" />
+          </div>
+        )}
+
+        {/* Files Table */}
+        {loadingState !== 'fetching' && (
+          <div className="rounded-lg border border-gray-600/30 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-gray-600/30 hover:bg-gray-800/20">
+                  <TableHead className="text-gray-300">File</TableHead>
+                  <TableHead className="text-gray-300">Date</TableHead>
+                  <TableHead className="text-gray-300">Size</TableHead>
+                  <TableHead className="text-gray-300">Status</TableHead>
+                  <TableHead className="text-gray-300">Rows</TableHead>
+                  <TableHead className="text-gray-300 text-center">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUploads.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="flex flex-col items-center gap-2">
+                        <FileText className="h-8 w-8 text-gray-400" />
+                        <p className="text-gray-400">
+                          {uploads.length === 0 ? "No uploaded files found" : "No files match your filters"}
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUploads.map((upload) => (
+                    <TableRow key={upload.id} className="border-gray-600/30 hover:bg-gray-800/10">
+                      <TableCell className="font-medium text-white">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-gray-400" />
+                          <span className="truncate max-w-xs" title={upload.original_filename}>
+                            {upload.original_filename}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray-300">
+                        {format(new Date(upload.created_at), 'MMM dd, yyyy')}
+                      </TableCell>
+                      <TableCell className="text-gray-300">{formatFileSize(upload.file_size)}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={getStatusBadgeVariant(upload.status)}
+                          className="flex items-center gap-1 w-fit"
+                        >
+                          <span className={getStatusColor(upload.status)}>
+                            {getStatusIcon(upload.status)}
+                          </span>
+                          {upload.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-gray-300">
+                        <div className="text-sm">
+                          <span className="font-medium">{upload.imported_row_count ?? '-'}</span>
+                          <span className="text-gray-400"> / {upload.row_count ?? 'N/A'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button 
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteClick(upload)}
+                          disabled={loadingState === 'deleting'}
+                          className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* Summary Stats */}
+        {uploads.length > 0 && (
+          <div className="mt-4 flex items-center justify-between text-sm text-gray-400">
+            <span>
+              Showing {filteredUploads.length} of {uploads.length} files
+            </span>
+            <span>
+              Total size: {formatFileSize(totalSize)}
+            </span>
+          </div>
+        )}
 
         {/* Confirmation Dialog */}
         <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-          <AlertDialogContent>
+          <AlertDialogContent className="bg-gray-900 border-gray-700">
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the uploaded file 
-                <span className="font-semibold"> {uploadToDelete?.original_filename} </span> 
-                and its associated records. 
-                <span className="font-bold text-destructive"> Imported transactions from this file will NOT be deleted.</span>
+              <AlertDialogTitle className="text-white">Delete File Record?</AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-300">
+                This action cannot be undone. This will permanently delete the uploaded file record for{" "}
+                <span className="font-semibold text-white">{uploadToDelete?.original_filename}</span>.
+                <br /><br />
+                <span className="font-bold text-yellow-400">
+                  Note: Imported transactions from this file will NOT be deleted.
+                </span>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={loadingState === 'deleting'}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel 
+                disabled={loadingState === 'deleting'}
+                className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+              >
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction 
                 onClick={handleConfirmDelete} 
                 disabled={loadingState === 'deleting'}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                className="bg-red-600 text-white hover:bg-red-700"
               >
                 {loadingState === 'deleting' ? 'Deleting...' : 'Delete File Record'}
               </AlertDialogAction>
