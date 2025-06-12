@@ -1,8 +1,8 @@
 // UI Components
 export * from "./ui"
 
-// Import System
-export * from "./import"
+// Transaction Management (includes import system)
+export * from "./transactions"
 
 // Overview Components
 export * from "./dashboard/overview"

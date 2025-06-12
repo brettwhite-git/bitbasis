@@ -15,7 +15,7 @@ import {
 } from "chart.js"
 import { Line } from "react-chartjs-2"
 import { Button } from "@/components/ui/button"
-import { usePortfolioHistory } from "@/lib/hooks/usePortfolioHistory"
+import { usePortfolioHistory } from "@/lib/hooks"
 import { createPortfolioSummaryTooltipConfig } from "@/lib/utils/chart-tooltip-config"
 
 // Register ChartJS components

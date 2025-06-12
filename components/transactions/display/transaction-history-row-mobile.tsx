@@ -20,10 +20,10 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { formatBTC, formatCurrency } from "@/lib/utils/format"
-import { TransactionHistoryAccordion } from "./transaction-history-accordion"
+import { TransactionAccordion } from "./accordion"
 import { TransactionBadge } from "@/components/shared/badges"
 import { TransactionType } from "@/lib/utils/transaction-utils"
-import { useEditDrawer } from "./edit-drawer-provider"
+import { useEditDrawer } from "@/components/transactions/edit"
 import { UnifiedTransaction } from "@/types/transactions"
 
 interface TransactionHistoryRowMobileProps {
@@ -192,7 +192,7 @@ export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMo
       {/* Expanded details */}
       {isExpanded && (
         <div className="px-3 pb-3">
-          <TransactionHistoryAccordion transaction={transaction} />
+          <TransactionAccordion transaction={transaction} />
         </div>
       )}
     </div>

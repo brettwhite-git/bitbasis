@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Crown, Star, Zap, Check, ExternalLink } from "lucide-react"
-import { useSubscription } from "@/hooks/use-subscription"
+import { useSubscription } from "@/lib/hooks"
 import { useToast } from "@/lib/hooks/use-toast"
 
 interface SubscriptionModalProps {

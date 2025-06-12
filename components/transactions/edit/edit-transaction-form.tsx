@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useEditDrawer } from './edit-drawer-provider'
-import { TransactionTypeFields } from './transaction-type-fields'
+import { TransactionTypeFields } from '../forms/fields'
 import { toast } from 'sonner'
 import { UnifiedTransaction } from '@/types/transactions'
 

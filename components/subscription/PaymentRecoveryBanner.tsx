@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, CreditCard, RefreshCw, X } from "lucide-react"
-import { useSubscription } from "@/hooks/use-subscription"
+import { useSubscription } from "@/lib/hooks"
 
 export function PaymentRecoveryBanner() {
   const [dismissed, setDismissed] = useState(false)

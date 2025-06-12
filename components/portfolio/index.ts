@@ -24,5 +24,4 @@ export { TaxLiability } from './tax/tax-liability';
 export { PortfolioMetricsWrapper } from './portfolio-metrics-wrapper';
 
 // Export data hooks
-export { usePerformanceMetrics } from '@/lib/hooks/usePerformanceMetrics';
-export { usePortfolioMetrics } from '@/lib/hooks/usePortfolioMetrics';
+export { usePerformanceMetrics, usePortfolioMetrics } from '@/lib/hooks';

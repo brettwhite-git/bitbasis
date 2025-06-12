@@ -1,6 +1,6 @@
 "use client"
 
-import { usePortfolioMetrics } from "@/lib/hooks/usePortfolioMetrics"
+import { usePortfolioMetrics } from "@/lib/hooks"
 import { ExtendedPortfolioMetrics } from "@/lib/core/portfolio/types"
 import { PortfolioValue } from "./metrics/portfolio-value"
 import { CostBasis } from "./metrics/cost-basis"

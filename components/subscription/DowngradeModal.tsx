@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle } from "lucide-react"
-import { useSubscription } from "@/hooks/use-subscription"
+import { useSubscription } from "@/lib/hooks"
 import { useAuth } from "@/providers/supabase-auth-provider"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 

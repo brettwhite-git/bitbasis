@@ -22,11 +22,11 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { formatBTC, formatCurrency, formatDate } from "@/lib/utils/format"
-import { TransactionHistoryAccordion } from "./transaction-history-accordion"
-import { useBitcoinPrice } from "@/lib/hooks/useBitcoinPrice"
+import { TransactionAccordion } from "./accordion"
+import { useBitcoinPrice } from "@/lib/hooks"
 import { TransactionBadge } from "@/components/shared/badges"
 import { TransactionType } from "@/lib/utils/transaction-utils"
-import { useEditDrawer } from './edit-drawer-provider'
+import { useEditDrawer } from '@/components/transactions/edit'
 import { UnifiedTransaction } from '@/types/transactions'
 
 interface TransactionHistoryRowProps {
@@ -278,8 +278,8 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
       {/* Accordion Details Row */}
       {isExpanded && (
         <TableRow>
-          <TableCell colSpan={12} className="p-0 border-0">
-            <TransactionHistoryAccordion transaction={transaction} />
+          <TableCell colSpan={100} className="p-0 border-0">
+            <TransactionAccordion transaction={transaction} />
           </TableCell>
         </TableRow>
       )}

@@ -1,8 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useBitcoinPrice } from "@/lib/hooks/useBitcoinPrice"
-import { useDashboardTaxLiability } from "@/lib/hooks/useDashboardTaxLiability"
+import { useBitcoinPrice, useDashboardTaxLiability } from "@/lib/hooks"
 // Import from the new locations
 import { RecentTransactions } from "./widgets/recent-transactions"
 import { PortfolioSummaryChart } from "./charts/portfolio-summary-chart"

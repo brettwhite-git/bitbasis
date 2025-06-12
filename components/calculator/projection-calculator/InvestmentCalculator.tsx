@@ -42,7 +42,7 @@ import {
   calculateRecurringBuyData,
   aggregateChartData
 } from "../utils/calculation-utils"
-import { useBitcoinPrice } from "@/lib/hooks/useBitcoinPrice"
+import { useBitcoinPrice } from "@/lib/hooks"
 
 export function InvestmentCalculator() {
   const [calculatorMode, setCalculatorMode] = useState<CalculatorMode>('savingsGoal'); // Default to Savings Goal

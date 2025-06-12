@@ -1,6 +1,6 @@
 "use client"
 
-import { useSubscription } from "@/hooks/use-subscription"
+import { useSubscription } from "@/lib/hooks"
 import { TransactionLimitService, SubscriptionService } from "@/lib/subscription"
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle } from "lucide-react"

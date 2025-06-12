@@ -3,7 +3,7 @@
 import { memo, useMemo } from "react";
 import { TrendingDownIcon } from "lucide-react";
 import { formatCurrency, formatPercent, formatDateLong } from "@/lib/utils/utils";
-import { PerformanceData } from "@/lib/hooks/usePerformanceData";
+import { PerformanceData } from "@/lib/hooks/use-performance-data";
 import { 
   calculateDrawdownFromATHRatio, 
   calculateDrawdownFromATHAmount, 

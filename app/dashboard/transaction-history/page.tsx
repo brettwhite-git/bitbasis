@@ -1,6 +1,6 @@
-import { TransactionHistoryTable } from "@/components/transaction-history/transaction-history-table"
-import { EditDrawerProvider } from "@/components/transaction-history/edit-drawer-provider"
-import { EditTransactionDrawer } from "@/components/transaction-history/edit-transaction-drawer"
+import { TransactionTable } from "@/components/transactions/table"
+import { EditDrawerProvider } from "@/components/transactions/edit"
+import { EditTransactionDrawer } from "@/components/transactions/edit"
 
 export default function TransactionHistoryPage() {
   return (
@@ -13,7 +13,7 @@ export default function TransactionHistoryPage() {
         
         <div className="w-full">
           <div className="bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm rounded-xl">
-            <TransactionHistoryTable />
+            <TransactionTable />
           </div>
         </div>
       </div>

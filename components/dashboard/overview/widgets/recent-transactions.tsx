@@ -15,10 +15,10 @@ import { formatBTC, formatCurrency } from "@/lib/utils/format"
 import { TransactionBadge } from "@/components/shared/badges"
 import { UnifiedTransaction } from "@/types/transactions"
 import { TransactionType } from "@/lib/utils/transaction-utils"
-import { useBitcoinPrice } from "@/lib/hooks/useBitcoinPrice"
-import { TransactionHistoryAccordion } from "@/components/transaction-history/transaction-history-accordion"
-import { TransactionHistoryMobileView } from "@/components/transaction-history/transaction-history-mobile-view"
-import { EditDrawerProvider } from "@/components/transaction-history/edit-drawer-provider"
+import { useBitcoinPrice } from "@/lib/hooks"
+import { TransactionAccordion } from "@/components/transactions/display/accordion"
+import { TransactionMobileView } from "@/components/transactions/display"
+import { EditDrawerProvider } from "@/components/transactions/edit"
 import Link from "next/link"
 
 // Import data table components for loading/error states
@@ -268,7 +268,7 @@ const RecentTransactionRow = memo(function RecentTransactionRow({
         <TableRow>
           <TableCell colSpan={10} className="px-0 py-0">
             <div className="border-t border-gray-700/50">
-              <TransactionHistoryAccordion transaction={transaction} />
+                                      <TransactionAccordion transaction={transaction} />
             </div>
           </TableCell>
         </TableRow>
@@ -378,7 +378,7 @@ export function RecentTransactions() {
 
         {/* Mobile View - reuse existing component but with no selection/delete */}
         <div className="md:hidden">
-          <TransactionHistoryMobileView
+                      <TransactionMobileView
             transactions={transactions}
             selectedTransactions={new Set()}
             toggleSelection={() => {}} // No selection in preview

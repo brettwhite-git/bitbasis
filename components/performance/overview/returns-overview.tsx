@@ -2,7 +2,7 @@
 
 import { TrendingUpIcon, TrendingDownIcon } from "lucide-react";
 import { formatCurrency, formatPercent } from "@/lib/utils/utils";
-import { PerformanceData } from "@/lib/hooks/usePerformanceData";
+import { PerformanceData } from "@/lib/hooks/use-performance-data";
 import { safeMetricValue } from "@/lib/core/performance-utils";
 import { memo } from "react";
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { usePerformanceMetrics } from "@/lib/hooks/usePerformanceMetrics"
+import { usePerformanceMetrics } from "@/lib/hooks"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
