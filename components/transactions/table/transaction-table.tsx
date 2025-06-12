@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react"
 import { Table, TableBody } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Loader2, Ghost } from "lucide-react"
+import { Loader2, Ghost, Upload } from "lucide-react"
 import { toast } from 'sonner'
 
 // Import hooks that we'll need
@@ -28,10 +28,10 @@ import {
   useTransactionPagination 
 } from "./transaction-pagination"
 
-// Import existing components from their new organized locations
-import { TransactionHeaders } from "../display"
-import { TransactionRow } from "../display"
-import { TransactionMobileView } from "../display"
+// Import existing components from local table folder
+import { TransactionHeaders } from "./transaction-headers"
+import { TransactionRow } from "./transaction-row"
+import { TransactionMobileView } from "./transaction-mobile-view"
 
 // Import the wizard from its new location
 import { AddTransactionWizard } from "../forms/wizard"
@@ -79,7 +79,7 @@ export function TransactionTable() {
 
   // Hooks for extracted functionality
   const isMobile = useIsMobile()
-  const filterUtils = useTransactionFilters(transactions)
+  const filterUtils = useTransactionFilters()
   const selectionState = useTransactionSelection()
   const paginationState = useTransactionPagination(20)
 
@@ -209,14 +209,16 @@ export function TransactionTable() {
     return count
   }, [searchQuery, dateRange, selectedTypes, selectedTerms, selectedExchanges])
 
-  // Reset page when filters change (excluding paginationState from deps to avoid infinite loops)
+  // Reset page when filters change
   useEffect(() => {
     paginationState.resetToFirstPage()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, dateRange, selectedTypes, selectedTerms, selectedExchanges])
 
-  // Auto-adjust page if needed (excluding paginationState from deps)
+  // Auto-adjust page if needed
   useEffect(() => {
     paginationState.adjustPageIfNeeded(sortedTransactions.length)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortedTransactions.length])
 
   // Handlers
@@ -272,7 +274,7 @@ export function TransactionTable() {
   }
 
   const handleBulkDelete = async () => {
-    const idsToDelete = Array.from(selectionState.selectedTransactions)
+    const idsToDelete = Array.from(selectionState.selectedTransactions) as string[]
     setTransactionsToDelete(idsToDelete)
     setDeleteDialogOpen(true)
   }
@@ -299,7 +301,8 @@ export function TransactionTable() {
         className="h-9 flex items-center justify-center bg-gray-800/40 border-gray-600/50 hover:bg-gray-700/50"
         onClick={() => setImportWizardOpen(true)}
       >
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center gap-2">
+          <Upload className="h-4 w-4" />
           <span className="hidden sm:inline">Import</span>
         </div>
       </Button>
@@ -564,7 +567,6 @@ export function TransactionTable() {
         itemsPerPage={paginationState.itemsPerPage}
         setItemsPerPage={paginationState.setItemsPerPage}
         totalItems={sortedTransactions.length}
-        currentPageItems={paginatedTransactions.length}
       />
 
       {/* Confirmation dialog */}

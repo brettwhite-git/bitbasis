@@ -20,7 +20,6 @@ interface TransactionPaginationProps {
   
   // Data
   totalItems: number
-  currentPageItems: number
 }
 
 export function TransactionPagination({
@@ -29,7 +28,6 @@ export function TransactionPagination({
   itemsPerPage,
   setItemsPerPage,
   totalItems,
-  currentPageItems,
 }: TransactionPaginationProps) {
   
   // Calculate pagination info

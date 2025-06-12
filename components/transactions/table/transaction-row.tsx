@@ -4,15 +4,13 @@ import { useState, memo } from "react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { 
   ChevronDown, 
   ChevronUp, 
   MoreHorizontal, 
   Edit, 
   Copy, 
-  Trash2,
-  ExternalLink
+  Trash2
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -22,14 +20,14 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { formatBTC, formatCurrency, formatDate } from "@/lib/utils/format"
-import { TransactionAccordion } from "./accordion"
+import { TransactionAccordion } from "../display/accordion"
 import { useBitcoinPrice } from "@/lib/hooks"
 import { TransactionBadge } from "@/components/shared/badges"
 import { TransactionType } from "@/lib/utils/transaction-utils"
 import { useEditDrawer } from '@/components/transactions/edit'
 import { UnifiedTransaction } from '@/types/transactions'
 
-interface TransactionHistoryRowProps {
+interface TransactionRowProps {
   transaction: UnifiedTransaction
   isSelected: boolean
   onSelect: () => void
@@ -40,12 +38,12 @@ interface TransactionHistoryRowProps {
  * Enhanced transaction history row with condensed structure and accordion details
  * Structure: [✓] [Date] [Type] [Term] [From] [To] [Amount] [Gain/Income] [Gain] [⚙️] [▼]
  */
-export const TransactionHistoryRow = memo(function TransactionHistoryRow({
+export const TransactionRow = memo(function TransactionRow({
   transaction,
   isSelected,
   onSelect,
   onDelete
-}: TransactionHistoryRowProps) {
+}: TransactionRowProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { price: currentBitcoinPrice, loading: priceLoading } = useBitcoinPrice()
   const { openDrawer } = useEditDrawer()
@@ -55,29 +53,7 @@ export const TransactionHistoryRow = memo(function TransactionHistoryRow({
     return <TransactionBadge type={type} />
   }
 
-  // Note: getTermBadge function available for accordion/utility use
-  // Term information removed from main row but available in accordion details and via Term filter
-  const getTermBadge = (date: string, type: string) => {
-    if (type !== 'buy' && type !== 'sell') return null
-    
-    // Calculate if transaction is short-term (< 1 year) or long-term (>= 1 year)
-    const transactionDate = new Date(date)
-    const currentDate = new Date()
-    const daysDiff = (currentDate.getTime() - transactionDate.getTime()) / (1000 * 60 * 60 * 24)
-    const isLongTerm = daysDiff >= 365
-    
-    return (
-      <Badge 
-        variant="outline" 
-        className={`text-xs ${isLongTerm 
-          ? 'border-bitcoin-orange/50 text-bitcoin-orange' 
-          : 'border-gray-600 text-gray-400'
-        }`}
-      >
-        {isLongTerm ? 'Long' : 'Short'}
-      </Badge>
-    )
-  }
+  // Note: Term information available in accordion details and via Term filter
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded)

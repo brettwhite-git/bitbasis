@@ -20,7 +20,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { Search, X, CalendarIcon, CirclePlus, Filter } from "lucide-react"
+import { Search, X, CalendarIcon, CirclePlus } from "lucide-react"
 import { UnifiedTransaction } from '@/types/transactions'
 import { format } from "date-fns"
 
@@ -135,14 +135,17 @@ export function TransactionFilters({
         {['buy', 'sell', 'deposit', 'withdrawal'].map((type) => (
           <DropdownMenuItem
             key={type}
-            className="flex items-center justify-between p-2 hover:bg-gray-700"
-            onClick={() => {
+            className="flex items-center justify-between p-2 hover:bg-gray-700 focus:bg-gray-700"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
               if (selectedTypes.includes(type)) {
                 setSelectedTypes(selectedTypes.filter(t => t !== type))
               } else {
                 setSelectedTypes([...selectedTypes, type])
               }
             }}
+            onSelect={(e) => e.preventDefault()}
           >
             <div className="flex items-center space-x-2">
               <div className={`w-3 h-3 border rounded-sm ${
@@ -190,14 +193,17 @@ export function TransactionFilters({
         {['SHORT', 'LONG'].map((term) => (
           <DropdownMenuItem
             key={term}
-            className="flex items-center justify-between p-2 hover:bg-gray-700"
-            onClick={() => {
+            className="flex items-center justify-between p-2 hover:bg-gray-700 focus:bg-gray-700"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
               if (selectedTerms.includes(term)) {
                 setSelectedTerms(selectedTerms.filter(t => t !== term))
               } else {
                 setSelectedTerms([...selectedTerms, term])
               }
             }}
+            onSelect={(e) => e.preventDefault()}
           >
             <div className="flex items-center space-x-2">
               <div className={`w-3 h-3 border rounded-sm ${
@@ -257,14 +263,17 @@ export function TransactionFilters({
         {exchanges.map((exchange) => (
           <DropdownMenuItem
             key={exchange}
-            className="flex items-center justify-between p-2 hover:bg-gray-700"
-            onClick={() => {
+            className="flex items-center justify-between p-2 hover:bg-gray-700 focus:bg-gray-700"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
               if (selectedExchanges.includes(exchange)) {
                 setSelectedExchanges(selectedExchanges.filter(e => e !== exchange))
               } else {
                 setSelectedExchanges([...selectedExchanges, exchange])
               }
             }}
+            onSelect={(e) => e.preventDefault()}
           >
             <div className="flex items-center space-x-2">
               <div className={`w-3 h-3 border rounded-sm ${
@@ -322,6 +331,13 @@ export function TransactionFilters({
           onSelect={setDateRange}
           numberOfMonths={2}
           className="bg-gray-800"
+          classNames={{
+            day_today: "bg-bitcoin-orange/20 text-bitcoin-orange font-semibold border border-bitcoin-orange/40 rounded-md",
+            day_selected: "bg-bitcoin-orange text-white hover:bg-bitcoin-orange/90",
+            day_range_middle: "bg-bitcoin-orange/10 text-bitcoin-orange",
+            day_range_start: "bg-bitcoin-orange text-white rounded-l-md",
+            day_range_end: "bg-bitcoin-orange text-white rounded-r-md"
+          }}
         />
       </PopoverContent>
     </Popover>
@@ -341,11 +357,11 @@ export function TransactionFilters({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-2 lg:px-3 text-gray-300 hover:text-white hover:bg-gray-700/50"
+            className="h-8 px-3 lg:px-4 text-gray-300 hover:text-white hover:bg-gray-700/50 gap-2"
             onClick={resetFilters}
           >
             Reset
-            <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-xs">
+            <Badge variant="secondary" className="h-5 w-5 p-0 text-xs flex items-center justify-center rounded-full bg-bitcoin-orange/20 text-bitcoin-orange border-bitcoin-orange/30">
               {activeFiltersCount}
             </Badge>
           </Button>
@@ -356,7 +372,7 @@ export function TransactionFilters({
 }
 
 // Export utility functions used by the main table component
-export function useTransactionFilters(transactions: UnifiedTransaction[]) {
+export function useTransactionFilters() {
   // Filter logic
   const applyFilters = React.useCallback((
     transactions: UnifiedTransaction[],

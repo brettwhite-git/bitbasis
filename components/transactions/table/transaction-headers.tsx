@@ -40,7 +40,7 @@ interface SortConfig {
   direction: 'asc' | 'desc'
 }
 
-interface TransactionHistoryHeadersProps {
+interface TransactionHeadersProps {
   sortConfig: SortConfig
   onSort: (column: keyof UnifiedTransaction) => void
   areAllSelected: boolean
@@ -52,13 +52,13 @@ interface TransactionHistoryHeadersProps {
  * Enhanced transaction history table headers with new condensed structure
  * Based on our vision: [✓] [Date] [Type] [Term] [From] [To] [Amount] [PNL] [Gain] [⚙️] [▼]
  */
-export const TransactionHistoryHeaders = memo(function TransactionHistoryHeaders({
+export const TransactionHeaders = memo(function TransactionHeaders({
   sortConfig,
   onSort,
   areAllSelected,
   onSelectAll,
   hasTransactions
-}: TransactionHistoryHeadersProps) {
+}: TransactionHeadersProps) {
   
   const getSortIcon = (column: keyof UnifiedTransaction) => {
     if (sortConfig.column !== column) {

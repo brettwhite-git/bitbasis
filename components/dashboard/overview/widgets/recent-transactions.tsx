@@ -17,7 +17,7 @@ import { UnifiedTransaction } from "@/types/transactions"
 import { TransactionType } from "@/lib/utils/transaction-utils"
 import { useBitcoinPrice } from "@/lib/hooks"
 import { TransactionAccordion } from "@/components/transactions/display/accordion"
-import { TransactionMobileView } from "@/components/transactions/display"
+import { TransactionMobileView } from "@/components/transactions/table"
 import { EditDrawerProvider } from "@/components/transactions/edit"
 import Link from "next/link"
 

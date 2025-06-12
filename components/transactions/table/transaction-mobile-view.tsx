@@ -1,6 +1,6 @@
 "use client"
 
-import { TransactionHistoryRowMobile } from "./transaction-history-row-mobile"
+import { TransactionRowMobile } from "./transaction-row-mobile"
 
 interface UnifiedTransaction {
   id: string
@@ -31,7 +31,7 @@ interface UnifiedTransaction {
   csv_upload_id: string | null
 }
 
-interface TransactionHistoryMobileViewProps {
+interface TransactionMobileViewProps {
   transactions: UnifiedTransaction[]
   selectedTransactions: Set<string>
   toggleSelection: (id: string) => void
@@ -41,12 +41,12 @@ interface TransactionHistoryMobileViewProps {
 /**
  * Mobile-optimized view for displaying transaction history
  */
-export function TransactionHistoryMobileView({
+export function TransactionMobileView({
   transactions,
   selectedTransactions,
   toggleSelection,
   onDelete
-}: TransactionHistoryMobileViewProps) {
+}: TransactionMobileViewProps) {
   if (transactions.length === 0) {
     return (
       <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6 my-4">
@@ -60,7 +60,7 @@ export function TransactionHistoryMobileView({
   return (
     <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50 divide-y divide-gray-700/50">
       {transactions.map(transaction => (
-        <TransactionHistoryRowMobile
+        <TransactionRowMobile
           key={transaction.id}
           transaction={transaction}
           isSelected={selectedTransactions.has(transaction.id)}

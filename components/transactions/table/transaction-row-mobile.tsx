@@ -20,13 +20,13 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { formatBTC, formatCurrency } from "@/lib/utils/format"
-import { TransactionAccordion } from "./accordion"
+import { TransactionAccordion } from "../display/accordion"
 import { TransactionBadge } from "@/components/shared/badges"
 import { TransactionType } from "@/lib/utils/transaction-utils"
 import { useEditDrawer } from "@/components/transactions/edit"
 import { UnifiedTransaction } from "@/types/transactions"
 
-interface TransactionHistoryRowMobileProps {
+interface TransactionRowMobileProps {
   transaction: UnifiedTransaction
   isSelected: boolean
   onSelect: () => void
@@ -36,12 +36,12 @@ interface TransactionHistoryRowMobileProps {
 /**
  * Mobile-optimized transaction row with expandable details
  */
-export const TransactionHistoryRowMobile = memo(function TransactionHistoryRowMobile({
+export const TransactionRowMobile = memo(function TransactionRowMobile({
   transaction,
   isSelected,
   onSelect,
   onDelete
-}: TransactionHistoryRowMobileProps) {
+}: TransactionRowMobileProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { openDrawer } = useEditDrawer()
   
