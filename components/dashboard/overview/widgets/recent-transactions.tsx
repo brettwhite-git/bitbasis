@@ -205,9 +205,9 @@ const RecentTransactionRow = memo(function RecentTransactionRow({
               const currentValue = transaction.received_amount * currentBitcoinPrice
               const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
               const gainIncome = currentValue - adjustedCostBasis
-              return gainIncome >= 0 ? "text-green-400 text-xs font-medium" : "text-red-400 text-xs font-medium"
+              return gainIncome >= 0 ? "text-green-400 text-sm font-medium" : "text-red-400 text-sm font-medium"
             }
-            return "text-xs text-gray-500"
+            return "text-sm text-gray-500"
           })()}>
             {(() => {
               if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
@@ -222,15 +222,15 @@ const RecentTransactionRow = memo(function RecentTransactionRow({
         </TableCell>
         
         {/* Gain % */}
-        <TableCell className="hidden md:table-cell text-center px-4">
-          <span className={(() => {
+        <TableCell className="hidden md:table-cell w-[100px] text-center">
+          <div className={(() => {
             if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
               const currentValue = transaction.received_amount * currentBitcoinPrice
               const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
               const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
-              return gainPercent >= 0 ? "text-green-400 text-xs font-medium" : "text-red-400 text-xs font-medium"
+              return gainPercent >= 0 ? "text-green-400 text-sm font-medium" : "text-red-400 text-sm font-medium"
             }
-            return "text-xs text-gray-500"
+            return "text-sm text-gray-500"
           })()}>
             {(() => {
               if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
@@ -241,7 +241,7 @@ const RecentTransactionRow = memo(function RecentTransactionRow({
               }
               return priceLoading ? "..." : "-"
             })()}
-          </span>
+          </div>
         </TableCell>
         
         {/* Accordion Toggle */}

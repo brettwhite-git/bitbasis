@@ -9,8 +9,6 @@ export * from "./dashboard/overview"
 
 // Settings Components
 export * from "./settings/account-settings"
-export * from "./settings/cost-basis-settings"
-export * from "./settings/privacy-settings"
 
 // Subscription Components
 export * from "./subscription/SubscriptionModal"

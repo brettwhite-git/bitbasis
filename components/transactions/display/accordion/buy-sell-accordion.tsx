@@ -1,6 +1,6 @@
 "use client"
 
-import { formatBTC, formatCurrency } from "@/lib/utils/format"
+import { formatCurrency } from "@/lib/utils/format"
 import { useBitcoinPrice } from "@/lib/hooks"
 import { UnifiedTransaction } from '@/types/transactions'
 
@@ -183,20 +183,10 @@ export function BuySellAccordion({ transaction }: BuySellAccordionProps) {
             <span className="text-gray-400">Tax Category:</span>
             <span className="text-white">
               {(() => {
-                if (transaction.type === 'buy') {
-                  const days = Math.floor((Date.now() - new Date(transaction.date).getTime()) / (1000 * 60 * 60 * 24))
-                  return days >= 365 ? "Long-term (>1 year)" : "Short-term (<1 year)"
-                } else if (transaction.type === 'sell') {
-                  return "Capital gains (lot tracking needed)"
-                } else {
-                  return "N/A"
-                }
+                const days = Math.floor((Date.now() - new Date(transaction.date).getTime()) / (1000 * 60 * 60 * 24))
+                return days >= 365 ? "Long-term" : "Short-term"
               })()}
             </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Record Keeping:</span>
-            <span className="text-white">Manual cost basis tracking</span>
           </div>
         </div>
       </div>

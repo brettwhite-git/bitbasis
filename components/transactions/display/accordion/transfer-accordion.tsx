@@ -93,7 +93,7 @@ export function TransferAccordion({ transaction }: TransferAccordionProps) {
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Tax Category:</span>
-            <span className="text-white">N/A (not taxable)</span>
+            <span className="text-white">N/A</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Cost Basis Impact:</span>
@@ -107,12 +107,6 @@ export function TransferAccordion({ transaction }: TransferAccordionProps) {
                   return "N/A"
                 }
               })()}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Record Keeping:</span>
-            <span className="text-white">
-              {transaction.transaction_hash ? "Hash available" : "Manual record"}
             </span>
           </div>
         </div>
