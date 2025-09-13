@@ -4,7 +4,7 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import type { Database } from '@/types/supabase'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Only allow in development
     if (process.env.NODE_ENV === 'production') {
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Fetch database subscriptions for comparison
-    const { data: dbSubscriptions, error: dbError } = await supabase
+    const { data: dbSubscriptions } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)

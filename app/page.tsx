@@ -1,7 +1,6 @@
 import { Navigation } from "@/components/landing/Navigation"
 import { 
   HeroSection,
-  BenefitsSection,
   FeaturesSection,
   TestimonialsSection,
   DataSourcesSection,
@@ -36,7 +35,6 @@ export default function LandingPage() {
 
       <main className="flex-1 relative z-10 pt-16">
         <HeroSection />
-        <BenefitsSection />
         <FeaturesSection />
         <TestimonialsSection />
         <DataSourcesSection />

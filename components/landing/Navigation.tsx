@@ -15,10 +15,6 @@ export function Navigation() {
               Home
               <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-bitcoin-orange transition-all duration-300 group-hover:w-full"></span>
             </Link>
-            <Link href="#benefits" className="relative text-gray-400 hover:text-white group">
-              Benefits
-              <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-bitcoin-orange transition-all duration-300 group-hover:w-full"></span>
-            </Link>
             <Link href="#features" className="relative text-gray-400 hover:text-white group">
               Features
               <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-bitcoin-orange transition-all duration-300 group-hover:w-full"></span>

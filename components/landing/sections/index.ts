@@ -1,5 +1,4 @@
 export { HeroSection } from './Hero'
-export { BenefitsSection } from './Benefits'
 export { FeaturesSection } from './Features'
 export { TestimonialsSection } from './Testimonials'
 export { DataSourcesSection } from './DataSources'
