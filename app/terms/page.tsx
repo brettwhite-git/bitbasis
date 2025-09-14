@@ -90,7 +90,7 @@ export default function TermsPage() {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-white">7. Disclaimer</h2>
             <p className="text-gray-400">
-              BitBasis is provided "as is" without warranties of any kind. We do not guarantee the accuracy of calculations or 
+              BitBasis is provided &#34;as is&#34; without warranties of any kind. We do not guarantee the accuracy of calculations or 
               data presented. BitBasis is not a tax preparation service, and all tax calculations should be verified by a qualified 
               tax professional.
             </p>
@@ -117,7 +117,7 @@ export default function TermsPage() {
             <h2 className="text-xl font-semibold text-white">10. Changes to Terms</h2>
             <p className="text-gray-400">
               We reserve the right to modify these terms at any time. We will provide notice of significant changes by updating 
-              the "Last updated" date at the top of this page. Your continued use of BitBasis after such modifications constitutes 
+              the &#34;Last updated&#34; date at the top of this page. Your continued use of BitBasis after such modifications constitutes 
               your acceptance of the new Terms.
             </p>
           </section>

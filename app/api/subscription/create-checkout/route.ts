@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       try {
         await stripe.customers.retrieve(customerId)
         console.log('✅ Customer verified in Stripe')
-      } catch (stripeError) {
+      } catch {
         console.log('⚠️ Customer not found in Stripe, will create new one')
         customerId = undefined
       }

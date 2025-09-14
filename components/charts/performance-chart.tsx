@@ -1,11 +1,8 @@
 "use client"
 
-import { useState, useEffect, createContext, useContext } from "react"
+import { useState, createContext, useContext } from "react"
 import { BasePortfolioChart } from "./base-chart"
-import { useSupabase } from "@/components/providers/supabase-provider"
-import { PortfolioDataServiceImpl } from "@/lib/services/portfolio/portfolioDataService"
-import { ChartConfigServiceImpl } from "@/lib/services/portfolio/chartConfigService"
-import { PerformanceChartProps, PortfolioDataPoint, TimeRange, ChartDataOptions } from "@/lib/services/portfolio/types"
+import { TimeRange } from "@/lib/services/portfolio/types"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui"
 
 // Create context for chart period

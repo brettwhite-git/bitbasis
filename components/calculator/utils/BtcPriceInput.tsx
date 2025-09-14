@@ -1,8 +1,7 @@
 "use client"
 
-import React, { useTransition } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from './format-utils';
 
@@ -18,10 +17,8 @@ export function BtcPriceInput({
   customBtcPrice,
   onCustomBtcPriceChange,
   spotPrice,
-  loading,
-  label = "BTC Price"
+  loading
 }: BtcPriceInputProps) {
-  const [isPending, startTransition] = useTransition();
   
   // Handle custom BTC price change
   const handleCustomBtcPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {

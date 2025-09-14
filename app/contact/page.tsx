@@ -84,7 +84,7 @@ export default function ContactPage() {
             <CardHeader className="relative z-10">
               <CardTitle className="text-2xl text-white">Send us a Message</CardTitle>
               <CardDescription className="text-gray-400">
-                Have questions about BitBasis? We're here to help. Fill out the form below and we'll get back to you as soon as possible.
+                Have questions about BitBasis? We&#39;re here to help. Fill out the form below and we&#39;ll get back to you as soon as possible.
               </CardDescription>
             </CardHeader>
             <CardContent className="relative z-10">

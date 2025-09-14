@@ -66,7 +66,7 @@ export const isValidSatsInputValue = (value: string): boolean => {
   try {
     const num = parseFloat(sanitized);
     return !isNaN(num) && isFinite(num) && num >= 0;
-  } catch (e) {
+  } catch {
     return false;
   }
 }; 

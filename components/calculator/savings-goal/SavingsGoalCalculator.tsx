@@ -6,16 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { ProjectionChart } from "./SavingsGoalProjectionChart";
 import { useSavingsGoalData, useBitcoinPrice } from '@/lib/hooks';
 import { calculateTimeRemaining } from '@/lib/utils/utils';
-import { CheckCircle, Circle, LoaderCircle, Trash2 } from "lucide-react";
-import { formatCurrency } from '../utils/format-utils';
+import { CheckCircle, LoaderCircle, Trash2 } from "lucide-react";
 import { calculateProjection } from '../utils/calculation-utils';
 import { BtcPriceInput } from "../utils/BtcPriceInput";
-import { ProjectionPoint, CalculateProjectionParams, ProjectionResult, SavedGoalData } from '../types/calculator-types';
+import { ProjectionPoint, SavedGoalData } from '../types/calculator-types';
 // import { Line } from 'react-chartjs-2'; // We'll add chart imports later
 // We'll need Chart.js core and scales too later
 
@@ -51,11 +49,9 @@ export function SavingsGoalCalculator() {
   const [projectedValueAdjustedUSD, setProjectedValueAdjustedUSD] = useState(0);
   const [roiPercent, setRoiPercent] = useState(0);
   const [totalPrincipal, setTotalPrincipal] = useState(0);
-  const [totalInterest, setTotalInterest] = useState(0);
   const [projectionData, setProjectionData] = useState<ProjectionPoint[]>([]);
   const [targetUsdValue, setTargetUsdValue] = useState<number | null>(null);
   const [estimatedBtcTargetDate, setEstimatedBtcTargetDate] = useState<Date | null>(null);
-  const [savedGoalEstBtcDate, setSavedGoalEstBtcDate] = useState<Date | null>(null);
 
   const [activeGoal, setActiveGoal] = useState<SavedGoalData | null>(null);
 
@@ -101,7 +97,6 @@ export function SavingsGoalCalculator() {
       setProjectedValueUSD(0);
       setProjectedValueAdjustedUSD(0);
       setTotalPrincipal(0);
-      setTotalInterest(0);
       setRoiPercent(0);
       setProjectionData([]);
       setEstimatedBtcTargetDate(null);
@@ -125,7 +120,6 @@ export function SavingsGoalCalculator() {
     setProjectedValueAdjustedUSD(results.adjustedValueAtPeriodEnd);
     setTotalPrincipal(results.principalAtPeriodEnd);
     const interest = Math.max(0, results.nominalValueAtPeriodEnd - results.principalAtPeriodEnd);
-    setTotalInterest(interest);
     const roi = results.principalAtPeriodEnd > 0 ? (interest / results.principalAtPeriodEnd) * 100 : 0;
     setRoiPercent(roi);
     setProjectionData(results.dataPoints);
@@ -151,7 +145,6 @@ export function SavingsGoalCalculator() {
   // --- Calculate Estimated BTC Target Date for the *Saved* Goal ---
   useEffect(() => {
     if (!activeGoal || !activeGoal.savedProjection.targetBtcAmount || !activeGoal.savedProjection.currentBtcPriceUSD) {
-      setSavedGoalEstBtcDate(null);
       return;
     }
 
@@ -160,7 +153,6 @@ export function SavingsGoalCalculator() {
     const periodsPerYear = contributionFrequency === 'monthly' ? 12 : 52;
     // Use the full saved projection period to see if target is reachable within that original timeframe
     const projectionPeriodYears = projectionPeriodMonths / 12;
-    const totalPeriods = projectionPeriodYears * periodsPerYear;
     const annualGrowthRate = expectedGrowthPercent / 100;
     const periodicGrowthRate = Math.pow(1 + annualGrowthRate, 1 / periodsPerYear) - 1;
     const savedTargetUsd = targetBtcAmount * currentBtcPriceUSD;
@@ -196,10 +188,8 @@ export function SavingsGoalCalculator() {
       dateEstimate.setFullYear(dateEstimate.getFullYear() + targetYear);
       const monthEstimate = (targetReachedPeriod % periodsPerYear) * (12 / periodsPerYear);
       dateEstimate.setMonth(dateEstimate.getMonth() + Math.floor(monthEstimate));
-      setSavedGoalEstBtcDate(dateEstimate);
     } else {
       // Target not reached within the safety limit (or target not set)
-      setSavedGoalEstBtcDate(null); 
     }
 
   }, [activeGoal]); // Recalculate whenever the activeGoal changes

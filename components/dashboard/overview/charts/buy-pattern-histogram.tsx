@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-import { cn } from "@/lib/utils/utils";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import {

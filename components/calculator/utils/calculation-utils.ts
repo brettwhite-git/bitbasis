@@ -29,7 +29,6 @@ export function calculateSatsGoalData(
   const annualGrowthRate = parseFloat(priceGrowth.toString()) / 100;
   const periodicGrowthRate = Math.pow(1 + annualGrowthRate, 1 / periodsPerYear) - 1;
   const annualInflationRate = parseFloat(inflationRate.toString()) / 100;
-  const periodicInflationRate = Math.pow(1 + annualInflationRate, 1 / periodsPerYear) - 1;
   
   const startDate = new Date();
   const totalSatsGoal = Math.round(btcGoal * 100000000);
@@ -48,7 +47,6 @@ export function calculateSatsGoalData(
     const btcNeededThisPeriod = satsPerPeriod / 100000000;
     const usdNeededThisPeriod = btcNeededThisPeriod * estimatedPriceThisPeriod;
     cumulativeSats += satsPerPeriod;
-    cumulativeCost += usdNeededThisPeriod;
     const finalSats = (i === totalPeriods - 1) ? totalSatsGoal : cumulativeSats;
 
     // Calculate inflation-adjusted values if needed
@@ -123,7 +121,6 @@ export function calculateRecurringBuyData(
   const annualGrowthRate = parseFloat(priceGrowth.toString()) / 100;
   const periodicGrowthRate = Math.pow(1 + annualGrowthRate, 1 / periodsPerYear) - 1;
   const annualInflationRate = parseFloat(inflationRate.toString()) / 100;
-  const periodicInflationRate = Math.pow(1 + annualInflationRate, 1 / periodsPerYear) - 1;
   
   const startDate = new Date();
   const result: ChartDataPoint[] = [];
@@ -315,11 +312,9 @@ export function calculateProjection(params: CalculateProjectionParams): Projecti
       
       // Calculate values at this point
       let valueAtPoint = 0;
-      let principalAtPoint = 0;
       
       for (let p = 1; p <= periodAtPoint; p++) {
         valueAtPoint += contributionAmountUSD;
-        principalAtPoint += contributionAmountUSD;
         valueAtPoint *= (1 + periodicGrowthRate);
       }
       
@@ -370,7 +365,6 @@ export function aggregateChartData(
 
     chartData.forEach((point, index) => {
       const isStartOfWeek = index % 7 === 0;
-      const periodDate = addPeriods(startDateForCalc, frequency, index);
 
       if (isStartOfWeek) {
         // Push previous week's data if it exists

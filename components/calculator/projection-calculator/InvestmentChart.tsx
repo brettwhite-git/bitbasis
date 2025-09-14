@@ -10,9 +10,6 @@ import {
   Legend,
   LineElement,
   PointElement,
-  ChartData,
-  ChartOptions,
-  Chart,
 } from "chart.js"
 import { Chart as ReactChart } from "react-chartjs-2"
 import { COLORS } from "../utils/color-constants" // Adjusted import path

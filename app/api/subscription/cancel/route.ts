@@ -88,7 +88,6 @@ export async function POST(request: NextRequest) {
 
     // Handle regular Stripe subscriptions
     console.log('Cancelling regular Stripe subscription:', subscriptionId)
-    let stripeUpdate: any = {}
 
     switch (cancelOption) {
       case 'immediate':
@@ -98,14 +97,14 @@ export async function POST(request: NextRequest) {
 
       case 'period_end':
         // Cancel at period end (default recommended option)
-        stripeUpdate = await stripe.subscriptions.update(subscriptionId, {
+        await stripe.subscriptions.update(subscriptionId, {
           cancel_at_period_end: true,
         })
         break
 
       case 'cleanup':
         // Same as period_end, but user indicated they want to clean up first
-        stripeUpdate = await stripe.subscriptions.update(subscriptionId, {
+        await stripe.subscriptions.update(subscriptionId, {
           cancel_at_period_end: true,
         })
         break

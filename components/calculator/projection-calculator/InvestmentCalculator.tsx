@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import {
@@ -25,9 +24,7 @@ import {
 } from "../types/calculator-types"
 import { 
   getDurationDetails,
-  getFrequencyDetails, 
-  addPeriods, 
-  formatDateLabel 
+  getFrequencyDetails
 } from "../utils/date-utils"
 import { 
   isValidSatsInputValue,
@@ -198,65 +195,6 @@ export function InvestmentCalculator() {
     }
   };
 
-  // Handle price growth change
-  const handlePriceGrowthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    
-    // Handle backspace to empty field
-    if (value === '') {
-      setPriceGrowth('');
-      return;
-    }
-    
-    // Remove non-numeric and non-decimal characters
-    value = value.replace(/[^\d.-]/g, '');
-    
-    // Handle negative values
-    const isNegative = value.startsWith('-');
-    value = value.replace(/-/g, '');
-    
-    // Parse to number and apply constraints
-    let numValue = parseFloat(value);
-    
-    if (!isNaN(numValue)) {
-      if (isNegative) numValue = -numValue;
-      
-      // Clamp value between -100 and 1000
-      numValue = Math.max(-100, Math.min(1000, numValue));
-      
-      setPriceGrowth(numValue.toString());
-    }
-  };
-
-  // Handle inflation rate change
-  const handleInflationRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    
-    // Handle backspace to empty field
-    if (value === '') {
-      setInflationRate('');
-      return;
-    }
-    
-    // Remove non-numeric and non-decimal characters
-    value = value.replace(/[^\d.-]/g, '');
-    
-    // Handle negative values
-    const isNegative = value.startsWith('-');
-    value = value.replace(/-/g, '');
-    
-    // Parse to number and apply constraints
-    let numValue = parseFloat(value);
-    
-    if (!isNaN(numValue)) {
-      if (isNegative) numValue = -numValue;
-      
-      // Clamp value between 0 and 20
-      numValue = Math.max(0, Math.min(20, numValue));
-      
-      setInflationRate(numValue.toString());
-    }
-  };
 
   return (
     <div className="w-full space-y-6">
