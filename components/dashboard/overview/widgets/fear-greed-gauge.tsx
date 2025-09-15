@@ -14,6 +14,7 @@ interface FearGreedData {
 }
 
 // Define the expected structure for the fear_greed_index table row (consistent with API route)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface FearGreedIndexEntry {
   id: number; // Assuming an id column exists
   date: string;
@@ -147,9 +148,9 @@ const FearGreedMultiGauge: React.FC<{ className?: string }> = ({ className }) =>
         console.log('[FearGreedMultiGauge] Formatted Data:', formattedData);
         setFearGreedData(formattedData);
 
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('[FearGreedMultiGauge] Error fetching fear & greed data:', err);
-        setError(err.message || 'Failed to load data');
+        setError(err instanceof Error ? err.message : 'Failed to load data');
         // Keep existing/default data on error
       } finally {
         setIsLoading(false);

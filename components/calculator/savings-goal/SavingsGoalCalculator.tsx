@@ -148,11 +148,12 @@ export function SavingsGoalCalculator() {
       return;
     }
 
-    const { contributionAmountUSD, contributionFrequency, expectedGrowthPercent, projectionPeriodMonths, targetBtcAmount, currentBtcPriceUSD } = activeGoal.savedProjection;
+    const { contributionAmountUSD, contributionFrequency, expectedGrowthPercent, targetBtcAmount, currentBtcPriceUSD } = activeGoal.savedProjection;
+    // projectionPeriodMonths not used in this calculation
 
     const periodsPerYear = contributionFrequency === 'monthly' ? 12 : 52;
     // Use the full saved projection period to see if target is reachable within that original timeframe
-    const projectionPeriodYears = projectionPeriodMonths / 12;
+    // const projectionPeriodYears = projectionPeriodMonths / 12;
     const annualGrowthRate = expectedGrowthPercent / 100;
     const periodicGrowthRate = Math.pow(1 + annualGrowthRate, 1 / periodsPerYear) - 1;
     const savedTargetUsd = targetBtcAmount * currentBtcPriceUSD;

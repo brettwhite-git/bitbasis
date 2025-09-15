@@ -60,9 +60,9 @@ export function InvestmentInsights({ performance, transactions }: InvestmentInsi
   const threeMonthAvgPrice = calculateThreeMonthAverage()
   
   // Calculate percentage differences from current price
-  const lowestBuyDiff = lowestBuyPrice > 0 ? ((currentPrice - lowestBuyPrice) / lowestBuyPrice) * 100 : 0
-  const avgBuyDiff = threeMonthAvgPrice > 0 ? ((currentPrice - threeMonthAvgPrice) / threeMonthAvgPrice) * 100 : 0
-  const highestBuyDiff = highestBuyPrice > 0 ? ((currentPrice - highestBuyPrice) / highestBuyPrice) * 100 : 0
+  // const lowestBuyDiff = lowestBuyPrice > 0 ? ((currentPrice - lowestBuyPrice) / lowestBuyPrice) * 100 : 0
+  // const avgBuyDiff = threeMonthAvgPrice > 0 ? ((currentPrice - threeMonthAvgPrice) / threeMonthAvgPrice) * 100 : 0
+  // const highestBuyDiff = highestBuyPrice > 0 ? ((currentPrice - highestBuyPrice) / highestBuyPrice) * 100 : 0
   
   // Calculate insights
   const calculatePriceComparison = () => {
@@ -100,7 +100,7 @@ export function InvestmentInsights({ performance, transactions }: InvestmentInsi
 
   // Calculate DCA vs Lump Sum Performance
   const calculateDCAInsight = () => {
-    const { dcaReturn, lumpSumReturn, outperformance } = calculateDCAPerformance(transactions, currentPrice)
+    const { dcaReturn: _dcaReturn, lumpSumReturn: _lumpSumReturn, outperformance } = calculateDCAPerformance(transactions, currentPrice)
     
     if (Math.abs(outperformance) < 1) {
       return {

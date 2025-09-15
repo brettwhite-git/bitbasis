@@ -109,7 +109,8 @@ export function EditTransactionForm({ transaction }: EditTransactionFormProps) {
     },
   })
 
-  const { watch, handleSubmit, formState: { isDirty, isSubmitting } } = form
+  const { handleSubmit, formState: { isDirty, isSubmitting } } = form
+  // watch not used in this component
 
   // Watch for changes to show unsaved changes indicator
   useEffect(() => {

@@ -7,7 +7,7 @@ export interface UserSubscriptionInfo {
   should_show_warning: boolean
   subscription_data?: {
     price_id?: string
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
     current_period_end?: string
     cancel_at_period_end?: boolean
   }

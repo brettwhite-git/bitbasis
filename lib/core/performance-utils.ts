@@ -83,7 +83,7 @@ export function safeMetricValue<T>(
   if (!metrics) return defaultValue;
   
   const parts = path.split('.');
-  let value: any = metrics;
+  let value: unknown = metrics;
   
   for (const part of parts) {
     if (value === undefined || value === null) {

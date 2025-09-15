@@ -4,8 +4,8 @@
  * Provides consistent tooltip styling across all charts in the application
  */
 
-import { TooltipOptions } from 'chart.js'
-import { formatCurrency, formatPercent, formatBTC } from '@/lib/utils/utils'
+import { TooltipOptions, TooltipItem, TooltipModel } from 'chart.js'
+import { formatCurrency, formatBTC } from '@/lib/utils/utils' // formatPercent not used
 
 // Local formatNumber function since it's not exported from utils
 const formatNumber = (value: number): string => {
@@ -77,10 +77,10 @@ export const createBaseTooltipConfig = (): Partial<TooltipOptions<any>> => ({
 /**
  * Portfolio Summary Chart Tooltip Configuration
  */
-export const createPortfolioSummaryTooltipConfig = (data?: any[]): any => ({
+export const createPortfolioSummaryTooltipConfig = (data?: Record<string, unknown>[]): TooltipOptions<'line'> => ({
   ...createBaseTooltipConfig(),
   callbacks: {
-    title: function(tooltipItems: any) {
+    title: function(tooltipItems: TooltipItem<'line'>[]) {
       if (tooltipItems.length > 0 && data) {
         const index = tooltipItems[0]?.dataIndex;
         if (index !== undefined && data[index] && data[index].date) {
@@ -105,7 +105,7 @@ export const createPortfolioSummaryTooltipConfig = (data?: any[]): any => ({
 /**
  * Weekly Buy Pattern Chart Tooltip Configuration
  */
-export const createBuyPatternTooltipConfig = (): any => ({
+export const createBuyPatternTooltipConfig = (): TooltipOptions<'bar'> => ({
   ...createBaseTooltipConfig(),
   callbacks: {
     title: function(tooltipItems: any) {
@@ -124,7 +124,7 @@ export const createBuyPatternTooltipConfig = (): any => ({
 /**
  * Performance Over Time Chart Tooltip Configuration
  */
-export const createPerformanceTooltipConfig = (): any => ({
+export const createPerformanceTooltipConfig = (): TooltipOptions<'line'> => ({
   ...createBaseTooltipConfig(),
   callbacks: {
     label: function(context: any) {
@@ -140,7 +140,7 @@ export const createPerformanceTooltipConfig = (): any => ({
 /**
  * Savings Goal Projection Chart Tooltip Configuration
  */
-export const createSavingsGoalTooltipConfig = (): any => ({
+export const createSavingsGoalTooltipConfig = (): TooltipOptions<'line'> => ({
   ...createBaseTooltipConfig(),
   callbacks: {
     label: function(context: any) {
@@ -160,9 +160,9 @@ export const createSavingsGoalTooltipConfig = (): any => ({
  * Investment Accumulation Forecast Chart Tooltip Configuration
  */
 export const createInvestmentAccumulationTooltipConfig = (
-  chartData?: any[], 
+  chartData?: Record<string, unknown>[], 
   bitcoinUnit: 'satoshi' | 'bitcoin' = 'satoshi'
-): Partial<TooltipOptions<any>> => ({
+): TooltipOptions<'line'> => ({
   ...createBaseTooltipConfig(),
   callbacks: {
     title: function(tooltipItems: any) {

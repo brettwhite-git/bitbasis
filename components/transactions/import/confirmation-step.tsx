@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { CheckCircle, Database, Upload, AlertCircle } from 'lucide-react'
 import { useImport } from './import-context'
+import type { UnifiedTransaction } from './import-context'
 import { format } from 'date-fns'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import type { Database as DatabaseType } from '@/types/supabase'
@@ -35,7 +36,7 @@ export function ConfirmationStep() {
     try {
       const supabase = createClientComponentClient<DatabaseType>()
       
-      const updateData: any = { status }
+      const updateData: { status: string; imported_row_count?: number } = { status }
       if (details?.importedRowCount !== undefined) {
         updateData.imported_row_count = details.importedRowCount
       }
@@ -57,10 +58,10 @@ export function ConfirmationStep() {
   }
 
   // Transform unified transactions to API format
-  const transformForAPI = (transactions: any[]) => {
+  const transformForAPI = (transactions: UnifiedTransaction[]) => {
     return transactions.map(transaction => {
       // Start with required fields
-      const apiTransaction: any = {
+      const apiTransaction: Record<string, unknown> = {
         date: transaction.date?.toISOString() || new Date().toISOString(),
         type: transaction.type,
         asset: transaction.asset || 'BTC',
@@ -157,7 +158,7 @@ export function ConfirmationStep() {
         
         // Handle detailed validation errors
         if (errorData.details && Array.isArray(errorData.details)) {
-          const errorDetails = errorData.details.map((detail: any) => 
+          const errorDetails = errorData.details.map((detail: { field: string; message: string }) => 
             `${detail.field}: ${detail.message}`
           ).join(', ')
           throw new Error(`${errorData.error || 'Validation failed'}\nDetails: ${errorDetails}`)

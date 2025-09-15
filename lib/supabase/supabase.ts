@@ -19,7 +19,7 @@ if (!supabaseAnonKey || supabaseAnonKey.length < 20) {
 }
 
 // Initialize a basic server-side client for internal operations
-const supabase = createSupabaseClient<Database>(supabaseUrl, supabaseAnonKey)
+// const supabase = createSupabaseClient<Database>(supabaseUrl, supabaseAnonKey) // Not used
 
 // Create a Supabase client for client-side operations with auth
 let browserClient: ReturnType<typeof createClientComponentClient<Database>> | null = null

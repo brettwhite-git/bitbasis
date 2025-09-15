@@ -155,7 +155,7 @@ export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModal
           Cancel Subscription
         </DialogTitle>
         <DialogDescription>
-          You're about to cancel your subscription. Here's what you need to know:
+          You&#39;re about to cancel your subscription. Here&#39;s what you need to know:
         </DialogDescription>
       </DialogHeader>
 
@@ -172,7 +172,7 @@ export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModal
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               You have {transactionCount - 50} transactions over the free limit. 
-              After cancellation, you won't be able to add new transactions until you're under 50.
+              After cancellation, you won&#39;t be able to add new transactions until you&#39;re under 50.
             </AlertDescription>
           </Alert>
         )}

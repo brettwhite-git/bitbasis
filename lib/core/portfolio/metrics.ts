@@ -376,7 +376,7 @@ export async function getPortfolioMetrics(
 export async function getOrdersData(
   userId: string,
   supabase: SupabaseClient<Database>
-): Promise<any[]> {
+): Promise<unknown[]> {
   console.warn('getOrdersData is deprecated. Use getTransactionsData instead.')
   const transactions = await getTransactionsData(userId, supabase)
   return transactions.filter(t => t.type === 'buy' || t.type === 'sell')

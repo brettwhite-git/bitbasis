@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/types/supabase'
 import { MonthlyPortfolioCalculator } from '@/lib/core/portfolio/monthly-calculator'
@@ -51,7 +51,7 @@ export function usePortfolioHistory(): UsePortfolioHistoryResult {
     fetchSession()
   }, [supabase])
 
-  const fetchPortfolioHistory = async () => {
+  const fetchPortfolioHistory = useCallback(async () => {
     console.log('fetchPortfolioHistory called, userId:', userId)
     
     if (!userId) {
@@ -88,14 +88,14 @@ export function usePortfolioHistory(): UsePortfolioHistoryResult {
     } finally {
       setLoading(false)
     }
-  }
+  }, [userId, supabase])
 
   // Fetch data when userId changes
   useEffect(() => {
     if (userId) {
       fetchPortfolioHistory()
     }
-  }, [userId])
+  }, [userId, fetchPortfolioHistory])
 
   const refetch = () => {
     if (userId) {

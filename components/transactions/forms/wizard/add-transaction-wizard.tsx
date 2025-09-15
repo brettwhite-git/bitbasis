@@ -41,9 +41,7 @@ function WizardContent() {
 export function AddTransactionWizard({ onTransactionsAdded, triggerButton }: AddTransactionWizardProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const handleClose = () => {
-    setIsOpen(false)
-  }
+  // handleClose function not used - modal closes via other mechanisms
 
   const handleTransactionsAdded = () => {
     onTransactionsAdded?.()

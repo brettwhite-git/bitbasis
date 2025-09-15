@@ -128,9 +128,9 @@ export function HodlAgeDistribution() {
           const calculatedData = calculateHodlAgeDistribution(transactions)
           setHodlData(calculatedData)
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching HODL age data:', err)
-        setError(err.message || 'Failed to load HODL age data')
+        setError(err instanceof Error ? err.message : 'Failed to load HODL age data')
       } finally {
         setIsLoading(false)
       }

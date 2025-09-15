@@ -80,7 +80,7 @@ export function checkRateLimit(
   const clientId = getClientId(request);
   const config = RATE_LIMITS[limitType];
   const now = Date.now();
-  const windowStart = now - config.window;
+  // const windowStart = now - config.window; // Not used currently
   
   // Clean up expired entries periodically
   if (Math.random() < 0.01) { // 1% chance to cleanup

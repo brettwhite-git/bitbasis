@@ -1,6 +1,5 @@
 import { 
-  ArrowUpRight,
-  ArrowDownRight, 
+  // ArrowUpRight, ArrowDownRight not used
   CircleArrowRight, 
   CircleArrowLeft, 
   CircleArrowDown, 

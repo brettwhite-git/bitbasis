@@ -1,6 +1,7 @@
 "use client"
 
 import { UseFormReturn } from 'react-hook-form'
+import { TransactionWizardData } from '@/types/add-transaction'
 import {
   FormControl,
   FormDescription,
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/select'
 
 interface CommonTransactionFieldsProps {
-  form: UseFormReturn<any>
+  form: UseFormReturn<TransactionWizardData>
   transactionType: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
   showDateField?: boolean
   showFeeFields?: boolean

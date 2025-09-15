@@ -28,8 +28,8 @@ import {
 
 interface DynamicFieldProps {
   field: FieldConfig
-  value: any
-  onChange: (value: any) => void
+  value: string | number | boolean | undefined
+  onChange: (value: string | number | boolean | undefined) => void
   error?: string
 }
 

@@ -1,5 +1,6 @@
 import { Database } from '@/types/supabase'
 import { SupabaseClient } from '@supabase/supabase-js'
+import { UnifiedTransaction } from '@/types/transactions'
 
 /**
  * Base order type from Supabase schema
@@ -160,7 +161,7 @@ export interface SortConfig {
  */
 export interface PortfolioFunctions {
   getPortfolioMetrics: (userId: string, supabase: SupabaseClient<Database>) => Promise<ExtendedPortfolioMetrics>
-  calculateCostBasis: (userId: string, method: 'FIFO' | 'LIFO' | 'HIFO', orders: any[], currentPrice: number) => Promise<CostBasisMethodResult>
+  calculateCostBasis: (userId: string, method: 'FIFO' | 'LIFO' | 'HIFO', orders: UnifiedTransaction[], currentPrice: number) => Promise<CostBasisMethodResult>
   getPerformanceMetrics: (userId: string, supabase: SupabaseClient<Database>) => Promise<PerformanceMetrics>
-  calculateDCAPerformance: (orders: any[], currentPrice: number) => DCAPerformanceResult
+  calculateDCAPerformance: (orders: UnifiedTransaction[], currentPrice: number) => DCAPerformanceResult
 }

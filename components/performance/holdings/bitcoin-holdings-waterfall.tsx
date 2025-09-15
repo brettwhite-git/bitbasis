@@ -106,6 +106,7 @@ function generateColors(yearlyData: YearlyHolding[]): string[] {
 }
 
 // Format BTC with appropriate number of decimal places
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function formatBTC(amount: number): string {
   if (amount >= 1) {
     return `${amount.toFixed(4)} BTC`

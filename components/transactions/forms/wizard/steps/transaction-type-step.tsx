@@ -16,7 +16,7 @@ import {
   ArrowUpDown, 
   Percent,
   ChevronRight,
-  ChevronDown,
+  // ChevronDown not used
   Package
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -27,7 +27,7 @@ interface TransactionGroup {
   id: 'trade' | 'transfer' | 'interest'
   title: string
   description: string
-  icon: React.ComponentType<any>
+  icon: React.ComponentType<{ className?: string }>
   options?: { value: NewTransaction['type']; label: string }[]
   singleType?: NewTransaction['type']
 }

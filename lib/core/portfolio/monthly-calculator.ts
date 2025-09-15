@@ -112,8 +112,8 @@ export class MonthlyPortfolioCalculator {
       console.log(`🔍 MonthlyCalculator: Fetching historical prices from ${startDateStr} to ${endDateStr}`)
       
       // Query the btc_monthly_close table directly
-      // Note: Using 'any' cast because btc_monthly_close is not in generated types yet
-      const { data, error } = await (this.supabase as any)
+      // Note: Using unknown cast because btc_monthly_close is not in generated types yet
+      const { data, error } = await (this.supabase as unknown as SupabaseClient<{ btc_monthly_close: { Row: { date: string; close: number } } }>)
         .from('btc_monthly_close')
         .select('date, close')
         .gte('date', startDateStr)
@@ -127,7 +127,7 @@ export class MonthlyPortfolioCalculator {
 
       const priceMap = new Map<string, number>()
       
-      data?.forEach((row: any) => {
+      data?.forEach((row: { date: string; close: number }) => {
         const date = new Date(row.date)
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
         priceMap.set(monthKey, parseFloat(row.close))

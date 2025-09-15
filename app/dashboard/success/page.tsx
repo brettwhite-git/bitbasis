@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation' // useSearchParams not used
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle, Loader2 } from 'lucide-react'
@@ -10,7 +10,7 @@ export default function CheckoutSuccessPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  const searchParams = useSearchParams()
+  // const searchParams = useSearchParams()
   const supabase = createClientComponentClient()
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function CheckoutSuccessPage() {
     }
 
     handleSuccess()
-  }, [router, supabase.auth])
+  }, [router, supabase])
 
   if (loading) {
     return (

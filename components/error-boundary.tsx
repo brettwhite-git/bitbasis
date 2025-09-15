@@ -72,7 +72,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </div>
               <CardTitle>Something went wrong</CardTitle>
               <CardDescription>
-                We encountered an unexpected error. This has been logged and we'll look into it.
+                We encountered an unexpected error. This has been logged and we&#39;ll look into it.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -131,7 +131,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
 // Hook for functional components to handle errors
 export const useErrorHandler = () => {
-  return (error: Error, context?: Record<string, any>) => {
+  return (error: Error, context?: Record<string, unknown>) => {
     logger.error('Unhandled error in component', context, error)
     
     // In development, re-throw to show in console

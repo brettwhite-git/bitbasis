@@ -3,11 +3,11 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X } from "lucide-react"
+import { Menu } from "lucide-react" // X not used
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Logo } from "@/components/logo"
-import { LayoutDashboard, LineChart, PieChart, Settings, History, Calculator, Database } from "lucide-react"
+import { LayoutDashboard, LineChart, PieChart, Settings, History, Calculator } from "lucide-react" // Database not used
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)

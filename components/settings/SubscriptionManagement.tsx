@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+// Card components not used in this component
 import { useSubscription } from "@/lib/hooks"
 import { useAuth } from "@/providers/supabase-auth-provider"
 import { Crown, Star } from "lucide-react"
@@ -12,7 +12,7 @@ import { SubscriptionModal } from "@/components/subscription/SubscriptionModal"
 import { DowngradeModal } from "@/components/subscription/DowngradeModal"
 
 export function SubscriptionManagement() {
-  const { user } = useAuth()
+  const { } = useAuth() // user not used in this component
   const { subscriptionInfo, loading, refreshStatus } = useSubscription()
   const [modalOpen, setModalOpen] = useState(false)
   const [downgradeModalOpen, setDowngradeModalOpen] = useState(false)
@@ -46,7 +46,8 @@ export function SubscriptionManagement() {
   }
 
   const getSubscriptionDisplayInfo = () => {
-    const { subscription_status, transaction_count, subscription_data } = subscriptionInfo
+    const { subscription_status, subscription_data } = subscriptionInfo
+    // transaction_count not used in this function
 
     if (subscription_status === 'active' || subscription_status === 'trialing') {
       // Check price ID to determine if it's Lifetime or Pro Monthly

@@ -60,7 +60,8 @@ const clearFromLocalStorage = () => {
   }
 }
 
-// Debug function to check localStorage status
+// Debug function to check localStorage status - not currently used
+/*
 const getLocalStorageInfo = () => {
   try {
     if (typeof window !== 'undefined') {
@@ -76,11 +77,12 @@ const getLocalStorageInfo = () => {
   }
   return { hasStored: false, count: 0, data: null }
 }
+*/
 
 export function AddTransactionWizardProvider({ 
   children, 
   onSuccess,
-  onClose 
+  onClose: _onClose // Parameter not currently used 
 }: AddTransactionWizardProviderProps) {
   const [currentStep, setCurrentStep] = useState<WizardStep>('type')
   const [transactionData, setTransactionData] = useState<TransactionWizardData>({
@@ -283,15 +285,16 @@ export function AddTransactionWizardProvider({
       // Call success callback
       onSuccess?.()
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error submitting transactions:', error)
       
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit transactions. Please try again.'
       setErrors({ 
-        submit: error.message || 'Failed to submit transactions. Please try again.' 
+        submit: errorMessage 
       })
       
       toast.error('Failed to submit transactions', {
-        description: error.message || 'Please check your data and try again.'
+        description: error instanceof Error ? error.message : 'Please check your data and try again.'
       })
     } finally {
       setIsSubmitting(false)

@@ -118,7 +118,7 @@ export function useSavingsGoalData(goal: SavingsGoalInput | null): SavingsGoalDa
     fetchAndCalculateProgress();
 
     // Dependencies: Hook should re-run if the goal, start date, target amount, or user changes.
-  }, [goal?.startDate, goal?.targetBtcAmount, user, supabase]); // Added goal references and supabase client
+  }, [goal, user, supabase]); // Added goal references and supabase client
 
   return progressData;
 } 

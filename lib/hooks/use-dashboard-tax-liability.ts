@@ -119,11 +119,11 @@ export function useDashboardTaxLiability(currentPrice: number): TaxLiabilityResu
       sampleTransaction: transactions[0]
     })
 
-    if (loading || transactions.length === 0 || currentBtcPrice <= 0) {
+    if (loading || transactions.length === 0 || currentPrice <= 0) {
       console.log('useDashboardTaxLiability: Returning zero liability due to:', { 
         loading, 
         transactionCount: transactions.length, 
-        currentBtcPrice 
+        currentPrice 
       })
       return {
         shortTermLiability: 0,
@@ -176,8 +176,8 @@ export function useDashboardTaxLiability(currentPrice: number): TaxLiabilityResu
     }))
 
     // Use the proper tax calculation with the selected method
-    const result = calculateTaxLiability(convertedTransactions, currentBtcPrice, taxMethod)
+    const result = calculateTaxLiability(convertedTransactions, currentPrice, taxMethod)
     console.log('useDashboardTaxLiability: Tax liability calculation result:', result)
     return result
-  }, [transactions, currentBtcPrice, taxMethod, loading, userId])
+  }, [transactions, currentPrice, taxMethod, loading, userId])
 } 

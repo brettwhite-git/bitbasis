@@ -73,9 +73,9 @@ export function useTransactions() {
         })
 
         setTransactions(mappedTransactions)
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching transactions:', err)
-        setError(err.message || 'Failed to load transactions')
+        setError(err instanceof Error ? err.message : 'Failed to load transactions')
       } finally {
         setIsLoading(false)
       }
@@ -143,9 +143,9 @@ export function useTransactions() {
       })
 
       setTransactions(mappedTransactions)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error refetching transactions:', err)
-      setError(err.message || 'Failed to refresh transactions')
+      setError(err instanceof Error ? err.message : 'Failed to refresh transactions')
     } finally {
       setIsLoading(false)
     }

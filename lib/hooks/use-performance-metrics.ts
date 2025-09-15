@@ -125,7 +125,7 @@ export function usePerformanceMetrics(): UsePerformanceMetricsReturn {
       console.log('usePerformanceMetrics: User ID changed, fetching metrics for:', userId)
       fetchData()
     }
-  }, [userId])
+  }, [userId, fetchData])
 
   return {
     data,

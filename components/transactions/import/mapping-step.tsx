@@ -94,7 +94,7 @@ export function MappingStep() {
   } = useImport()
 
   const [mappings, setMappings] = useState<ColumnMapping[]>([])
-  const [previewData, setPreviewData] = useState<any[]>([])
+  const [previewData, setPreviewData] = useState<Record<string, unknown>[]>([])
 
   // Smart field detection patterns with enhanced recognition
   // This function maps common CSV column names to our transaction fields
@@ -618,7 +618,7 @@ export function MappingStep() {
                     {unmappedColumns.map(m => m.csvColumn).join(', ')}
                   </div>
                   <div className="text-xs text-blue-200 mt-2">
-                    This won't prevent import - unmapped columns are simply skipped.
+                    This won&#39;t prevent import - unmapped columns are simply skipped.
                   </div>
                 </div>
               </div>

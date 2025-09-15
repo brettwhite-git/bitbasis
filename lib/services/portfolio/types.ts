@@ -4,9 +4,7 @@
  * This file contains interfaces and types used by the portfolio chart data services.
  */
 
-import { SupabaseClient } from "@supabase/supabase-js"
-import { Database } from "@/types/supabase"
-import { Order } from "@/lib/core/portfolio/types"
+// SupabaseClient, Database, Order not used in type definitions
 
 /**
  * Spot price data from database

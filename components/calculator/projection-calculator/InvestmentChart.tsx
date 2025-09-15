@@ -91,7 +91,7 @@ export function InvestmentChart({ chartData, title, bitcoinUnit, showInflationAd
         },
         ticks: {
           color: COLORS.chartText,
-          callback: function(value: any) {
+          callback: function(value: string | number) {
             if (bitcoinUnit === 'satoshi') {
               return formatNumber(value);
             } else {
@@ -109,7 +109,7 @@ export function InvestmentChart({ chartData, title, bitcoinUnit, showInflationAd
         grid: { drawOnChartArea: false, color: COLORS.background },
         ticks: {
           color: COLORS.chartText,
-          callback: function(value: any) {
+          callback: function(value: string | number) {
             if (typeof value === 'number') {
               return formatCurrency(value);
             }
@@ -133,7 +133,7 @@ export function InvestmentChart({ chartData, title, bitcoinUnit, showInflationAd
           boxHeight: 15,
           usePointStyle: true,
           pointStyle: 'circle',
-          generateLabels: function(chart: any) {
+          generateLabels: function(chart: ChartJS) {
             const originalLabels = ChartJS.defaults.plugins.legend.labels.generateLabels(chart);
             return originalLabels.sort((a, b) => {
               if (a.text.includes('USD')) return 1;

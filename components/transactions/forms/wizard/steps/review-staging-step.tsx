@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
+// Separator not used in this component
 import { 
   ChevronLeft, 
   Trash2, 
@@ -136,7 +136,7 @@ function StagedTransactionCard({ transaction, onEdit, onRemove }: StagedTransact
         
         {transaction.comment && (
           <div className="text-sm text-gray-400 italic">
-            "{transaction.comment}"
+            &#34;{transaction.comment}&#34;
           </div>
         )}
       </CardContent>

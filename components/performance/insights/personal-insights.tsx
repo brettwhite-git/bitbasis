@@ -1,13 +1,13 @@
 'use client';
 
 // Removed Card imports - using glass morphism styling
-import { formatCurrency, formatPercent } from "@/lib/utils/utils";
+// import { formatCurrency, formatPercent } from "@/lib/utils/utils";
 import { PerformanceChart, PerformanceFilters, PerformanceContainer } from "../overview/exports";
 import { InvestmentInsights } from "./investment-insights";
-import { ArrowUpIcon, ArrowDownIcon, TrendingUpIcon, TrendingDownIcon } from "lucide-react";
+// import { ArrowUpIcon, ArrowDownIcon, TrendingUpIcon, TrendingDownIcon } from "lucide-react";
 import { ReturnsOverview } from "../overview/exports";
 import { DrawdownMetrics } from "./drawdown-metrics";
-import { PerformanceMetrics } from "@/lib/core/portfolio/types";
+// import { PerformanceMetrics } from "@/lib/core/portfolio/types";
 import { PerformanceData } from "@/hooks/usePerformanceData";
 import { UnifiedTransaction } from "@/types/transactions";
 import { Skeleton } from "@/components/ui/skeleton";

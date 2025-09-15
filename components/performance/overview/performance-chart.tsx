@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState /*, useEffect */ } from "react"
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -56,6 +56,7 @@ function useChartContext() {
 }
 
 // Nice scale calculation utility
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function calculateNiceScale(min: number, max: number): { min: number; max: number } {
   const range = max - min;
   const roughStep = range / 6; // Aim for about 6-7 ticks

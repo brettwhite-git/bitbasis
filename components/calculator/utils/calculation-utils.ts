@@ -39,7 +39,7 @@ export function calculateSatsGoalData(
   const result: ChartDataPoint[] = [];
   let currentPrice = btcPrice;
   let cumulativeSats = 0;
-  let cumulativeCost = 0;
+  // let cumulativeCost = 0;
   
   for (let i = 0; i < totalPeriods; i++) {
     const periodDate = addPeriods(startDate, frequency, i);
@@ -351,7 +351,7 @@ export function aggregateChartData(
   if (!chartData || !chartData.length) return undefined;
 
   const { years: durationInYears } = getDurationDetails(goalDuration);
-  const startDateForCalc = new Date();
+  // const startDateForCalc = new Date();
 
   // Aggregate to weekly if daily frequency and duration > 6 months
   if (frequency === 'daily' && durationInYears > 0.5) {

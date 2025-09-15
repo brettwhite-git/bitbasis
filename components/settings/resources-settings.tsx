@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+// Card components not used in this component
 import { Button } from "@/components/ui/button";
 import { DownloadCloud, ExternalLink, FileText, BookOpen } from 'lucide-react';
 

@@ -12,7 +12,7 @@ interface HodlDistributionProps {
   isLoading: boolean;
 }
 
-export function HodlDistribution({ performance, isLoading }: HodlDistributionProps) {
+export function HodlDistribution({ performance: _performance, isLoading }: HodlDistributionProps) {
   if (isLoading) {
     return <HodlDistributionSkeleton />;
   }

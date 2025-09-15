@@ -118,10 +118,10 @@ export function BasePortfolioChart({
             borderWidth: 1,
             displayColors: true,
             callbacks: {
-              title: function(context: any) {
+              title: function(context: Array<{ label?: string }>) {
                 return context[0]?.label || ''
               },
-              label: function(context: any) {
+              label: function(context: { dataset: { label?: string }, parsed: { y: number } }) {
                 const label = context.dataset.label || ''
                 const value = context.parsed.y
                 return `${label}: $${value.toLocaleString()}`
@@ -148,7 +148,7 @@ export function BasePortfolioChart({
             },
             ticks: {
               color: "#9ca3af",
-              callback: function(value: any) {
+              callback: function(value: string | number) {
                 if (typeof value !== 'number') return ''
                 return `$${value.toLocaleString()}`
               },

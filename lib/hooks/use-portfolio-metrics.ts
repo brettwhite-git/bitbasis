@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { getPortfolioMetrics } from '@/lib/core/portfolio/metrics'
-import { PortfolioMetrics, ExtendedPortfolioMetrics } from '@/lib/core/portfolio/types'
+import { ExtendedPortfolioMetrics } from '@/lib/core/portfolio/types' // PortfolioMetrics not used
 import { Database } from '@/types/supabase'
 
 export interface UsePortfolioMetricsResult {
@@ -43,7 +43,7 @@ export function usePortfolioMetrics(): UsePortfolioMetricsResult {
     fetchSession()
   }, [supabase])
 
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     console.log('fetchMetrics called, userId:', userId)
     
     if (!userId) {
@@ -65,14 +65,14 @@ export function usePortfolioMetrics(): UsePortfolioMetricsResult {
     } finally {
       setLoading(false)
     }
-  }
+  }, [userId, supabase])
 
   useEffect(() => {
     if (userId) {
       console.log('User ID changed, fetching metrics for:', userId)
       fetchMetrics()
     }
-  }, [userId])
+  }, [userId, fetchMetrics])
 
   return {
     data,

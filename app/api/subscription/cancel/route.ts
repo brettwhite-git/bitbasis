@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update our database record
-    const updateData: any = {
+    const updateData: { cancel_at_period_end: boolean; status?: string; canceled_at?: string } = {
       cancel_at_period_end: cancelOption === 'period_end' || cancelOption === 'cleanup',
     }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/types/supabase'
 import { calculateCostBasis } from '@/lib/core/portfolio/cost-basis'
@@ -123,14 +123,14 @@ export function useCostBasisCalculation(
     }
 
     fetchData()
-  }, [userId, supabase])
+  }, [userId, supabase, calculateWithMethod, method])
 
   // Recalculate when method changes
   useEffect(() => {
     if (transactions.length > 0 && currentPrice > 0) {
       calculateWithMethod(transactions, currentPrice, method)
     }
-  }, [method])
+  }, [method, calculateWithMethod, transactions, currentPrice])
 
   const calculateWithMethod = async (transactions: UnifiedTransaction[], price: number, method: CostBasisMethod) => {
     try {

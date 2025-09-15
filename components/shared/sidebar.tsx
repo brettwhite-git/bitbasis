@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, LineChart, PieChart, Settings, History, Calculator, Database } from "lucide-react"
+import { LayoutDashboard, LineChart, PieChart, Settings, History, Calculator } from "lucide-react" // Database not used
 import { useSidebar } from "./sidebar-provider"
 
 export function DashboardSidebar() {

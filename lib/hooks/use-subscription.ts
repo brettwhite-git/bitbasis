@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/providers/supabase-auth-provider'
-import { SubscriptionService, TransactionLimitService, UserSubscriptionInfo } from '@/lib/subscription'
+import { SubscriptionService, UserSubscriptionInfo } from '@/lib/subscription' // TransactionLimitService not used
 
 export interface UseSubscriptionReturn {
   subscriptionInfo: UserSubscriptionInfo | null
@@ -19,7 +19,7 @@ export function useSubscription(): UseSubscriptionReturn {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchSubscriptionStatus = async () => {
+  const fetchSubscriptionStatus = useCallback(async () => {
     if (!user?.id) {
       setSubscriptionInfo(null)
       setLoading(false)
@@ -45,11 +45,11 @@ export function useSubscription(): UseSubscriptionReturn {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.id])
 
   useEffect(() => {
     fetchSubscriptionStatus()
-  }, [user?.id])
+  }, [user?.id, fetchSubscriptionStatus])
 
   const refreshStatus = async () => {
     // Force a fresh fetch by clearing any potential cache

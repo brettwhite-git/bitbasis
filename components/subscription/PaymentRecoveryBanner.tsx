@@ -73,7 +73,7 @@ export function PaymentRecoveryBanner() {
           <AlertDescription className="text-orange-800">
             <div className="font-medium mb-2">Payment Failed - Action Required</div>
             <p className="text-sm mb-3">
-              Your last payment couldn't be processed. You have {daysLeft > 0 ? `${daysLeft} days` : 'limited time'} 
+              Your last payment couldn&#39;t be processed. You have {daysLeft > 0 ? `${daysLeft} days` : 'limited time'} 
               {' '}left to update your payment method before losing access to Pro features.
             </p>
             <div className="flex gap-2 flex-wrap">

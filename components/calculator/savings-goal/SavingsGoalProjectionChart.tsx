@@ -43,7 +43,7 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
     label: 'Nominal Value',
     data: data.map(d => d.nominalValue),
     borderColor: COLORS.bitcoinOrange, // Bitcoin orange from theme
-    backgroundColor: (context: any) => { 
+    backgroundColor: (context: { chart?: { ctx?: CanvasRenderingContext2D } }) => { 
       if (!context || !context.chart || !context.chart.ctx) {
         return COLORS.withOpacity(COLORS.bitcoinOrange, 0.2);
       }
@@ -143,7 +143,7 @@ export function ProjectionChart({ data, showInflationAdjusted }: ProjectionChart
 
   return (
       <div className="h-full w-full">
-        <Line options={chartOptions as any} data={chartData as any} />
+        <Line options={chartOptions as ChartOptions<'line'>} data={chartData as ChartData<'line'>} />
       </div>
   );
 } 

@@ -26,9 +26,9 @@ export function SignUpForm() {
   const turnstileRef = useRef(null)
 
   const resetCaptcha = () => {
-    // @ts-ignore
+    // @ts-expect-error - Turnstile ref type not properly typed
     if (turnstileRef.current?.reset) {
-      // @ts-ignore
+      // @ts-expect-error - Turnstile reset method not properly typed
       turnstileRef.current.reset()
     }
     setCaptchaToken(null)
@@ -135,7 +135,7 @@ export function SignUpForm() {
             </div>
             <CardTitle className="text-2xl text-center text-white">Create an account</CardTitle>
             <CardDescription className="text-center text-gray-400">
-              Enter your email to get started. We'll send you a magic link to complete signup.
+              Enter your email to get started. We&#39;ll send you a magic link to complete signup.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -260,7 +260,7 @@ export function SignUpForm() {
               </div>
               <CardTitle className="text-2xl text-center text-white">Check your email</CardTitle>
               <CardDescription className="text-center text-gray-400">
-                We've sent you a confirmation link. Please check your email to complete your registration.
+                We&#39;ve sent you a confirmation link. Please check your email to complete your registration.
               </CardDescription>
             </CardHeader>
             <CardFooter className="flex flex-col gap-2">

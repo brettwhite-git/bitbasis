@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface BitcoinPriceData {
@@ -14,7 +14,7 @@ export function useBitcoinPrice(defaultPrice: number = 100000, refreshInterval: 
   
   const supabase = createClientComponentClient();
 
-  const fetchPrice = async () => {
+  const fetchPrice = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -47,7 +47,7 @@ export function useBitcoinPrice(defaultPrice: number = 100000, refreshInterval: 
     } finally {
       setLoading(false);
     }
-  };
+  }, [defaultPrice, supabase, price]);
 
   useEffect(() => {
     // Fetch price immediately
@@ -58,7 +58,7 @@ export function useBitcoinPrice(defaultPrice: number = 100000, refreshInterval: 
     
     // Clean up on unmount
     return () => clearInterval(intervalId);
-  }, [refreshInterval]);
+  }, [refreshInterval, fetchPrice]);
 
   return { price, loading, error, lastUpdated, refetch: fetchPrice };
 } 

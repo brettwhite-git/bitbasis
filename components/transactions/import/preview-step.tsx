@@ -6,6 +6,15 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle, AlertTriangle, XCircle, ArrowRight } from 'lucide-react'
 import { useImport } from './import-context'
+
+interface TransactionSummary {
+  total: number
+  dateRange: {
+    earliest: Date | null
+    latest: Date | null
+  }
+  byType: Record<string, number>
+}
 import { transformCSVData, validateTransactions, getTransactionSummary } from './utils'
 import { format } from 'date-fns'
 
@@ -23,7 +32,7 @@ export function PreviewStep() {
     setLoadingState
   } = useImport()
 
-  const [summary, setSummary] = useState<any>(null)
+  const [summary, setSummary] = useState<TransactionSummary | null>(null)
 
   // Transform and validate data when step loads
   useEffect(() => {

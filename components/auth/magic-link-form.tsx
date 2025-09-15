@@ -23,9 +23,9 @@ export function MagicLinkForm() {
   const { signInWithMagicLink } = useAuth()
 
   const resetCaptcha = () => {
-    // @ts-ignore
+    // @ts-expect-error - Turnstile ref type not properly typed
     if (turnstileRef.current?.reset) {
-      // @ts-ignore
+      // @ts-expect-error - Turnstile reset method not properly typed
       turnstileRef.current.reset()
     }
     setCaptchaToken(null)
@@ -111,7 +111,7 @@ export function MagicLinkForm() {
             </div>
             <CardTitle className="text-2xl text-center text-white">Sign in to your account</CardTitle>
             <CardDescription className="text-center text-gray-400">
-              Enter your email and we'll send you a magic link to sign in
+              Enter your email and we&#39;ll send you a magic link to sign in
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -172,7 +172,7 @@ export function MagicLinkForm() {
           </CardContent>
           <CardFooter className="flex flex-col space-y-2">
             <div className="text-sm text-center text-gray-400">
-              Don't have an account?{" "}
+              Don&#39;t have an account?{" "}
               <Link href="/auth/sign-up" className="text-bitcoin-orange hover:underline">
                 Sign up
               </Link>
@@ -213,7 +213,7 @@ export function MagicLinkForm() {
               </div>
               <CardTitle className="text-2xl text-center text-white">Check your email</CardTitle>
               <CardDescription className="text-center text-gray-400">
-                We've sent a magic link to <span className="font-medium text-white">{email}</span>. 
+                We&#39;ve sent a magic link to <span className="font-medium text-white">{email}</span>. 
                 Click the link in the email to sign in.
               </CardDescription>
             </CardHeader>

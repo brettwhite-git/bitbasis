@@ -1,6 +1,7 @@
 "use client"
 
 import { UseFormReturn } from 'react-hook-form'
+import { TransactionWizardData } from '@/types/add-transaction'
 import { Badge } from '@/components/ui/badge'
 
 // Import our extracted field components
@@ -10,7 +11,7 @@ import { TransferTransactionFields } from './transfer-transaction-fields'
 import { CommonTransactionFields } from './common-transaction-fields'
 
 interface TransactionFormFieldsProps {
-  form: UseFormReturn<any>
+  form: UseFormReturn<TransactionWizardData>
   transactionType: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
 }
 

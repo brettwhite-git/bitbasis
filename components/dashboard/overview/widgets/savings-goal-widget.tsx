@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 import { Button } from "@/components/ui/button";
 import { useSavingsGoalData } from '@/lib/hooks';
@@ -34,15 +34,18 @@ interface SavingsGoalWidgetProps {
 export function SavingsGoalWidget({ className }: SavingsGoalWidgetProps) {
   const [activeGoal, setActiveGoal] = useState<SavedGoalData | null>(null);
   
-  // Get progress data using the hook
-  const goalProgress = useSavingsGoalData(
-    activeGoal
+  // Memoize the goal object to prevent infinite re-renders
+  const memoizedGoal = useMemo(() => {
+    return activeGoal
       ? {
           startDate: activeGoal.startDate,
           targetBtcAmount: activeGoal.savedProjection.targetBtcAmount,
         }
-      : null
-  );
+      : null;
+  }, [activeGoal?.startDate, activeGoal?.savedProjection.targetBtcAmount]);
+
+  // Get progress data using the hook
+  const goalProgress = useSavingsGoalData(memoizedGoal);
   
   // Load goal from localStorage on mount
   useEffect(() => {

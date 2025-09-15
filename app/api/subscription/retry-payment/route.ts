@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         message: 'Payment successful'
       })
 
-    } catch (paymentError: any) {
+    } catch (paymentError: unknown) {
       // Payment failed - return specific error
       console.error('Payment retry failed:', paymentError)
 

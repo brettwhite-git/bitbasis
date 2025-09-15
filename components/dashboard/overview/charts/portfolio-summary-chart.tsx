@@ -102,7 +102,6 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
           maxTicksLimit: 8,
           includeBounds: true
         },
-        min: 0,
         beginAtZero: true,
         grace: 0
       }

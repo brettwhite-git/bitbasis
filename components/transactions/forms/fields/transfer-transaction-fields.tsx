@@ -1,6 +1,7 @@
 "use client"
 
 import { UseFormReturn } from 'react-hook-form'
+import { TransactionWizardData } from '@/types/add-transaction'
 import {
   FormControl,
   FormDescription,
@@ -12,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 
 interface TransferTransactionFieldsProps {
-  form: UseFormReturn<any>
+  form: UseFormReturn<TransactionWizardData>
   transactionType: 'deposit' | 'withdrawal' | 'interest'
 }
 

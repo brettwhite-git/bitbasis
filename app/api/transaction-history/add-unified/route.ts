@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     // Transform and prepare transactions for database insertion
     console.log('Debug: Processing transactions with csv_upload_id:', validatedTransactions[0]?.csv_upload_id)
     const dbTransactions = validatedTransactions.map(transaction => {
-      const dbTransaction: any = {
+      const dbTransaction: Record<string, unknown> = {
         user_id: user.id,
         date: new Date(transaction.date).toISOString(),
         type: transaction.type,
@@ -220,13 +220,13 @@ export async function POST(request: Request) {
       data: insertedTransactions
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('API Error - /api/transaction-history/add-unified:', error);
     
     return NextResponse.json(
       { 
         error: 'Failed to add transactions.',
-        message: error.message 
+        message: error instanceof Error ? error.message : 'Unknown error' 
       },
       { status: 500 }
     );

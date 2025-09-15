@@ -7,12 +7,12 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 import { Database } from "@/types/supabase"
 import { Order } from "@/lib/core/portfolio/types"
-import { MonthlyPortfolioCalculator } from "@/lib/core/portfolio/monthly-calculator"
+// MonthlyPortfolioCalculator not used in this service
 import { 
   PortfolioDataService, 
   PortfolioDataPoint, 
   ChartDataOptions, 
-  SpotPriceData,
+  // SpotPriceData not used
   TimeRange
 } from "./types"
 
