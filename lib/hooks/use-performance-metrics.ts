@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { getPerformanceMetrics } from '@/lib/core/portfolio/performance'
 import { Database } from '@/types/supabase'
@@ -82,7 +82,7 @@ export function usePerformanceMetrics(): UsePerformanceMetricsReturn {
     fetchSession()
   }, [supabase])
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!userId) {
       console.log('usePerformanceMetrics: No user ID available, skipping fetch')
       setLoading(false)
@@ -118,7 +118,7 @@ export function usePerformanceMetrics(): UsePerformanceMetricsReturn {
     } finally {
       setLoading(false)
     }
-  }
+  }, [userId, supabase])
 
   useEffect(() => {
     if (userId) {

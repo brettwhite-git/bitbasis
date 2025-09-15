@@ -77,62 +77,8 @@ export function useCostBasisCalculation(
     fetchSession()
   }, [supabase])
 
-  // Fetch transactions and price data
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!userId) {
-        return
-      }
-
-      try {
-        setLoading(true)
-        console.log('useCostBasisCalculation: Fetching transactions and price for user:', userId)
-        
-        // Fetch transactions and price in parallel
-        const [transactionsResult, priceResult] = await Promise.all([
-          supabase
-            .from('transactions')
-            .select('id, date, type, sent_amount, sent_currency, received_amount, received_currency, fee_amount, fee_currency, price')
-            .eq('user_id', userId)
-            .order('date', { ascending: true }),
-          supabase
-            .from('spot_price')
-            .select('price_usd, updated_at')
-            .order('updated_at', { ascending: false })
-            .limit(1)
-            .single()
-        ])
-
-        if (transactionsResult.error) throw transactionsResult.error
-        if (priceResult.error) throw priceResult.error
-
-        const fetchedTransactions = transactionsResult.data || []
-        if (!priceResult.data) throw new Error('No Bitcoin price available')
-        
-        setTransactions(fetchedTransactions)
-        setCurrentPrice(priceResult.data.price_usd)
-        
-        // Perform initial calculation
-        await calculateWithMethod(fetchedTransactions, priceResult.data.price_usd, method)
-      } catch (err) {
-        console.error('useCostBasisCalculation: Error fetching data:', err)
-        setError(err instanceof Error ? err : new Error('Failed to fetch data'))
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [userId, supabase, calculateWithMethod, method])
-
-  // Recalculate when method changes
-  useEffect(() => {
-    if (transactions.length > 0 && currentPrice > 0) {
-      calculateWithMethod(transactions, currentPrice, method)
-    }
-  }, [method, calculateWithMethod, transactions, currentPrice])
-
-  const calculateWithMethod = async (transactions: UnifiedTransaction[], price: number, method: CostBasisMethod) => {
+  // Memoize the calculateWithMethod function to prevent infinite loops
+  const calculateWithMethod = useCallback(async (transactions: UnifiedTransaction[], price: number, method: CostBasisMethod) => {
     try {
       console.log(`useCostBasisCalculation: Calculating using ${method} method`)
       if (!userId) {
@@ -161,7 +107,7 @@ export function useCostBasisCalculation(
       console.error(`useCostBasisCalculation: Error calculating ${method}:`, err)
       setError(err instanceof Error ? err : new Error(`Failed to calculate ${method}`))
     }
-  }
+  }, [userId]) // Only depend on userId since other params are passed directly
 
   const refetch = () => {
     if (userId) {
@@ -170,10 +116,14 @@ export function useCostBasisCalculation(
     }
   }
 
-  const fetchData = async () => {
+  // Memoize fetchData to prevent infinite loops
+  const fetchData = useCallback(async () => {
     if (!userId) return
     
     try {
+      setLoading(true)
+      console.log('useCostBasisCalculation: Fetching transactions and price for user:', userId)
+      
       // Fetch transactions and price in parallel
       const [transactionsResult, priceResult] = await Promise.all([
         supabase
@@ -198,15 +148,34 @@ export function useCostBasisCalculation(
       setTransactions(fetchedTransactions)
       setCurrentPrice(priceResult.data.price_usd)
       
-      // Perform calculation
-      await calculateWithMethod(fetchedTransactions, priceResult.data.price_usd, method)
+      // Don't call calculateWithMethod here - let the separate useEffect handle it
+      // This prevents circular dependency: fetchData -> calculateWithMethod -> fetchData
     } catch (err) {
-      console.error('useCostBasisCalculation: Error in refetch:', err)
-      setError(err instanceof Error ? err : new Error('Failed to refetch data'))
+      console.error('useCostBasisCalculation: Error fetching data:', err)
+      setError(err instanceof Error ? err : new Error('Failed to fetch data'))
     } finally {
       setLoading(false)
     }
-  }
+  }, [userId, supabase, method]) // Removed calculateWithMethod from dependencies
+
+  // Fetch transactions and price data when userId changes
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  // Perform initial calculation when data is first loaded
+  useEffect(() => {
+    if (transactions.length > 0 && currentPrice > 0 && !data) {
+      calculateWithMethod(transactions, currentPrice, method)
+    }
+  }, [transactions, currentPrice, method, calculateWithMethod, data])
+
+  // Recalculate when method changes (but only if we already have data)
+  useEffect(() => {
+    if (transactions.length > 0 && currentPrice > 0 && data) {
+      calculateWithMethod(transactions, currentPrice, method)
+    }
+  }, [method, calculateWithMethod, transactions, currentPrice, data])
 
   return {
     data,

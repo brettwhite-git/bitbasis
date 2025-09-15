@@ -41,13 +41,11 @@ export function useBitcoinPrice(defaultPrice: number = 100000, refreshInterval: 
       console.error('Error fetching Bitcoin price:', err);
       setError('Failed to fetch Bitcoin price');
       // Use default price as fallback on error
-      if (price === 0) {
-        setPrice(defaultPrice);
-      }
+      setPrice(prev => prev === 0 ? defaultPrice : prev);
     } finally {
       setLoading(false);
     }
-  }, [defaultPrice, supabase, price]);
+  }, [defaultPrice, supabase]); // Removed 'price' from dependencies
 
   useEffect(() => {
     // Fetch price immediately

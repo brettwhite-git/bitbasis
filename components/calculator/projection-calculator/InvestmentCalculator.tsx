@@ -195,6 +195,14 @@ export function InvestmentCalculator() {
     }
   };
 
+  // Defensive check to ensure we have valid price data
+  if (priceLoading || btcPrice <= 0) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-white">Loading Bitcoin price data...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-6">

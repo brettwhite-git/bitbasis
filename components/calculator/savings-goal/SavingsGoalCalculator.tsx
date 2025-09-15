@@ -29,7 +29,7 @@ export function SavingsGoalCalculator() {
   const [inflationRatePercent, setInflationRatePercent] = useState(3);
   const [showInflationAdjusted, setShowInflationAdjusted] = useState(true);
   const [targetBtcAmount, setTargetBtcAmount] = useState(0.1);
-  const [startDate, setStartDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(() => new Date());
   const [customBtcPrice, setCustomBtcPrice] = useState<string | null>(null); // Custom BTC price input by user
 
   // Use Bitcoin price hook instead of manual input
@@ -60,15 +60,18 @@ export function SavingsGoalCalculator() {
     console.log("Active goal state in component:", activeGoal);
   }, [activeGoal]);
 
-  // --- Call the new hook for progress calculation ---
-  const goalProgress = useSavingsGoalData(
-    activeGoal
+  // --- Memoize goal object to prevent infinite loops ---
+  const memoizedGoal = useMemo(() => {
+    return activeGoal
       ? {
           startDate: activeGoal.startDate,
           targetBtcAmount: activeGoal.savedProjection.targetBtcAmount,
         }
-      : null
-  );
+      : null;
+  }, [activeGoal?.startDate, activeGoal?.savedProjection.targetBtcAmount]);
+
+  // --- Call the new hook for progress calculation ---
+  const goalProgress = useSavingsGoalData(memoizedGoal);
 
   // Note: Removed old calculation logic - now using calculateProjection function below
 
@@ -321,6 +324,15 @@ export function SavingsGoalCalculator() {
       window.removeEventListener(btcPriceEventId, handleBtcPriceChange);
     };
   }, []);
+
+  // Defensive check to ensure we have valid price data
+  if (priceLoading || spotBtcPrice <= 0) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-white">Loading Bitcoin price data...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-6">
