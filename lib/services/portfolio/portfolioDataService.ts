@@ -28,7 +28,7 @@ type RawOrderData = {
   sell_btc_amount: number | null;
   received_fiat_amount: number | null;
   price: number | null;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export class PortfolioDataServiceImpl implements PortfolioDataService {
@@ -41,7 +41,7 @@ export class PortfolioDataServiceImpl implements PortfolioDataService {
   /**
    * Gets current Bitcoin price from spot_price table
    */
-  async getCurrentPrice(source: string = 'coinpaprika'): Promise<number> {
+  async getCurrentPrice(): Promise<number> {
     try {
       const { data, error } = await this.supabase
         .from('spot_price')

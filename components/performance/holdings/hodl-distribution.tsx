@@ -5,14 +5,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BitcoinHoldingsWaterfall } from "./bitcoin-holdings-waterfall";
 import { HodlAgeDistribution } from "./hodl-age-distribution";
 import { BtcHeatmap } from "../insights/btc-heatmap";
-import { PerformanceData } from "@/hooks/usePerformanceData";
 
 interface HodlDistributionProps {
-  performance: PerformanceData['performance'];
   isLoading: boolean;
 }
 
-export function HodlDistribution({ performance: _performance, isLoading }: HodlDistributionProps) {
+export function HodlDistribution({ isLoading }: HodlDistributionProps) {
   if (isLoading) {
     return <HodlDistributionSkeleton />;
   }

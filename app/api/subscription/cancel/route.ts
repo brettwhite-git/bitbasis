@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
     })
 
     // Check if this is a lifetime subscription
-    const isLifetime = subscription.metadata?.type === 'lifetime' || 
+    const metadata = subscription.metadata as Record<string, unknown> | null
+    const isLifetime = metadata?.type === 'lifetime' || 
                       subscription.id.startsWith('lifetime_')
 
     if (isLifetime) {

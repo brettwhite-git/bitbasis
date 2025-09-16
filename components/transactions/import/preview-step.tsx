@@ -226,7 +226,7 @@ export function PreviewStep() {
               </tr>
             </thead>
             <tbody>
-              {mappedTransactions.slice(0, 5).map((transaction, index) => {
+              {mappedTransactions.slice(0, 5).map((transaction) => {
                 const hasError = validationIssues.some(
                   issue => issue.transactionId === transaction.id && issue.severity === 'error'
                 )

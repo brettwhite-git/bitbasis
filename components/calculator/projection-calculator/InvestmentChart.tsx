@@ -10,6 +10,7 @@ import {
   Legend,
   LineElement,
   PointElement,
+  ChartData,
 } from "chart.js"
 import { Chart as ReactChart } from "react-chartjs-2"
 import { COLORS } from "../utils/color-constants" // Adjusted import path
@@ -197,7 +198,7 @@ export function InvestmentChart({ chartData, title, bitcoinUnit, showInflationAd
         <ReactChart
           type="bar"
           options={chartOptions}
-          data={chartConfig as any}
+          data={chartConfig as ChartData<'bar'>}
           height={"100%"}
         />
       </div>

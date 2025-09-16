@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 
@@ -29,7 +31,7 @@ export async function GET() {
     }
     
     // Test 3: Check specific price IDs
-    const priceTests = {}
+    const priceTests: Record<string, string> = {}
     const priceIds = [
       process.env.STRIPE_PRO_MONTHLY_PRICE_ID,
       process.env.STRIPE_LIFETIME_PRICE_ID,

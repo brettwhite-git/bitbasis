@@ -1,8 +1,8 @@
 import { Database } from '@/types/supabase'
 
-type BaseOrder = Database['public']['Tables']['orders']['Row']
+type BaseTransaction = Database['public']['Tables']['transactions']['Row']
 
-interface Order extends BaseOrder {
+interface Order extends BaseTransaction {
   type: 'buy' | 'sell'
   received_btc_amount: number | null
   sell_btc_amount: number | null

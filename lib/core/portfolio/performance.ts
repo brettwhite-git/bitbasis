@@ -150,7 +150,6 @@ export async function getPerformanceMetrics(
     const transactions = transactionsResult.data || []
     if (!priceResult.data) throw new Error('No Bitcoin price data available')
     const currentPrice = priceResult.data.price_usd
-    const lastUpdated = priceResult.data.updated_at
     const marketAthPrice = athResult.data?.price_usd ?? 0
     const marketAthDate = athResult.data?.ath_date ?? 'N/A'
 
@@ -514,7 +513,7 @@ export async function getPerformanceMetrics(
     // Only calculate if we have at least one transaction
     if (portfolioHistory.length > 0) {
       // First, build a timeline of actual transactions with accurate values 
-      let timeline = [...portfolioHistory]
+      const timeline = [...portfolioHistory]
         .sort((a, b) => a.date.getTime() - b.date.getTime()); // Ensure chronological order
       
       // Find global maximum portfolio value
@@ -603,7 +602,7 @@ export async function getPerformanceMetrics(
         portfolioATH: maxDrawdownPortfolioATH,
         portfolioLow: maxDrawdownPortfolioLow
       },
-      hodlTime: calculateWeightedHodlTime(transactions as any, today),
+      hodlTime: calculateWeightedHodlTime(transactions, today),
       currentPrice,
       averageBuyPrice,
       lowestBuyPrice: lowestBuyPrice === Infinity ? 0 : lowestBuyPrice,

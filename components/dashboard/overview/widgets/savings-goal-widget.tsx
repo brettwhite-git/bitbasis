@@ -42,7 +42,7 @@ export function SavingsGoalWidget({ className }: SavingsGoalWidgetProps) {
           targetBtcAmount: activeGoal.savedProjection.targetBtcAmount,
         }
       : null;
-  }, [activeGoal?.startDate, activeGoal?.savedProjection.targetBtcAmount]);
+  }, [activeGoal]);
 
   // Get progress data using the hook
   const goalProgress = useSavingsGoalData(memoizedGoal);

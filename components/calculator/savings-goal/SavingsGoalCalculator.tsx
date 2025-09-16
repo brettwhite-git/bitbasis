@@ -68,7 +68,7 @@ export function SavingsGoalCalculator() {
           targetBtcAmount: activeGoal.savedProjection.targetBtcAmount,
         }
       : null;
-  }, [activeGoal?.startDate, activeGoal?.savedProjection.targetBtcAmount]);
+  }, [activeGoal]);
 
   // --- Call the new hook for progress calculation ---
   const goalProgress = useSavingsGoalData(memoizedGoal);

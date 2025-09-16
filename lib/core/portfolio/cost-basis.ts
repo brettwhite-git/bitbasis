@@ -31,26 +31,14 @@ export async function calculateCostBasis(
 
     // Calculate running balance and totals from the provided orders
     let runningBalance = 0
-    let totalBtcBought = 0
-    let totalSold = 0
-    let totalShortTermBtcBought = 0
-    let totalLongTermBtcBought = 0
     const oneYearAgoForProportion = new Date()
     oneYearAgoForProportion.setFullYear(oneYearAgoForProportion.getFullYear() - 1)
 
     orders.forEach(order => {
       if (order.type === 'buy' && order.received_btc_amount) {
         const amount = order.received_btc_amount
-        totalBtcBought += amount
         runningBalance += amount
-        const acquisitionDate = new Date(order.date)
-        if (acquisitionDate > oneYearAgoForProportion) {
-          totalShortTermBtcBought += amount
-        } else {
-          totalLongTermBtcBought += amount
-        }
       } else if (order.type === 'sell' && order.sell_btc_amount) {
-        totalSold += order.sell_btc_amount
         runningBalance -= order.sell_btc_amount
       }
     })
@@ -58,7 +46,7 @@ export async function calculateCostBasis(
     const remainingBtc = Math.max(0, runningBalance)
 
     // --- FIFO, LIFO, and HIFO Methods --- 
-    let btcHoldings: BTCHolding[] = []
+    const btcHoldings: BTCHolding[] = []
     let realizedGains = 0
 
     // Populate holdings only from buy orders
@@ -78,7 +66,7 @@ export async function calculateCostBasis(
     })
 
     // Clone and sort holdings based on method for processing sells
-    let holdingsToProcess = [...btcHoldings] // Work on a copy
+    const holdingsToProcess = [...btcHoldings] // Work on a copy
     
     if (method === 'FIFO') {
       // Sort by date (oldest first)

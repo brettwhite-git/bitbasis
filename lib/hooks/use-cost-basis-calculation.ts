@@ -156,7 +156,7 @@ export function useCostBasisCalculation(
     } finally {
       setLoading(false)
     }
-  }, [userId, supabase, method]) // Removed calculateWithMethod from dependencies
+  }, [userId, supabase]) // method not used in fetchData, removed to prevent circular dependency
 
   // Fetch transactions and price data when userId changes
   useEffect(() => {

@@ -77,7 +77,7 @@ function calculateRemainingHoldings(
   pricePerCoin: number
 }> {
   // Create holdings from buy transactions
-  let holdings: Array<{
+  const holdings: Array<{
     amount: number
     date: string
     costBasis: number
@@ -101,7 +101,7 @@ function calculateRemainingHoldings(
     })
 
   // Clone holdings for processing
-  let holdingsToProcess = [...holdings]
+  const holdingsToProcess = [...holdings]
   
   // Sort holdings based on the method
   switch (method) {
@@ -148,34 +148,3 @@ function calculateRemainingHoldings(
 
   return holdingsToProcess.filter(h => h.amount > 1e-9) // Filter out tiny amounts
 }
-
-/**
- * DEPRECATED: Legacy function with flawed logic
- * @deprecated Use calculateTaxLiability instead
- */
-function calculateHoldingsClassification(
-  transactions: Transaction[],
-  method: TaxMethod
-): { shortTermHoldings: number; longTermHoldings: number } {
-  console.warn('calculateHoldingsClassification is deprecated. Use calculateTaxLiability for accurate results.')
-  
-  const remainingHoldings = calculateRemainingHoldings(transactions, method)
-  const oneYearAgo = new Date()
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-
-  let shortTermHoldings = 0
-  let longTermHoldings = 0
-
-  remainingHoldings.forEach(holding => {
-    if (new Date(holding.date) > oneYearAgo) {
-      shortTermHoldings += holding.amount
-    } else {
-      longTermHoldings += holding.amount
-    }
-  })
-
-  return {
-    shortTermHoldings: Math.max(0, shortTermHoldings),
-    longTermHoldings: Math.max(0, longTermHoldings)
-  }
-} 

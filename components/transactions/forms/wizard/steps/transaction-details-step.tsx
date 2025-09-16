@@ -177,7 +177,6 @@ export function TransactionDetailsStep() {
     nextStep, 
     prevStep,
     addToStaging,
-    errors,
     stagedTransactions,
     goToStep
   } = useAddTransactionWizard()
@@ -190,7 +189,7 @@ export function TransactionDetailsStep() {
     handleSubmit,
     watch,
     setValue,
-    formState: { errors: formErrors, isValid }
+    formState: { errors: formErrors }
   } = useForm<NewTransaction>({
     resolver: zodResolver(transactionSchema),
     mode: 'onChange',

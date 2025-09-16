@@ -4,7 +4,9 @@
  * Provides consistent tooltip styling across all charts in the application
  */
 
-import { TooltipOptions, TooltipItem, TooltipModel } from 'chart.js'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { TooltipOptions, TooltipItem } from 'chart.js'
 import { formatCurrency, formatBTC } from '@/lib/utils/utils' // formatPercent not used
 
 // Local formatNumber function since it's not exported from utils
@@ -267,7 +269,7 @@ export const createBtcHeatmapTooltipConfig = () => ({
     fontSize: '12px',
     fontFamily: 'inherit',
   },
-  custom: ({ series, seriesIndex, dataPointIndex, w }: any) => {
+  custom: ({ seriesIndex, dataPointIndex, w }: any) => {
     const data = w.config.series[seriesIndex].data[dataPointIndex];
     const year = w.config.series[seriesIndex].name;
     const month = data.x;

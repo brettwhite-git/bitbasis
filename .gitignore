@@ -58,3 +58,6 @@ ehthumbs.db
 # deployment artifacts
 /dist/
 /.vercel/
+
+#mcp
+mcp.json

@@ -13,7 +13,6 @@ import {
 interface AddTransactionWizardProviderProps {
   children: React.ReactNode
   onSuccess?: () => void
-  onClose?: () => void
 }
 
 const WizardContext = createContext<AddTransactionWizardContext | null>(null)
@@ -81,8 +80,7 @@ const getLocalStorageInfo = () => {
 
 export function AddTransactionWizardProvider({ 
   children, 
-  onSuccess,
-  onClose: _onClose // Parameter not currently used 
+  onSuccess
 }: AddTransactionWizardProviderProps) {
   const [currentStep, setCurrentStep] = useState<WizardStep>('type')
   const [transactionData, setTransactionData] = useState<TransactionWizardData>({
@@ -198,7 +196,8 @@ export function AddTransactionWizardProvider({
     const transaction = stagedTransactions.find(t => t.tempId === tempId)
     if (transaction) {
       // Load into current transaction data, excluding temp fields
-      const { tempId: _, created_at: __, ...transactionDataToLoad } = transaction
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { tempId, created_at, ...transactionDataToLoad } = transaction
       
       // Properly handle the discriminated union by ensuring type safety
       setTransactionData(transactionDataToLoad)

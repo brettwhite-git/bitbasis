@@ -189,7 +189,7 @@ export function BtcHeatmap() {
       markers: {
         size: 8
       },
-      formatter: function(seriesName, _opts) {
+      formatter: function(seriesName) {
         return `<span style="padding-left: 5px;">${seriesName}</span>`
       }
     },

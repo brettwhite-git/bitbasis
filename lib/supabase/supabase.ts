@@ -77,69 +77,6 @@ export async function checkEmailExists(email: string): Promise<boolean> {
   }
 }
 
-// Test the connection with more detailed error handling
-async function testSupabaseConnection() {
-  // Create a temporary client specifically for this test
-  const testClient = createSupabaseClient<Database>(supabaseUrl!, supabaseAnonKey!)
-  
-  try {
-    console.log('=== Supabase Connection Test ===')
-    console.log('1. Environment Variables:')
-    console.log('   - URL:', supabaseUrl ? 'Present' : 'Missing')
-    console.log('   - Anon Key:', supabaseAnonKey ? 'Present' : 'Missing')
-
-    // Test basic connection
-    console.log('\n2. Testing basic connection...')
-    const { data: testData, error: testError } = await testClient
-      .from('transactions')
-      .select('count')
-      .limit(1)
-
-    if (testError) {
-      console.error('Basic connection test failed:', {
-        code: testError.code,
-        message: testError.message,
-        details: testError.details,
-        hint: testError.hint
-      })
-      return false
-    }
-
-    // Test table structure
-    console.log('\n3. Testing table structure...')
-    const { data: tableInfo, error: tableError } = await testClient
-      .from('transactions')
-      .select('*')
-      .limit(0)
-
-    if (tableError) {
-      console.error('Table structure test failed:', {
-        code: tableError.code,
-        message: tableError.message,
-        details: tableError.details,
-        hint: tableError.hint
-      })
-      return false
-    }
-
-    console.log('Table structure:', tableInfo)
-    console.log('\n4. Connection test successful!')
-    return true
-  } catch (err) {
-    console.error('Connection test failed with error:', {
-      error: err,
-      name: err instanceof Error ? err.name : 'Unknown',
-      message: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack : undefined
-    })
-    return false
-  }
-}
-
-// Run the test immediately if not in production
-// if (process.env.NODE_ENV !== 'production') {
-//   void testSupabaseConnection() // Temporarily disable to check if it causes the cookies error
-// }
 
 export interface Transaction {
   id?: string

@@ -179,5 +179,5 @@ export function useDashboardTaxLiability(currentPrice: number): TaxLiabilityResu
     const result = calculateTaxLiability(convertedTransactions, currentPrice, taxMethod)
     console.log('useDashboardTaxLiability: Tax liability calculation result:', result)
     return result
-  }, [transactions, currentPrice, taxMethod, loading, userId])
+  }, [transactions, currentPrice, currentBtcPrice, taxMethod, loading, userId])
 } 

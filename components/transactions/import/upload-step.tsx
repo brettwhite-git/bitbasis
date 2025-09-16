@@ -64,7 +64,7 @@ export function UploadStep() {
   }
 
   // File validation
-  const validateFile = (file: File): string | null => {
+  const validateFile = useCallback((file: File): string | null => {
     // Check file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       return 'File size must be less than 10MB'
@@ -76,7 +76,7 @@ export function UploadStep() {
     }
 
     return null
-  }
+  }, [])
 
   // Parse CSV file
   const parseCSV = useCallback(async (file: File) => {
@@ -164,7 +164,7 @@ export function UploadStep() {
       setIsLoading(false)
       setLoadingState('idle')
     }
-  }, [setCsvData, setCsvHeaders, setCurrentFile, setStep, setError, setIsLoading, setLoadingState])
+  }, [setCsvData, setCsvHeaders, setCurrentFile, setStep, setError, setIsLoading, setLoadingState, setCsvUploadId])
 
   // Handle file selection
   const handleFileSelect = useCallback(async (file: File) => {

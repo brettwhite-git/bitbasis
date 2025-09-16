@@ -72,12 +72,12 @@ export interface ChartConfigService {
   /**
    * Creates configuration for portfolio summary chart
    */
-  createSummaryChartConfig(data: PortfolioDataPoint[]): any // Replace 'any' with actual return type
+  createSummaryChartConfig(data: PortfolioDataPoint[]): unknown // Replace with actual return type
   
   /**
    * Creates configuration for performance chart
    */
-  createPerformanceChartConfig(data: PortfolioDataPoint[], options: ChartDataOptions): any // Replace 'any' with actual return type
+  createPerformanceChartConfig(data: PortfolioDataPoint[], options: ChartDataOptions): unknown // Replace with actual return type
 }
 
 /**
@@ -86,8 +86,8 @@ export interface ChartConfigService {
 export interface BaseChartProps {
   data?: PortfolioDataPoint[]
   options?: ChartDataOptions | {
-    data: any;
-    options: any;
+    data: unknown;
+    options: unknown;
   }
   height?: number | string
   width?: number | string

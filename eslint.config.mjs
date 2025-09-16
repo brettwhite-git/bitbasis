@@ -11,6 +11,13 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    // Only allow 'any' types in Chart.js utility files where it's genuinely needed
+    files: ["lib/utils/chart-tooltip-config.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off"
+    }
+  }
 ];
 
 export default eslintConfig;

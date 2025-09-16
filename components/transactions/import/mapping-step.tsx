@@ -85,7 +85,6 @@ export function MappingStep() {
   const {
     csvHeaders,
     csvData,
-    columnMappings,
     setColumnMappings,
     setStep,
     setError,
@@ -375,7 +374,7 @@ export function MappingStep() {
     
     // Return fields that are mapped to multiple CSV columns
     return Array.from(fieldCounts.entries())
-      .filter(([_, csvColumns]) => csvColumns.length > 1)
+      .filter(([, csvColumns]) => csvColumns.length > 1)
       .map(([field, csvColumns]) => ({ field, csvColumns }))
   }
   

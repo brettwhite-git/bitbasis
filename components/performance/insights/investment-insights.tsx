@@ -100,7 +100,7 @@ export function InvestmentInsights({ performance, transactions }: InvestmentInsi
 
   // Calculate DCA vs Lump Sum Performance
   const calculateDCAInsight = () => {
-    const { dcaReturn: _dcaReturn, lumpSumReturn: _lumpSumReturn, outperformance } = calculateDCAPerformance(transactions, currentPrice)
+    const { outperformance } = calculateDCAPerformance(transactions, currentPrice)
     
     if (Math.abs(outperformance) < 1) {
       return {

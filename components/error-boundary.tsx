@@ -1,7 +1,6 @@
 "use client"
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { logger } from '@/lib/logger'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
@@ -34,12 +33,14 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log the error
-    logger.error('React Error Boundary caught an error', {
+    // Log the error to console
+    console.error('React Error Boundary caught an error', {
       errorId: this.state.errorId,
       componentStack: errorInfo.componentStack,
-      errorBoundary: true
-    }, error)
+      errorBoundary: true,
+      error: error.message,
+      stack: error.stack
+    })
 
     // Call custom error handler if provided
     if (this.props.onError) {
@@ -132,7 +133,11 @@ export class ErrorBoundary extends Component<Props, State> {
 // Hook for functional components to handle errors
 export const useErrorHandler = () => {
   return (error: Error, context?: Record<string, unknown>) => {
-    logger.error('Unhandled error in component', context, error)
+    console.error('Unhandled error in component', {
+      error: error.message,
+      stack: error.stack,
+      context
+    })
     
     // In development, re-throw to show in console
     if (process.env.NODE_ENV === 'development') {
