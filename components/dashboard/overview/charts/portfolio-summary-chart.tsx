@@ -73,7 +73,7 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
           pointStyle: "circle",
         },
       },
-      tooltip: createPortfolioSummaryTooltipConfig(portfolioData),
+      tooltip: createPortfolioSummaryTooltipConfig(portfolioData as unknown as Record<string, unknown>[]),
     },
     scales: {
       x: {

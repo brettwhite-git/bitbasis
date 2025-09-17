@@ -81,23 +81,25 @@ export async function POST(request: NextRequest) {
 
       if (existingStripeCustomers.data.length > 0) {
         const existingStripeCustomer = existingStripeCustomers.data[0]
-        console.log('✅ Found existing Stripe customer by email:', existingStripeCustomer.id)
-        customerId = existingStripeCustomer.id
+        if (existingStripeCustomer) {
+          console.log('✅ Found existing Stripe customer by email:', existingStripeCustomer.id)
+          customerId = existingStripeCustomer.id
 
-        // Update our database with this customer ID
-        console.log('💾 Updating database with existing Stripe customer...')
-        const { error: upsertError } = await supabase
-          .from('customers')
-          .upsert({
-            id: user.id,
-            stripe_customer_id: customerId,
-          })
-        
-        if (upsertError) {
-          console.log('⚠️ Failed to update customer in database:', upsertError.message)
-          // Continue anyway - the customer exists in Stripe
-        } else {
-          console.log('✅ Database updated with existing customer')
+          // Update our database with this customer ID
+          console.log('💾 Updating database with existing Stripe customer...')
+          const { error: upsertError } = await supabase
+            .from('customers')
+            .upsert({
+              id: user.id,
+              stripe_customer_id: customerId,
+            })
+          
+          if (upsertError) {
+            console.log('⚠️ Failed to update customer in database:', upsertError.message)
+            // Continue anyway - the customer exists in Stripe
+          } else {
+            console.log('✅ Database updated with existing customer')
+          }
         }
       } else {
       // Create new Stripe customer

@@ -12,6 +12,30 @@ const supabaseAdmin = createClient<Database>(
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
+// Map Stripe subscription statuses to our database enum
+function mapStripeStatusToDbStatus(stripeStatus: Stripe.Subscription.Status): Database["public"]["Enums"]["subscription_status"] {
+  switch (stripeStatus) {
+    case 'active':
+      return 'active'
+    case 'trialing':
+      return 'trialing'
+    case 'canceled':
+      return 'canceled'
+    case 'incomplete':
+      return 'incomplete'
+    case 'incomplete_expired':
+      return 'incomplete_expired'
+    case 'past_due':
+      return 'past_due'
+    case 'unpaid':
+      return 'unpaid'
+    case 'paused':
+      return 'active' // Map paused to active since we don't have paused status
+    default:
+      return 'active' // Default fallback
+  }
+}
+
 const relevantEvents = new Set([
   'checkout.session.completed',
   'customer.subscription.created',
@@ -178,7 +202,7 @@ async function handleLifetimePayment(session: Stripe.Checkout.Session, userId: s
       metadata: {
         type: 'lifetime',
         checkout_session_id: session.id,
-        payment_intent_id: session.payment_intent,
+        payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id || null,
       },
       price_id: session.metadata?.price_id || null,
       quantity: 1,
@@ -272,15 +296,15 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     .upsert({
       id: subscription.id,
       user_id: userId,
-      status: subscription.status,
+      status: mapStripeStatusToDbStatus(subscription.status),
       metadata: subscription.metadata,
       price_id: priceId,
       quantity: subscription.items.data[0]?.quantity || 1,
       cancel_at_period_end: subscription.cancel_at_period_end,
-      current_period_start: subscription.current_period_start 
+      current_period_start: 'current_period_start' in subscription && typeof subscription.current_period_start === 'number'
         ? new Date(subscription.current_period_start * 1000).toISOString() 
         : new Date().toISOString(),
-      current_period_end: subscription.current_period_end 
+      current_period_end: 'current_period_end' in subscription && typeof subscription.current_period_end === 'number'
         ? new Date(subscription.current_period_end * 1000).toISOString() 
         : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now as fallback
       created: subscription.created 
@@ -330,7 +354,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log('Processing successful invoice payment:', invoice.id)
 
-  if (invoice.subscription) {
+  if ('subscription' in invoice && invoice.subscription) {
     // Fetch and update the subscription status
     const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
     await handleSubscriptionUpdate(subscription)
@@ -341,14 +365,14 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   console.log('Processing failed invoice payment:', invoice.id)
   console.log('Invoice details:', {
     id: invoice.id,
-    subscription: invoice.subscription,
+    subscription: 'subscription' in invoice ? invoice.subscription : null,
     customer: invoice.customer,
     amount_due: invoice.amount_due,
     attempt_count: invoice.attempt_count,
     next_payment_attempt: invoice.next_payment_attempt,
   })
 
-  if (invoice.subscription) {
+  if ('subscription' in invoice && invoice.subscription) {
     // Fetch and update the subscription status
     const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
     await handleSubscriptionUpdate(subscription)

@@ -56,10 +56,17 @@ export async function POST(request: NextRequest) {
     }
 
     const invoice = invoices.data[0]
+    
+    if (!invoice) {
+      return NextResponse.json(
+        { success: false, error: 'Invoice not found' },
+        { status: 404 }
+      )
+    }
 
     try {
       // Attempt to pay the invoice
-      const paidInvoice = await stripe.invoices.pay(invoice.id)
+      const paidInvoice = await stripe.invoices.pay(invoice.id!)
 
       return NextResponse.json({
         success: true,
@@ -76,19 +83,23 @@ export async function POST(request: NextRequest) {
       console.error('Payment retry failed:', paymentError)
 
       let errorMessage = 'Payment failed'
-      if (paymentError.code === 'card_declined') {
-        errorMessage = 'Your card was declined. Please update your payment method.'
-      } else if (paymentError.code === 'insufficient_funds') {
-        errorMessage = 'Insufficient funds. Please check your account balance.'
-      } else if (paymentError.code === 'expired_card') {
-        errorMessage = 'Your card has expired. Please update your payment method.'
+      if (paymentError && typeof paymentError === 'object' && 'code' in paymentError) {
+        const stripeError = paymentError as { code: string }
+        if (stripeError.code === 'card_declined') {
+          errorMessage = 'Your card was declined. Please update your payment method.'
+        } else if (stripeError.code === 'insufficient_funds') {
+          errorMessage = 'Insufficient funds. Please check your account balance.'
+        } else if (stripeError.code === 'expired_card') {
+          errorMessage = 'Your card has expired. Please update your payment method.'
+        }
       }
 
+      const stripeError = paymentError && typeof paymentError === 'object' ? paymentError as { code?: string; decline_code?: string } : {}
       return NextResponse.json(
         { 
           error: errorMessage,
-          code: paymentError.code,
-          decline_code: paymentError.decline_code,
+          code: stripeError.code,
+          decline_code: stripeError.decline_code,
         },
         { status: 402 } // Payment Required
       )

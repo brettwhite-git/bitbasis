@@ -4,6 +4,7 @@ import { useState, createContext, useContext } from "react"
 import { BasePortfolioChart } from "./base-chart"
 import { TimeRange } from "@/lib/services/portfolio/types"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui"
+import { usePerformanceData } from "@/lib/hooks/use-performance-data"
 
 // Create context for chart period
 type ChartContextType = {
@@ -59,13 +60,13 @@ export function PerformanceChart({
   width?: string
   className?: string
 }) {
-  const { period } = useChartContext()
-  const { data, loading, error } = usePortfolioData(period)
+  // TODO: Get actual user ID from auth context
+  const { isLoading: loading, error } = usePerformanceData('')
 
   if (error) {
     return (
       <div className="flex items-center justify-center h-60 bg-black/10 rounded-md">
-        <p className="text-red-500">{error.message}</p>
+        <p className="text-red-500">{error}</p>
       </div>
     )
   }
@@ -80,7 +81,7 @@ export function PerformanceChart({
 
   return (
     <BasePortfolioChart
-      data={data}
+      data={[]} // TODO: Convert performance data to PortfolioDataPoint format
       height={height}
       width={width}
       className={className}

@@ -190,7 +190,7 @@ export async function POST(request: Request) {
           break;
 
         default:
-          throw new Error(`Unsupported transaction type: ${transaction.type}`);
+          throw new Error(`Unsupported transaction type: ${(transaction as { type: string }).type}`);
       }
 
       return dbTransaction;

@@ -17,8 +17,9 @@ export { CompoundGrowth } from './performance/compound-growth';
 export { ReturnsTable } from './performance/returns-table';
 
 // Export tax components
-export { CostBasisComparison } from './tax/cost-basis-comparison';
-export { TaxLiability } from './tax/tax-liability';
+// TODO: Re-enable when tax components are implemented
+// export { CostBasisComparison } from './tax/cost-basis-comparison';
+// export { TaxLiability } from './tax/tax-liability';
 
 // Export wrappers
 export { PortfolioMetricsWrapper } from './portfolio-metrics-wrapper';

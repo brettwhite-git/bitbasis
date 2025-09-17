@@ -146,7 +146,7 @@ export function InvestmentChart({ chartData, title, bitcoinUnit, showInflationAd
           }
         }
       },
-      tooltip: createInvestmentAccumulationTooltipConfig(chartData, bitcoinUnit),
+      tooltip: createInvestmentAccumulationTooltipConfig(chartData as Record<string, unknown>[] | undefined, bitcoinUnit),
     },
   };
 
@@ -197,7 +197,8 @@ export function InvestmentChart({ chartData, title, bitcoinUnit, showInflationAd
       <div className="flex-1">
         <ReactChart
           type="bar"
-          options={chartOptions}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          options={chartOptions as any}
           data={chartConfig as ChartData<'bar'>}
           height={"100%"}
         />

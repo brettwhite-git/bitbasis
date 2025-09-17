@@ -15,7 +15,7 @@ import {
   ChartData,
 } from "chart.js"
 import { Line } from "react-chartjs-2"
-import { PortfolioDataPoint } from "@/lib/services/portfolio/unifiedPortfolioDataService"
+import { PortfolioDataPoint } from "@/lib/services/portfolio/types"
 
 // Register ChartJS components
 ChartJS.register(

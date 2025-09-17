@@ -290,7 +290,8 @@ export function calculateProjection(params: CalculateProjectionParams): Projecti
   }
 
   // Add final data point if not already included
-  if (dataPoints.length > 0 && dataPoints[dataPoints.length - 1].month < projectionPeriodMonths) {
+  const lastDataPoint = dataPoints[dataPoints.length - 1];
+  if (dataPoints.length > 0 && lastDataPoint && lastDataPoint.month < projectionPeriodMonths) {
     dataPoints.push({ 
       month: projectionPeriodMonths, 
       nominalValue: nominalValueAtPeriodEnd, 

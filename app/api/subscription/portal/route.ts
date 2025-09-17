@@ -11,8 +11,11 @@ async function ensurePortalConfiguration() {
     const configurations = await stripe.billingPortal.configurations.list({ limit: 1 })
     
     if (configurations.data.length > 0) {
-      console.log('✅ Portal configuration already exists')
-      return configurations.data[0].id
+      const existingConfig = configurations.data[0]
+      if (existingConfig) {
+        console.log('✅ Portal configuration already exists')
+        return existingConfig.id
+      }
     }
 
     // Create a default configuration
@@ -116,21 +119,24 @@ export async function POST(request: NextRequest) {
         })
 
         if (customers.data.length > 0) {
-          customerId = customers.data[0].id
-          console.log('✅ Found Stripe customer by email:', customerId)
-          
-          // Save the customer ID to our database
-          const { error: upsertError } = await supabase
-            .from('customers')
-            .upsert({
-              id: user.id,
-              stripe_customer_id: customerId,
-            })
-          
-          if (upsertError) {
-            console.log('Error saving customer to database:', upsertError.message)
-          } else {
-            console.log('✅ Customer saved to database')
+          const existingCustomer = customers.data[0]
+          if (existingCustomer) {
+            customerId = existingCustomer.id
+            console.log('✅ Found Stripe customer by email:', customerId)
+            
+            // Save the customer ID to our database
+            const { error: upsertError } = await supabase
+              .from('customers')
+              .upsert({
+                id: user.id,
+                stripe_customer_id: customerId,
+              })
+            
+            if (upsertError) {
+              console.log('Error saving customer to database:', upsertError.message)
+            } else {
+              console.log('✅ Customer saved to database')
+            }
           }
         } else {
           console.log('No Stripe customer found, creating new one...')
