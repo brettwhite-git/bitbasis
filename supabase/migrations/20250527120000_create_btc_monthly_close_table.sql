@@ -19,10 +19,18 @@ CREATE INDEX IF NOT EXISTS idx_btc_monthly_close_date ON public.btc_monthly_clos
 ALTER TABLE public.btc_monthly_close ENABLE ROW LEVEL SECURITY;
 
 -- Create policy to allow read access to all authenticated users
-CREATE POLICY IF NOT EXISTS "Allow read access to monthly close data" 
-ON public.btc_monthly_close FOR SELECT 
-TO authenticated 
-USING (true);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'btc_monthly_close' 
+    AND policyname = 'Allow read access to monthly close data'
+  ) THEN
+    CREATE POLICY "Allow read access to monthly close data" 
+    ON public.btc_monthly_close FOR SELECT 
+    TO authenticated 
+    USING (true);
+  END IF;
+END $$;
 
 -- Add comments for documentation
 COMMENT ON TABLE public.btc_monthly_close IS 'Bitcoin monthly OHLC data aggregated from daily prices';
