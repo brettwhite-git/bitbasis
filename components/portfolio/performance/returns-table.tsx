@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/tooltip"
 import { useSupabase } from "@/components/providers/supabase-provider"
 import { calculateCostBasis } from "@/lib/core/portfolio/cost-basis"
+import { UnifiedTransaction } from "@/types/transactions"
 
 type CostBasisResult = {
   totalCostBasis: number
@@ -174,8 +175,18 @@ export function ReturnsTable() {
         const currentPrice = priceResult.data.price_usd
         const transactions = transactionsResult.data || []
 
+        // Filter and validate transaction types to match the UnifiedTransaction interface
+        const validTransactions = transactions.filter(
+          (transaction): transaction is UnifiedTransaction => 
+            (transaction.type === 'buy' || transaction.type === 'sell' || 
+             transaction.type === 'deposit' || transaction.type === 'withdrawal' || 
+             transaction.type === 'interest') &&
+            typeof transaction.date === 'string' &&
+            typeof transaction.id === 'string'
+        )
+
         // Transform transactions to legacy order format
-        const legacyOrders = transformTransactionsToLegacyOrders(transactions)
+        const legacyOrders = transformTransactionsToLegacyOrders(validTransactions)
 
         // 3. Calculate results for each method using the transformed data
         const fifo = await calculateCostBasis(user.id, 'FIFO', legacyOrders, currentPrice)

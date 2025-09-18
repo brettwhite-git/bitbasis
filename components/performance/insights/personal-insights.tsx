@@ -8,7 +8,7 @@ import { InvestmentInsights } from "./investment-insights";
 import { ReturnsOverview } from "../overview/exports";
 import { DrawdownMetrics } from "./drawdown-metrics";
 // import { PerformanceMetrics } from "@/lib/core/portfolio/types";
-import { PerformanceData } from "@/hooks/usePerformanceData";
+import { PerformanceData } from "@/lib/hooks/use-performance-data";
 import { UnifiedTransaction } from "@/types/transactions";
 import { Skeleton } from "@/components/ui/skeleton";
 

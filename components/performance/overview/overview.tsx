@@ -60,7 +60,6 @@ export function PerformanceOverview({ user }: PerformanceOverviewProps) {
         <TabsContent value="distribution">
           <Suspense fallback={<TabContentSkeleton />}>
             <HodlDistribution
-              performance={performanceData.performance}
               isLoading={performanceData.isLoading}
             />
           </Suspense>

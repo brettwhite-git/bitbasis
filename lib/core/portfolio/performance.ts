@@ -10,21 +10,8 @@ import {
   calculateCAGR 
 } from '@/lib/utils/portfolio-utils'
 
-// Unified Transaction type matching the new schema
-interface UnifiedTransaction {
-  id: number
-  date: string
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
-  sent_amount: number | null
-  sent_currency: string | null
-  received_amount: number | null
-  received_currency: string | null
-  fee_amount: number | null
-  fee_currency: string | null
-  price: number | null
-  from_address_name: string | null
-  to_address_name: string | null
-}
+// Import the unified transaction type from types
+import { UnifiedTransaction } from '@/types/transactions'
 
 /**
  * Calculates HODL time as days since last sell, or days since first buy if no sells

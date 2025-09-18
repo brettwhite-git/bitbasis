@@ -89,7 +89,7 @@ const options: ChartOptions<"bar"> = {
       ticks: {
         color: "#9CA3AF",
         callback: function(value) {
-          return `${value.toFixed(4)} BTC`
+          return `${Number(value).toFixed(4)} BTC`
         },
       },
     },
@@ -125,7 +125,15 @@ export function HodlAgeDistribution() {
         if (error) throw error
 
         if (transactions) {
-          const calculatedData = calculateHodlAgeDistribution(transactions)
+          // Filter and validate transaction types to match the Transaction interface
+          const validTransactions = transactions.filter(
+            (transaction): transaction is Transaction => 
+              transaction.type === 'buy' &&
+              typeof transaction.date === 'string' &&
+              typeof transaction.received_amount === 'number'
+          )
+          
+          const calculatedData = calculateHodlAgeDistribution(validTransactions)
           setHodlData(calculatedData)
         }
       } catch (err: unknown) {

@@ -188,7 +188,16 @@ export function BitcoinHoldingsWaterfall() {
       }
 
       if (transactions && transactions.length > 0) {
-        const calculatedData = calculateBitcoinByYear(transactions)
+        // Filter and validate transaction types to match the Transaction interface
+        const validTransactions = transactions.filter(
+          (transaction): transaction is Transaction => 
+            (transaction.type === 'buy' || transaction.type === 'sell') &&
+            typeof transaction.date === 'string' &&
+            typeof transaction.sent_amount === 'number' &&
+            typeof transaction.received_amount === 'number'
+        )
+        
+        const calculatedData = calculateBitcoinByYear(validTransactions)
         setYearlyHoldings(calculatedData)
         
         // Convert to waterfall data format
