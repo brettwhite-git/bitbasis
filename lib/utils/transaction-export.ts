@@ -74,7 +74,7 @@ export async function importTransactionsFromCSV(file: File): Promise<Partial<Uni
     // This will need additional processing to map CSV fields to transaction fields
     // and validate the data before returning
     
-    return rawData.map((row: any) => {
+    return (rawData as Record<string, unknown>[]).map((row: Record<string, unknown>) => {
       // Basic mapping of fields - this needs enhancement based on actual CSV format
       return {
         // Map fields and convert types as needed

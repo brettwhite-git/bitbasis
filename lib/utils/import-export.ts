@@ -101,13 +101,17 @@ export function importFromCSV<T = unknown>(
     }
 
     // Merge with Papa Parse expected options
-    const parseOptions: Papa.ParseConfig = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parseOptions: any = {
       ...opts.papaParseOptions,
-      complete: (results) => {
-        resolve(results.data as T[])
-      },
-      error: (error) => {
-        reject(error)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      complete: (results: any) => {
+        if (results.errors && results.errors.length > 0) {
+          const error = results.errors[0]
+          reject(new Error(error?.message || 'CSV parsing error'))
+        } else {
+          resolve(results.data as T[])
+        }
       }
     }
 

@@ -2,13 +2,20 @@ import { NextResponse } from 'next/server'
 import FormData from 'form-data'
 import Mailgun from 'mailgun.js'
 
-// Initialize Mailgun
-const mailgun = new Mailgun(FormData)
-const mg = mailgun.client({
-  username: 'api',
-  key: process.env.MAILGUN_API_KEY || '',
-  url: "https://api.mailgun.net",
-})
+// Lazy initialize Mailgun client
+function getMailgunClient() {
+  const apiKey = process.env.MAILGUN_API_KEY
+  if (!apiKey) {
+    throw new Error('MAILGUN_API_KEY environment variable is required')
+  }
+  
+  const mailgun = new Mailgun(FormData)
+  return mailgun.client({
+    username: 'api',
+    key: apiKey,
+    url: "https://api.mailgun.net",
+  })
+}
 
 export async function POST(request: Request) {
   try {
@@ -60,6 +67,7 @@ ${message}
     }
 
     // Send email using Mailgun
+    const mg = getMailgunClient()
     await mg.messages.create(process.env.MAILGUN_DOMAIN || '', emailData)
 
     return NextResponse.json(
