@@ -1,8 +1,11 @@
 import { 
-  Order, 
   BTCHolding, 
   CostBasisMethodResult 
 } from './types'
+import { UnifiedTransaction } from '@/types/transactions'
+
+// Using UnifiedTransaction as Order type
+type Order = UnifiedTransaction
 
 // Shared Tax Rates (Consider making these configurable or constants)
 const SHORT_TERM_TAX_RATE = 0.37 // Updated placeholder ST rate
@@ -35,11 +38,10 @@ export async function calculateCostBasis(
     oneYearAgoForProportion.setFullYear(oneYearAgoForProportion.getFullYear() - 1)
 
     orders.forEach(order => {
-      if (order.type === 'buy' && order.received_btc_amount) {
-        const amount = order.received_btc_amount
-        runningBalance += amount
-      } else if (order.type === 'sell' && order.sell_btc_amount) {
-        runningBalance -= order.sell_btc_amount
+      if (order.type === 'buy' && order.received_amount && order.received_currency === 'BTC') {
+        runningBalance += order.received_amount
+      } else if (order.type === 'sell' && order.sent_amount && order.sent_currency === 'BTC') {
+        runningBalance -= order.sent_amount
       }
     })
 
@@ -51,14 +53,14 @@ export async function calculateCostBasis(
 
     // Populate holdings only from buy orders
     orders.forEach(order => {
-      if (order.type === 'buy' && order.received_btc_amount && order.buy_fiat_amount && order.price != null) { // Ensure price exists
+      if (order.type === 'buy' && order.received_amount && order.received_currency === 'BTC' && order.sent_amount && order.sent_currency === 'USD' && order.price != null) {
         // Calculate cost basis per buy, including fees
-        const fee = (order.service_fee && order.service_fee_currency === 'USD') ? order.service_fee : 0
-        const costBasisPerBuy = order.buy_fiat_amount + fee
+        const fee = (order.fee_amount && order.fee_currency === 'USD') ? order.fee_amount : 0
+        const costBasisPerBuy = order.sent_amount + fee
 
         btcHoldings.push({
           date: order.date,
-          amount: order.received_btc_amount,
+          amount: order.received_amount,
           costBasis: costBasisPerBuy,
           pricePerCoin: order.price // Store price per coin at purchase
         })
@@ -87,11 +89,11 @@ export async function calculateCostBasis(
 
     // Process only sell transactions against the sorted holdings
     orders.forEach(order => {
-      if (order.type === 'sell' && order.sell_btc_amount && order.received_fiat_amount) {
-        let remainingSellAmount = order.sell_btc_amount
+      if (order.type === 'sell' && order.sent_amount && order.sent_currency === 'BTC' && order.received_amount && order.received_currency === 'USD') {
+        let remainingSellAmount = order.sent_amount
         // Calculate sell price safely
-        const sellPrice = order.sell_btc_amount > 0 
-            ? order.received_fiat_amount / order.sell_btc_amount
+        const sellPrice = order.sent_amount > 0 
+            ? order.received_amount / order.sent_amount
             : 0
 
         while (remainingSellAmount > 0 && holdingsToProcess.length > 0) {

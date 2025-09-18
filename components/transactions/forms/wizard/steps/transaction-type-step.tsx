@@ -227,7 +227,7 @@ export function TransactionTypeStep() {
             key={group.id}
             group={group}
             isSelected={selectedGroup === group.id}
-            selectedSubType={selectedSubType}
+            selectedSubType={selectedSubType ?? undefined}
             onSelect={handleGroupSelect}
             onSubTypeSelect={handleSubTypeSelect}
           />

@@ -29,50 +29,38 @@ export function useTransactions() {
 
         if (transactionsError) throw transactionsError
 
-        // Map database transactions to unified format
-        const mappedTransactions = (transactionsData || []).map(tx => {
-          // Determine primary BTC amount based on transaction type
-          let btc_amount: number | null = null
-          let usd_value: number | null = null
+        // Use transactions data directly as UnifiedTransaction[]
+        // Database query already returns the correct UnifiedTransaction structure
+        const unifiedTransactions: UnifiedTransaction[] = (transactionsData || []).map(tx => ({
+          id: tx.id,
+          created_at: tx.created_at,
+          updated_at: tx.updated_at,
+          user_id: tx.user_id,
+          date: tx.date,
+          type: tx.type,
+          asset: tx.asset,
+          sent_amount: tx.sent_amount,
+          sent_currency: tx.sent_currency,
+          sent_cost_basis: tx.sent_cost_basis,
+          from_address: tx.from_address,
+          from_address_name: tx.from_address_name,
+          to_address: tx.to_address,
+          to_address_name: tx.to_address_name,
+          received_amount: tx.received_amount,
+          received_currency: tx.received_currency,
+          received_cost_basis: tx.received_cost_basis,
+          fee_amount: tx.fee_amount,
+          fee_currency: tx.fee_currency,
+          fee_cost_basis: tx.fee_cost_basis,
+          realized_return: tx.realized_return,
+          fee_realized_return: tx.fee_realized_return,
+          transaction_hash: tx.transaction_hash,
+          comment: tx.comment,
+          price: tx.price,
+          csv_upload_id: tx.csv_upload_id
+        }))
 
-          switch (tx.type) {
-            case 'buy':
-              btc_amount = tx.received_amount
-              usd_value = tx.sent_amount
-              break
-            case 'sell':
-              btc_amount = tx.sent_amount
-              usd_value = tx.received_amount
-              break
-            case 'deposit':
-              btc_amount = tx.received_amount
-              usd_value = tx.received_amount && tx.price ? tx.received_amount * tx.price : null
-              break
-            case 'withdrawal':
-              btc_amount = tx.sent_amount
-              usd_value = tx.sent_amount && tx.price ? tx.sent_amount * tx.price : null
-              break
-            default:
-              btc_amount = tx.received_amount || tx.sent_amount
-              usd_value = null
-          }
-
-          return {
-            id: `tx-${tx.id}`,
-            date: tx.date,
-            type: tx.type as 'buy' | 'sell' | 'deposit' | 'withdrawal',
-            asset: tx.asset,
-            btc_amount,
-            usd_value,
-            fee_usd: tx.fee_currency === 'USD' ? tx.fee_amount : null,
-            price_at_tx: tx.price,
-            exchange: tx.from_address_name || tx.to_address_name,
-            network_fee_btc: tx.fee_currency === 'BTC' ? tx.fee_amount : null,
-            txid: tx.transaction_hash
-          }
-        })
-
-        setTransactions(mappedTransactions)
+        setTransactions(unifiedTransactions)
       } catch (err: unknown) {
         console.error('Error fetching transactions:', err)
         setError(err instanceof Error ? err.message : 'Failed to load transactions')
@@ -99,50 +87,37 @@ export function useTransactions() {
 
       if (transactionsError) throw transactionsError
 
-      // Map database transactions to unified format
-      const mappedTransactions = (transactionsData || []).map(tx => {
-        // Determine primary BTC amount based on transaction type
-        let btc_amount: number | null = null
-        let usd_value: number | null = null
+      // Use transactions data directly as UnifiedTransaction[] 
+      const unifiedTransactions: UnifiedTransaction[] = (transactionsData || []).map(tx => ({
+        id: tx.id,
+        created_at: tx.created_at,
+        updated_at: tx.updated_at,
+        user_id: tx.user_id,
+        date: tx.date,
+        type: tx.type,
+        asset: tx.asset,
+        sent_amount: tx.sent_amount,
+        sent_currency: tx.sent_currency,
+        sent_cost_basis: tx.sent_cost_basis,
+        from_address: tx.from_address,
+        from_address_name: tx.from_address_name,
+        to_address: tx.to_address,
+        to_address_name: tx.to_address_name,
+        received_amount: tx.received_amount,
+        received_currency: tx.received_currency,
+        received_cost_basis: tx.received_cost_basis,
+        fee_amount: tx.fee_amount,
+        fee_currency: tx.fee_currency,
+        fee_cost_basis: tx.fee_cost_basis,
+        realized_return: tx.realized_return,
+        fee_realized_return: tx.fee_realized_return,
+        transaction_hash: tx.transaction_hash,
+        comment: tx.comment,
+        price: tx.price,
+        csv_upload_id: tx.csv_upload_id
+      }))
 
-        switch (tx.type) {
-          case 'buy':
-            btc_amount = tx.received_amount
-            usd_value = tx.sent_amount
-            break
-          case 'sell':
-            btc_amount = tx.sent_amount
-            usd_value = tx.received_amount
-            break
-          case 'deposit':
-            btc_amount = tx.received_amount
-            usd_value = tx.received_amount && tx.price ? tx.received_amount * tx.price : null
-            break
-          case 'withdrawal':
-            btc_amount = tx.sent_amount
-            usd_value = tx.sent_amount && tx.price ? tx.sent_amount * tx.price : null
-            break
-          default:
-            btc_amount = tx.received_amount || tx.sent_amount
-            usd_value = null
-        }
-
-        return {
-          id: `tx-${tx.id}`,
-          date: tx.date,
-          type: tx.type as 'buy' | 'sell' | 'deposit' | 'withdrawal',
-          asset: tx.asset,
-          btc_amount,
-          usd_value,
-          fee_usd: tx.fee_currency === 'USD' ? tx.fee_amount : null,
-          price_at_tx: tx.price,
-          exchange: tx.from_address_name || tx.to_address_name,
-          network_fee_btc: tx.fee_currency === 'BTC' ? tx.fee_amount : null,
-          txid: tx.transaction_hash
-        }
-      })
-
-      setTransactions(mappedTransactions)
+      setTransactions(unifiedTransactions)
     } catch (err: unknown) {
       console.error('Error refetching transactions:', err)
       setError(err instanceof Error ? err.message : 'Failed to refresh transactions')

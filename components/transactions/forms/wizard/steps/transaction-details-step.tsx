@@ -55,7 +55,7 @@ function DynamicField({ field, value, onChange, error }: DynamicFieldProps) {
               
               // Allow empty input
               if (inputValue === '') {
-                onChange(null)
+                onChange(undefined)
                 return
               }
               
@@ -99,7 +99,7 @@ function DynamicField({ field, value, onChange, error }: DynamicFieldProps) {
             {field.label}
             {field.required && <span className="text-red-400 ml-1">*</span>}
           </Label>
-          <Select value={value || ''} onValueChange={onChange}>
+          <Select value={value?.toString() || ''} onValueChange={onChange}>
             <SelectTrigger className={cn(baseClasses, error && "border-red-500")}>
               <SelectValue placeholder={field.placeholder} />
             </SelectTrigger>
@@ -130,7 +130,7 @@ function DynamicField({ field, value, onChange, error }: DynamicFieldProps) {
           <Textarea
             id={field.name}
             placeholder={field.placeholder}
-            value={value || ''}
+            value={value?.toString() || ''}
             onChange={(e) => onChange(e.target.value)}
             className={cn(baseClasses, error && "border-red-500 focus:border-red-500")}
             rows={3}
@@ -155,7 +155,7 @@ function DynamicField({ field, value, onChange, error }: DynamicFieldProps) {
             id={field.name}
             type="text"
             placeholder={field.placeholder}
-            value={value || ''}
+            value={value?.toString() || ''}
             onChange={(e) => onChange(e.target.value)}
             className={cn(baseClasses, error && "border-red-500 focus:border-red-500")}
           />
@@ -308,8 +308,8 @@ export function TransactionDetailsStep() {
               <DynamicField
                 key={field.name}
                 field={field}
-                value={watchedValues[field.name as keyof NewTransaction]}
-                onChange={(value) => setValue(field.name as keyof NewTransaction, value)}
+                value={watchedValues[field.name as keyof NewTransaction] ?? undefined}
+                onChange={(value) => setValue(field.name as keyof NewTransaction, typeof value === 'boolean' ? (value ? 'true' : 'false') : value)}
                 error={formErrors[field.name as keyof NewTransaction]?.message}
               />
             ))}

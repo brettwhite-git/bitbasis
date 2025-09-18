@@ -74,7 +74,8 @@ export function CommonTransactionFields({
                     placeholder="0.0001"
                     className="bg-gray-800 border-gray-700 text-white h-10 text-base"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || null)}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
                   />
                 </FormControl>
                 <FormMessage />

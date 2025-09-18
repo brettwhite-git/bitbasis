@@ -5,11 +5,7 @@ import {
   CircleArrowDown, 
   CircleArrowUp 
 } from "lucide-react";
-
-/**
- * Transaction types supported by the application
- */
-export type TransactionType = 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest';
+import { TransactionType } from "@/types/transactions";
 
 /**
  * Get the appropriate icon component for a transaction type

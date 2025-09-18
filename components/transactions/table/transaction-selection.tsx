@@ -68,7 +68,7 @@ export function useTransactionSelection() {
 
   // Select all filtered transactions
   const selectAllFiltered = React.useCallback((filteredTransactions: UnifiedTransaction[]) => {
-    const allIds = new Set(filteredTransactions.map(t => t.id))
+    const allIds = new Set(filteredTransactions.map(t => String(t.id)))
     setSelectedTransactions(allIds)
   }, [])
 

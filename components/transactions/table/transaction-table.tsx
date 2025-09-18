@@ -519,16 +519,16 @@ export function TransactionTable() {
             <TransactionHeaders
               sortConfig={sortConfig}
               onSort={handleSort}
-              areAllSelected={paginatedTransactions.length > 0 && paginatedTransactions.every(t => selectionState.selectedTransactions.has(t.id))}
+              areAllSelected={paginatedTransactions.length > 0 && paginatedTransactions.every(t => selectionState.selectedTransactions.has(String(t.id)))}
               onSelectAll={() => {
-                if (paginatedTransactions.every(t => selectionState.selectedTransactions.has(t.id))) {
+                if (paginatedTransactions.every(t => selectionState.selectedTransactions.has(String(t.id)))) {
                   // Deselect all on current page
-                  paginatedTransactions.forEach(t => selectionState.toggleTransaction(t.id))
+                  paginatedTransactions.forEach(t => selectionState.toggleTransaction(String(t.id)))
                 } else {
                   // Select all on current page
                   paginatedTransactions.forEach(t => {
-                    if (!selectionState.selectedTransactions.has(t.id)) {
-                      selectionState.toggleTransaction(t.id)
+                    if (!selectionState.selectedTransactions.has(String(t.id))) {
+                      selectionState.toggleTransaction(String(t.id))
                     }
                   })
                 }
@@ -540,9 +540,9 @@ export function TransactionTable() {
                 <TransactionRow
                   key={transaction.id}
                   transaction={transaction}
-                  isSelected={selectionState.selectedTransactions.has(transaction.id)}
-                  onSelect={() => selectionState.toggleTransaction(transaction.id)}
-                  onDelete={() => handleSingleDelete(transaction.id)}
+                  isSelected={selectionState.selectedTransactions.has(String(transaction.id))}
+                  onSelect={() => selectionState.toggleTransaction(String(transaction.id))}
+                  onDelete={() => handleSingleDelete(String(transaction.id))}
                 />
               ))}
             </TableBody>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/types/supabase'
+import { UnifiedTransaction } from '@/types/transactions'
 import { calculateCostBasis } from '@/lib/core/portfolio/cost-basis'
 
 export type CostBasisMethod = 'FIFO' | 'LIFO' | 'HIFO'
@@ -27,19 +28,7 @@ export interface UseCostBasisCalculationResult {
   refetch: () => void
 }
 
-// Unified transaction type for the new schema
-interface UnifiedTransaction {
-  id: number
-  date: string
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
-  sent_amount: number | null
-  sent_currency: string | null
-  received_amount: number | null
-  received_currency: string | null
-  fee_amount: number | null
-  fee_currency: string | null
-  price: number | null
-}
+// Using canonical UnifiedTransaction from types/transactions.ts
 
 export function useCostBasisCalculation(
   initialMethod: CostBasisMethod = 'HIFO'
@@ -85,23 +74,11 @@ export function useCostBasisCalculation(
         throw new Error('User ID is required')
       }
       
-      // Transform unified transactions to legacy order format for calculateCostBasis function
-      const legacyOrders = transactions
+      // Filter to buy/sell transactions only - calculateCostBasis expects UnifiedTransaction[]
+      const buySelltransactions = transactions
         .filter(tx => tx.type === 'buy' || tx.type === 'sell')
-        .map(tx => ({
-          id: tx.id,
-          date: tx.date,
-          type: tx.type,
-          received_btc_amount: tx.type === 'buy' ? tx.received_amount : null,
-          buy_fiat_amount: tx.type === 'buy' ? tx.sent_amount : null,
-          service_fee: tx.fee_amount && tx.fee_currency === 'USD' ? tx.fee_amount : null,
-          service_fee_currency: tx.fee_currency === 'USD' ? 'USD' : null,
-          sell_btc_amount: tx.type === 'sell' ? tx.sent_amount : null,
-          received_fiat_amount: tx.type === 'sell' ? tx.received_amount : null,
-          price: tx.price
-        }))
       
-      const result = await calculateCostBasis(userId, method, legacyOrders, price)
+      const result = await calculateCostBasis(userId, method, buySelltransactions, price)
       setData(result)
     } catch (err) {
       console.error(`useCostBasisCalculation: Error calculating ${method}:`, err)
@@ -145,7 +122,28 @@ export function useCostBasisCalculation(
       const fetchedTransactions = transactionsResult.data || []
       if (!priceResult.data) throw new Error('No Bitcoin price available')
       
-      setTransactions(fetchedTransactions)
+      // Convert partial data to UnifiedTransaction with required fields
+      const unifiedTransactions: UnifiedTransaction[] = fetchedTransactions.map(tx => ({
+        ...tx,
+        created_at: '', // Not needed for cost basis calculation
+        updated_at: null,
+        user_id: userId,
+        asset: 'BTC',
+        sent_cost_basis: null,
+        from_address: null,
+        from_address_name: null,
+        to_address: null,
+        to_address_name: null,
+        received_cost_basis: null,
+        fee_cost_basis: null,
+        realized_return: null,
+        fee_realized_return: null,
+        transaction_hash: null,
+        comment: null,
+        csv_upload_id: null
+      } as UnifiedTransaction))
+      
+      setTransactions(unifiedTransactions)
       setCurrentPrice(priceResult.data.price_usd)
       
       // Don't call calculateWithMethod here - let the separate useEffect handle it

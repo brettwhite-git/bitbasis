@@ -92,5 +92,5 @@ export function safeMetricValue<T>(
     value = value[part as keyof typeof value];
   }
   
-  return (value !== undefined && value !== null) ? value : defaultValue;
+  return (value !== undefined && value !== null) ? value as T : defaultValue;
 } 

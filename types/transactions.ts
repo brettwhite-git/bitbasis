@@ -1,15 +1,15 @@
-import { TransactionType } from "@/lib/utils/transaction-utils";
-
 /**
- * Represents a unified transaction structure for display in the UI
+ * Unified transaction type that matches the database schema exactly
+ * This is the canonical type - all other UnifiedTransaction definitions should be removed
  */
 export interface UnifiedTransaction {
-  id: string;
+  // Database fields (matching supabase.ts exactly)
+  id: number;
   created_at: string;
-  updated_at: string;
+  updated_at: string | null;
   user_id: string;
   date: string;
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest';
+  type: string; // Allows all transaction types from database
   asset: string;
   sent_amount: number | null;
   sent_currency: string | null;
@@ -32,7 +32,22 @@ export interface UnifiedTransaction {
   csv_upload_id: string | null;
 }
 
-export type TransactionType = UnifiedTransaction['type'];
+// Specific transaction types (for UI type safety)
+export type TransactionType = 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest';
+
+// Type guard to ensure transaction type is valid
+export function isValidTransactionType(type: string): type is TransactionType {
+  return ['buy', 'sell', 'deposit', 'withdrawal', 'interest'].includes(type);
+}
+
+// Type guard for database query results
+export function isUnifiedTransaction(obj: any): obj is UnifiedTransaction {
+  return obj && 
+    typeof obj.id === 'number' &&
+    typeof obj.date === 'string' &&
+    typeof obj.type === 'string' &&
+    typeof obj.user_id === 'string';
+}
 
 /**
  * Configuration for sorting transaction tables

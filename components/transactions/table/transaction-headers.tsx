@@ -5,35 +5,9 @@ import { TableHead, TableRow, TableHeader } from "@/components/ui/table"
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { memo } from "react"
 import { Button } from "@/components/ui/button"
+import { UnifiedTransaction } from "@/types/transactions"
 
-interface UnifiedTransaction {
-  id: string
-  created_at: string
-  updated_at: string
-  user_id: string
-  date: string
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
-  asset: string
-  sent_amount: number | null
-  sent_currency: string | null
-  sent_cost_basis: number | null
-  from_address: string | null
-  from_address_name: string | null
-  to_address: string | null
-  to_address_name: string | null
-  received_amount: number | null
-  received_currency: string | null
-  received_cost_basis: number | null
-  fee_amount: number | null
-  fee_currency: string | null
-  fee_cost_basis: number | null
-  realized_return: number | null
-  fee_realized_return: number | null
-  transaction_hash: string | null
-  comment: string | null
-  price: number | null
-  csv_upload_id: string | null
-}
+// Using canonical UnifiedTransaction from types/transactions.ts
 
 interface SortConfig {
   column: keyof UnifiedTransaction

@@ -36,7 +36,7 @@ export function ConfirmationStep() {
     try {
       const supabase = createClientComponentClient<DatabaseType>()
       
-      const updateData: { status: string; imported_row_count?: number } = { status }
+      const updateData: { status: string; imported_row_count?: number; error_message?: string } = { status }
       if (details?.importedRowCount !== undefined) {
         updateData.imported_row_count = details.importedRowCount
       }
@@ -70,19 +70,19 @@ export function ConfirmationStep() {
       }
 
       // Only include optional fields if they have valid values
-      if (transaction.sent_amount != null && transaction.sent_amount !== '') {
+      if (transaction.sent_amount != null && transaction.sent_amount !== 0) {
         apiTransaction.sent_amount = transaction.sent_amount
       }
       if (transaction.sent_currency && transaction.sent_currency !== '') {
         apiTransaction.sent_currency = transaction.sent_currency
       }
-      if (transaction.received_amount != null && transaction.received_amount !== '') {
+      if (transaction.received_amount != null && transaction.received_amount !== 0) {
         apiTransaction.received_amount = transaction.received_amount
       }
       if (transaction.received_currency && transaction.received_currency !== '') {
         apiTransaction.received_currency = transaction.received_currency
       }
-      if (transaction.fee_amount != null && transaction.fee_amount !== '') {
+      if (transaction.fee_amount != null && transaction.fee_amount !== 0) {
         apiTransaction.fee_amount = transaction.fee_amount
       }
       if (transaction.fee_currency && transaction.fee_currency !== '') {

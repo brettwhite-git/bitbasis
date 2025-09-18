@@ -1,12 +1,7 @@
-import { Database } from '@/types/supabase'
+import { UnifiedTransaction } from '@/types/transactions'
 
-type BaseTransaction = Database['public']['Tables']['transactions']['Row']
-
-interface Order extends BaseTransaction {
-  type: 'buy' | 'sell'
-  received_btc_amount: number | null
-  sell_btc_amount: number | null
-}
+// Using UnifiedTransaction from the canonical type definition
+type Order = UnifiedTransaction
 
 export interface PortfolioMetrics {
   totalBtc: number
@@ -21,14 +16,14 @@ export interface PortfolioMetrics {
 
 /**
  * Calculates total BTC holdings from buy/sell orders only
- * Formula: Sum of (buy orders received BTC - sell orders BTC)
+ * Formula: Sum of (buy orders received_amount - sell orders sent_amount)
  */
 export function calculateTotalBTC(orders: Order[]): number {
   return orders.reduce((total, order) => {
-    if (order.type === 'buy' && order.received_btc_amount) {
-      return total + order.received_btc_amount
-    } else if (order.type === 'sell' && order.sell_btc_amount) {
-      return total - order.sell_btc_amount
+    if (order.type === 'buy' && order.received_amount && order.received_currency === 'BTC') {
+      return total + order.received_amount
+    } else if (order.type === 'sell' && order.sent_amount && order.sent_currency === 'BTC') {
+      return total - order.sent_amount
     }
     return total
   }, 0)
@@ -36,13 +31,13 @@ export function calculateTotalBTC(orders: Order[]): number {
 
 /**
  * Calculates total cost basis from buy orders only
- * Formula: Sum of (buy_fiat_amount + service_fee) for all buy orders
+ * Formula: Sum of (sent_amount + fee_amount) for all buy orders
  */
 export function calculateCostBasis(orders: Order[]): number {
   return orders.reduce((total, order) => {
     if (order.type === 'buy') {
-      const buyAmount = order.buy_fiat_amount || 0
-      const serviceFee = (order.service_fee_currency === 'USD' ? order.service_fee : 0) || 0
+      const buyAmount = (order.sent_amount && order.sent_currency === 'USD') ? order.sent_amount : 0
+      const serviceFee = (order.fee_currency === 'USD' ? order.fee_amount : 0) || 0
       return total + buyAmount + serviceFee
     }
     return total
@@ -51,11 +46,11 @@ export function calculateCostBasis(orders: Order[]): number {
 
 /**
  * Calculates total fees from all orders
- * Formula: Sum of all service fees in USD
+ * Formula: Sum of all fees in USD
  */
 export function calculateTotalFees(orders: Order[]): number {
   return orders.reduce((total, order) => {
-    const serviceFee = (order.service_fee_currency === 'USD' ? order.service_fee : 0) || 0
+    const serviceFee = (order.fee_currency === 'USD' ? order.fee_amount : 0) || 0
     return total + serviceFee
   }, 0)
 }
@@ -76,7 +71,12 @@ export function calculateUnrealizedGains(totalBtc: number, currentPrice: number,
 export function calculateAverageBuyPrice(orders: Order[]): number {
   const buyOrders = orders.filter(order => order.type === 'buy')
   const totalCostBasis = calculateCostBasis(buyOrders)
-  const totalBtcBought = buyOrders.reduce((total, order) => total + (order.received_btc_amount || 0), 0)
+  const totalBtcBought = buyOrders.reduce((total, order) => {
+    if (order.received_amount && order.received_currency === 'BTC') {
+      return total + order.received_amount
+    }
+    return total
+  }, 0)
   
   return totalBtcBought > 0 ? totalCostBasis / totalBtcBought : 0
 }
@@ -110,25 +110,25 @@ export function calculatePortfolioMetrics(
   let totalFees = 0
 
   orders.forEach(order => {
-    if (order.type === 'buy' && order.received_btc_amount) {
+    if (order.type === 'buy' && order.received_amount && order.received_currency === 'BTC') {
       // Add BTC from buy
-      totalBtc += order.received_btc_amount
+      totalBtc += order.received_amount
       
       // Add to cost basis (including fees)
-      if (order.buy_fiat_amount) {
-        totalCostBasis += order.buy_fiat_amount
+      if (order.sent_amount && order.sent_currency === 'USD') {
+        totalCostBasis += order.sent_amount
       }
-      if (order.service_fee && order.service_fee_currency === 'USD') {
-        totalCostBasis += order.service_fee
-        totalFees += order.service_fee
+      if (order.fee_amount && order.fee_currency === 'USD') {
+        totalCostBasis += order.fee_amount
+        totalFees += order.fee_amount
       }
-    } else if (order.type === 'sell' && order.sell_btc_amount) {
+    } else if (order.type === 'sell' && order.sent_amount && order.sent_currency === 'BTC') {
       // Subtract BTC from sell
-      totalBtc -= order.sell_btc_amount
+      totalBtc -= order.sent_amount
 
       // Add sell fees to total fees
-      if (order.service_fee && order.service_fee_currency === 'USD') {
-        totalFees += order.service_fee
+      if (order.fee_amount && order.fee_currency === 'USD') {
+        totalFees += order.fee_amount
       }
     }
   })
@@ -144,7 +144,12 @@ export function calculatePortfolioMetrics(
   
   // Calculate average buy price using only buy orders
   const buyOrders = orders.filter(order => order.type === 'buy')
-  const totalBtcBought = buyOrders.reduce((total, order) => total + (order.received_btc_amount || 0), 0)
+  const totalBtcBought = buyOrders.reduce((total, order) => {
+    if (order.received_amount && order.received_currency === 'BTC') {
+      return total + order.received_amount
+    }
+    return total
+  }, 0)
   const averageBuyPrice = totalBtcBought > 0 ? totalCostBasis / totalBtcBought : 0
 
   return {

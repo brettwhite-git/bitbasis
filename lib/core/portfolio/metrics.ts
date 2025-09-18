@@ -1,27 +1,12 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
+import { UnifiedTransaction } from '@/types/transactions'
 import { 
   PortfolioMetrics,
   ExtendedPortfolioMetrics
 } from './types'
 
-/**
- * Unified Transaction type for the new schema
- */
-export interface UnifiedTransaction {
-  id: number
-  date: string
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
-  sent_amount: number | null
-  sent_currency: string | null
-  received_amount: number | null
-  received_currency: string | null
-  fee_amount: number | null
-  fee_currency: string | null
-  price: number | null
-  from_address_name: string | null
-  to_address_name: string | null
-}
+// Using canonical UnifiedTransaction from types/transactions.ts
 
 /**
  * Calculates total BTC holdings from buy/sell transactions only

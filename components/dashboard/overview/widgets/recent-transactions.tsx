@@ -14,7 +14,7 @@ import {
 import { formatBTC, formatCurrency } from "@/lib/utils/format"
 import { TransactionBadge } from "@/components/shared/badges"
 import { UnifiedTransaction } from "@/types/transactions"
-import { TransactionType } from "@/lib/utils/transaction-utils"
+import { TransactionType } from "@/types/transactions"
 import { useBitcoinPrice } from "@/lib/hooks"
 import { TransactionAccordion } from "@/components/transactions/display/accordion"
 import { TransactionMobileView } from "@/components/transactions/table"

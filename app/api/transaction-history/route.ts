@@ -97,22 +97,29 @@ export async function DELETE(request: NextRequest) {
     const ownedIds = ownedTransactions?.map(t => t.id) || []
     
     // Check if user owns all requested transactions
-    const unauthorizedIds = validIds.filter(id => !ownedIds.includes(id))
+    // Convert both arrays to strings for consistent comparison since DB returns numbers but client sends strings
+    const ownedIdsStr = ownedIds.map(id => String(id))
+    const validIdsStr = validIds.map(id => String(id))
+    const unauthorizedIds = validIdsStr.filter(id => !ownedIdsStr.includes(id))
     if (unauthorizedIds.length > 0) {
-      console.warn(`User ${session.user.id} attempted to delete unauthorized transactions:`, unauthorizedIds)
+      console.warn(`User ${session.user.id} attempted to delete unauthorized transactions:`, {
+        requestedIds: validIdsStr,
+        ownedIds: ownedIdsStr,
+        unauthorizedIds: unauthorizedIds
+      })
       return NextResponse.json(
         { error: 'You can only delete your own transactions' },
         { status: 403 }
       )
     }
 
-    // Perform the deletion
+    // Perform the deletion using the original numeric IDs
     // RLS policies should also prevent unauthorized deletion, but we've already verified above
     const { error: deleteError, count } = await supabase
       .from('transactions')
       .delete()
       .eq('user_id', session.user.id) // Extra security: ensure user_id matches
-      .in('id', ownedIds)
+      .in('id', ownedIds) // Use original numeric IDs for database query
 
     if (deleteError) {
       console.error('Error deleting transactions:', deleteError)

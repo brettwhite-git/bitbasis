@@ -130,7 +130,7 @@ export class MonthlyPortfolioCalculator {
       data?.forEach((row: { date: string; close: number }) => {
         const date = new Date(row.date)
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-        priceMap.set(monthKey, parseFloat(row.close))
+        priceMap.set(monthKey, row.close)
       })
 
       console.log(`✅ MonthlyCalculator: Fetched ${data?.length || 0} historical prices from btc_monthly_close table`)

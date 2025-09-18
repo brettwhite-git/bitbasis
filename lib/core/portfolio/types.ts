@@ -3,18 +3,10 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { UnifiedTransaction } from '@/types/transactions'
 
 /**
- * Base order type from Supabase schema
+ * Legacy Order type - now using UnifiedTransaction instead
+ * Keeping for backward compatibility during migration
  */
-export type BaseOrder = Database['public']['Tables']['orders']['Row']
-
-/**
- * Enhanced Order interface with specific fields needed for portfolio calculations
- */
-export interface Order extends BaseOrder {
-  type: 'buy' | 'sell'
-  received_btc_amount: number | null
-  sell_btc_amount: number | null
-}
+export type Order = UnifiedTransaction
 
 /**
  * Transaction interface for generic transaction handling

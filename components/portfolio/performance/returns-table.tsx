@@ -28,19 +28,7 @@ type CostBasisResult = {
 type SortField = 'method' | 'totalBtc' | 'costBasis' | 'averageCost' | 'realizedGains' | 'unrealizedGain' | 'unrealizedGainPercent' | 'taxLiabilityST' | 'taxLiabilityLT' | 'totalTaxLiability'
 type SortConfig = { field: SortField, direction: 'asc' | 'desc' }
 
-// Unified transaction type
-interface UnifiedTransaction {
-  id: number
-  date: string
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
-  sent_amount: number | null
-  sent_currency: string | null
-  received_amount: number | null
-  received_currency: string | null
-  fee_amount: number | null
-  fee_currency: string | null
-  price: number | null
-}
+// Using canonical UnifiedTransaction from types/transactions.ts
 
 export function ReturnsTable() {
   const { supabase } = useSupabase()
@@ -118,23 +106,7 @@ export function ReturnsTable() {
     })
   }
 
-  // Transform unified transactions to legacy order format for calculateCostBasis function
-  const transformTransactionsToLegacyOrders = (transactions: UnifiedTransaction[]) => {
-    return transactions
-      .filter(tx => tx.type === 'buy' || tx.type === 'sell')
-      .map(tx => ({
-        id: tx.id,
-        date: tx.date,
-        type: tx.type,
-        received_btc_amount: tx.type === 'buy' ? tx.received_amount : null,
-        buy_fiat_amount: tx.type === 'buy' ? tx.sent_amount : null,
-        service_fee: tx.fee_amount && tx.fee_currency === 'USD' ? tx.fee_amount : null,
-        service_fee_currency: tx.fee_currency === 'USD' ? 'USD' : null,
-        sell_btc_amount: tx.type === 'sell' ? tx.sent_amount : null,
-        received_fiat_amount: tx.type === 'sell' ? tx.received_amount : null,
-        price: tx.price
-      }))
-  }
+  // Legacy transformation function removed - now using UnifiedTransaction directly
 
   useEffect(() => {
     async function loadData() {
@@ -185,13 +157,13 @@ export function ReturnsTable() {
             typeof transaction.id === 'string'
         )
 
-        // Transform transactions to legacy order format
-        const legacyOrders = transformTransactionsToLegacyOrders(validTransactions)
+        // Filter to only buy/sell transactions for cost basis calculation
+        const buyAndSellTransactions = validTransactions.filter(tx => tx.type === 'buy' || tx.type === 'sell')
 
-        // 3. Calculate results for each method using the transformed data
-        const fifo = await calculateCostBasis(user.id, 'FIFO', legacyOrders, currentPrice)
-        const lifo = await calculateCostBasis(user.id, 'LIFO', legacyOrders, currentPrice)
-        const average = await calculateCostBasis(user.id, 'HIFO', legacyOrders, currentPrice)
+        // 3. Calculate results for each method using the unified transactions
+        const fifo = await calculateCostBasis(user.id, 'FIFO', buyAndSellTransactions, currentPrice)
+        const lifo = await calculateCostBasis(user.id, 'LIFO', buyAndSellTransactions, currentPrice)
+        const average = await calculateCostBasis(user.id, 'HIFO', buyAndSellTransactions, currentPrice)
 
         setFifoResults(fifo)
         setLifoResults(lifo)

@@ -22,7 +22,7 @@ import {
 import { formatBTC, formatCurrency } from "@/lib/utils/format"
 import { TransactionAccordion } from "../display/accordion"
 import { TransactionBadge } from "@/components/shared/badges"
-import { TransactionType } from "@/lib/utils/transaction-utils"
+import { TransactionType } from "@/types/transactions"
 import { useEditDrawer } from "@/components/transactions/edit"
 import { UnifiedTransaction } from "@/types/transactions"
 

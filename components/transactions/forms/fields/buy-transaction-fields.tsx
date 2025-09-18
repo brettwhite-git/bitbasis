@@ -89,7 +89,8 @@ export function BuyTransactionFields({ form }: BuyTransactionFieldsProps) {
                   placeholder="40000.00"
                   className="bg-gray-800 border-gray-700 text-white h-10 text-base"
                   {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value) || null)}
+                  value={field.value ?? ''}
+                  onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
                 />
               </FormControl>
               <FormDescription className="text-gray-400 text-xs">

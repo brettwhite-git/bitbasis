@@ -17,8 +17,14 @@ export function PaymentRecoveryBanner() {
 
   if (!isPastDue || !subscriptionData) return null
 
-  const periodEndDate = subscriptionData.period_end_date 
-    ? new Date(subscriptionData.period_end_date as string)
+  // Type assertion for subscription data fields
+  const subscriptionDataWithDates = subscriptionData as typeof subscriptionData & {
+    period_end_date?: string;
+    id?: string;
+  }
+  
+  const periodEndDate = subscriptionDataWithDates.period_end_date 
+    ? new Date(subscriptionDataWithDates.period_end_date)
     : null
 
   const daysLeft = periodEndDate 
@@ -49,7 +55,7 @@ export function PaymentRecoveryBanner() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subscriptionId: subscriptionData.id,
+          subscriptionId: subscriptionDataWithDates.id,
         }),
       })
 

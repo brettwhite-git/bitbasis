@@ -134,7 +134,24 @@ export async function getPerformanceMetrics(
       throw athResult.error
     }
 
-    const transactions = transactionsResult.data || []
+    // Convert partial transaction data to UnifiedTransaction with required fields
+    const transactions: UnifiedTransaction[] = (transactionsResult.data || []).map(tx => ({
+      ...tx,
+      created_at: '', // Not needed for performance calculations
+      updated_at: null,
+      user_id: userId,
+      asset: 'BTC',
+      sent_cost_basis: null,
+      received_cost_basis: null,
+      fee_cost_basis: null,
+      realized_return: null,
+      fee_realized_return: null,
+      from_address: null,
+      to_address: null,
+      transaction_hash: null,
+      comment: null,
+      csv_upload_id: null
+    }))
     if (!priceResult.data) throw new Error('No Bitcoin price data available')
     const currentPrice = priceResult.data.price_usd
     const marketAthPrice = athResult.data?.price_usd ?? 0

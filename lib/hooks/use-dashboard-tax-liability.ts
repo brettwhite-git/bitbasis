@@ -5,20 +5,9 @@ import { useTaxMethod } from '@/providers/tax-method-provider'
 import { calculateTaxLiability } from '@/lib/core/portfolio/tax-calculator'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/types/supabase'
+import { UnifiedTransaction } from '@/types/transactions'
 
-// Use the same UnifiedTransaction interface as the working hook
-interface UnifiedTransaction {
-  id: number
-  date: string
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'
-  sent_amount: number | null
-  sent_currency: string | null
-  received_amount: number | null
-  received_currency: string | null
-  fee_amount: number | null
-  fee_currency: string | null
-  price: number | null
-}
+// Using canonical UnifiedTransaction from types/transactions.ts
 
 interface TaxLiabilityResult {
   shortTermLiability: number
@@ -97,7 +86,28 @@ export function useDashboardTaxLiability(currentPrice: number): TaxLiabilityResu
         console.log('useDashboardTaxLiability: Fetched transactions:', fetchedTransactions.length)
         console.log('useDashboardTaxLiability: Current BTC price:', priceResult.data.price_usd)
         
-        setTransactions(fetchedTransactions)
+        // Convert partial data to UnifiedTransaction with required fields
+        const unifiedTransactions: UnifiedTransaction[] = fetchedTransactions.map(tx => ({
+          ...tx,
+          created_at: '', // Not needed for tax calculation
+          updated_at: null,
+          user_id: userId,
+          asset: 'BTC',
+          sent_cost_basis: null,
+          from_address: null,
+          from_address_name: null,
+          to_address: null,
+          to_address_name: null,
+          received_cost_basis: null,
+          fee_cost_basis: null,
+          realized_return: null,
+          fee_realized_return: null,
+          transaction_hash: null,
+          comment: null,
+          csv_upload_id: null
+        } as UnifiedTransaction))
+        
+        setTransactions(unifiedTransactions)
         setCurrentBtcPrice(priceResult.data.price_usd)
       } catch (err) {
         console.error('useDashboardTaxLiability: Error fetching data:', err)

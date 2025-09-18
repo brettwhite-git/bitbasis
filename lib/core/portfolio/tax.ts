@@ -1,4 +1,4 @@
-import { Order } from './types'
+import { UnifiedTransaction } from '@/types/transactions'
 
 // Tax rates - these should be configurable in a real app
 export const SHORT_TERM_TAX_RATE = 0.37; // 37% for short-term capital gains
@@ -9,7 +9,7 @@ export const LONG_TERM_TAX_RATE = 0.20;  // 20% for long-term capital gains
  * @param orders Array of buy/sell orders
  * @returns Object with short-term and long-term holdings amounts
  */
-export function calculateHoldingsClassification(orders: Order[]): { 
+export function calculateHoldingsClassification(orders: UnifiedTransaction[]): { 
   shortTerm: number, 
   longTerm: number 
 } {
@@ -21,10 +21,10 @@ export function calculateHoldingsClassification(orders: Order[]): {
   
   // Process buy orders first to determine initial holdings
   orders
-    .filter(order => order.type === 'buy' && order.received_btc_amount)
+    .filter(order => order.type === 'buy' && order.received_amount && order.received_currency === 'BTC')
     .forEach(order => {
       const acquisitionDate = new Date(order.date);
-      const amount = order.received_btc_amount || 0;
+      const amount = order.received_amount || 0;
       
       if (acquisitionDate > oneYearAgo) {
         shortTermHoldings += amount;
@@ -35,9 +35,9 @@ export function calculateHoldingsClassification(orders: Order[]): {
   
   // Then process sell orders to reduce holdings proportionally
   orders
-    .filter(order => order.type === 'sell' && order.sell_btc_amount)
+    .filter(order => order.type === 'sell' && order.sent_amount && order.sent_currency === 'BTC')
     .forEach(order => {
-      const sellAmount = order.sell_btc_amount || 0;
+      const sellAmount = order.sent_amount || 0;
       const totalHoldings = shortTermHoldings + longTermHoldings;
       
       if (totalHoldings > 0) {

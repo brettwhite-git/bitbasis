@@ -12,17 +12,27 @@ import { exportToCSV, importFromCSV } from "@/lib/utils/import-export"
  * @returns Formatted object ready for CSV export
  */
 export function formatTransactionForCSV(transaction: UnifiedTransaction) {
+  // Calculate BTC amount based on transaction type
+  const btcAmount = transaction.type === 'buy' || transaction.type === 'deposit' 
+    ? transaction.received_amount 
+    : transaction.sent_amount
+
+  // Calculate USD value based on transaction type  
+  const usdValue = transaction.type === 'buy' || transaction.type === 'withdrawal'
+    ? transaction.sent_amount
+    : transaction.received_amount
+
   return {
     Date: formatDate(transaction.date),
     Type: transaction.type,
     Asset: transaction.asset,
-    "Amount (BTC)": formatBTC(transaction.btc_amount, 8, false),
-    "Price at Tx (USD)": formatCurrency(transaction.price_at_tx),
-    "Value (USD)": formatCurrency(transaction.usd_value),
-    "Fees (USD)": formatCurrency(transaction.fee_usd),
-    Exchange: transaction.exchange || "-",
-    "Fees (BTC)": formatBTC(transaction.network_fee_btc, 8, false),
-    "Transaction ID": transaction.txid || "-"
+    "Amount (BTC)": formatBTC(btcAmount, 8, false),
+    "Price at Tx (USD)": formatCurrency(transaction.price),
+    "Value (USD)": formatCurrency(usdValue),
+    "Fees (USD)": formatCurrency(transaction.fee_currency === 'USD' ? transaction.fee_amount : null),
+    Exchange: transaction.from_address_name || transaction.to_address_name || "-",
+    "Fees (BTC)": formatBTC(transaction.fee_currency === 'BTC' ? transaction.fee_amount : null, 8, false),
+    "Transaction ID": transaction.transaction_hash || "-"
   }
 }
 
@@ -64,7 +74,7 @@ export async function importTransactionsFromCSV(file: File): Promise<Partial<Uni
     // This will need additional processing to map CSV fields to transaction fields
     // and validate the data before returning
     
-    return rawData.map(row => {
+    return rawData.map((row: any) => {
       // Basic mapping of fields - this needs enhancement based on actual CSV format
       return {
         // Map fields and convert types as needed

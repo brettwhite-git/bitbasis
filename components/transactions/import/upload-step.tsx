@@ -100,7 +100,7 @@ export function UploadStep() {
                 error => error.type === 'Delimiter' || error.type === 'Quotes'
               )
               if (criticalErrors.length > 0) {
-                throw new Error(`CSV parsing error: ${criticalErrors[0].message}`)
+                throw new Error(`CSV parsing error: ${criticalErrors[0]?.message || 'Unknown parsing error'}`)
               }
             }
 
@@ -151,7 +151,7 @@ export function UploadStep() {
             setLoadingState('idle')
           }
         },
-        error: (error) => {
+        error: (error: Error) => {
           console.error('Papa Parse error:', error)
           setError(`CSV parsing failed: ${error.message}`)
           setIsLoading(false)
@@ -181,7 +181,7 @@ export function UploadStep() {
   // Handle file input change
   const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
-    if (files && files.length > 0) {
+    if (files && files.length > 0 && files[0]) {
       handleFileSelect(files[0])
     }
   }, [handleFileSelect])
@@ -202,7 +202,7 @@ export function UploadStep() {
     setDragActive(false)
     
     const files = event.dataTransfer.files
-    if (files && files.length > 0) {
+    if (files && files.length > 0 && files[0]) {
       await handleFileSelect(files[0])
     }
   }, [handleFileSelect])

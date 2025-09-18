@@ -6,30 +6,17 @@
 
 import { SupabaseClient } from "@supabase/supabase-js"
 import { Database } from "@/types/supabase"
-import { Order } from "@/lib/core/portfolio/types"
-// MonthlyPortfolioCalculator not used in this service
+import { UnifiedTransaction } from "@/types/transactions"
 import { 
   PortfolioDataService, 
   PortfolioDataPoint, 
   ChartDataOptions, 
-  // SpotPriceData not used
   TimeRange
 } from "./types"
 
-// Define a type for the raw order data from database
-type RawOrderData = {
-  id?: number;
-  date: string;
-  type: string;
-  received_btc_amount: number | null;
-  buy_fiat_amount: number | null;
-  service_fee: number | null;
-  service_fee_currency: string | null;
-  sell_btc_amount: number | null;
-  received_fiat_amount: number | null;
-  price: number | null;
-  [key: string]: unknown;
-};
+// Using UnifiedTransaction as Order type
+type Order = UnifiedTransaction
+type RawOrderData = UnifiedTransaction
 
 export class PortfolioDataServiceImpl implements PortfolioDataService {
   private supabase: SupabaseClient<Database>
@@ -84,8 +71,8 @@ export class PortfolioDataServiceImpl implements PortfolioDataService {
       }
 
       // Normalize and process the data
-      const transactions = this.normalizeTransactionData(rawTransactions || [])
-      const processedData = this.processTransactionsData(transactions, currentPrice)
+      const transactions = this.normalizeOrderData(rawTransactions || [])
+      const processedData = this.processOrdersData(transactions, currentPrice)
       
       // Apply filters and options
       const filteredData = this.filterByTimeRange(processedData, options.timeRange)
@@ -98,30 +85,17 @@ export class PortfolioDataServiceImpl implements PortfolioDataService {
   }
 
   /**
-   * Normalizes raw order data to match the expected Order type
+   * Filters transactions to only include buy/sell orders
    */
   private normalizeOrderData(rawOrders: RawOrderData[]): Order[] {
-    return rawOrders.map(order => {
-      // Convert type to lowercase to match 'buy' | 'sell' type
-      const normalizedType = order.type?.toLowerCase();
-      
+    return rawOrders.filter(order => {
       // Only include 'buy' or 'sell' orders, skip others
-      if (normalizedType !== 'buy' && normalizedType !== 'sell') {
+      if (order.type !== 'buy' && order.type !== 'sell') {
         console.warn(`Skipping order with invalid type: ${order.type}`, order);
-        return null;
+        return false;
       }
-      
-      return {
-        ...order,
-        type: normalizedType as 'buy' | 'sell',
-        // Ensure numeric fields are properly typed
-        received_btc_amount: order.received_btc_amount ?? null,
-        sell_btc_amount: order.sell_btc_amount ?? null,
-        buy_fiat_amount: order.buy_fiat_amount ?? null,
-        service_fee: order.service_fee ?? null,
-        price: order.price ?? 0, // Default to 0 if price is missing
-      };
-    }).filter((order): order is Order => order !== null);
+      return true;
+    });
   }
 
   /**
@@ -195,10 +169,17 @@ export class PortfolioDataServiceImpl implements PortfolioDataService {
       
       // Update portfolio based on order type
       if (order.type === 'buy') {
-        cumulativeBTC += order.received_btc_amount ?? 0;
-        cumulativeCostBasis += (order.buy_fiat_amount ?? 0) + (order.service_fee ?? 0);
+        // For buy orders: received_amount is BTC, sent_amount is USD
+        const btcAmount = (order.received_currency === 'BTC') ? (order.received_amount ?? 0) : 0;
+        const usdAmount = (order.sent_currency === 'USD') ? (order.sent_amount ?? 0) : 0;
+        const feeAmount = (order.fee_currency === 'USD') ? (order.fee_amount ?? 0) : 0;
+        
+        cumulativeBTC += btcAmount;
+        cumulativeCostBasis += usdAmount + feeAmount;
       } else if (order.type === 'sell') {
-        cumulativeBTC -= order.sell_btc_amount ?? 0;
+        // For sell orders: sent_amount is BTC, received_amount is USD
+        const btcAmount = (order.sent_currency === 'BTC') ? (order.sent_amount ?? 0) : 0;
+        cumulativeBTC -= btcAmount;
         // Sells don't add to cost basis in this calculation method
       }
       

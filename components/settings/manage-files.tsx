@@ -135,7 +135,12 @@ export function ManageFilesSettings() {
     try {
       const { data, error } = await getCSVUploads();
       if (error) throw error;
-      setUploads(data || []);
+      // Type assertion for database status field
+      const uploadsWithTypedStatus = (data || []).map(upload => ({
+        ...upload,
+        status: upload.status as 'error' | 'processing' | 'completed' | 'pending'
+      }));
+      setUploads(uploadsWithTypedStatus);
       
       if (isRefresh) {
         toast({ 

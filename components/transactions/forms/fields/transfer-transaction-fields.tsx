@@ -68,7 +68,8 @@ export function TransferTransactionFields({ form, transactionType }: TransferTra
                   placeholder="40000.00"
                   className="bg-gray-800 border-gray-700 text-white h-10 text-base"
                   {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value) || null)}
+                  value={field.value ?? ''}
+                  onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
                 />
               </FormControl>
               <FormDescription className="text-gray-400 text-xs">
@@ -203,8 +204,9 @@ export function TransferTransactionFields({ form, transactionType }: TransferTra
                     placeholder="0.0001"
                     className="bg-gray-800 border-gray-700 text-white h-10 text-base"
                     {...field}
+                    value={field.value ?? ''}
                     onChange={(e) => {
-                      field.onChange(parseFloat(e.target.value) || null)
+                      field.onChange(parseFloat(e.target.value) || undefined)
                       // Set fee currency to BTC automatically for withdrawals
                       form.setValue('fee_currency', 'BTC')
                     }}

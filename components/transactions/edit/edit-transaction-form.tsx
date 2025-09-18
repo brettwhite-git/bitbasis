@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useEditDrawer } from './edit-drawer-provider'
 import { TransactionTypeFields } from '../forms/fields'
+import { TransactionWizardData } from '@/types/add-transaction'
 import { toast } from 'sonner'
 import { UnifiedTransaction } from '@/types/transactions'
 
@@ -16,13 +17,13 @@ const baseTransactionSchema = z.object({
   date: z.string().min(1, "Date is required"),
   type: z.enum(['buy', 'sell', 'deposit', 'withdrawal', 'interest']),
   asset: z.string().default('BTC'),
-  price: z.number().positive("Price must be positive").optional().nullable(),
-  comment: z.string().optional().nullable(),
-  from_address_name: z.string().optional().nullable(),
-  to_address_name: z.string().optional().nullable(),
-  from_address: z.string().optional().nullable(),
-  to_address: z.string().optional().nullable(),
-  transaction_hash: z.string().optional().nullable(),
+  price: z.number().positive("Price must be positive").optional(),
+  comment: z.string().optional(),
+  from_address_name: z.string().optional(),
+  to_address_name: z.string().optional(),
+  from_address: z.string().optional(),
+  to_address: z.string().optional(),
+  transaction_hash: z.string().optional(),
 })
 
 // Type-specific field extensions
@@ -31,8 +32,8 @@ const buyTransactionSchema = baseTransactionSchema.extend({
   sent_currency: z.string().min(1, "Sent currency is required"),
   received_amount: z.number().positive("Received amount must be positive"),
   received_currency: z.string().default('BTC'),
-  fee_amount: z.number().min(0, "Fee cannot be negative").optional().nullable(),
-  fee_currency: z.string().optional().nullable(),
+  fee_amount: z.number().min(0, "Fee cannot be negative").optional(),
+  fee_currency: z.string().optional(),
 })
 
 const sellTransactionSchema = baseTransactionSchema.extend({
@@ -40,17 +41,17 @@ const sellTransactionSchema = baseTransactionSchema.extend({
   sent_currency: z.string().default('BTC'),
   received_amount: z.number().positive("Received amount must be positive"),
   received_currency: z.string().min(1, "Received currency is required"),
-  fee_amount: z.number().min(0, "Fee cannot be negative").optional().nullable(),
-  fee_currency: z.string().optional().nullable(),
+  fee_amount: z.number().min(0, "Fee cannot be negative").optional(),
+  fee_currency: z.string().optional(),
 })
 
 const transferTransactionSchema = baseTransactionSchema.extend({
-  sent_amount: z.number().positive().optional().nullable(),
-  sent_currency: z.string().optional().nullable(),
-  received_amount: z.number().positive().optional().nullable(),
-  received_currency: z.string().optional().nullable(),
-  fee_amount: z.number().min(0, "Fee cannot be negative").optional().nullable(),
-  fee_currency: z.string().optional().nullable(),
+  sent_amount: z.number().positive().optional(),
+  sent_currency: z.string().optional(),
+  received_amount: z.number().positive().optional(),
+  received_currency: z.string().optional(),
+  fee_amount: z.number().min(0, "Fee cannot be negative").optional(),
+  fee_currency: z.string().optional(),
 })
 
 // Dynamic schema based on transaction type
@@ -91,21 +92,21 @@ export function EditTransactionForm({ transaction }: EditTransactionFormProps) {
     resolver: zodResolver(getTransactionSchema(transaction.type)),
     defaultValues: {
       date: transaction.date.slice(0, 16), // Format for datetime-local input
-      type: transaction.type,
+      type: transaction.type as 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest',
       asset: transaction.asset,
-      price: transaction.price,
-      comment: transaction.comment,
-      from_address_name: transaction.from_address_name,
-      to_address_name: transaction.to_address_name,
-      from_address: transaction.from_address,
-      to_address: transaction.to_address,
-      transaction_hash: transaction.transaction_hash,
-      sent_amount: transaction.sent_amount,
-      sent_currency: transaction.sent_currency,
-      received_amount: transaction.received_amount,
-      received_currency: transaction.received_currency,
-      fee_amount: transaction.fee_amount,
-      fee_currency: transaction.fee_currency,
+      price: transaction.price ?? undefined,
+      comment: transaction.comment ?? undefined,
+      from_address_name: transaction.from_address_name ?? undefined,
+      to_address_name: transaction.to_address_name ?? undefined,
+      from_address: transaction.from_address ?? undefined,
+      to_address: transaction.to_address ?? undefined,
+      transaction_hash: transaction.transaction_hash ?? undefined,
+      sent_amount: transaction.sent_amount ?? undefined,
+      sent_currency: transaction.sent_currency ?? undefined,
+      received_amount: transaction.received_amount ?? undefined,
+      received_currency: transaction.received_currency ?? undefined,
+      fee_amount: transaction.fee_amount ?? undefined,
+      fee_currency: transaction.fee_currency ?? undefined,
     },
   })
 
@@ -168,9 +169,9 @@ export function EditTransactionForm({ transaction }: EditTransactionFormProps) {
     <div className="space-y-4 sm:space-y-6">
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
-          <TransactionTypeFields 
-            form={form} 
-            transactionType={transaction.type}
+          <TransactionTypeFields
+            form={form as UseFormReturn<TransactionWizardData>}
+            transactionType={transaction.type as 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'interest'}
           />
           
           {/* Action Buttons */}
