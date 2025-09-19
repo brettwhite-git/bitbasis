@@ -121,7 +121,7 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
                          window.location.hostname === '127.0.0.1';
       
       // Redirect to auth callback first, then to dashboard
-      const redirectUrl = `${window.location.origin}/auth/callback?next=/dashboard`;
+      const redirectUrl = `${window.location.origin}/auth/callback?next=${window.location.origin}/dashboard`;
       
       console.log('Magic link redirect URL:', redirectUrl);
       
