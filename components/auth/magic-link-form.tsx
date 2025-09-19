@@ -10,7 +10,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
 import { Turnstile } from "@marsidev/react-turnstile"
-import { validateTurnstileToken } from "@/lib/captcha"
 import { Icons } from '../icons'
 
 export function MagicLinkForm() {
@@ -49,17 +48,7 @@ export function MagicLinkForm() {
     }
 
     try {
-      // First validate the CAPTCHA token with our backend
-      const isValid = await validateTurnstileToken(captchaToken);
-      
-      if (!isValid) {
-        setError('CAPTCHA validation failed. Please try again.');
-        resetCaptcha();
-        setIsLoading(false);
-        return;
-      }
-      
-      // Then proceed with the magic link sign-in
+      // Proceed with the magic link sign-in - Supabase will handle CAPTCHA validation
       const { error: signInError } = await signInWithMagicLink(email, captchaToken)
       
       if (signInError) {

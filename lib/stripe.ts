@@ -9,6 +9,6 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   appInfo: {
     name: 'BitBasis',
     version: '1.0.0',
-    url: 'https://bitbasis.io',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://bitbasis.io',
   },
 }) 

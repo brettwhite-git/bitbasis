@@ -13,7 +13,6 @@ import { checkEmailExists } from '@/lib/supabase/supabase'
 import { Icons } from '../icons'
 import { Checkbox } from "@/components/ui/checkbox"
 import { Turnstile } from "@marsidev/react-turnstile"
-import { validateTurnstileToken } from "@/lib/captcha"
 
 export function SignUpForm() {
   const { signUp } = useAuth()
@@ -59,16 +58,6 @@ export function SignUpForm() {
     }
 
     try {
-      // First validate the CAPTCHA token with our backend
-      const isValid = await validateTurnstileToken(captchaToken);
-      
-      if (!isValid) {
-        setError('CAPTCHA validation failed. Please try again.');
-        resetCaptcha();
-        setIsLoading(false);
-        return;
-      }
-
       // Check if email exists
       const emailExists = await checkEmailExists(email)
       if (emailExists) {
