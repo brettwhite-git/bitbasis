@@ -291,31 +291,36 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     price_id: priceId,
   })
 
+  // Add detailed logging before database operation
+  const subscriptionData = {
+    id: subscription.id,
+    user_id: userId,
+    status: mapStripeStatusToDbStatus(subscription.status),
+    metadata: subscription.metadata || {},
+    price_id: priceId,
+    quantity: subscription.items.data[0]?.quantity || 1,
+    cancel_at_period_end: subscription.cancel_at_period_end || false,
+    current_period_start: subscription.current_period_start 
+      ? new Date(subscription.current_period_start * 1000).toISOString() 
+      : new Date().toISOString(),
+    current_period_end: subscription.current_period_end 
+      ? new Date(subscription.current_period_end * 1000).toISOString() 
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    created: subscription.created 
+      ? new Date(subscription.created * 1000).toISOString() 
+      : new Date().toISOString(),
+    ended_at: subscription.ended_at ? new Date(subscription.ended_at * 1000).toISOString() : null,
+    cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
+    canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
+    trial_start: subscription.trial_start ? new Date(subscription.trial_start * 1000).toISOString() : null,
+    trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+  }
+
+  console.log('💾 Attempting to upsert subscription with data:', JSON.stringify(subscriptionData, null, 2))
+
   const { error } = await supabaseAdmin
     .from('subscriptions')
-    .upsert({
-      id: subscription.id,
-      user_id: userId,
-      status: mapStripeStatusToDbStatus(subscription.status),
-      metadata: subscription.metadata,
-      price_id: priceId,
-      quantity: subscription.items.data[0]?.quantity || 1,
-      cancel_at_period_end: subscription.cancel_at_period_end,
-      current_period_start: 'current_period_start' in subscription && typeof subscription.current_period_start === 'number'
-        ? new Date(subscription.current_period_start * 1000).toISOString() 
-        : new Date().toISOString(),
-      current_period_end: 'current_period_end' in subscription && typeof subscription.current_period_end === 'number'
-        ? new Date(subscription.current_period_end * 1000).toISOString() 
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now as fallback
-      created: subscription.created 
-        ? new Date(subscription.created * 1000).toISOString() 
-        : new Date().toISOString(),
-      ended_at: subscription.ended_at ? new Date(subscription.ended_at * 1000).toISOString() : null,
-      cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
-      canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
-      trial_start: subscription.trial_start ? new Date(subscription.trial_start * 1000).toISOString() : null,
-      trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-    })
+    .upsert(subscriptionData)
 
   if (error) {
     console.error('Error updating subscription:', error)
