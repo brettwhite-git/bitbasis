@@ -94,18 +94,25 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
     initAuth()
   }, [router, supabase])
 
-  const signUp = async (email: string) => {
+  const signUp = async (email: string, captchaToken?: string) => {
     try {
       // Redirect to auth callback first, then to dashboard
       const redirectUrl = `${window.location.origin}/auth/callback?next=/dashboard`;
       
       console.log('Signup redirect URL:', redirectUrl);
       
+      const options: any = {
+        emailRedirectTo: redirectUrl,
+      }
+      
+      // Add captcha token if provided
+      if (captchaToken) {
+        options.captchaToken = captchaToken
+      }
+      
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: {
-          emailRedirectTo: redirectUrl,
-        },
+        options,
       })
       return { error }
     } catch (error) {
@@ -121,7 +128,7 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
                          window.location.hostname === '127.0.0.1';
       
       // Redirect to auth callback first, then to dashboard
-      const redirectUrl = `${window.location.origin}/auth/callback?next=${window.location.origin}/dashboard`;
+      const redirectUrl = `${window.location.origin}/auth/callback?next=/dashboard`;
       
       console.log('Magic link redirect URL:', redirectUrl);
       

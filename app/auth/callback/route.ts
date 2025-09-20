@@ -24,7 +24,16 @@ export async function GET(request: Request) {
       console.log('✅ Auth code exchanged successfully')
     } else if (token) {
       // Handle magic link token (OTP flow)
-      console.log('🪄 Received magic link token, session should be automatically set')
+      console.log('🪄 Verifying magic link token')
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: token,
+        type: 'email'
+      })
+      if (verifyError) {
+        console.error('❌ Magic link verification failed:', verifyError)
+        throw verifyError
+      }
+      console.log('✅ Magic link verified successfully')
     } else {
       console.log('⚠️ No code or token found in callback')
     }

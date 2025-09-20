@@ -68,7 +68,7 @@ export function SignUpForm() {
       }
 
       // Proceed with sign up
-      const { error: signUpError } = await signUp(email)
+      const { error: signUpError } = await signUp(email, captchaToken)
 
       if (signUpError) {
         if (signUpError.message?.includes('already registered')) {
