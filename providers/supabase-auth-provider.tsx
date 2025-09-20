@@ -12,7 +12,7 @@ type SupabaseAuthProviderProps = {
 
 type AuthContextType = {
   user: User | null
-  signUp: (email: string) => Promise<{ error: any }>
+  signUp: (email: string, captchaToken?: string) => Promise<{ error: any }>
   signInWithMagicLink: (email: string, captchaToken?: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
 }
