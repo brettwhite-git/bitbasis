@@ -188,12 +188,14 @@ export async function POST(request: NextRequest) {
       success_url: successUrl || `${request.nextUrl.origin}/dashboard/success`,
       cancel_url: cancelUrl || `${request.nextUrl.origin}/dashboard/cancel`,
       allow_promotion_codes: true,
-      // Disable automatic tax in development mode
-      ...(process.env.NODE_ENV === 'production' && {
-        automatic_tax: {
-          enabled: true,
-        },
-      }),
+      // Let Stripe collect customer info during checkout
+      billing_address_collection: 'required',
+      // Disable automatic tax - let Stripe handle tax collection during checkout
+      // ...(process.env.NODE_ENV === 'production' && {
+      //   automatic_tax: {
+      //     enabled: true,
+      //   },
+      // }),
       metadata: {
         user_id: user.id,
         price_id: priceId,
