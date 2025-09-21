@@ -291,6 +291,11 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     price_id: priceId,
   })
 
+  // Get period dates from subscription items (where they actually are in Stripe API)
+  const firstItem = subscription.items.data[0]
+  const periodStart = firstItem?.current_period_start || subscription.created || Math.floor(Date.now() / 1000)
+  const periodEnd = firstItem?.current_period_end || (periodStart + 30 * 24 * 60 * 60) // 30 days fallback
+
   // Add detailed logging before database operation
   const subscriptionData = {
     id: subscription.id,
@@ -300,12 +305,8 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     price_id: priceId,
     quantity: subscription.items.data[0]?.quantity || 1,
     cancel_at_period_end: subscription.cancel_at_period_end || false,
-    current_period_start: 'current_period_start' in subscription && typeof subscription.current_period_start === 'number'
-      ? new Date(subscription.current_period_start * 1000).toISOString() 
-      : new Date().toISOString(),
-    current_period_end: 'current_period_end' in subscription && typeof subscription.current_period_end === 'number'
-      ? new Date(subscription.current_period_end * 1000).toISOString() 
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    current_period_start: new Date(periodStart * 1000).toISOString(),
+    current_period_end: new Date(periodEnd * 1000).toISOString(),
     created: subscription.created 
       ? new Date(subscription.created * 1000).toISOString() 
       : new Date().toISOString(),
