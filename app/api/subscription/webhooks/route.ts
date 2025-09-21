@@ -132,6 +132,9 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   console.log('Session metadata:', session.metadata)
   console.log('Session customer:', session.customer)
   console.log('Session subscription:', session.subscription)
+  console.log('Session payment_status:', session.payment_status)
+  console.log('Session amount_total:', session.amount_total)
+  console.log('Session payment_intent:', session.payment_intent)
 
   const userId = session.metadata?.user_id
   if (!userId) {
