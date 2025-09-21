@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation' // useSearchParams not used
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle, Loader2 } from 'lucide-react'
@@ -10,7 +10,7 @@ export default function CheckoutSuccessPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  // const searchParams = useSearchParams()
+  const searchParams = useSearchParams()
   const supabase = createClientComponentClient()
 
   useEffect(() => {
@@ -57,6 +57,12 @@ export default function CheckoutSuccessPage() {
         
         console.log('✅ User authenticated on success page:', user.id)
         
+        // Get URL parameters to check for session info
+        const sessionId = searchParams.get('session_id')
+        const priceId = searchParams.get('price_id') || searchParams.get('priceId')
+        
+        console.log('🔍 URL params - session_id:', sessionId, 'price_id:', priceId)
+        
         // Check if subscription was created successfully
         console.log('🔍 Checking subscription status...')
         const { data: subscription } = await supabase
@@ -70,7 +76,54 @@ export default function CheckoutSuccessPage() {
         if (subscription) {
           console.log('✅ Subscription found:', subscription.status)
         } else {
-          console.log('⚠️ No subscription found yet, but user is authenticated')
+          console.log('⚠️ No subscription found yet, checking if this was a $0 lifetime payment...')
+          
+          // Check if this might be a $0 lifetime payment that didn't trigger webhook
+          const lifetimePriceId = process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID
+          if (sessionId && priceId === lifetimePriceId) {
+            console.log('🎯 Detected potential $0 lifetime payment, creating subscription manually...')
+            
+            try {
+              // Create lifetime subscription manually for $0 payments
+              const { data: newSubscription, error: createError } = await supabase
+                .from('subscriptions')
+                .insert({
+                  id: `lifetime_${user.id}`,
+                  user_id: user.id,
+                  status: 'active',
+                  metadata: {
+                    type: 'lifetime',
+                    checkout_session_id: sessionId,
+                    amount_paid: 0,
+                    promo_applied: true
+                  },
+                  price_id: priceId,
+                  quantity: 1,
+                  cancel_at_period_end: false,
+                  current_period_start: new Date().toISOString(),
+                  current_period_end: new Date('2099-12-31').toISOString(),
+                  created: new Date().toISOString(),
+                  ended_at: null,
+                  cancel_at: null,
+                  canceled_at: null,
+                  trial_start: null,
+                  trial_end: null,
+                })
+                .select()
+                .single()
+              
+              if (createError) {
+                console.error('❌ Error creating manual lifetime subscription:', createError)
+                if (createError.code === '23505') {
+                  console.log('ℹ️ Lifetime subscription already exists')
+                }
+              } else {
+                console.log('✅ Manually created lifetime subscription:', newSubscription.id)
+              }
+            } catch (err) {
+              console.error('❌ Exception creating manual subscription:', err)
+            }
+          }
         }
         
         // Wait a moment for any webhooks to process
