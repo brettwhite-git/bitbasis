@@ -42,6 +42,14 @@ export function TransactionCountDisplay({
   // This respects subscription status (lifetime, active, etc.) from the database
   const shouldShowBadge = subscriptionInfo.should_show_warning
   
+  // For Pro/Lifetime users with unlimited transactions, don't show the component at all
+  const shouldShowComponent = limits.maxTransactions !== Infinity || shouldShowBadge
+  
+  // If user has unlimited access and no warnings needed, hide entire component
+  if (!shouldShowComponent) {
+    return null
+  }
+  
   // Only calculate thresholds if we should show warning (for styling purposes)
   const isWarning = shouldShowBadge && count >= 25 && count < 50
   const isAtLimit = shouldShowBadge && count === 50
