@@ -38,17 +38,14 @@ export function TransactionCountDisplay({
   const formattedCount = TransactionLimitService.formatTransactionCount(count, limits.maxTransactions)
   const progressPercentage = TransactionLimitService.getProgressPercentage(count, limits.maxTransactions)
   
-  // Use database-determined warning logic instead of client-side calculation
-  // This respects subscription status (lifetime, active, etc.) from the database
-  const shouldShowBadge = subscriptionInfo.should_show_warning
-  
-  // For Pro/Lifetime users with unlimited transactions, don't show the component at all
-  const shouldShowComponent = limits.maxTransactions !== Infinity || shouldShowBadge
-  
-  // If user has unlimited access and no warnings needed, hide entire component
-  if (!shouldShowComponent) {
+  // Simple logic: Hide entire component for Pro/Lifetime users
+  // Only show for users with transaction limits (Free/Trialing)
+  if (subscriptionInfo.subscription_status === 'active' || subscriptionInfo.subscription_status === 'lifetime') {
     return null
   }
+  
+  // Use database-determined warning logic for badge display
+  const shouldShowBadge = subscriptionInfo.should_show_warning
   
   // Only calculate thresholds if we should show warning (for styling purposes)
   const isWarning = shouldShowBadge && count >= 25 && count < 50

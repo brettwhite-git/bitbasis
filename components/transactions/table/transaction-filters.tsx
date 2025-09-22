@@ -24,8 +24,6 @@ import { Calendar } from "@/components/ui/calendar"
 import { Search, X, CalendarIcon, CirclePlus } from "lucide-react"
 import { UnifiedTransaction } from '@/types/transactions'
 import { format } from "date-fns"
-import { useSubscription } from "@/lib/hooks"
-import { SubscriptionService } from "@/lib/subscription"
 
 export interface FilterCounts {
   typeCounts: Record<string, number>
@@ -71,17 +69,6 @@ export function TransactionFilters({
   activeFiltersCount,
   resetFilters,
 }: TransactionFiltersProps) {
-  
-  // Get subscription info to determine if transaction count should be shown
-  const { subscriptionInfo, loading } = useSubscription()
-  
-  // Determine if user should see transaction count display
-  const shouldShowTransactionCount = React.useMemo(() => {
-    if (loading || !subscriptionInfo) return false
-    
-    const limits = SubscriptionService.getSubscriptionLimits(subscriptionInfo.subscription_status)
-    return limits.maxTransactions !== Infinity || subscriptionInfo.should_show_warning
-  }, [subscriptionInfo, loading])
   
   // Search input component
   const searchInput = (
@@ -366,12 +353,10 @@ export function TransactionFilters({
         {termFilter}
         {exchangeFilter}
         
-        {/* Transaction Count Display - Only show for users with transaction limits */}
-        {shouldShowTransactionCount && (
-          <div className="flex items-center px-3 py-2 bg-gray-800/50 rounded-md border border-gray-700/50 ml-3">
-            <TransactionCountDisplay showProgress={true} />
-          </div>
-        )}
+        {/* Transaction Count Display */}
+        <div className="flex items-center px-3 py-2 bg-gray-800/50 rounded-md border border-gray-700/50 ml-3">
+          <TransactionCountDisplay showProgress={true} />
+        </div>
         
         {/* Reset filters button */}
         {activeFiltersCount > 0 && (
