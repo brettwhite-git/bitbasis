@@ -49,7 +49,7 @@ export function SubscriptionManagement() {
     const { subscription_status, subscription_data } = subscriptionInfo
     // transaction_count not used in this function
 
-    if (subscription_status === 'active' || subscription_status === 'trialing') {
+    if (subscription_status === 'active') {
       // Check price ID to determine if it's Lifetime or Pro Monthly
       const lifetimePriceId = process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID
       const currentPriceId = subscription_data?.price_id
@@ -77,9 +77,15 @@ export function SubscriptionManagement() {
         }
       }
     } else {
+      // Trialing, free, and all other statuses show as FREE
+      const statusText = subscription_status === 'trialing' ? "Trial Active" : "Active"
+      const description = subscription_status === 'trialing' 
+        ? "Trial period • Limited to 50 transactions"
+        : "Limited to 50 transactions"
+      
       return {
-        status: "Active",
-        description: "Limited to 50 transactions",
+        status: statusText,
+        description: description,
         badge: { text: "FREE", variant: "secondary" as const, icon: null },
         isLifetime: false,
         isPro: false,

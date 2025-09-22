@@ -117,8 +117,8 @@ export class TransactionLimitService {
       const status = await SubscriptionService.getUserSubscriptionStatus(userId)
       const limits = SubscriptionService.getSubscriptionLimits(status.subscription_status)
 
-      // Pro users don't need warnings
-      if (status.subscription_status === 'active' || status.subscription_status === 'trialing') {
+      // Only active and lifetime users don't need warnings (trialing users are treated as free)
+      if (status.subscription_status === 'active' || status.subscription_status === 'lifetime') {
         return {
           shouldShow: false,
           message: '',

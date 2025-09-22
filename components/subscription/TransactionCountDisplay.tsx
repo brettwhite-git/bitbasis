@@ -38,16 +38,19 @@ export function TransactionCountDisplay({
   const formattedCount = TransactionLimitService.formatTransactionCount(count, limits.maxTransactions)
   const progressPercentage = TransactionLimitService.getProgressPercentage(count, limits.maxTransactions)
   
-  // Updated thresholds: warning at 25+, limit at 50+, over limit at 50+
-  const isWarning = count >= 25 && count < 50
-  const isAtLimit = count === 50
-  const isOverLimit = count > 50
-  const shouldShowBadge = isWarning || isAtLimit || isOverLimit
+  // Use database-determined warning logic instead of client-side calculation
+  // This respects subscription status (lifetime, active, etc.) from the database
+  const shouldShowBadge = subscriptionInfo.should_show_warning
+  
+  // Only calculate thresholds if we should show warning (for styling purposes)
+  const isWarning = shouldShowBadge && count >= 25 && count < 50
+  const isAtLimit = shouldShowBadge && count === 50
+  const isOverLimit = shouldShowBadge && count > 50
 
   return (
     <div className="flex items-center gap-3">
-      {/* 1. Progress Bar First */}
-      {showProgress && limits.maxTransactions !== Infinity && (
+      {/* 1. Progress Bar First - Only show for users with transaction limits */}
+      {showProgress && shouldShowBadge && limits.maxTransactions !== Infinity && (
         <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
           <div 
             className={`h-full transition-all duration-300 ${

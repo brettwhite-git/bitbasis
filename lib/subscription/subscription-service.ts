@@ -116,11 +116,12 @@ export class SubscriptionService {
   static getSubscriptionLimits(subscriptionStatus: string): SubscriptionLimits {
     switch (subscriptionStatus) {
       case 'active':
-      case 'trialing':
+      case 'lifetime':
         return {
           maxTransactions: Infinity,
           warningThreshold: Infinity
         }
+      case 'trialing':
       case 'free':
       default:
         return {

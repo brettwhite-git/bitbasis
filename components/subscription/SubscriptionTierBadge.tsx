@@ -50,8 +50,8 @@ export function SubscriptionTierBadge() {
   }
 
   const getTierDisplay = () => {
-    // Check if user has active subscription
-    if (subscriptionInfo.subscription_status === 'active' || subscriptionInfo.subscription_status === 'trialing') {
+    // Check if user has active paid subscription (excluding trialing)
+    if (subscriptionInfo.subscription_status === 'active') {
       // Check if it's a lifetime subscription
       const isLifetime = subscriptionInfo.subscription_data?.metadata?.type === 'lifetime' ||
                         subscriptionInfo.subscription_data?.price_id === process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID
@@ -72,23 +72,24 @@ export function SubscriptionTierBadge() {
         }
       }
     } else {
-        return {
-          label: 'FREE',
-          icon: null,
+      // Trialing, free, and all other statuses show as FREE
+      return {
+        label: 'FREE',
+        icon: null,
         variant: 'secondary' as const,
         useCustomStyle: true,
-          style: {
-            backgroundImage: 'linear-gradient(135deg, #6B7280 0%, #374151 50%, #6B7280 100%)',
-            borderColor: 'rgba(107, 114, 128, 0.5)',
-            color: 'white',
-            boxShadow: '0 4px 12px rgba(107, 114, 128, 0.3)'
-          }
+        style: {
+          backgroundImage: 'linear-gradient(135deg, #6B7280 0%, #374151 50%, #6B7280 100%)',
+          borderColor: 'rgba(107, 114, 128, 0.5)',
+          color: 'white',
+          boxShadow: '0 4px 12px rgba(107, 114, 128, 0.3)'
         }
+      }
     }
   }
 
   const tierInfo = getTierDisplay()
-  const showUpgradeButton = subscriptionInfo.subscription_status === 'free'
+  const showUpgradeButton = subscriptionInfo.subscription_status === 'free' || subscriptionInfo.subscription_status === 'trialing'
 
   return (
     <>
