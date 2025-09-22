@@ -1,4 +1,16 @@
 
+-- Bitcoin Monthly Close Historical Data Reference
+-- 
+-- This file contains all 182 historical BTC monthly close prices from 2010-07-31 to 2025-08-31
+-- Generated on 2025-09-22 during initial system setup
+-- 
+-- ⚠️  PRODUCTION NOTE: This data is now automatically maintained by:
+--     - Cron job: 'update-monthly-btc-close' (runs 59 23 28-31 * *)  
+--     - Edge function: update-monthly-btc-close
+--     - Batch insert function: batch-insert-btc-monthly
+-- 
+-- Usage: For emergency data recovery or reference only
+
 -- Temporarily disable RLS for data population
 ALTER TABLE public.btc_monthly_close DISABLE ROW LEVEL SECURITY;
     

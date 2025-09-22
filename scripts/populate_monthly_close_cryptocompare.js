@@ -6,12 +6,20 @@
  * Fetches historical Bitcoin daily prices from CryptoCompare API
  * and populates the btc_monthly_close table with month-end close prices.
  * 
+ * ⚠️  PRODUCTION NOTE: The btc_monthly_close table is now automatically 
+ *     maintained by a cron job + edge function. This script is kept for:
+ *     - Emergency data recovery
+ *     - Historical data backfill for new date ranges
+ *     - Reference implementation for other cryptocurrencies
+ * 
  * Features:
  * - Efficient API batching (2000 days per request)
  * - Error recovery and checkpointing
  * - Data validation and gap detection
  * - Comprehensive logging
  * - Rate limiting respect
+ * 
+ * Usage: node scripts/populate_monthly_close_cryptocompare.js
  */
 
 const https = require('https');
