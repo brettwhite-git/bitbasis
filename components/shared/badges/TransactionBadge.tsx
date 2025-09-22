@@ -61,7 +61,7 @@ export function TransactionBadge({ type, className }: TransactionBadgeProps) {
     <Badge
       variant="outline"
       className={cn(
-        "inline-flex items-center justify-center rounded-full border shadow-sm transition-all duration-200 px-3 py-1 gap-1.5 font-medium text-sm",
+        "inline-flex items-center justify-center rounded-full border shadow-sm transition-all duration-200 px-3 py-1 gap-1.5 font-medium text-sm w-[125px]",
         className
       )}
       style={getInlineStyles()}
