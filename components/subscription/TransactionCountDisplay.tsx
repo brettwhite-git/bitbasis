@@ -53,7 +53,7 @@ export function TransactionCountDisplay({
   const isOverLimit = shouldShowBadge && count > 50
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center px-3 py-2 bg-gray-800/50 rounded-md border border-gray-700/50 ml-3 gap-3">
       {/* 1. Progress Bar First - Only show for users with transaction limits */}
       {showProgress && shouldShowBadge && limits.maxTransactions !== Infinity && (
         <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">

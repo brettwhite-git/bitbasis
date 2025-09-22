@@ -353,10 +353,8 @@ export function TransactionFilters({
         {termFilter}
         {exchangeFilter}
         
-        {/* Transaction Count Display */}
-        <div className="flex items-center px-3 py-2 bg-gray-800/50 rounded-md border border-gray-700/50 ml-3">
-          <TransactionCountDisplay showProgress={true} />
-        </div>
+        {/* Transaction Count Display - Component handles its own styling and visibility */}
+        <TransactionCountDisplay showProgress={true} />
         
         {/* Reset filters button */}
         {activeFiltersCount > 0 && (
