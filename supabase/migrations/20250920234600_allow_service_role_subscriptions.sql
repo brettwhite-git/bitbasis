@@ -1,6 +1,9 @@
 -- Allow service role to manage subscriptions for webhook processing
 -- This enables Stripe webhooks to create/update subscription records
 
+-- Drop existing policy if it exists
+DROP POLICY IF EXISTS "Service role can manage subscriptions" ON public.subscriptions;
+
 CREATE POLICY "Service role can manage subscriptions" 
 ON public.subscriptions 
 FOR ALL 

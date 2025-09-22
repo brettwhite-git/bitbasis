@@ -153,7 +153,7 @@ export function calculateBTCHoldingsAtDate(
  */
 export async function getHistoricalBTCPrice(
   targetDate: Date,
-  supabase: any
+  supabase: any // eslint-disable-line @typescript-eslint/no-explicit-any
 ): Promise<number | null> {
   try {
     // Format the target date to find the closest month-end price

@@ -141,7 +141,7 @@ export default function CheckoutSuccessPage() {
     }
 
     handleSuccess()
-  }, [router, supabase])
+  }, [router, supabase, searchParams])
 
   if (loading) {
     return (

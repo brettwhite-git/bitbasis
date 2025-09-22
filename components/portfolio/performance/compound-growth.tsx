@@ -51,7 +51,7 @@ export function CompoundGrowth({ data }: CompoundGrowthProps) {
               </TooltipTrigger>
               <TooltipContent>
                 <div className="max-w-xs">
-                  <p>Compares your portfolio's compound annual growth rate (CAGR) against Bitcoin, Gold, and S&P 500.</p>
+                  <p>Compares your portfolio&apos;s compound annual growth rate (CAGR) against Bitcoin, Gold, and S&P 500.</p>
                   <p className="mt-2 text-xs text-gray-300">Values marked with ~ are approximate for periods less than 1 year.</p>
                 </div>
               </TooltipContent>

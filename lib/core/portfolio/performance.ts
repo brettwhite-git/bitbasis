@@ -12,7 +12,6 @@ import {
   calculateBTCHoldingsAtDate,
   getHistoricalBTCPrice
 } from '@/lib/utils/portfolio-utils'
-import { getBenchmarkCAGR, getAvailableBenchmarkPeriods } from '@/lib/constants/benchmark-cagr'
 
 // Import the unified transaction type from types
 import { UnifiedTransaction } from '@/types/transactions'
@@ -374,10 +373,6 @@ export async function getPerformanceMetrics(
       return startValue > 0 ? ((endValue / startValue) - 1) * 100 : 0
     }
     
-    // Helper for ROI calculation (Gain / Investment) - for specific use cases
-    const calculateROIPercent = (endValue: number, startValue: number, startInvestment: number) => {
-      return startInvestment > 0 ? ((endValue - startValue) / startInvestment) * 100 : 0
-    }
     
     // Helper for dollar calculation (End Value - Start Value)
     const calculateReturnDollar = (endValue: number, startValue: number) => {
@@ -462,73 +457,51 @@ export async function getPerformanceMetrics(
       }
     }
 
-    // Function to get initial investment for a period
-    const getInitialInvestmentForPeriod = (yearsAgo: number): { value: number, date: Date | null } => {
-      // Find the cutoff date for this period
-      const cutoffDate = new Date(today)
-      cutoffDate.setFullYear(today.getFullYear() - yearsAgo)
-      
-      // Find the point closest to the cutoff date without going over
-      let closestPoint = null;
-      let smallestDiff = Infinity;
-      
-      for (const point of portfolioHistory) {
-        if (!point) continue;
-        if (point.date > cutoffDate) continue;
-        
-        const timeDiff = Math.abs(cutoffDate.getTime() - point.date.getTime());
-        if (timeDiff < smallestDiff) {
-          smallestDiff = timeDiff;
-          closestPoint = point;
-        }
-      }
-      
-      if (!closestPoint) return { value: 0, date: null };
-      
-      return { 
-        value: closestPoint.usdValue,
-        date: closestPoint.date
-      };
-    };
 
     // Calculate transaction-based CAGR for user's portfolio
     const calculateTransactionBasedCAGR = async (years: number): Promise<number | null> => {
-      const targetDate = new Date(today);
-      targetDate.setFullYear(today.getFullYear() - years);
-      
-      // Check if user has transactions going back that far
-      const firstTransactionDate = transactions.length > 0 
-        ? new Date(Math.min(...transactions.map(tx => new Date(tx.date).getTime())))
-        : today;
-      
-      if (firstTransactionDate > targetDate) {
+      try {
+        const targetDate = new Date(today);
+        targetDate.setFullYear(today.getFullYear() - years);
+        
+        // Check if user has transactions going back that far
+        const firstTransactionDate = transactions.length > 0 
+          ? new Date(Math.min(...transactions.map(tx => new Date(tx.date).getTime())))
+          : today;
+        
+        if (firstTransactionDate > targetDate) {
+          return null;
+        }
+        
+        // Calculate BTC holdings at the target date
+        const historicalBTCHoldings = calculateBTCHoldingsAtDate(transactions, targetDate);
+        
+        if (historicalBTCHoldings === 0) {
+          return null; // No holdings at that time
+        }
+        
+        // Get historical BTC price for that date
+        const historicalBTCPrice = await getHistoricalBTCPrice(targetDate, supabase);
+        
+        if (!historicalBTCPrice) {
+          console.warn(`No historical price found for ${years}-year CAGR calculation (${targetDate.toDateString()})`);
+          return null; // No price data available
+        }
+        
+        // Calculate historical portfolio value
+        const historicalPortfolioValue = historicalBTCHoldings * historicalBTCPrice;
+        
+        // Calculate actual years between the dates
+        const actualYears = calculateYearsBetween(targetDate, today);
+        
+        // Calculate CAGR
+        const cagr = calculateCAGR(currentValue, historicalPortfolioValue, actualYears);
+        
+        return cagr;
+      } catch (error) {
+        console.error(`Error calculating ${years}-year CAGR:`, error);
         return null;
       }
-      
-      // Calculate BTC holdings at the target date
-      const historicalBTCHoldings = calculateBTCHoldingsAtDate(transactions, targetDate);
-      
-      if (historicalBTCHoldings === 0) {
-        return null; // No holdings at that time
-      }
-      
-      // Get historical BTC price for that date
-      const historicalBTCPrice = await getHistoricalBTCPrice(targetDate, supabase);
-      
-      if (!historicalBTCPrice) {
-        return null; // No price data available
-      }
-      
-      // Calculate historical portfolio value
-      const historicalPortfolioValue = historicalBTCHoldings * historicalBTCPrice;
-      
-      // Calculate actual years between the dates
-      const actualYears = calculateYearsBetween(targetDate, today);
-      
-      // Calculate CAGR
-      const cagr = calculateCAGR(currentValue, historicalPortfolioValue, actualYears);
-      
-      return cagr;
     };
     
     // Calculate approximate CAGR for users with less than 1 year of data
@@ -571,21 +544,26 @@ export async function getPerformanceMetrics(
       }
     };
 
-    // Calculate CAGR for each period
-    const cagrPromises = [1, 2, 3, 4, 5, 6, 7, 8].map(async (years) => {
-      const periodKey = yearToPeriodKey(years);
-      const cagr = await calculateTransactionBasedCAGR(years);
-      return { periodKey, cagr };
-    });
-    
-    const cagrResults = await Promise.all(cagrPromises);
-    
-    // Apply the results to compoundGrowth
-    cagrResults.forEach(({ periodKey, cagr }) => {
-      compoundGrowth[periodKey] = cagr;
-    });
-    
-    console.log('✅ CAGR Calculation Complete:', compoundGrowth);
+    // Calculate CAGR for each period with error handling
+    try {
+      const cagrPromises = [1, 2, 3, 4, 5, 6, 7, 8].map(async (years) => {
+        const periodKey = yearToPeriodKey(years);
+        const cagr = await calculateTransactionBasedCAGR(years);
+        return { periodKey, cagr };
+      });
+      
+      const cagrResults = await Promise.all(cagrPromises);
+      
+      // Apply the results to compoundGrowth
+      cagrResults.forEach(({ periodKey, cagr }) => {
+        compoundGrowth[periodKey] = cagr;
+      });
+      
+      console.log('✅ CAGR Calculation Complete:', compoundGrowth);
+    } catch (error) {
+      console.error('❌ Error in CAGR calculation:', error);
+      // Continue with null values if CAGR calculation fails
+    }
     
     // For users with less than 1 year, show approximate 1-year CAGR
     if (compoundGrowth.oneYear === null) {
