@@ -7,8 +7,12 @@ import {
 import { 
   calculateYearsBetween, 
   getPortfolioStateAtDate, 
-  calculateCAGR 
+  calculateCAGR,
+  calculateApproximateCAGR,
+  calculateBTCHoldingsAtDate,
+  getHistoricalBTCPrice
 } from '@/lib/utils/portfolio-utils'
+import { getBenchmarkCAGR, getAvailableBenchmarkPeriods } from '@/lib/constants/benchmark-cagr'
 
 // Import the unified transaction type from types
 import { UnifiedTransaction } from '@/types/transactions'
@@ -315,25 +319,41 @@ export async function getPerformanceMetrics(
       });
     }
 
-    // Calculate performance over different periods
+    // Calculate performance over different periods using precise date calculations
     const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(today.getDate() - 1)
-    const lastWeek = new Date(today)
-    lastWeek.setDate(today.getDate() - 7)
+    
+    // Use millisecond-based calculations for more precision
+    const yesterday = new Date(today.getTime() - (24 * 60 * 60 * 1000))
+    const lastWeek = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000))
+    
+    // For months and years, use the date methods but be more careful about edge cases
     const lastMonth = new Date(today)
     lastMonth.setMonth(today.getMonth() - 1)
+    // Handle case where today is 31st and previous month has fewer days
+    if (lastMonth.getMonth() === today.getMonth()) {
+      lastMonth.setDate(0) // Go to last day of previous month
+    }
+    
     const startOfYear = new Date(today.getFullYear(), 0, 1)
+    
     const threeMonthsAgo = new Date(today)
     threeMonthsAgo.setMonth(today.getMonth() - 3)
+    if (threeMonthsAgo.getMonth() !== (today.getMonth() - 3 + 12) % 12) {
+      threeMonthsAgo.setDate(0) // Adjust for month-end edge cases
+    }
+    
     const oneYearAgo = new Date(today)
     oneYearAgo.setFullYear(today.getFullYear() - 1)
+    
     const twoYearsAgo = new Date(today)
     twoYearsAgo.setFullYear(today.getFullYear() - 2)
+    
     const threeYearsAgo = new Date(today)
     threeYearsAgo.setFullYear(today.getFullYear() - 3)
+    
     const fourYearsAgo = new Date(today)
     fourYearsAgo.setFullYear(today.getFullYear() - 4)
+    
     const fiveYearsAgo = new Date(today)
     fiveYearsAgo.setFullYear(today.getFullYear() - 5)
 
@@ -349,9 +369,13 @@ export async function getPerformanceMetrics(
     const valueFourYearsAgo = getPortfolioStateAtDate(portfolioHistory, fourYearsAgo, currentPrice)
     const valueFiveYearsAgo = getPortfolioStateAtDate(portfolioHistory, fiveYearsAgo, currentPrice)
 
-    // Helper for percentage calculation (Gain / Investment)
-    const calculateReturnPercent = (endValue: number, startValue: number, startInvestment: number) => {
-      // Use startInvestment as the denominator for ROI calculation
+    // Helper for cumulative return calculation (End Value / Start Value) - 1
+    const calculateCumulativeReturnPercent = (endValue: number, startValue: number) => {
+      return startValue > 0 ? ((endValue / startValue) - 1) * 100 : 0
+    }
+    
+    // Helper for ROI calculation (Gain / Investment) - for specific use cases
+    const calculateROIPercent = (endValue: number, startValue: number, startInvestment: number) => {
       return startInvestment > 0 ? ((endValue - startValue) / startInvestment) * 100 : 0
     }
     
@@ -363,50 +387,50 @@ export async function getPerformanceMetrics(
     const firstOrderDate = portfolioHistory[0]?.date
     const totalInvestment = currentInvestment
 
-    // Cumulative Returns
+    // Cumulative Returns - Using proper cumulative return formula: (End Value / Start Value) - 1
     const cumulative = {
       total: {
-        percent: totalInvestment > 0 ? ((currentValue - totalInvestment) / totalInvestment) * 100 : 0,
+        percent: totalInvestment > 0 ? ((currentValue - totalInvestment) / totalInvestment) * 100 : 0, // Total return is still ROI
         dollar: currentValue - totalInvestment
       },
       day: {
-        percent: calculateReturnPercent(valueNow.usdValue, valueYesterday.usdValue, valueYesterday.investment),
+        percent: calculateCumulativeReturnPercent(valueNow.usdValue, valueYesterday.usdValue),
         dollar: calculateReturnDollar(valueNow.usdValue, valueYesterday.usdValue)
       },
       week: {
-        percent: calculateReturnPercent(valueNow.usdValue, valueLastWeek.usdValue, valueLastWeek.investment),
+        percent: calculateCumulativeReturnPercent(valueNow.usdValue, valueLastWeek.usdValue),
         dollar: calculateReturnDollar(valueNow.usdValue, valueLastWeek.usdValue)
       },
       month: firstOrderDate && firstOrderDate <= lastMonth ? {
-        percent: calculateReturnPercent(valueNow.usdValue, valueLastMonth.usdValue, valueLastMonth.investment),
+        percent: calculateCumulativeReturnPercent(valueNow.usdValue, valueLastMonth.usdValue),
         dollar: calculateReturnDollar(valueNow.usdValue, valueLastMonth.usdValue)
       } : { percent: null, dollar: null },
       ytd: firstOrderDate && firstOrderDate <= startOfYear ? {
-        percent: calculateReturnPercent(valueNow.usdValue, valueStartOfYear.usdValue, valueStartOfYear.investment),
+        percent: calculateCumulativeReturnPercent(valueNow.usdValue, valueStartOfYear.usdValue),
         dollar: calculateReturnDollar(valueNow.usdValue, valueStartOfYear.usdValue)
       } : { percent: null, dollar: null },
       threeMonth: firstOrderDate && firstOrderDate <= threeMonthsAgo ? {
-        percent: calculateReturnPercent(valueNow.usdValue, valueThreeMonthsAgo.usdValue, valueThreeMonthsAgo.investment),
+        percent: calculateCumulativeReturnPercent(valueNow.usdValue, valueThreeMonthsAgo.usdValue),
         dollar: calculateReturnDollar(valueNow.usdValue, valueThreeMonthsAgo.usdValue)
       } : { percent: null, dollar: null },
       year: firstOrderDate && firstOrderDate <= oneYearAgo ? {
-        percent: calculateReturnPercent(valueNow.usdValue, valueOneYearAgo.usdValue, valueOneYearAgo.investment),
+        percent: calculateCumulativeReturnPercent(valueNow.usdValue, valueOneYearAgo.usdValue),
         dollar: calculateReturnDollar(valueNow.usdValue, valueOneYearAgo.usdValue)
       } : { percent: null, dollar: null },
       twoYear: firstOrderDate && firstOrderDate <= twoYearsAgo ? {
-        percent: calculateReturnPercent(valueNow.usdValue, valueTwoYearsAgo.usdValue, valueTwoYearsAgo.investment),
+        percent: calculateCumulativeReturnPercent(valueNow.usdValue, valueTwoYearsAgo.usdValue),
         dollar: calculateReturnDollar(valueNow.usdValue, valueTwoYearsAgo.usdValue)
       } : { percent: null, dollar: null },
       threeYear: firstOrderDate && firstOrderDate <= threeYearsAgo ? {
-        percent: calculateReturnPercent(valueNow.usdValue, valueThreeYearsAgo.usdValue, valueThreeYearsAgo.investment),
+        percent: calculateCumulativeReturnPercent(valueNow.usdValue, valueThreeYearsAgo.usdValue),
         dollar: calculateReturnDollar(valueNow.usdValue, valueThreeYearsAgo.usdValue)
       } : { percent: null, dollar: null },
       fourYear: firstOrderDate && firstOrderDate <= fourYearsAgo ? {
-        percent: calculateReturnPercent(valueNow.usdValue, valueFourYearsAgo.usdValue, valueFourYearsAgo.investment),
+        percent: calculateCumulativeReturnPercent(valueNow.usdValue, valueFourYearsAgo.usdValue),
         dollar: calculateReturnDollar(valueNow.usdValue, valueFourYearsAgo.usdValue)
       } : { percent: null, dollar: null },
       fiveYear: firstOrderDate && firstOrderDate <= fiveYearsAgo ? {
-        percent: calculateReturnPercent(valueNow.usdValue, valueFiveYearsAgo.usdValue, valueFiveYearsAgo.investment),
+        percent: calculateCumulativeReturnPercent(valueNow.usdValue, valueFiveYearsAgo.usdValue),
         dollar: calculateReturnDollar(valueNow.usdValue, valueFiveYearsAgo.usdValue)
       } : { percent: null, dollar: null }
     }
@@ -414,7 +438,7 @@ export async function getPerformanceMetrics(
     // Initialize compoundGrowth with all null values
     const compoundGrowth = {
       total: null as number | null, 
-      oneYear: cumulative.year.percent, // 1-year cumulative is the same as annualized
+      oneYear: null as number | null, // Will calculate properly below
       twoYear: null as number | null,
       threeYear: null as number | null,
       fourYear: null as number | null,
@@ -467,22 +491,106 @@ export async function getPerformanceMetrics(
       };
     };
 
-    // Calculate each period's CAGR using the precise timeframe
-    ;[2, 3, 4, 5, 6, 7, 8].forEach(years => {
-      const periodKey = `${years}Year` as keyof typeof compoundGrowth;
-      const initialInvestment = getInitialInvestmentForPeriod(years);
+    // Calculate transaction-based CAGR for user's portfolio
+    const calculateTransactionBasedCAGR = async (years: number): Promise<number | null> => {
+      const targetDate = new Date(today);
+      targetDate.setFullYear(today.getFullYear() - years);
       
-      if (initialInvestment.date && initialInvestment.value > 0) {
-        const actualYears = calculateYearsBetween(initialInvestment.date, today);
-        if (actualYears >= 0.9) { // Require at least ~11 months of data
-          compoundGrowth[periodKey] = calculateCAGR(
-            currentValue,
-            initialInvestment.value,
-            actualYears
-          );
-        }
+      // Check if user has transactions going back that far
+      const firstTransactionDate = transactions.length > 0 
+        ? new Date(Math.min(...transactions.map(tx => new Date(tx.date).getTime())))
+        : today;
+      
+      if (firstTransactionDate > targetDate) {
+        return null;
       }
+      
+      // Calculate BTC holdings at the target date
+      const historicalBTCHoldings = calculateBTCHoldingsAtDate(transactions, targetDate);
+      
+      if (historicalBTCHoldings === 0) {
+        return null; // No holdings at that time
+      }
+      
+      // Get historical BTC price for that date
+      const historicalBTCPrice = await getHistoricalBTCPrice(targetDate, supabase);
+      
+      if (!historicalBTCPrice) {
+        return null; // No price data available
+      }
+      
+      // Calculate historical portfolio value
+      const historicalPortfolioValue = historicalBTCHoldings * historicalBTCPrice;
+      
+      // Calculate actual years between the dates
+      const actualYears = calculateYearsBetween(targetDate, today);
+      
+      // Calculate CAGR
+      const cagr = calculateCAGR(currentValue, historicalPortfolioValue, actualYears);
+      
+      return cagr;
+    };
+    
+    // Calculate approximate CAGR for users with less than 1 year of data
+    const calculateApproximateUserCAGR = (): number | null => {
+      if (transactions.length === 0) return null;
+      
+      const firstTransactionDate = new Date(Math.min(...transactions.map(tx => new Date(tx.date).getTime())));
+      const actualYears = calculateYearsBetween(firstTransactionDate, today);
+      
+      // Only show approximate CAGR if user has between 3 months and 11 months of data
+      if (actualYears < 0.25 || actualYears >= 0.9) return null;
+      
+      // Calculate the portfolio value at the first transaction date
+      const firstTransactionBTC = calculateBTCHoldingsAtDate(transactions, firstTransactionDate);
+      if (firstTransactionBTC === 0) return null;
+      
+      // Use the price from the first transaction as approximation
+      const firstTransaction = transactions.find(tx => new Date(tx.date).getTime() === firstTransactionDate.getTime());
+      const firstTransactionPrice = firstTransaction?.price;
+      
+      if (!firstTransactionPrice) return null;
+      
+      const firstPortfolioValue = firstTransactionBTC * firstTransactionPrice;
+      
+      return calculateApproximateCAGR(currentValue, firstPortfolioValue, actualYears);
+    };
+
+    // Map years to correct period keys
+    const yearToPeriodKey = (years: number): keyof typeof compoundGrowth => {
+      switch (years) {
+        case 1: return 'oneYear';
+        case 2: return 'twoYear';
+        case 3: return 'threeYear';
+        case 4: return 'fourYear';
+        case 5: return 'fiveYear';
+        case 6: return 'sixYear';
+        case 7: return 'sevenYear';
+        case 8: return 'eightYear';
+        default: return 'oneYear';
+      }
+    };
+
+    // Calculate CAGR for each period
+    const cagrPromises = [1, 2, 3, 4, 5, 6, 7, 8].map(async (years) => {
+      const periodKey = yearToPeriodKey(years);
+      const cagr = await calculateTransactionBasedCAGR(years);
+      return { periodKey, cagr };
     });
+    
+    const cagrResults = await Promise.all(cagrPromises);
+    
+    // Apply the results to compoundGrowth
+    cagrResults.forEach(({ periodKey, cagr }) => {
+      compoundGrowth[periodKey] = cagr;
+    });
+    
+    console.log('✅ CAGR Calculation Complete:', compoundGrowth);
+    
+    // For users with less than 1 year, show approximate 1-year CAGR
+    if (compoundGrowth.oneYear === null) {
+      compoundGrowth.oneYear = calculateApproximateUserCAGR();
+    }
 
     // Calculate average, lowest, and highest buy prices from transactions
     const buyTransactions = transactions.filter(transaction => transaction.type === 'buy' && transaction.received_amount && transaction.price);

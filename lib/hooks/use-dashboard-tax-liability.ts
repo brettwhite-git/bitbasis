@@ -121,19 +121,21 @@ export function useDashboardTaxLiability(currentPrice: number): TaxLiabilityResu
 
   // Calculate tax liability when method or data changes
   return useMemo(() => {
-    console.log('useDashboardTaxLiability: Calculating with:', {
+    console.log('🔍 useDashboardTaxLiability: Calculating with:', {
       loading,
       transactionCount: transactions.length,
       currentBtcPrice,
+      currentPrice,
       taxMethod,
       sampleTransaction: transactions[0]
     })
 
     if (loading || transactions.length === 0 || currentPrice <= 0) {
-      console.log('useDashboardTaxLiability: Returning zero liability due to:', { 
+      console.log('❌ useDashboardTaxLiability: Returning zero liability due to:', { 
         loading, 
         transactionCount: transactions.length, 
-        currentPrice 
+        currentPrice,
+        currentBtcPrice
       })
       return {
         shortTermLiability: 0,
@@ -144,10 +146,12 @@ export function useDashboardTaxLiability(currentPrice: number): TaxLiabilityResu
 
     // Filter to only buy/sell transactions for tax calculations
     const buysellTransactions = transactions.filter(tx => tx.type === 'buy' || tx.type === 'sell')
-    console.log('useDashboardTaxLiability: Buy/sell transactions:', buysellTransactions.length)
+    console.log('📊 useDashboardTaxLiability: Buy/sell transactions:', buysellTransactions.length)
+    console.log('📋 useDashboardTaxLiability: Sample buy/sell transactions:', buysellTransactions.slice(0, 3))
 
     if (buysellTransactions.length === 0) {
-      console.log('useDashboardTaxLiability: No buy/sell transactions found')
+      console.log('❌ useDashboardTaxLiability: No buy/sell transactions found')
+      console.log('📋 useDashboardTaxLiability: All transaction types:', transactions.map(tx => tx.type))
       return {
         shortTermLiability: 0,
         longTermLiability: 0,
@@ -185,9 +189,12 @@ export function useDashboardTaxLiability(currentPrice: number): TaxLiabilityResu
       comment: null
     }))
 
-    // Use the proper tax calculation with the selected method
-    const result = calculateTaxLiability(convertedTransactions, currentPrice, taxMethod)
-    console.log('useDashboardTaxLiability: Tax liability calculation result:', result)
+    // Use the proper tax calculation with the selected method - use the fetched price, not the passed parameter
+    const priceToUse = currentBtcPrice > 0 ? currentBtcPrice : currentPrice
+    console.log('💰 useDashboardTaxLiability: Using price for calculation:', { currentBtcPrice, currentPrice, priceToUse })
+    
+    const result = calculateTaxLiability(convertedTransactions, priceToUse, taxMethod)
+    console.log('✅ useDashboardTaxLiability: Tax liability calculation result:', result)
     return result
   }, [transactions, currentPrice, currentBtcPrice, taxMethod, loading, userId])
 } 

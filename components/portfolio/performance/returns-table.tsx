@@ -147,6 +147,13 @@ export function ReturnsTable() {
         const currentPrice = priceResult.data.price_usd
         const transactions = transactionsResult.data || []
 
+        console.log('📊 ReturnsTable: Fetched data:', {
+          currentPrice,
+          transactionCount: transactions.length,
+          sampleTransaction: transactions[0],
+          transactionTypes: transactions.map(tx => tx.type)
+        })
+
         // Filter and validate transaction types to match the UnifiedTransaction interface
         const validTransactions = transactions.filter(
           (transaction): transaction is UnifiedTransaction => 
@@ -154,16 +161,41 @@ export function ReturnsTable() {
              transaction.type === 'deposit' || transaction.type === 'withdrawal' || 
              transaction.type === 'interest') &&
             typeof transaction.date === 'string' &&
-            typeof transaction.id === 'string'
+            typeof transaction.id === 'number' // ID is a bigint/number in the database, not string
         )
+
+        console.log('✅ ReturnsTable: Valid transactions after filtering:', {
+          validCount: validTransactions.length,
+          originalCount: transactions.length,
+          sampleValidTransaction: validTransactions[0]
+        })
 
         // Filter to only buy/sell transactions for cost basis calculation
         const buyAndSellTransactions = validTransactions.filter(tx => tx.type === 'buy' || tx.type === 'sell')
 
+        console.log('💰 ReturnsTable: Buy/sell transactions for cost basis:', {
+          buyAndSellCount: buyAndSellTransactions.length,
+          buyCount: buyAndSellTransactions.filter(tx => tx.type === 'buy').length,
+          sellCount: buyAndSellTransactions.filter(tx => tx.type === 'sell').length,
+          sampleBuyTransaction: buyAndSellTransactions.find(tx => tx.type === 'buy')
+        })
+
         // 3. Calculate results for each method using the unified transactions
+        console.log('🧮 ReturnsTable: Starting cost basis calculations with:', {
+          userId: user.id,
+          transactionCount: buyAndSellTransactions.length,
+          currentPrice
+        })
+
         const fifo = await calculateCostBasis(user.id, 'FIFO', buyAndSellTransactions, currentPrice)
         const lifo = await calculateCostBasis(user.id, 'LIFO', buyAndSellTransactions, currentPrice)
         const average = await calculateCostBasis(user.id, 'HIFO', buyAndSellTransactions, currentPrice)
+
+        console.log('📋 ReturnsTable: Cost basis calculation results:', {
+          fifo,
+          lifo,
+          average
+        })
 
         setFifoResults(fifo)
         setLifoResults(lifo)

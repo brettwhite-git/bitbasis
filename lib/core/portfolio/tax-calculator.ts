@@ -22,10 +22,23 @@ export function calculateTaxLiability(
   currentPrice: number,
   method: TaxMethod = 'fifo'
 ): TaxLiabilityResult {
+  console.log('🧮 calculateTaxLiability: Starting calculation with:', {
+    transactionCount: transactions.length,
+    currentPrice,
+    method,
+    sampleTransactions: transactions.slice(0, 2)
+  })
+
   // Calculate what holdings would remain after applying the selected method
   const remainingHoldings = calculateRemainingHoldings(transactions, method)
   
+  console.log('💼 calculateTaxLiability: Remaining holdings after method application:', {
+    holdingsCount: remainingHoldings.length,
+    sampleHoldings: remainingHoldings.slice(0, 3)
+  })
+  
   if (remainingHoldings.length === 0) {
+    console.log('❌ calculateTaxLiability: No remaining holdings, returning zero liability')
     return {
       shortTermLiability: 0,
       longTermLiability: 0,
@@ -76,6 +89,13 @@ function calculateRemainingHoldings(
   costBasis: number
   pricePerCoin: number
 }> {
+  console.log('🏗️ calculateRemainingHoldings: Starting with transactions:', {
+    total: transactions.length,
+    types: transactions.map(tx => tx.type),
+    buyTransactions: transactions.filter(tx => tx.type === 'buy').length,
+    sellTransactions: transactions.filter(tx => tx.type === 'sell').length
+  })
+
   // Create holdings from buy transactions
   const holdings: Array<{
     amount: number
@@ -85,20 +105,24 @@ function calculateRemainingHoldings(
   }> = []
 
   // Add all buy transactions to holdings
-  transactions
-    .filter(tx => tx.type === 'buy' && tx.received_amount && tx.sent_amount && tx.price)
-    .forEach(tx => {
-      if (tx.received_amount && tx.sent_amount && tx.price) {
-        // Calculate cost basis: fiat sent + USD fees
-        const fee = (tx.fee_amount && tx.fee_currency === 'USD') ? tx.fee_amount : 0
-        holdings.push({
-          amount: tx.received_amount,
-          date: tx.date,
-          costBasis: tx.sent_amount + fee,
-          pricePerCoin: tx.price
-        })
+  const buyTransactions = transactions.filter(tx => tx.type === 'buy' && tx.received_amount && tx.sent_amount && tx.price)
+  console.log('💰 calculateRemainingHoldings: Valid buy transactions:', buyTransactions.length)
+  console.log('💰 calculateRemainingHoldings: Sample buy transaction:', buyTransactions[0])
+
+  buyTransactions.forEach(tx => {
+    if (tx.received_amount && tx.sent_amount && tx.price) {
+      // Calculate cost basis: fiat sent + USD fees
+      const fee = (tx.fee_amount && tx.fee_currency === 'USD') ? tx.fee_amount : 0
+      const holding = {
+        amount: tx.received_amount,
+        date: tx.date,
+        costBasis: tx.sent_amount + fee,
+        pricePerCoin: tx.price
       }
-    })
+      holdings.push(holding)
+      console.log('➕ calculateRemainingHoldings: Added holding:', holding)
+    }
+  })
 
   // Clone holdings for processing
   const holdingsToProcess = [...holdings]

@@ -65,11 +65,37 @@ export function filterOrdersByType(orders: Order[], type: 'buy' | 'sell'): Order
 
 /**
  * Calculates compound annual growth rate (CAGR)
+ * For portfolios with cash flows, this represents the growth rate of the portfolio value
+ * Note: This is a time-weighted return, not money-weighted (IRR)
  */
 export function calculateCAGR(endValue: number, startValue: number, years: number): number | null {
-  if (startValue <= 0 || years <= 0) return null;
+  if (startValue <= 0 || years <= 0 || endValue <= 0) return null;
+  
+  // Ensure we have meaningful time period (at least 1 month)
+  if (years < 0.083) return null; // Less than 1 month
+  
   // (End Value / Start Value)^(1/Years) - 1
-  return (Math.pow(endValue / startValue, 1 / years) - 1) * 100;
+  const cagr = (Math.pow(endValue / startValue, 1 / years) - 1) * 100;
+  
+  // Cap extreme values to prevent display issues
+  return Math.min(Math.max(cagr, -99.99), 9999.99);
+}
+
+/**
+ * Calculates approximate CAGR for short periods (less than 1 year)
+ * This annualizes the return to show what the equivalent annual rate would be
+ */
+export function calculateApproximateCAGR(endValue: number, startValue: number, years: number): number | null {
+  if (startValue <= 0 || years <= 0 || endValue <= 0) return null;
+  
+  // For very short periods (less than 3 months), return null to avoid extreme values
+  if (years < 0.25) return null;
+  
+  // Calculate the annualized return
+  const cagr = (Math.pow(endValue / startValue, 1 / years) - 1) * 100;
+  
+  // Cap extreme values more aggressively for short periods
+  return Math.min(Math.max(cagr, -95), 500);
 }
 
 /**
@@ -91,4 +117,78 @@ export function formatLargeNumber(num: number): string {
     return `${(num / 1_000).toFixed(2)}K`;
   }
   return num.toFixed(2);
+}
+
+/**
+ * Calculates BTC holdings at a specific historical date
+ * This is used for transaction-based CAGR calculations
+ */
+export function calculateBTCHoldingsAtDate(
+  transactions: Array<{ date: string; type: string; sent_amount?: number | null; received_amount?: number | null; sent_currency?: string | null; received_currency?: string | null }>,
+  targetDate: Date
+): number {
+  let btcHoldings = 0;
+  
+  // Process all transactions up to the target date
+  transactions.forEach(transaction => {
+    const transactionDate = new Date(transaction.date);
+    
+    // Only process transactions that occurred before or on the target date
+    if (transactionDate <= targetDate) {
+      if (transaction.type === 'buy' && transaction.received_currency === 'BTC' && transaction.received_amount) {
+        btcHoldings += transaction.received_amount;
+      } else if (transaction.type === 'sell' && transaction.sent_currency === 'BTC' && transaction.sent_amount) {
+        btcHoldings -= transaction.sent_amount;
+      }
+      // Note: We don't include deposits/withdrawals in CAGR calculation as they don't affect cost basis
+    }
+  });
+  
+  return Math.max(0, btcHoldings); // Ensure non-negative
+}
+
+/**
+ * Gets the closest historical BTC price for a given date
+ * This will be used to calculate portfolio values at historical points
+ */
+export async function getHistoricalBTCPrice(
+  targetDate: Date,
+  supabase: any
+): Promise<number | null> {
+  try {
+    // Format the target date to find the closest month-end price
+    const targetYear = targetDate.getFullYear();
+    const targetMonth = targetDate.getMonth(); // 0-indexed
+    
+    // Try to get the exact month first
+    const exactMonthEnd = new Date(targetYear, targetMonth + 1, 0); // Last day of target month
+    const exactDateStr = exactMonthEnd.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('btc_monthly_close')
+      .select('close')
+      .eq('date', exactDateStr)
+      .single();
+    
+    if (!error && data) {
+      return parseFloat(data.close);
+    }
+    
+    // If exact month not found, get the closest available price
+    const { data: closestData, error: closestError } = await supabase
+      .from('btc_monthly_close')
+      .select('close, date')
+      .lte('date', exactDateStr)
+      .order('date', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (!closestError && closestData) {
+      return parseFloat(closestData.close);
+    }
+    return null;
+  } catch (error) {
+    console.error('❌ Historical Price Debug: Error fetching historical BTC price:', error);
+    return null;
+  }
 }
