@@ -120,7 +120,7 @@ export function UploadStep() {
       setIsLoading(false)
       setLoadingState('idle')
     }
-  }, [setCsvData, setCsvHeaders, setCurrentFile, setStep, setError, setIsLoading, setLoadingState, setCsvUploadId])
+  }, [setCsvData, setCsvHeaders, setCurrentFile, setStep, setError, setIsLoading, setLoadingState])
 
   // Handle file selection
   const handleFileSelect = useCallback(async (file: File) => {
