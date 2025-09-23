@@ -6,8 +6,6 @@ import { Upload, FileText, AlertCircle } from 'lucide-react'
 import Papa from 'papaparse'
 import { useImport } from './import-context'
 import type { CSVRow } from './import-context'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import type { Database } from '@/types/supabase'
 
 export function UploadStep() {
   const {
@@ -19,7 +17,6 @@ export function UploadStep() {
     setError,
     setIsLoading,
     setLoadingState,
-    setCsvUploadId,
     error
   } = useImport()
 

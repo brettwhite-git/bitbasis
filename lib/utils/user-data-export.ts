@@ -3,7 +3,7 @@
  * Exports all user data including transactions, CSV uploads, and account info
  */
 import { UnifiedTransaction } from "@/types/transactions"
-import { formatBTC, formatCurrency, formatDate } from "@/lib/utils/format"
+import { formatCurrency, formatDate } from "@/lib/utils/format"
 import { exportToCSV } from "@/lib/utils/import-export"
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/types/supabase'

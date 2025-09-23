@@ -13,7 +13,6 @@ import type { Database as DatabaseType } from '@/types/supabase'
 export function ConfirmationStep() {
   const {
     mappedTransactions,
-    csvUploadId,
     validationIssues,
     error,
     setError,
