@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge'
 import { ChevronLeft, ChevronRight, Calendar, DollarSign, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAddTransactionWizard } from '../add-transaction-wizard-context'
+import { useTransactionLimits } from '@/lib/hooks/use-transaction-limits'
 import { 
   NewTransaction, 
   transactionSchema, 
@@ -181,6 +182,8 @@ export function TransactionDetailsStep() {
     goToStep
   } = useAddTransactionWizard()
 
+  const { validateSingleTransaction } = useTransactionLimits()
+
   const selectedType = transactionData.type!
   const config = transactionTypeConfigs[selectedType]
 
@@ -201,8 +204,17 @@ export function TransactionDetailsStep() {
   // Remove the automatic sync that causes infinite loops
   // Instead, we'll update context data only when form is submitted or specific actions occur
 
-  const onSubmit = (data: NewTransaction) => {
+  const onSubmit = async (data: NewTransaction) => {
     try {
+      // First check transaction limits
+      const limitResult = await validateSingleTransaction()
+      if (!limitResult.allowed) {
+        toast.error('Transaction Limit Reached', {
+          description: limitResult.message
+        })
+        return
+      }
+
       // Validate the complete transaction
       const validatedTransaction = transactionSchema.parse(data)
       

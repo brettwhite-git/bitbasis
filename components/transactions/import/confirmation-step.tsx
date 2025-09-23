@@ -19,46 +19,55 @@ export function ConfirmationStep() {
     setError,
     setIsLoading,
     setLoadingState,
-    handleImportComplete
+    handleImportComplete,
+    currentFile,
+    setCsvUploadId
   } = useImport()
 
   const [importProgress, setImportProgress] = useState(0)
   const [importStatus, setImportStatus] = useState<'idle' | 'uploading' | 'storing' | 'success' | 'error'>('idle')
   const [importedCount, setImportedCount] = useState(0)
 
-  // Update CSV upload status
-  const updateCSVUploadStatus = async (
-    status: 'completed' | 'error',
-    details?: { importedRowCount?: number; errorMessage?: string }
-  ) => {
-    if (!csvUploadId) return
-
+  // Create CSV upload record for successful import
+  const createCSVUploadRecord = async (file: File, rowCount: number): Promise<string | null> => {
     try {
       const supabase = createClientComponentClient<DatabaseType>()
       
-      const updateData: { status: string; imported_row_count?: number; error_message?: string } = { status }
-      if (details?.importedRowCount !== undefined) {
-        updateData.imported_row_count = details.importedRowCount
-      }
-      if (details?.errorMessage !== undefined) {
-        updateData.error_message = details.errorMessage
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        throw new Error('Authentication required')
       }
 
-      const { error } = await supabase
+      // Create CSV upload record with 'completed' status
+      const { data: uploadEntry, error: insertError } = await supabase
         .from('csv_uploads')
-        .update(updateData)
-        .eq('id', csvUploadId)
+        .insert({
+          user_id: user.id,
+          filename: `import-${Date.now()}-${file.name}`, // Unique filename for tracking
+          original_filename: file.name,
+          file_size: file.size,
+          status: 'completed', // Create as completed since we only create after successful import
+          row_count: rowCount,
+          imported_row_count: rowCount // Set imported count to match total since import was successful
+        })
+        .select()
+        .single()
 
-      if (error) {
-        console.error('Error updating CSV upload status:', error)
+      if (insertError) {
+        console.error('Error creating CSV upload record:', insertError)
+        throw new Error(`Failed to create upload record: ${insertError.message}`)
       }
+
+      return uploadEntry.id
     } catch (error) {
-      console.error('Error updating CSV upload status:', error)
+      console.error('Error creating CSV upload record:', error)
+      return null
     }
   }
 
   // Transform unified transactions to API format
-  const transformForAPI = (transactions: UnifiedTransaction[]) => {
+  const transformForAPI = (transactions: UnifiedTransaction[], uploadId: string | null) => {
     return transactions.map(transaction => {
       // Start with required fields
       const apiTransaction: Record<string, unknown> = {
@@ -66,7 +75,7 @@ export function ConfirmationStep() {
         type: transaction.type,
         asset: transaction.asset || 'BTC',
         price: transaction.price || 0, // Default to 0 if not provided
-        csv_upload_id: csvUploadId
+        csv_upload_id: uploadId
       }
 
       // Only include optional fields if they have valid values
@@ -118,10 +127,8 @@ export function ConfirmationStep() {
       return
     }
 
-    // Debug: Check if we have csvUploadId
-    console.log('Debug: Starting import with csvUploadId:', csvUploadId)
-    if (!csvUploadId) {
-      setError('No CSV upload ID found. Please restart the import process.')
+    if (!currentFile) {
+      setError('No file information found. Please restart the import process.')
       return
     }
 
@@ -131,13 +138,25 @@ export function ConfirmationStep() {
     setError(null)
 
     try {
-      // Transform transactions for API
-      const apiTransactions = transformForAPI(mappedTransactions)
+      // Step 1: Create CSV upload record first
+      setLoadingState('importing')
+      const uploadId = await createCSVUploadRecord(currentFile, mappedTransactions.length)
+      
+      if (!uploadId) {
+        throw new Error('Failed to create upload tracking record')
+      }
+
+      // Store the upload ID in context for future reference
+      setCsvUploadId(uploadId)
+      setImportProgress(20)
+
+      // Step 2: Transform transactions for API with the new upload ID
+      const apiTransactions = transformForAPI(mappedTransactions, uploadId)
+      console.log('Debug: Created CSV upload record with ID:', uploadId)
       console.log('Debug: First transaction csv_upload_id:', apiTransactions[0]?.csv_upload_id)
       setImportProgress(30)
 
-      // Send to unified transactions API
-      setLoadingState('importing')
+      // Step 3: Send to unified transactions API
       setImportStatus('storing')
       
       const response = await fetch('/api/transaction-history/add-unified', {
@@ -156,6 +175,17 @@ export function ConfirmationStep() {
         const errorData = await response.json()
         console.error('API Error Response:', errorData)
         
+        // If transaction creation fails, we need to clean up the CSV upload record
+        try {
+          const supabase = createClientComponentClient<DatabaseType>()
+          await supabase
+            .from('csv_uploads')
+            .delete()
+            .eq('id', uploadId)
+        } catch (cleanupError) {
+          console.error('Failed to cleanup CSV upload record after transaction error:', cleanupError)
+        }
+        
         // Handle detailed validation errors
         if (errorData.details && Array.isArray(errorData.details)) {
           const errorDetails = errorData.details.map((detail: { field: string; message: string }) => 
@@ -172,10 +202,7 @@ export function ConfirmationStep() {
       setImportedCount(result.count || apiTransactions.length)
       setImportStatus('success')
 
-      // Update CSV upload status to completed
-      await updateCSVUploadStatus('completed', { 
-        importedRowCount: result.count || apiTransactions.length 
-      })
+      // CSV upload record is already created as 'completed', no need to update
 
       // Brief delay to show success state
       setTimeout(() => {
@@ -188,8 +215,7 @@ export function ConfirmationStep() {
       const errorMessage = error instanceof Error ? error.message : 'Failed to import transactions'
       setError(errorMessage)
       
-      // Update CSV upload status to error
-      await updateCSVUploadStatus('error', { errorMessage })
+      // No CSV upload record cleanup needed here since it's only created on success
     } finally {
       setIsLoading(false)
       setLoadingState('idle')

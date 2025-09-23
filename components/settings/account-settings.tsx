@@ -7,16 +7,13 @@ import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form"
 import {
@@ -30,20 +27,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { CheckCircle, ShieldCheck, InfoIcon, Trash2 } from "lucide-react"
+import { CheckCircle, ShieldCheck, InfoIcon, Trash2, Download, ExternalLink } from "lucide-react"
 import { SubscriptionManagement } from "./SubscriptionManagement"
 import { useAuth } from "@/providers/supabase-auth-provider"
 import { useTaxMethod } from "@/providers/tax-method-provider"
 import { useToast } from "@/lib/hooks/use-toast"
+import { exportAllUserDataSingle } from "@/lib/utils/user-data-export"
 
 // Form schema for account settings
 const accountSettingsSchema = z.object({
   taxMethod: z.enum(["fifo", "lifo", "hifo"], {
     required_error: "Please select a cost basis method.",
   }),
-  encryptNotes: z.boolean().default(true),
-  storeCsv: z.boolean().default(true),
-  analytics: z.boolean().default(false),
 })
 
 type AccountSettingsFormValues = z.infer<typeof accountSettingsSchema>
@@ -53,15 +48,13 @@ export function AccountSettings() {
   const { taxMethod, setTaxMethod } = useTaxMethod()
   const { toast } = useToast()
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   // Initialize form with current values
   const form = useForm<AccountSettingsFormValues>({
     resolver: zodResolver(accountSettingsSchema),
     defaultValues: {
       taxMethod: taxMethod as "fifo" | "lifo" | "hifo",
-      encryptNotes: true,
-      storeCsv: true,
-      analytics: false,
     },
   })
 
@@ -89,6 +82,27 @@ export function AccountSettings() {
     }
   }
   
+  // Handle data export
+  const handleExportData = async () => {
+    setIsExporting(true)
+    try {
+      await exportAllUserDataSingle()
+      toast({
+        title: "Data Export Complete",
+        description: "Your data has been exported successfully. Check your downloads folder.",
+      })
+    } catch (error) {
+      console.error('Export error:', error)
+      toast({
+        title: "Export Failed",
+        description: "Failed to export your data. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   // Handle account deletion
   const handleDeleteAccount = async () => {
     setIsDeleting(true)
@@ -220,83 +234,48 @@ export function AccountSettings() {
             </div>
           </div>
 
-          {/* Privacy Settings Section */}
+          {/* Data Privacy Section */}
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
             <div className="relative z-10 space-y-6">
               <div className="flex items-center gap-2 mb-4">
                 <ShieldCheck className="h-5 w-5 text-green-400" />
-                <h3 className="text-lg font-semibold text-white">Privacy & Security</h3>
+                <h3 className="text-lg font-semibold text-white">Data privacy</h3>
               </div>
               
-              <div className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="encryptNotes"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-600/50 p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base text-white">
-                          Encrypt Transaction Notes
-                        </FormLabel>
-                        <FormDescription className="text-gray-400">
-                          Automatically encrypt your transaction notes for enhanced privacy.
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+              <p className="text-gray-300 text-sm leading-relaxed">
+                BitBasis believes in transparent data practices. Learn how your information is protected when using BitBasis products, and visit our{' '}
+                <a 
+                  href="/privacy" 
+                  className="text-bitcoin-orange hover:text-[#D4A76A] transition-colors duration-200 inline-flex items-center gap-1"
+                >
+                  Privacy Policy
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                {' '}for more details.
+              </p>
 
-                <FormField
-                  control={form.control}
-                  name="storeCsv"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-600/50 p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base text-white">
-                          Store CSV Files
-                        </FormLabel>
-                        <FormDescription className="text-gray-400">
-                          Keep uploaded CSV files for re-import and backup purposes.
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
+              <div className="pt-4">
+                <h4 className="text-white font-medium mb-4">Export data</h4>
+                <p className="text-gray-400 text-sm mb-4">
+                  Download a copy of all your data including transactions, CSV upload history, and account information.
+                </p>
+                <Button
+                  onClick={handleExportData}
+                  disabled={isExporting}
+                  className="bg-bitcoin-orange hover:bg-[#D4A76A] text-white"
+                >
+                  {isExporting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Exporting data...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export data
+                    </>
                   )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="analytics"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-600/50 p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base text-white">
-                          Anonymous Analytics
-                        </FormLabel>
-                        <FormDescription className="text-gray-400">
-                          Help improve BitBasis by sharing anonymous usage data.
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+                </Button>
               </div>
             </div>
           </div>

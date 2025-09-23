@@ -3,6 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { transactionSchema } from '@/types/add-transaction';
+import { TransactionLimitService } from '@/lib/subscription/transaction-limits';
 
 /**
  * POST /api/transaction-history/add-unified
@@ -65,6 +66,20 @@ export async function POST(request: Request) {
         }
         throw error;
       }
+    }
+
+    // Validate transaction limits (safety net)
+    const limitResult = await TransactionLimitService.validateBulkTransactionAdd(user.id, validatedTransactions.length);
+    if (!limitResult.allowed) {
+      return NextResponse.json(
+        { 
+          error: 'Transaction limit exceeded',
+          message: limitResult.message,
+          currentCount: limitResult.currentCount,
+          maxAllowed: limitResult.maxAllowed
+        },
+        { status: 403 }
+      );
     }
 
     // Get current BTC price if not provided for each transaction

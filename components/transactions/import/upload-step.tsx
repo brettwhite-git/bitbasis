@@ -26,42 +26,8 @@ export function UploadStep() {
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Create CSV upload record for tracking
-  const createCSVUploadRecord = async (file: File, rowCount: number): Promise<string | null> => {
-    try {
-      const supabase = createClientComponentClient<Database>()
-      
-      // Get current user
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user) {
-        throw new Error('Authentication required')
-      }
-
-      // Create CSV upload record
-      const { data: uploadEntry, error: insertError } = await supabase
-        .from('csv_uploads')
-        .insert({
-          user_id: user.id,
-          filename: `import-${Date.now()}-${file.name}`, // Unique filename for tracking
-          original_filename: file.name,
-          file_size: file.size,
-          status: 'processing',
-          row_count: rowCount
-        })
-        .select()
-        .single()
-
-      if (insertError) {
-        console.error('Error creating CSV upload record:', insertError)
-        throw new Error(`Failed to create upload record: ${insertError.message}`)
-      }
-
-      return uploadEntry.id
-    } catch (error) {
-      console.error('Error creating CSV upload record:', error)
-      return null
-    }
-  }
+  // Note: CSV upload record creation moved to confirmation step
+  // This ensures only successful imports create database records
 
   // File validation
   const validateFile = useCallback((file: File): string | null => {
@@ -126,19 +92,12 @@ export function UploadStep() {
               throw new Error('No valid data rows found in CSV file')
             }
 
-            // Create CSV upload record
-            const uploadId = await createCSVUploadRecord(file, validRows.length)
-            console.log('Debug: Created CSV upload record with ID:', uploadId)
-            if (!uploadId) {
-              throw new Error('Failed to create upload tracking record')
-            }
-
-            // Success - store data, headers, and upload ID
+            // Success - store data and headers
+            // Note: CSV upload record will be created after successful import
             setCsvHeaders(headers)
             setCsvData(validRows)
             setCurrentFile(file)
-            setCsvUploadId(uploadId)
-            console.log('Debug: Set CSV upload ID in context:', uploadId)
+            // Note: csvUploadId will be set after successful import
             
             // Move to mapping step
             setStep('mapping')

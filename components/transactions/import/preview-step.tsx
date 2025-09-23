@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle, AlertTriangle, XCircle, ArrowRight } from 'lucide-react'
 import { useImport } from './import-context'
+import { useTransactionLimits } from '@/lib/hooks/use-transaction-limits'
 
 interface TransactionSummary {
   total: number
@@ -32,41 +33,57 @@ export function PreviewStep() {
     setLoadingState
   } = useImport()
 
+  const { validateBulkTransactions } = useTransactionLimits()
   const [summary, setSummary] = useState<TransactionSummary | null>(null)
+  const [limitValidation, setLimitValidation] = useState<{ allowed: boolean; message: string } | null>(null)
 
   // Transform and validate data when step loads
   useEffect(() => {
     if (csvData && columnMappings.length > 0) {
-      setIsLoading(true)
-      setLoadingState('validating')
-      
-      try {
-        // Transform CSV data using mappings
-        const transformed = transformCSVData(csvData, columnMappings)
-        setMappedTransactions(transformed)
+      const processData = async () => {
+        setIsLoading(true)
+        setLoadingState('validating')
         
-        // Validate transformed transactions
-        const issues = validateTransactions(transformed)
-        setValidationIssues(issues)
-        
-        // Generate summary
-        const stats = getTransactionSummary(transformed)
-        setSummary(stats)
-        
-      } catch (error) {
-        console.error('Preview processing error:', error)
-        setError(error instanceof Error ? error.message : 'Failed to process transactions')
-      } finally {
-        setIsLoading(false)
-        setLoadingState('idle')
-      }
-    }
-  }, [csvData, columnMappings, setMappedTransactions, setValidationIssues, setError, setIsLoading, setLoadingState])
+        try {
+          // Transform CSV data using mappings
+          const transformed = transformCSVData(csvData, columnMappings)
+          setMappedTransactions(transformed)
+          
+          // Validate transformed transactions
+          const issues = validateTransactions(transformed)
+          setValidationIssues(issues)
+          
+          // Generate summary
+          const stats = getTransactionSummary(transformed)
+          setSummary(stats)
 
-  // Check if we can proceed (no errors)
+          // Validate transaction limits
+          const limitResult = await validateBulkTransactions(transformed.length)
+          setLimitValidation({
+            allowed: limitResult.allowed,
+            message: limitResult.message
+          })
+          
+        } catch (error) {
+          console.error('Preview processing error:', error)
+          setError(error instanceof Error ? error.message : 'Failed to process transactions')
+        } finally {
+          setIsLoading(false)
+          setLoadingState('idle')
+        }
+      }
+
+      processData()
+    }
+  }, [csvData, columnMappings, setMappedTransactions, setValidationIssues, setError, setIsLoading, setLoadingState, validateBulkTransactions])
+
+  // Check if we can proceed (no errors and within transaction limits)
   const canProceed = () => {
     const errorCount = validationIssues.filter(issue => issue.severity === 'error').length
-    return errorCount === 0 && mappedTransactions && mappedTransactions.length > 0
+    return errorCount === 0 && 
+           mappedTransactions && 
+           mappedTransactions.length > 0 &&
+           limitValidation?.allowed !== false
   }
 
   // Handle continue
@@ -201,8 +218,25 @@ export function PreviewStep() {
         </div>
       )}
 
+      {/* Transaction Limit Validation */}
+      {limitValidation && (
+        <Alert className={limitValidation.allowed 
+          ? "border-green-500/20 bg-green-500/5" 
+          : "border-red-500/20 bg-red-500/5"
+        }>
+          {limitValidation.allowed ? (
+            <CheckCircle className="h-4 w-4 text-green-400" />
+          ) : (
+            <XCircle className="h-4 w-4 text-red-400" />
+          )}
+          <AlertDescription className={limitValidation.allowed ? "text-green-300" : "text-red-300"}>
+            {limitValidation.message}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Success state */}
-      {validationIssues.length === 0 && (
+      {validationIssues.length === 0 && limitValidation?.allowed && (
         <Alert className="border-green-500/20 bg-green-500/5">
           <CheckCircle className="h-4 w-4 text-green-400" />
           <AlertDescription className="text-green-300">
