@@ -16,20 +16,10 @@ export function TransactionCountDisplay({
 }: TransactionCountDisplayProps) {
   const { subscriptionInfo, loading } = useSubscription()
 
-  if (loading) {
-    return (
-      <span className="text-sm text-muted-foreground">
-        Loading transaction count...
-      </span>
-    )
-  }
-
-  if (!subscriptionInfo) {
-    return (
-      <span className="text-sm text-muted-foreground">
-        Transaction count unavailable
-      </span>
-    )
+  // Don't render anything while loading or if subscription info is unavailable
+  // This prevents loading flashes for Pro/Lifetime users
+  if (loading || !subscriptionInfo) {
+    return null
   }
 
   // Note: Pro/Lifetime filtering is now handled by parent components
