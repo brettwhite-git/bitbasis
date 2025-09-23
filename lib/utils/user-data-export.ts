@@ -229,7 +229,7 @@ export async function exportAllUserDataSingle(): Promise<void> {
           "Upload Date": formatDate(upload.created_at),
           "Filename": upload.filename,
           "Status": upload.status,
-          "Total Rows": upload.total_row_count || 0,
+          "Total Rows": upload.row_count || 0,
           "Imported Rows": upload.imported_row_count || 0,
           "Error Message": upload.error_message || ''
         }))
