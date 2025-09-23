@@ -9,18 +9,9 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/types/supabase'
 
 /**
- * Interface for CSV upload metadata
+ * Interface for CSV upload metadata - using the actual database schema
  */
-interface CSVUploadData {
-  id: string
-  created_at: string
-  filename: string
-  storage_path: string
-  status: string
-  total_row_count: number | null
-  imported_row_count: number | null
-  error_message: string | null
-}
+type CSVUploadData = Database['public']['Tables']['csv_uploads']['Row']
 
 /**
  * Interface for user account data
@@ -76,9 +67,11 @@ export function formatTransactionForFullExport(transaction: UnifiedTransaction) 
 export function formatCSVUploadForExport(upload: CSVUploadData) {
   return {
     "Upload Date": formatDate(upload.created_at),
+    "Original Filename": upload.original_filename,
     "Filename": upload.filename,
+    "File Size": `${Math.round((upload.file_size || 0) / 1024)} KB`,
     "Status": upload.status,
-    "Total Rows": upload.total_row_count || 0,
+    "Total Rows": upload.row_count || 0,
     "Imported Rows": upload.imported_row_count || 0,
     "Error Message": upload.error_message || ''
   }
