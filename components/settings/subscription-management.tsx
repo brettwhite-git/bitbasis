@@ -7,9 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { useSubscription } from "@/lib/hooks"
 import { useAuth } from "@/providers/supabase-auth-provider"
 import { Crown, Star } from "lucide-react"
-import { TransactionCountDisplay } from "@/components/subscription/TransactionCountDisplay"
-import { SubscriptionModal } from "@/components/subscription/SubscriptionModal"
-import { DowngradeModal } from "@/components/subscription/DowngradeModal"
+import { TransactionCountDisplay } from "@/components/subscription/transaction-count-display"
+import { SubscriptionModal } from "@/components/subscription/subscription-modal"
+import { DowngradeModal } from "@/components/subscription/downgrade-modal"
 
 export function SubscriptionManagement() {
   const { } = useAuth() // user not used in this component

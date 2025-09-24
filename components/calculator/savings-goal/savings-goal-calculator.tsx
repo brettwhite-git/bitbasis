@@ -7,12 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { ProjectionChart } from "./SavingsGoalProjectionChart";
+import { ProjectionChart } from "./savings-goal-projection-chart";
 import { useSavingsGoalData, useBitcoinPrice } from '@/lib/hooks';
 import { calculateTimeRemaining } from '@/lib/utils/utils';
 import { CheckCircle, LoaderCircle, Trash2 } from "lucide-react";
 import { calculateProjection } from '../utils/calculation-utils';
-import { BtcPriceInput } from "../utils/BtcPriceInput";
+import { BtcPriceInput } from "../utils/btc-price-input";
 import { ProjectionPoint, SavedGoalData } from '../types/calculator-types';
 // import { Line } from 'react-chartjs-2'; // We'll add chart imports later
 // We'll need Chart.js core and scales too later

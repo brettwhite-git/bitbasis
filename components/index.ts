@@ -11,9 +11,9 @@ export * from "./dashboard/overview"
 export * from "./settings/account-settings"
 
 // Subscription Components
-export * from "./subscription/SubscriptionModal"
-export * from "./subscription/SubscriptionTierBadge"
-export * from "./subscription/TransactionCountDisplay"
+export * from "./subscription/subscription-modal"
+export * from "./subscription/subscription-tier-badge"
+export * from "./subscription/transaction-count-display"
 
 // Shared Components
 export { DashboardSidebar } from "./shared/sidebar"

@@ -1,1 +1,1 @@
-export { TransactionBadge } from './TransactionBadge' 
+export { TransactionBadge } from './transaction-badge' 

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { DateRange } from "react-day-picker"
 import { Separator } from "@/components/ui/separator"
-import { TransactionCountDisplay } from "@/components/subscription/TransactionCountDisplay"
+import { TransactionCountDisplay } from "@/components/subscription/transaction-count-display"
 import {
   DropdownMenu,
   DropdownMenuContent,

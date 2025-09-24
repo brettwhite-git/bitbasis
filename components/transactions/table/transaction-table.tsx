@@ -10,8 +10,8 @@ import { toast } from 'sonner'
 import { useIsMobile } from "@/lib/hooks"
 
 // Import existing components we can reuse
-import { DataTableLoading } from "@/components/shared/data-table/DataTableLoading"
-import { DataTableError } from "@/components/shared/data-table/DataTableError"
+import { DataTableLoading } from "@/components/shared/data-table/data-table-loading"
+import { DataTableError } from "@/components/shared/data-table/data-table-error"
 
 // Import our new extracted components (local to table folder)
 import { 

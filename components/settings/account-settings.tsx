@@ -28,7 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { CheckCircle, ShieldCheck, InfoIcon, Trash2, Download, ExternalLink } from "lucide-react"
-import { SubscriptionManagement } from "./SubscriptionManagement"
+import { SubscriptionManagement } from "./subscription-management"
 import { useAuth } from "@/providers/supabase-auth-provider"
 import { useTaxMethod } from "@/providers/tax-method-provider"
 import { useToast } from "@/lib/hooks/use-toast"

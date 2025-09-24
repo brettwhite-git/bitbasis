@@ -13,10 +13,10 @@ import {
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
-import { InvestmentChart } from "./InvestmentChart"
-import { SavingsGoalCalculator } from "../savings-goal/SavingsGoalCalculator"
+import { InvestmentChart } from "./investment-chart"
+import { SavingsGoalCalculator } from "../savings-goal/savings-goal-calculator"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { BtcPriceInput } from "../utils/BtcPriceInput"
+import { BtcPriceInput } from "../utils/btc-price-input"
 import { 
   BitcoinUnit, 
   CalculatorMode, 

@@ -12,7 +12,7 @@ import {
   TableRow 
 } from "@/components/ui/table"
 import { formatBTC, formatCurrency } from "@/lib/utils/format"
-import { TransactionBadge } from "@/components/shared/badges"
+import { TransactionBadge } from "@/components/shared/badges/transaction-badge"
 import { UnifiedTransaction } from "@/types/transactions"
 import { TransactionType } from "@/types/transactions"
 import { useBitcoinPrice } from "@/lib/hooks"
@@ -22,8 +22,8 @@ import { EditDrawerProvider } from "@/components/transactions/edit"
 import Link from "next/link"
 
 // Import data table components for loading/error states
-import { DataTableLoading } from "@/components/shared/data-table/DataTableLoading"
-import { DataTableError } from "@/components/shared/data-table/DataTableError"
+import { DataTableLoading } from "@/components/shared/data-table/data-table-loading"
+import { DataTableError } from "@/components/shared/data-table/data-table-error"
 
 /**
  * Simplified headers for recent transactions (no selection, no actions)

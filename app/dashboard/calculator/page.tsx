@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { InvestmentCalculator } from "@/components/calculator/projection-calculator/InvestmentCalculator"
+import { InvestmentCalculator } from "@/components/calculator/projection-calculator/investment-calculator"
 
 export const metadata: Metadata = {
   title: "Bitcoin Calculator | BitBasis",

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Crown, MousePointerClick, Star } from "lucide-react"
 import { useSubscription } from "@/lib/hooks"
 import { cn } from "@/lib/utils/utils"
-import { SubscriptionModal } from "./SubscriptionModal"
+import { SubscriptionModal } from "./subscription-modal"
 
 export function SubscriptionTierBadge() {
   const { subscriptionInfo, loading, refreshStatus } = useSubscription()

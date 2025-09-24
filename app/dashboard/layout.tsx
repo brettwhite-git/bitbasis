@@ -4,8 +4,8 @@ import { DashboardSidebar } from "@/components/shared/sidebar"
 import { UserNav } from "@/components/shared/user-nav"
 import { MobileNav } from "@/components/shared/mobile-nav"
 import { SidebarProvider } from "@/components/shared/sidebar-provider"
-import { SubscriptionTierBadge } from "@/components/subscription/SubscriptionTierBadge"
-import { PaymentRecoveryBanner } from "@/components/subscription/PaymentRecoveryBanner"
+import { SubscriptionTierBadge } from "@/components/subscription/subscription-tier-badge"
+import { PaymentRecoveryBanner } from "@/components/subscription/payment-recovery-banner"
 import { TaxMethodProvider } from "@/providers/tax-method-provider"
 
 export default function DashboardLayout({

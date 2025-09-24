@@ -1,4 +1,4 @@
-import { Navigation } from "@/components/landing/Navigation"
+import { Navigation } from "@/components/landing/navigation"
 import { 
   HeroSection,
   FeaturesSection,
