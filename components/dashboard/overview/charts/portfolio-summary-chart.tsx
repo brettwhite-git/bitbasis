@@ -16,6 +16,7 @@ import {
 import { Line } from "react-chartjs-2"
 import { usePortfolioHistory } from "@/lib/hooks"
 import { createPortfolioSummaryTooltipConfig } from "@/lib/utils/chart-tooltip-config"
+import { formatChartDate } from "@/lib/services/portfolio/chart-utils"
 
 // Register ChartJS components
 ChartJS.register(
@@ -109,12 +110,7 @@ export function PortfolioSummaryChart({ timeframe }: PortfolioSummaryChartProps)
   }
 
   const data = {
-    labels: portfolioData.map(d => {
-      const date = new Date(d.date);
-      const formattedMonth = date.toLocaleDateString('en-US', { month: 'short' });
-      const formattedYear = `'${date.toLocaleDateString('en-US', { year: '2-digit' })}`;
-      return `${formattedMonth} ${formattedYear}`;
-    }),
+    labels: portfolioData.map(d => formatChartDate(new Date(d.date))),
     datasets: [
       {
         label: "Portfolio Value",

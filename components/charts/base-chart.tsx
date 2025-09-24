@@ -15,7 +15,8 @@ import {
   ChartData,
 } from "chart.js"
 import { Line } from "react-chartjs-2"
-import { PortfolioDataPoint } from "@/lib/services/portfolio/types"
+import { PortfolioDataPoint, TimeRange } from "@/lib/services/portfolio/types"
+import { formatChartDate, getAxisRotation } from "@/lib/services/portfolio/chart-utils"
 
 // Register ChartJS components
 ChartJS.register(
@@ -34,6 +35,7 @@ interface BasePortfolioChartProps {
   height?: number
   width?: string
   className?: string
+  timeRange?: TimeRange
 }
 
 export function BasePortfolioChart({
@@ -41,6 +43,7 @@ export function BasePortfolioChart({
   height = 300,
   width = "100%",
   className = "",
+  timeRange = "2Y",
 }: BasePortfolioChartProps) {
   const [chartConfig, setChartConfig] = useState<{
     data: ChartData<'line'>
@@ -54,14 +57,11 @@ export function BasePortfolioChart({
       return
     }
 
+    const rotation = getAxisRotation(timeRange)
+    
     const config = {
       data: {
-        labels: data.map(d => {
-          const date = new Date(d.date)
-          const formattedMonth = date.toLocaleDateString('en-US', { month: 'short' })
-          const formattedYear = `'${date.toLocaleDateString('en-US', { year: '2-digit' })}`
-          return `${formattedMonth} ${formattedYear}`
-        }),
+        labels: data.map(d => formatChartDate(new Date(d.date))),
         datasets: [
           {
             label: "Portfolio Value",
@@ -137,6 +137,8 @@ export function BasePortfolioChart({
             },
             ticks: {
               color: "#9ca3af",
+              maxRotation: rotation.maxRotation,
+              minRotation: rotation.minRotation,
             },
           },
           y: {
@@ -165,7 +167,7 @@ export function BasePortfolioChart({
     }
 
     setChartConfig(config)
-  }, [data])
+  }, [data, timeRange])
 
   if (!data || data.length === 0) {
     return (

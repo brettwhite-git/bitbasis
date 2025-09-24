@@ -55,19 +55,13 @@ export function calculateMultipleMovingAverages(
 }
 
 /**
- * Formats date for chart labels based on time range
+ * Formats date for chart labels - consistent format across all time ranges
+ * Always returns format: "Mar '25" (abbreviated month + space + apostrophe + 2-digit year)
  */
-export function formatChartDate(date: Date, timeRange: string): string {
-  if (timeRange === 'ALL' || timeRange === '5Y') {
-    // Show only month and year for long time ranges
-    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-  } else if (timeRange === '3Y' || timeRange === '2Y') {
-    // Show abbreviated month and year for medium ranges
-    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-  } else {
-    // Show more detailed date for shorter ranges
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  }
+export function formatChartDate(date: Date): string {
+  const month = date.toLocaleDateString('en-US', { month: 'short' })
+  const year = date.toLocaleDateString('en-US', { year: '2-digit' })
+  return `${month} '${year}`
 }
 
 /**
@@ -123,4 +117,17 @@ export function calculateMaxTicks(dataLength: number, timeRange: string): number
   if (timeRange === '3Y' || timeRange === '2Y') return 18 // More ticks for medium periods
   if (timeRange === '1Y') return 24 // Even more for 1 year
   return 12 // Default for shorter periods (6M)
+}
+
+/**
+ * Determines if x-axis labels should be rotated based on time range
+ * Returns rotation angle in degrees (0 for no rotation, 45 for rotated)
+ */
+export function getAxisRotation(timeRange: string): { maxRotation: number; minRotation: number } {
+  // Rotate labels for longer time periods to improve readability
+  if (timeRange === '2Y' || timeRange === '3Y' || timeRange === '5Y' || timeRange === 'ALL') {
+    return { maxRotation: 45, minRotation: 45 }
+  }
+  // No rotation for shorter periods (1Y, 6M)
+  return { maxRotation: 0, minRotation: 0 }
 } 

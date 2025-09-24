@@ -16,6 +16,7 @@ import { Line } from "react-chartjs-2"
 import { Button } from "@/components/ui/button"
 import { usePortfolioHistory } from "@/lib/hooks"
 import { createPerformanceTooltipConfig } from "@/lib/utils/chart-tooltip-config"
+import { formatChartDate, getAxisRotation } from "@/lib/services/portfolio/chart-utils"
 
 // Register ChartJS components
 ChartJS.register(
@@ -156,6 +157,7 @@ function Chart() {
   })();
 
   // Calculate dynamic chart options
+  const rotation = getAxisRotation(period)
   const dynamicOptions: ChartOptions<'line'> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -183,6 +185,8 @@ function Chart() {
         },
         ticks: {
           color: "#9ca3af",
+          maxRotation: rotation.maxRotation,
+          minRotation: rotation.minRotation,
         },
       },
       y: {
@@ -214,8 +218,7 @@ function Chart() {
       const [year, month] = (d.month || '').split('-');
       if (!year || !month) return '';
       const date = new Date(parseInt(year), parseInt(month) - 1);
-      const shortYear = year.slice(-2); // Get last two digits
-      return `${date.toLocaleDateString('en-US', { month: 'short' })}'${shortYear}`;
+      return formatChartDate(date);
     }),
     datasets: [
       {

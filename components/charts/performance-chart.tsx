@@ -60,6 +60,7 @@ export function PerformanceChart({
   width?: string
   className?: string
 }) {
+  const { period } = useChartContext()
   // TODO: Get actual user ID from auth context
   const { isLoading: loading, error } = usePerformanceData('')
 
@@ -85,6 +86,7 @@ export function PerformanceChart({
       height={height}
       width={width}
       className={className}
+      timeRange={period}
     />
   )
 } 

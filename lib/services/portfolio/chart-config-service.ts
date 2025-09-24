@@ -14,6 +14,7 @@ import {
   createPortfolioSummaryTooltipConfig, 
   createPerformanceTooltipConfig 
 } from "@/lib/utils/chart-tooltip-config"
+import { formatChartDate, getAxisRotation } from "./chart-utils"
 
 export class ChartConfigServiceImpl implements ChartConfigService {
   /**
@@ -21,12 +22,7 @@ export class ChartConfigServiceImpl implements ChartConfigService {
    */
   createSummaryChartConfig(data: PortfolioDataPoint[]) {
     // Generate labels from data points
-    const labels = data.map(d => {
-      const date = new Date(d.date)
-      const formattedMonth = date.toLocaleDateString('en-US', { month: 'short' })
-      const formattedYear = `'${date.toLocaleDateString('en-US', { year: '2-digit' })}`
-      return `${formattedMonth} ${formattedYear}`
-    })
+    const labels = data.map(d => formatChartDate(new Date(d.date)))
 
     // Generate datasets
     const datasets = [
@@ -112,23 +108,8 @@ export class ChartConfigServiceImpl implements ChartConfigService {
    * Creates configuration for performance chart
    */
   createPerformanceChartConfig(data: PortfolioDataPoint[], options: ChartDataOptions) {
-    // Generate labels from data points
-    const labels = data.map(d => {
-      const date = new Date(d.date)
-      // Format based on time range for appropriate label density
-      if (options.timeRange === '5Y' || options.timeRange === 'ALL') {
-        // Show only month and year for long time ranges
-        const month = date.toLocaleDateString('en-US', { month: 'short' })
-        const year = date.toLocaleDateString('en-US', { year: 'numeric' })
-        return `${month} ${year}`
-      } else {
-        // Show more detailed date for shorter ranges
-        const month = date.toLocaleDateString('en-US', { month: 'short' })
-        const day = date.getDate()
-        const year = date.getFullYear()
-        return `${month} ${day}, ${year}`
-      }
-    })
+    // Generate labels from data points using consistent formatting
+    const labels = data.map(d => formatChartDate(new Date(d.date)))
 
     // Build datasets
     const datasets = []
@@ -189,7 +170,8 @@ export class ChartConfigServiceImpl implements ChartConfigService {
       pointRadius: 0, // Hide points
     })
 
-    // Chart options
+    // Chart options with dynamic rotation
+    const rotation = getAxisRotation(options.timeRange)
     const chartOptions: ChartOptions<"line"> = {
       responsive: true,
       maintainAspectRatio: false,
@@ -218,6 +200,9 @@ export class ChartConfigServiceImpl implements ChartConfigService {
             color: "#9ca3af",
             // Limit the number of labels shown based on data length
             maxTicksLimit: this.calculateMaxTicks(data.length, options.timeRange),
+            // Apply dynamic rotation
+            maxRotation: rotation.maxRotation,
+            minRotation: rotation.minRotation,
           },
         },
         y: {
