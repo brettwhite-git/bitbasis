@@ -3,11 +3,11 @@
  */
 
 // Base components
-export { BasePortfolioChart } from './base-chart.tsx'
+export { BasePortfolioChart } from './base-chart'
 
 // Specific chart implementations
 export {
   PerformanceChart,
   PerformanceFilters,
   PerformanceContainer
-} from './performance-chart.tsx' 
+} from './performance-chart' 

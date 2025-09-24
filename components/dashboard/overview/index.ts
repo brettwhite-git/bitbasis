@@ -1,19 +1,19 @@
 // Main layout
-export { OverviewLayout } from './overview-layout.tsx';
+export { OverviewLayout } from './overview-layout';
 
 // Summary cards
-export { PortfolioValueCard } from './summary-cards/portfolio-value-card.tsx';
-export { CostBasisCard } from './summary-cards/cost-basis-card.tsx';
-export { UnrealizedGainsCard } from './summary-cards/unrealized-gains-card.tsx';
-export { AverageBuyPriceCard } from './summary-cards/average-buy-price-card.tsx';
-export { HodlTimeCard } from './summary-cards/hodl-time-card.tsx';
-export { SummaryCardBase } from './summary-cards/summary-card-base.tsx';
+export { PortfolioValueCard } from './summary-cards/portfolio-value-card';
+export { CostBasisCard } from './summary-cards/cost-basis-card';
+export { UnrealizedGainsCard } from './summary-cards/unrealized-gains-card';
+export { AverageBuyPriceCard } from './summary-cards/average-buy-price-card';
+export { HodlTimeCard } from './summary-cards/hodl-time-card';
+export { SummaryCardBase } from './summary-cards/summary-card-base';
 
 // Charts
-export { PortfolioSummaryChart } from './charts/portfolio-summary-chart.tsx';
-export { default as BuyPatternHistogram } from './charts/buy-pattern-histogram.tsx';
+export { PortfolioSummaryChart } from './charts/portfolio-summary-chart';
+export { default as BuyPatternHistogram } from './charts/buy-pattern-histogram';
 
 // Widgets
-export { SavingsGoalWidget } from './widgets/savings-goal-widget.tsx';
-export { default as FearGreedMultiGauge } from './widgets/fear-greed-gauge.tsx';
-export { RecentTransactions } from './widgets/recent-transactions.tsx'; 
+export { SavingsGoalWidget } from './widgets/savings-goal-widget';
+export { default as FearGreedMultiGauge } from './widgets/fear-greed-gauge';
+export { RecentTransactions } from './widgets/recent-transactions'; 

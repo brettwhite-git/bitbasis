@@ -1,1 +1,1 @@
-export { TransactionBadge } from './transaction-badge.tsx' 
+export { TransactionBadge } from './transaction-badge' 
