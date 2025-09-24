@@ -58,7 +58,7 @@ export function OverviewLayout({ metrics, performance }: DashboardContentProps) 
       <div className="flex items-center justify-between w-full">
         <h1 className="text-3xl font-bold tracking-tight text-white">Overview Dashboard</h1>
       </div>
-      <div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid w-full gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <PortfolioValueCard 
           currentValue={metrics.currentValue}
           monthPercentChange={performance.cumulative.month?.percent ?? null}

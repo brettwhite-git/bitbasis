@@ -50,12 +50,12 @@ export function DashboardSidebar() {
 
   return (
     <div
-      className={`hidden md:block min-h-full ${
-        isOpen ? "w-64" : "w-20"
+      className={`hidden md:block fixed left-0 top-16 h-[calc(100vh-4rem)] z-30 ${
+        isOpen ? "w-56" : "w-20"
       } transition-all duration-300`}
     >
-      <div className="min-h-full bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm rounded-r-xl">
-        <nav className="flex flex-col py-4 min-h-full">
+      <div className="h-full bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm rounded-r-xl">
+        <nav className="flex flex-col py-4 h-full overflow-y-auto">
           <ul className="flex flex-col items-center gap-3">
             {routes.map((route) => (
               <li key={route.href} className="w-full px-2">

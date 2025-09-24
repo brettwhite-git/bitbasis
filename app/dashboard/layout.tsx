@@ -49,9 +49,11 @@ export default function DashboardLayout({
           </div>
         </header>
         <div className="flex flex-1 pt-16">
-          <DashboardSidebar />
-          <main className="flex-1 overflow-hidden relative z-10">
-            <div className="h-full w-full px-8 py-6">
+          <div className="hidden md:block">
+            <DashboardSidebar />
+          </div>
+          <main className="flex-1 ml-0 md:ml-24 relative z-10">
+            <div className="min-h-full w-full px-8 py-6">
               <PaymentRecoveryBanner />
               {children}
             </div>
