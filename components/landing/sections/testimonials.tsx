@@ -1,4 +1,6 @@
 
+import Image from "next/image"
+
 export function TestimonialsSection() {
   return (
     <section className="py-16 md:py-24 relative">
@@ -9,7 +11,7 @@ export function TestimonialsSection() {
           {/* Testimonial 1 */}
           <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/60 border border-white/10 rounded-xl p-8 shadow-lg">
             <div className="flex items-center mb-4">
-              <img className="h-12 w-12 rounded-full mr-4 ring-2 ring-bitcoin-orange/50" src="https://api.dicebear.com/9.x/adventurer/png?seed=Brian" alt="Alex R. avatar" width={48} height={48}/>
+              <Image className="h-12 w-12 rounded-full mr-4 ring-2 ring-bitcoin-orange/50" src="https://api.dicebear.com/9.x/adventurer/png?seed=Brian" alt="Alex R. avatar" width={48} height={48} unoptimized/>
               <div>
                 <p className="font-semibold text-white">Alex R.</p>
               </div>
@@ -19,7 +21,7 @@ export function TestimonialsSection() {
           {/* Testimonial 2 */}
           <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/60 border border-white/10 rounded-xl p-8 shadow-lg">
             <div className="flex items-center mb-4">
-              <img className="h-12 w-12 rounded-full mr-4 ring-2 ring-blue-500/50" src="https://api.dicebear.com/9.x/adventurer/png?seed=Vivian" alt="Sarah K. avatar" width={48} height={48}/>
+              <Image className="h-12 w-12 rounded-full mr-4 ring-2 ring-blue-500/50" src="https://api.dicebear.com/9.x/adventurer/png?seed=Vivian" alt="Sarah K. avatar" width={48} height={48} unoptimized/>
               <div>
                 <p className="font-semibold text-white">Sarah K.</p>
               </div>
@@ -29,7 +31,7 @@ export function TestimonialsSection() {
           {/* Testimonial 3 */}
           <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/60 border border-white/10 rounded-xl p-8 shadow-lg">
             <div className="flex items-center mb-4">
-              <img className="h-12 w-12 rounded-full mr-4 ring-2 ring-amber-500/50" src="https://api.dicebear.com/9.x/adventurer/png?seed=Michael" alt="Michael T. avatar" width={48} height={48}/>
+              <Image className="h-12 w-12 rounded-full mr-4 ring-2 ring-amber-500/50" src="https://api.dicebear.com/9.x/adventurer/png?seed=Michael" alt="Michael T. avatar" width={48} height={48} unoptimized/>
               <div>
                 <p className="font-semibold text-white">Michael T.</p>
               </div>

@@ -18,6 +18,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "BitBasis - Bitcoin Cost Basis Tracker",
   description: "Track your Bitcoin cost basis, calculate gains, and manage your portfolio with privacy-focused tools.",
+  icons: {
+    icon: '/bitcoin-favicon.svg',
+    shortcut: '/bitcoin-favicon.svg',
+    apple: '/bitcoin-favicon.svg',
+  },
 }
 
 export default function RootLayout({
