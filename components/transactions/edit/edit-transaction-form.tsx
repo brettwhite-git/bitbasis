@@ -175,13 +175,13 @@ export function EditTransactionForm({ transaction }: EditTransactionFormProps) {
           />
           
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4 sm:pt-6 border-t border-gray-800">
+          <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4 sm:pt-6 border-t border-gray-700/50">
             <Button
               type="button"
               variant="outline"
               onClick={handleCancel}
               disabled={isSubmitting}
-              className="w-full sm:w-auto border-gray-600 text-gray-300 hover:bg-gray-800 h-10 text-sm"
+              className="w-full sm:w-auto bg-red-600/20 border-red-500/30 hover:bg-red-600/30 text-red-400 hover:text-red-300 h-10 text-sm"
             >
               Cancel
             </Button>

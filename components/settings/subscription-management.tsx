@@ -134,10 +134,10 @@ export function SubscriptionManagement() {
               {displayInfo.isFree ? 'Upgrade' : 'Manage Subscription'}
             </Button>
             {(displayInfo.isPro || displayInfo.isLifetime) && (
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => setDowngradeModalOpen(true)}
-                className="border-gray-600/50 text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-gray-500/50 transition-all duration-300"
+                className="bg-red-600/20 border-red-500/30 hover:bg-red-600/30 text-red-400 hover:text-red-300 transition-all duration-300"
               >
                 Cancel Subscription
               </Button>

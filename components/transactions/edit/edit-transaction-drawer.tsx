@@ -21,13 +21,13 @@ export function EditTransactionDrawer() {
 
   return (
     <Sheet open={isOpen} onOpenChange={closeDrawer}>
-      <SheetContent 
+      <SheetContent
         side={isMobile ? "bottom" : "left"}
-        className={`bg-gray-900 border-gray-800 overflow-y-auto z-50 ${
-          isMobile 
-            ? "w-full h-[90vh] rounded-t-xl p-4" 
+        className={`bg-gradient-to-br from-gray-900/60 via-gray-900/80 to-gray-900/60 border-gray-700/50 overflow-y-auto z-50 ${
+          isMobile
+            ? "w-full h-[90vh] rounded-t-xl p-4"
             : "w-full max-w-sm sm:max-w-md lg:max-w-lg p-4 sm:p-6"
-        }`}
+        } [&>button]:text-gray-400 [&>button]:hover:text-white [&>button]:hover:bg-gray-700/50`}
       >
         <SheetHeader className="pb-4 sm:pb-6">
           <SheetTitle className="text-lg sm:text-xl font-semibold text-white">

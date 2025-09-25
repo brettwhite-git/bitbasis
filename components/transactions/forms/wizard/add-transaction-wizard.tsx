@@ -63,7 +63,7 @@ export function AddTransactionWizard({ onTransactionsAdded, triggerButton }: Add
       <DialogTrigger asChild>
         {triggerButton || defaultTrigger}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-xl border-gray-700/50">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-800/20 via-gray-900/40 to-gray-800/20 backdrop-blur-md border-gray-700/30 [&>button]:text-gray-400 [&>button]:hover:text-white [&>button]:hover:bg-gray-700/50">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] bg-clip-text text-transparent">
             Add Bitcoin Transaction

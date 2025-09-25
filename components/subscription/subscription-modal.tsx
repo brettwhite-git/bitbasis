@@ -110,11 +110,11 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-800/20 via-gray-900/40 to-gray-800/20 backdrop-blur-md border-gray-700/30 [&>button]:text-gray-400 [&>button]:hover:text-white [&>button]:hover:bg-gray-700/50">
         <DialogHeader className="text-center">
           <DialogTitle>
-            {isFree ? "Choose Your Plan" : 
-             isPro ? "Manage Subscription" : 
+            {isFree ? "Choose Your Plan" :
+             isPro ? "Manage Subscription" :
              "Subscription Management"}
           </DialogTitle>
           <DialogDescription>
@@ -129,31 +129,31 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
           {isFree && (
             <>
               {/* Pro Monthly Option */}
-              <Card className="border-orange-200">
+              <Card className="border-gray-700/30 bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm hover:shadow-lg transition-all duration-200">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Pro Monthly</CardTitle>
-                    <Badge variant="default" className="bg-orange-600">
+                    <CardTitle className="text-lg text-white">Pro Monthly</CardTitle>
+                    <Badge variant="default" className="bg-bitcoin-orange border-bitcoin-orange/20">
                       <Crown className="h-3 w-3 mr-1" />
                       Popular
                     </Badge>
                   </div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-bold">$4.99</span>
-                    <span className="text-muted-foreground">/month</span>
+                    <span className="text-2xl font-bold text-white">$4.99</span>
+                    <span className="text-gray-400">/month</span>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-600" />
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <Check className="h-4 w-4 text-green-500" />
                     <span>Unlimited transactions</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-600" />
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <Check className="h-4 w-4 text-green-500" />
                     <span>Premium portfolio analytics</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-600" />
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <Check className="h-4 w-4 text-green-500" />
                     <span>Priority customer support</span>
                   </div>
                   <Button 
@@ -168,31 +168,31 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
               </Card>
 
               {/* Lifetime Option */}
-              <Card className="border-green-200">
+              <Card className="border-gray-700/30 bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm hover:shadow-lg transition-all duration-200">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Lifetime</CardTitle>
-                    <Badge variant="default" className="bg-green-600">
+                    <CardTitle className="text-lg text-white">Lifetime</CardTitle>
+                    <Badge variant="default" className="bg-green-600 border-green-600/20">
                       <Star className="h-3 w-3 mr-1" />
                       Best Value
                     </Badge>
                   </div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-bold">$210</span>
-                    <span className="text-muted-foreground">one-time</span>
+                    <span className="text-2xl font-bold text-white">$210</span>
+                    <span className="text-gray-400">one-time</span>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-600" />
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <Check className="h-4 w-4 text-green-500" />
                     <span>Everything in Pro</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-600" />
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <Check className="h-4 w-4 text-green-500" />
                     <span>Lifetime access</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-600" />
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <Check className="h-4 w-4 text-green-500" />
                     <span>No recurring payments</span>
                   </div>
                   <Button 
@@ -212,15 +212,15 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
           {/* Pro Users: Show lifetime upgrade and manage options */}
           {isPro && (
             <>
-              <Card className="border-green-200">
+              <Card className="border-gray-700/30 bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm hover:shadow-lg transition-all duration-200">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-lg">Upgrade to Lifetime</CardTitle>
-                  <p className="text-sm text-muted-foreground">
+                  <CardTitle className="text-lg text-white">Upgrade to Lifetime</CardTitle>
+                  <p className="text-sm text-gray-400">
                     One-time payment, unlimited forever
                   </p>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-bold">$210</span>
-                    <span className="text-muted-foreground">one-time</span>
+                    <span className="text-2xl font-bold text-white">$210</span>
+                    <span className="text-gray-400">one-time</span>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -252,13 +252,13 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
           {/* Lifetime Users: Show current status and portal access */}
           {isLifetime && (
             <>
-              <Card className="border-green-200 bg-green-50 dark:bg-green-950/20">
+              <Card className="border-gray-700/30 bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 backdrop-blur-sm hover:shadow-lg transition-all duration-200">
                 <CardHeader className="text-center">
-                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
-                    <Star className="h-6 w-6 text-green-600" />
+                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-600/20">
+                    <Star className="h-6 w-6 text-green-500" />
                   </div>
-                  <CardTitle className="text-lg">Lifetime Plan Active</CardTitle>
-                  <p className="text-sm text-muted-foreground">
+                  <CardTitle className="text-lg text-white">Lifetime Plan Active</CardTitle>
+                  <p className="text-sm text-gray-400">
                     You have unlimited access to all BitBasis features forever.
                   </p>
                 </CardHeader>

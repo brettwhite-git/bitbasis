@@ -160,43 +160,43 @@ export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModal
       </DialogHeader>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-          <span className="text-sm font-medium">Current Transactions</span>
-          <Badge variant={isOverLimit ? "destructive" : "secondary"}>
+        <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
+          <span className="text-sm font-medium text-white">Current Transactions</span>
+          <Badge variant={isOverLimit ? "destructive" : "secondary"} className={isOverLimit ? "bg-red-600/20 text-red-400 border-red-500/30" : "bg-gray-700/50 text-gray-300 border-gray-600"}>
             {transactionCount} / 50 (Free limit)
           </Badge>
         </div>
 
         {isOverLimit && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              You have {transactionCount - 50} transactions over the free limit. 
+          <Alert className="bg-red-500/5 border-red-500/20">
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <AlertDescription className="text-red-300">
+              You have {transactionCount - 50} transactions over the free limit.
               After cancellation, you won&#39;t be able to add new transactions until you&#39;re under 50.
             </AlertDescription>
           </Alert>
         )}
 
         <div className="space-y-2">
-          <h4 className="font-medium">What happens when you cancel:</h4>
-          <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+          <h4 className="font-medium text-white">What happens when you cancel:</h4>
+          <ul className="text-sm text-gray-300 space-y-1 ml-4">
             <li>• Your subscription will be cancelled immediately</li>
             <li>• All existing data remains safe and accessible</li>
             <li>• You can re-subscribe anytime to regain full access</li>
             {isOverLimit && (
-              <li className="text-orange-600">• New transactions will be blocked immediately if over 50 total</li>
+              <li className="text-orange-400">• New transactions will be blocked immediately if over 50 total</li>
             )}
           </ul>
         </div>
 
         <div className="flex gap-2 pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 bg-gray-800/40 border-gray-600/50 hover:bg-gray-700/50 text-white">
             Keep Subscription
           </Button>
-          <Button 
-            onClick={() => setStep('confirm')} 
-            variant="destructive" 
-            className="flex-1"
+          <Button
+            onClick={() => setStep('confirm')}
+            variant="destructive"
+            className="flex-1 bg-red-600/20 border-red-500/30 hover:bg-red-600/30 text-red-400"
           >
             Cancel Subscription
           </Button>
@@ -217,27 +217,27 @@ export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModal
       </DialogHeader>
 
       <div className="space-y-4">
-        <div className="p-4 bg-muted rounded-lg">
-          <h4 className="font-medium mb-2">This will:</h4>
-          <ul className="text-sm space-y-1">
+        <div className="p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
+          <h4 className="font-medium mb-2 text-white">This will:</h4>
+          <ul className="text-sm text-gray-300 space-y-1">
             <li>• Cancel your subscription immediately</li>
             <li>• Remove access to Pro features</li>
             {isOverLimit && (
-              <li className="text-orange-600">• Block new transactions (you have {transactionCount - 50} over the free limit)</li>
+              <li className="text-orange-400">• Block new transactions (you have {transactionCount - 50} over the free limit)</li>
             )}
             <li>• Keep all your existing data safe</li>
           </ul>
         </div>
 
         <div className="flex gap-2 pt-4">
-          <Button variant="outline" onClick={() => setStep('warning')} className="flex-1">
+          <Button variant="outline" onClick={() => setStep('warning')} className="flex-1 bg-gray-800/40 border-gray-600/50 hover:bg-gray-700/50 text-white">
             Back
           </Button>
-          <Button 
-            onClick={handleCancel} 
-            variant="destructive" 
+          <Button
+            onClick={handleCancel}
+            variant="destructive"
             disabled={loading}
-            className="flex-1"
+            className="flex-1 bg-red-600/20 border-red-500/30 hover:bg-red-600/30 text-red-400"
           >
             {loading ? 'Cancelling...' : 'Confirm Cancellation'}
           </Button>
@@ -257,7 +257,7 @@ export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModal
         setLoading(false) // Also reset loading state
       }
     }}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-800/20 via-gray-900/40 to-gray-800/20 backdrop-blur-md border-gray-700/30 [&>button]:text-gray-400 [&>button]:hover:text-white [&>button]:hover:bg-gray-700/50">
         {step === 'warning' && renderWarningStep()}
         {step === 'confirm' && renderConfirmStep()}
       </DialogContent>
