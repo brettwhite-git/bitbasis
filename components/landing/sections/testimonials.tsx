@@ -14,7 +14,7 @@ export function TestimonialsSection() {
                 <p className="font-semibold text-white">Alex R.</p>
               </div>
             </div>
-            <p className="text-gray-300 italic leading-relaxed">"Finally, a simple way to track my Bitcoin cost basis without giving up my privacy. BitBasis is exactly what I needed. The interface is clean and calculating my potential tax obligations is much less stressful now."</p>
+            <p className="text-gray-300 italic leading-relaxed">&ldquo;Finally, a simple way to track my Bitcoin cost basis without giving up my privacy. BitBasis is exactly what I needed. The interface is clean and calculating my potential tax obligations is much less stressful now.&rdquo;</p>
           </div>
           {/* Testimonial 2 */}
           <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/60 border border-white/10 rounded-xl p-8 shadow-lg">
@@ -24,7 +24,7 @@ export function TestimonialsSection() {
                 <p className="font-semibold text-white">Sarah K.</p>
               </div>
             </div>
-            <p className="text-gray-300 italic leading-relaxed">"I was hesitant to use online portfolio trackers because of privacy concerns. BitBasis's focus on CSV imports and no exchange connections sold me. It's secure, easy to use, and respects user data."</p>
+            <p className="text-gray-300 italic leading-relaxed">&ldquo;I was hesitant to use online portfolio trackers because of privacy concerns. BitBasis&rsquo;s focus on CSV imports and no exchange connections sold me. It&rsquo;s secure, easy to use, and respects user data.&rdquo;</p>
           </div>
           {/* Testimonial 3 */}
           <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/60 border border-white/10 rounded-xl p-8 shadow-lg">
@@ -34,7 +34,7 @@ export function TestimonialsSection() {
                 <p className="font-semibold text-white">Michael T.</p>
               </div>
             </div>
-            <p className="text-gray-300 italic leading-relaxed">"The performance charts in BitBasis have changed how I view my bitcoin strategy. Being able to visualize my DCA approach over time has been incredibly valuable. This tool strikes the perfect balance between simplicity and depth."</p>
+            <p className="text-gray-300 italic leading-relaxed">&ldquo;The performance charts in BitBasis have changed how I view my bitcoin strategy. Being able to visualize my DCA approach over time has been incredibly valuable. This tool strikes the perfect balance between simplicity and depth.&rdquo;</p>
           </div>
         </div>
       </div>

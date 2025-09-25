@@ -11,7 +11,7 @@ export function FeaturesSection() {
             { icon: UploadCloud, title: "Simple CSV Upload", description: "Easily import your transaction history from popular exchanges and wallets via CSV. No API keys needed.", color: "text-bitcoin-orange" },
             { icon: BarChart, title: "Cost Basis Calculation", description: "Accurately calculate your Bitcoin cost basis using FIFO, LIFO, or HIFO methods.", color: "text-bitcoin-orange" },
             { icon: TrendingUp, title: "Performance Tracking", description: "Visualize your portfolio growth, unrealized gains, ROI, and other key metrics over time.", color: "text-bitcoin-orange" },
-            { icon: Shield, title: "Privacy Focused", description: "Your data stays in secure cloud storage. We don't track or sell your financial information.", color: "text-bitcoin-orange" },
+            { icon: Shield, title: "Privacy Focused", description: "Your data stays in secure cloud storage. We don&rsquo;t track or sell your financial information.", color: "text-bitcoin-orange" },
             { icon: Lock, title: "Secure Storage", description: "Built on Supabase with robust security measures, including encryption at rest and Row Level Security.", color: "text-bitcoin-orange" },
             { icon: Percent, title: "Tax Lot Identification", description: "Track individual Bitcoin purchase lots to optimize for short-term vs. long-term capital gains.", color: "text-bitcoin-orange" },
           ].map((feature, index) => (
