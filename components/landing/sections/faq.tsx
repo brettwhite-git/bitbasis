@@ -11,19 +11,19 @@ export function FAQSection() {
             <AccordionItem value="item-1" className="bg-gray-800/20 rounded-lg px-6 transition-colors hover:bg-gray-800/30 shadow-sm">
               <AccordionTrigger className="text-left font-medium text-white hover:no-underline py-4">Is my data secure and private?</AccordionTrigger>
               <AccordionContent className="text-gray-400 pb-4 pt-2 text-sm leading-relaxed">
-                Absolutely. Privacy is our top priority. We don&#39;t require API keys or direct connections to your exchanges. All data is handled via secure CSV uploads and stored either locally in your browser (for basic use) or encrypted in our secure database (for Pro users) using Supabase. We never sell or share your data.
+                Absolutely. Privacy is our top priority. We don't require API keys or direct connections to your exchanges. All data is handled via secure CSV uploads and stored either locally in your browser or encrypted in our secure database using Supabase. We never sell or share your data.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2" className="bg-gray-800/20 rounded-lg px-6 transition-colors hover:bg-gray-800/30 shadow-sm">
               <AccordionTrigger className="text-left font-medium text-white hover:no-underline py-4">Which exchanges/wallets are supported?</AccordionTrigger>
               <AccordionContent className="text-gray-400 pb-4 pt-2 text-sm leading-relaxed">
-                BitBasis is designed to work with standard CSV transaction history exports from most major platforms, including Coinbase, Binance, Kraken, Gemini, Ledger Live, Trezor Suite, and many others. If your platform provides a CSV export, it should be compatible.
+                BitBasis is designed to work with standard CSV transaction history exports from most major platforms, including River, Kraken, Coinbase, Binance, Trezor, and many others. If your platform provides a CSV export, it should be compatible.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-3" className="bg-gray-800/20 rounded-lg px-6 transition-colors hover:bg-gray-800/30 shadow-sm">
               <AccordionTrigger className="text-left font-medium text-white hover:no-underline py-4">How is the cost basis calculated?</AccordionTrigger>
               <AccordionContent className="text-gray-400 pb-4 pt-2 text-sm leading-relaxed">
-                Currently, we primarily use the First-In, First-Out (FIFO) method, which is common in many regions. We plan to introduce LIFO (Last-In, First-Out) and HIFO (Highest-In, First-Out) options for Pro users soon to provide more flexibility for tax optimization strategies.
+                Currently, we show users the FIFO (First-In, First-Out) method, LIFO (Last-In, First-Out) and HIFO (Highest-In, First-Out) options in order to provide more flexibility for tax optimization strategies. BitBasis is not a tax calculator, but a tool to help you organize and calculate your transaction data for potential tax reporting purposes. We strongly recommend consulting with a qualified tax professional regarding your specific situation.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-4" className="bg-gray-800/20 rounded-lg px-6 transition-colors hover:bg-gray-800/30 shadow-sm">

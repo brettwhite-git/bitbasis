@@ -10,35 +10,32 @@ export function TestimonialsSection() {
           {/* Testimonial 1 */}
           <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/60 border border-white/10 rounded-xl p-8 shadow-lg">
             <div className="flex items-center mb-4">
-              <Image className="h-12 w-12 rounded-full mr-4 ring-2 ring-bitcoin-orange/50" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User avatar" width={48} height={48}/>
+              <img className="h-12 w-12 rounded-full mr-4 ring-2 ring-bitcoin-orange/50" src="https://api.dicebear.com/9.x/adventurer/png?seed=Brian" alt="Alex R. avatar" width={48} height={48}/>
               <div>
                 <p className="font-semibold text-white">Alex R.</p>
-                <p className="text-sm text-gray-500">Long-term HODLer</p>
               </div>
             </div>
-            <p className="text-gray-300 italic leading-relaxed">&ldquo;Finally, a simple way to track my Bitcoin cost basis without giving up my privacy. BitBasis is exactly what I needed. The interface is clean and calculating my potential tax obligations is much less stressful now.&rdquo;</p>
+            <p className="text-gray-300 italic leading-relaxed">"Finally, a simple way to track my Bitcoin cost basis without giving up my privacy. BitBasis is exactly what I needed. The interface is clean and calculating my potential tax obligations is much less stressful now."</p>
           </div>
           {/* Testimonial 2 */}
           <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/60 border border-white/10 rounded-xl p-8 shadow-lg">
             <div className="flex items-center mb-4">
-              <Image className="h-12 w-12 rounded-full mr-4 ring-2 ring-blue-500/50" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User avatar" width={48} height={48}/>
+              <Image className="h-12 w-12 rounded-full mr-4 ring-2 ring-blue-500/50" src="https://api.dicebear.com/9.x/adventurer/png?seed=Vivian" alt="User avatar" width={48} height={48}/>
               <div>
                 <p className="font-semibold text-white">Sarah K.</p>
-                <p className="text-sm text-gray-500">Privacy Advocate</p>
               </div>
             </div>
-            <p className="text-gray-300 italic leading-relaxed">&ldquo;I was hesitant to use online portfolio trackers because of privacy concerns. BitBasis&#39;s focus on CSV imports and no exchange connections sold me. It&#39;s secure, easy to use, and respects user data.&rdquo;</p>
+            <p className="text-gray-300 italic leading-relaxed">"I was hesitant to use online portfolio trackers because of privacy concerns. BitBasis's focus on CSV imports and no exchange connections sold me. It's secure, easy to use, and respects user data."</p>
           </div>
           {/* Testimonial 3 */}
           <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/60 border border-white/10 rounded-xl p-8 shadow-lg">
             <div className="flex items-center mb-4">
-              <Image className="h-12 w-12 rounded-full mr-4 ring-2 ring-amber-500/50" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User avatar" width={48} height={48}/>
+              <Image className="h-12 w-12 rounded-full mr-4 ring-2 ring-amber-500/50" src="https://api.dicebear.com/9.x/adventurer/png?seed=Michael" alt="User avatar" width={48} height={48}/>
               <div>
                 <p className="font-semibold text-white">Michael T.</p>
-                <p className="text-sm text-gray-500">DCA Investor</p>
               </div>
             </div>
-            <p className="text-gray-300 italic leading-relaxed">&ldquo;The performance charts in BitBasis have changed how I view my bitcoin strategy. Being able to visualize my DCA approach over time has been incredibly valuable. This tool strikes the perfect balance between simplicity and depth.&rdquo;</p>
+            <p className="text-gray-300 italic leading-relaxed">"The performance charts in BitBasis have changed how I view my bitcoin strategy. Being able to visualize my DCA approach over time has been incredibly valuable. This tool strikes the perfect balance between simplicity and depth."</p>
           </div>
         </div>
       </div>

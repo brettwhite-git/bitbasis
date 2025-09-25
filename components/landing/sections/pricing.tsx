@@ -11,7 +11,7 @@ export function PricingSection() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {/* Free Tier */}
           <div className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-8 shadow-md transition-all duration-300">
-            <div className="absolute inset-0 border-2 border-gray-700/50 rounded-xl opacity-70 blur-[0.5px]"></div>
+            <div className="absolute inset-0 border-2 border-gray-700/50 rounded-xl opacity-70 blur-[0.5px] pointer-events-none"></div>
             <h3 className="text-2xl font-semibold text-white mb-2">Free</h3>
             <p className="text-gray-400 mb-6">Get started with essential tracking features.</p>
             <p className="text-4xl font-bold text-white mb-6">$0 <span className="text-lg font-normal text-gray-400">/ month</span></p>
@@ -29,7 +29,7 @@ export function PricingSection() {
           </div>
           {/* Pro Tier */}
           <div className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/30 via-[#171923]/50 to-gray-800/30 p-8 shadow-xl shadow-bitcoin-orange/5 transition-all duration-300 transform md:scale-105">
-            <div className="absolute inset-0 border-2 border-bitcoin-orange/30 rounded-xl opacity-50 blur-[0.5px]"></div>
+            <div className="absolute inset-0 border-2 border-bitcoin-orange/30 rounded-xl opacity-50 blur-[0.5px] pointer-events-none"></div>
             <div className="absolute top-0 right-0 bg-bitcoin-orange text-black text-xs font-bold px-3 py-1 rounded-bl-lg">Most Popular</div>
             <h3 className="text-2xl font-semibold text-white mb-2">Pro</h3>
             <p className="text-gray-400 mb-6">Unlock advanced features and unlimited tracking.</p>
@@ -50,7 +50,7 @@ export function PricingSection() {
           </div>
           {/* Lifetime Tier */}
           <div className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/40 via-[#171923]/60 to-gray-800/40 p-8 shadow-xl shadow-bitcoin-orange/10 transition-all duration-300 transform md:scale-100">
-            <div className="absolute inset-0 border-2 border-bitcoin-orange/40 rounded-xl opacity-60 blur-[0.5px]"></div>
+            <div className="absolute inset-0 border-2 border-bitcoin-orange/40 rounded-xl opacity-60 blur-[0.5px] pointer-events-none"></div>
             <div className="absolute top-0 right-0 bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-black text-xs font-bold px-3 py-1 rounded-bl-lg">Best Value</div>
             <h3 className="text-2xl font-semibold text-white mb-2">Lifetime</h3>
             <p className="text-gray-400 mb-6">One-time payment for lifetime access.</p>

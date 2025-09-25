@@ -36,10 +36,12 @@ export function HeroSection() {
                  <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 group-active:opacity-20 transition-opacity duration-300"></span>
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="group w-full sm:w-auto text-gray-300 border-gray-700 hover:bg-gray-800/50 hover:text-white hover:border-gray-600 transform hover:-translate-y-1 transition-all duration-300 px-8 py-3">
-              Learn how it works
-              <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
-            </Button>
+            <Link href="#features">
+              <Button size="lg" variant="outline" className="group w-full sm:w-auto text-gray-300 border-gray-700 hover:bg-gray-800/50 hover:text-white hover:border-gray-600 transform hover:-translate-y-1 transition-all duration-300 px-8 py-3">
+                Learn how it works
+                <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

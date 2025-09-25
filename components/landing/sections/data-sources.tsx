@@ -9,13 +9,12 @@ export function DataSourcesSection() {
         </p>
         {/* Placeholder for exchange logos - requires actual logo assets */}
         <div className="flex justify-center items-center gap-8 md:gap-12 filter grayscale opacity-60">
+          <span className="text-2xl font-semibold">River</span>
+          <span className="text-2xl font-semibold">Kraken</span>
           <span className="text-2xl font-semibold">Coinbase</span>
           <span className="text-2xl font-semibold">Binance</span>
-          <span className="text-2xl font-semibold">Kraken</span>
-          <span className="text-2xl font-semibold">Ledger</span>
           <span className="text-2xl font-semibold">Trezor</span>
         </div>
-        <p className="mt-8 text-sm text-gray-500">(And many more...)</p>
       </div>
     </section>
   )
