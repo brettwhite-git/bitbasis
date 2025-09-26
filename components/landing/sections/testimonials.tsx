@@ -26,7 +26,7 @@ export function TestimonialsSection() {
                 <p className="font-semibold text-white">Sarah K.</p>
               </div>
             </div>
-            <p className="text-gray-300 italic leading-relaxed">&ldquo;I was hesitant to use online portfolio trackers because of privacy concerns. BitBasis&rsquo;s focus on CSV imports and no exchange connections sold me. It&rsquo;s secure, easy to use, and respects user data.&rdquo;</p>
+            <p className="text-gray-300 italic leading-relaxed">&ldquo;I was hesitant to use online portfolio trackers because of privacy concerns. BitBasis&apos;s focus on CSV imports and no exchange connections sold me. It&apos;s secure, easy to use, and respects user data.&rdquo;</p>
           </div>
           {/* Testimonial 3 */}
           <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/60 border border-white/10 rounded-xl p-8 shadow-lg">

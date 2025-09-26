@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowRight, Lock } from "lucide-react"
 
 export function HeroSection() {
@@ -68,10 +69,13 @@ export function HeroSection() {
                 
                 {/* Image container with fade effect */}
                 <div className="relative">
-                  <img 
+                  <Image 
                     src="/dashboard-render.jpg" 
                     alt="BitBasis Dashboard Preview - Bitcoin Portfolio Tracking Interface" 
+                    width={2000}
+                    height={1200}
                     className="w-full h-auto"
+                    priority
                   />
                   
                   {/* Bottom fade gradient overlay */}

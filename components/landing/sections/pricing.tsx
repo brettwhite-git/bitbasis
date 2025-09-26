@@ -17,7 +17,6 @@ export function PricingSection() {
             <p className="text-4xl font-bold text-white mb-6">$0 <span className="text-lg font-normal text-gray-400">/ month</span></p>
             <ul className="space-y-3 text-gray-300 mb-8">
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> Up to 50 transactions</li>
-              <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> Basic Cost Basis (FIFO)</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> Portfolio Overview</li>
               <li className="flex items-center"><CheckCircle className="w-5 h-5 mr-3 text-green-500" /> CSV Import</li>
             </ul>

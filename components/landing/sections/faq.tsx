@@ -11,7 +11,7 @@ export function FAQSection() {
             <AccordionItem value="item-1" className="bg-gray-800/20 rounded-lg px-6 transition-colors hover:bg-gray-800/30 shadow-sm">
               <AccordionTrigger className="text-left font-medium text-white hover:no-underline py-4">Is my data secure and private?</AccordionTrigger>
               <AccordionContent className="text-gray-400 pb-4 pt-2 text-sm leading-relaxed">
-                Absolutely. Privacy is our top priority. We don&rsquo;t require API keys or direct connections to your exchanges. All data is handled via secure CSV uploads and stored either locally in your browser or encrypted in our secure database using Supabase. We never sell or share your data.
+                Absolutely. Privacy is our top priority. We don&apos;t require API keys or direct connections to your exchanges. All data is handled via secure CSV uploads and stored either locally in your browser or encrypted in our secure database using Supabase. We never sell or share your data.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2" className="bg-gray-800/20 rounded-lg px-6 transition-colors hover:bg-gray-800/30 shadow-sm">
