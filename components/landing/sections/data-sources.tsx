@@ -3,17 +3,17 @@ export function DataSourcesSection() {
     <section className="py-16 md:py-24 relative">
       <div className="absolute inset-0 bg-[#171923]/0 z-[-1]"></div>
       <div className="container mx-auto px-4 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-8">Works with Your Exchange Data</h2>
-        <p className="text-lg text-gray-400 max-w-3xl mx-auto mb-12">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6 sm:mb-8 px-4 sm:px-0">Works with Your Exchange Data</h2>
+        <p className="text-base sm:text-lg text-gray-400 max-w-3xl mx-auto mb-8 sm:mb-12 px-4 sm:px-0 leading-relaxed">
           BitBasis processes standard CSV export files. Simply download your transaction history from your favorite exchange or wallet and upload it securely.
         </p>
-        {/* Placeholder for exchange logos - requires actual logo assets */}
-        <div className="flex justify-center items-center gap-8 md:gap-12 filter grayscale opacity-60">
-          <span className="text-2xl font-semibold">River</span>
-          <span className="text-2xl font-semibold">Kraken</span>
-          <span className="text-2xl font-semibold">Coinbase</span>
-          <span className="text-2xl font-semibold">Binance</span>
-          <span className="text-2xl font-semibold">Trezor</span>
+        {/* Mobile responsive exchange logos */}
+        <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 md:gap-8 lg:gap-12 filter grayscale opacity-60 px-4 sm:px-0">
+          <span className="text-lg sm:text-xl md:text-2xl font-semibold whitespace-nowrap">River</span>
+          <span className="text-lg sm:text-xl md:text-2xl font-semibold whitespace-nowrap">Kraken</span>
+          <span className="text-lg sm:text-xl md:text-2xl font-semibold whitespace-nowrap">Coinbase</span>
+          <span className="text-lg sm:text-xl md:text-2xl font-semibold whitespace-nowrap">Binance</span>
+          <span className="text-lg sm:text-xl md:text-2xl font-semibold whitespace-nowrap">Trezor</span>
         </div>
       </div>
     </section>
