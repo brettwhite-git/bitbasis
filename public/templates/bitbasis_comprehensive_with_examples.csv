@@ -1,0 +1,9 @@
+Date,Type,Sent Amount,Sent Currency,Received Amount,Received Currency,Fee Amount,Fee Currency,From Address Name,To Address Name,From Address,To Address,Transaction Hash,Price,Comment
+2024-01-15,buy,1000.00,USD,0.025,BTC,5.00,USD,River,Personal Wallet,,,a1b2c3d4e5f6789,40000.00,Monthly DCA purchase
+2024-02-01,sell,0.01,BTC,420.00,USD,2.10,USD,Personal Wallet,River,bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh,,b2c3d4e5f6789a1b,42000.00,Profit taking
+2024-01-20,deposit,,,0.05,BTC,0.0002,BTC,Friend's Wallet,Personal Wallet,1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa,bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4,c3d4e5f6789a1b2c,41000.00,Gift from friend
+2024-01-25,withdrawal,0.02,BTC,,,0.0003,BTC,Personal Wallet,Cold Storage,bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4,3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy,d4e5f6789a1b2c3d,41500.00,Moving to cold storage
+2024-01-31,interest,,,0.001,BTC,,,BlockFi,Personal Wallet,,,e5f6789a1b2c3d4e,43000.00,Monthly interest payment
+2024-02-15,buy,500.00,USD,0.012,BTC,2.50,USD,Coinbase Pro,Personal Wallet,,,f6789a1b2c3d4e5f,41666.67,Weekly DCA
+2024-03-01,deposit,,,0.1,BTC,,,Binance,Personal Wallet,,,789a1b2c3d4e5f67,45000.00,Transfer from exchange
+2024-03-10,withdrawal,0.005,BTC,,,0.00015,BTC,Personal Wallet,Ledger Hardware,bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq,bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4,89a1b2c3d4e5f678,46000.00,Long-term storage

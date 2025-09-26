@@ -16,27 +16,27 @@ import type { ColumnMapping, TransactionFieldType } from './import-context'
  * REQUIRED FIELDS:
  * - date: Transaction date/timestamp
  * - type: Transaction type (buy/sell/deposit/withdrawal/interest)
- * 
- * OPTIONAL FIELDS:
+ * - price: BTC price at time of transaction
  * - sent_amount: Amount sent/paid (e.g., USD paid for BTC)
  * - sent_currency: Currency of sent amount (e.g., USD, BTC)
  * - received_amount: Amount received (e.g., BTC received)
  * - received_currency: Currency of received amount (e.g., BTC, USD)
+ * 
+ * OPTIONAL FIELDS:
  * - fee_amount: Transaction fee amount
  * - fee_currency: Currency of the fee
  * - from_address_name: Source name (exchange, wallet name)
  * - to_address_name: Destination name
  * - from_address: Source wallet address (blockchain address)
  * - to_address: Destination wallet address (blockchain address)
- * - transaction_hash: Blockchain transaction ID/hash
- * - price: BTC price at time of transaction
+ * - transaction_hash: Blockchain transaction hash/ID
  * - comment: Additional notes/comments
  * - ignore: Skip this CSV column (don't import)
  * 
  * IMPORTANT RULES:
  * - Each transaction field can only be mapped to ONE CSV column
  * - Multiple CSV columns cannot map to the same transaction field
- * - Required fields (date, type) must be mapped
+ * - Required fields (date, type, price, sent_amount, sent_currency, received_amount, received_currency) must be mapped
  * - Duplicate mappings will prevent import
  * - Unmapped columns are ignored (don't block import)
  * 
@@ -65,18 +65,18 @@ const TRANSACTION_FIELDS: {
 }[] = [
   { value: 'date', label: 'Date', description: 'Transaction date', required: true },
   { value: 'type', label: 'Type', description: 'Transaction type (buy/sell/deposit/withdrawal)', required: true },
-  { value: 'sent_amount', label: 'Sent Amount', description: 'Amount sent/paid', required: false },
-  { value: 'sent_currency', label: 'Sent Currency', description: 'Currency of sent amount', required: false },
-  { value: 'received_amount', label: 'Received Amount', description: 'Amount received', required: false },
-  { value: 'received_currency', label: 'Received Currency', description: 'Currency of received amount', required: false },
+  { value: 'sent_amount', label: 'Sent Amount', description: 'Amount sent/paid', required: true },
+  { value: 'sent_currency', label: 'Sent Currency', description: 'Currency of sent amount', required: true },
+  { value: 'received_amount', label: 'Received Amount', description: 'Amount received', required: true },
+  { value: 'received_currency', label: 'Received Currency', description: 'Currency of received amount', required: true },
   { value: 'fee_amount', label: 'Fee Amount', description: 'Transaction fee', required: false },
   { value: 'fee_currency', label: 'Fee Currency', description: 'Currency of fee', required: false },
   { value: 'from_address_name', label: 'From (Name)', description: 'Source name (exchange, wallet)', required: false },
   { value: 'to_address_name', label: 'To (Name)', description: 'Destination name', required: false },
   { value: 'from_address', label: 'From Address', description: 'Source wallet address', required: false },
   { value: 'to_address', label: 'To Address', description: 'Destination wallet address', required: false },
-  { value: 'transaction_hash', label: 'Transaction Hash', description: 'Blockchain transaction ID', required: false },
-  { value: 'price', label: 'Price', description: 'BTC price at transaction time', required: false },
+  { value: 'transaction_hash', label: 'Hash', description: 'Blockchain transaction hash/ID', required: false },
+  { value: 'price', label: 'Price', description: 'BTC price at transaction time', required: true },
   { value: 'comment', label: 'Comment/Note', description: 'Additional notes', required: false },
   { value: 'ignore', label: 'Ignore Column', description: 'Skip this column', required: false }
 ]
@@ -108,8 +108,10 @@ export function MappingStep() {
       return { field: 'date', confidence: 0.9 }
     }
     
-    // Type patterns
-    if (name.includes('type') || name.includes('action') || name.includes('side')) {
+    // Type patterns - be specific to avoid matching "transaction" (which contains "action")
+    if (name.includes('type') || 
+        (name.includes('action') && !name.includes('transaction')) || 
+        name.includes('side')) {
       return { field: 'type', confidence: 0.8 }
     }
     
@@ -273,8 +275,13 @@ export function MappingStep() {
       return { field: 'from_address_name', confidence: 0.7 }
     }
     
-    // Hash patterns
-    if (name.includes('hash') || name.includes('txid') || name.includes('transaction') && name.includes('id')) {
+    // Hash patterns - be very specific to avoid confusion with transaction type
+    // Check for hash-specific patterns first (most specific to least specific)
+    if (name.includes('hash') || name.includes('txid') || name.includes('tx_id') ||
+        name === 'transaction id' || name === 'transaction_id' ||
+        name === 'tx id' || name === 'txhash' || name === 'tx_hash' ||
+        (name.includes('transaction') && name.includes('hash')) ||
+        (name.includes('tx') && name.includes('hash'))) {
       return { field: 'transaction_hash', confidence: 0.9 }
     }
     
@@ -306,7 +313,8 @@ export function MappingStep() {
           if (header.toLowerCase().includes('fee') || header.toLowerCase().includes('amount') ||
               header.toLowerCase().includes('from') || header.toLowerCase().includes('to') ||
               header.toLowerCase().includes('source') || header.toLowerCase().includes('destination') ||
-              header.toLowerCase().includes('address')) {
+              header.toLowerCase().includes('address') || header.toLowerCase().includes('type') ||
+              header.toLowerCase().includes('hash') || header.toLowerCase().includes('transaction')) {
             console.log('🔍 Column detection debug:', {
               originalHeader: header,
               normalizedName: header.toLowerCase().trim(),
@@ -327,6 +335,26 @@ export function MappingStep() {
         
         setMappings(autoMappings)
         setColumnMappings(autoMappings)
+        
+        // Debug duplicate mappings
+        const fieldCounts = new Map<TransactionFieldType, string[]>()
+        autoMappings.forEach(mapping => {
+          if (mapping.transactionField && mapping.transactionField !== 'ignore') {
+            const existing = fieldCounts.get(mapping.transactionField) || []
+            fieldCounts.set(mapping.transactionField, [...existing, mapping.csvColumn])
+          }
+        })
+        
+        const duplicates = Array.from(fieldCounts.entries())
+          .filter(([, csvColumns]) => csvColumns.length > 1)
+        
+        if (duplicates.length > 0) {
+          console.log('🚨 Duplicate mappings detected:', duplicates.map(([field, csvColumns]) => ({
+            field,
+            csvColumns,
+            fieldLabel: TRANSACTION_FIELDS.find(f => f.value === field)?.label
+          })))
+        }
         
         // Generate preview data (first 3 rows)
         const preview = csvData.slice(0, 3).map((row, index) => ({

@@ -1,0 +1,11 @@
+Date,Type,Sent Amount,Sent Currency,Received Amount,Received Currency,Fee Amount,Fee Currency,From,To,Price,Comment
+2024-01-15,buy,1000.00,USD,0.025,BTC,5.00,USD,River,Personal Wallet,40000.00,Monthly DCA purchase
+2024-02-01,sell,0.01,BTC,420.00,USD,2.10,USD,Personal Wallet,River,42000.00,Profit taking
+2024-01-20,deposit,,,0.05,BTC,0.0002,BTC,Friend,Personal Wallet,41000.00,Gift from friend
+2024-01-25,withdrawal,0.02,BTC,,,0.0003,BTC,Personal Wallet,Cold Storage,41500.00,Moving to cold storage
+2024-01-31,interest,,,0.001,BTC,,,BlockFi,Personal Wallet,43000.00,Monthly interest payment
+2024-02-15,buy,500.00,USD,0.012,BTC,2.50,USD,Coinbase,Personal Wallet,41666.67,Weekly DCA
+2024-03-01,deposit,,,0.1,BTC,,,Exchange,Personal Wallet,45000.00,Transfer from exchange
+2024-03-10,withdrawal,0.005,BTC,,,0.00015,BTC,Personal Wallet,Hardware Wallet,46000.00,Long-term storage
+2024-03-15,sell,0.002,BTC,92.00,USD,0.46,USD,Personal Wallet,Coinbase,46000.00,Small expense coverage
+2024-03-31,interest,,,0.0005,BTC,,,Celsius,Personal Wallet,47000.00,Quarterly interest
