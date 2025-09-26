@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import Image from "next/image"
 import { ArrowRight, Lock } from "lucide-react"
+import { DashboardImage } from "../dashboard-image"
 
 export function HeroSection() {
   return (
@@ -67,16 +67,9 @@ export function HeroSection() {
                 {/* Top border accent */}
                 <div className="h-px bg-gradient-to-r from-transparent via-bitcoin-orange/60 to-transparent"></div>
                 
-                {/* Image container with fade effect */}
+                {/* Optimized dashboard image with overlays */}
                 <div className="relative">
-                  <Image 
-                    src="/dashboard-render.jpg" 
-                    alt="BitBasis Dashboard Preview - Bitcoin Portfolio Tracking Interface" 
-                    width={2000}
-                    height={1200}
-                    className="w-full h-auto"
-                    priority
-                  />
+                  <DashboardImage />
                   
                   {/* Bottom fade gradient overlay */}
                   <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent opacity-60"></div>

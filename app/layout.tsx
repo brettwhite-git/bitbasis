@@ -32,6 +32,33 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Preload critical dashboard images for faster landing page */}
+        <link
+          rel="preload"
+          as="image"
+          href="/dashboard-render-sm.webp"
+          media="(max-width: 640px)"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="/dashboard-render-md.webp"
+          media="(max-width: 1024px)"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="/dashboard-render-lg.webp"
+          media="(max-width: 1600px)"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="/dashboard-render.webp"
+          media="(min-width: 1601px)"
+        />
+      </head>
       <body className={inter.className}>
         <ThemeProvider>
           <SupabaseProvider>

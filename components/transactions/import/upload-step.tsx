@@ -2,7 +2,7 @@
 
 import React, { useCallback, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Upload, FileText, AlertCircle } from 'lucide-react'
+import { Upload, FileText, AlertCircle, Download } from 'lucide-react'
 import Papa from 'papaparse'
 import { useImport } from './import-context'
 import type { CSVRow } from './import-context'
@@ -243,6 +243,45 @@ export function UploadStep() {
           </div>
         </div>
       )}
+
+      {/* Template Download Buttons */}
+      <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 rounded-xl p-4 border border-gray-700/30">
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-medium text-white mb-2">Need a template?</h4>
+            <p className="text-sm text-gray-400">
+              Download our standardized CSV templates to get started quickly.
+            </p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Basic Template Button */}
+            <Button asChild variant="outline" className="flex-1 bg-gray-800/40 border-gray-600/50 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:border-gray-500/70 transition-all duration-200">
+              <a href="/templates/bitbasis_template_with_examples.csv" download>
+                <Download className="mr-2 h-4 w-4" />
+                Basic Template
+              </a>
+            </Button>
+            
+            {/* Comprehensive Template Button */}
+            <Button asChild variant="outline" className="flex-1 bg-gray-800/40 border-gray-600/50 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:border-gray-500/70 transition-all duration-200">
+              <a href="/templates/bitbasis_comprehensive_with_examples.csv" download>
+                <FileText className="mr-2 h-4 w-4" />
+                Comprehensive Template
+              </a>
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-gray-500">
+            <div className="text-center">
+              <span className="font-medium text-gray-400">Basic:</span> Essential fields for most users
+            </div>
+            <div className="text-center">
+              <span className="font-medium text-gray-400">Comprehensive:</span> All fields + addresses
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Help text */}
       <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">

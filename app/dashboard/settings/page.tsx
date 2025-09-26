@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { AccountSettings } from "@/components/settings/account-settings"
 import { ManageFilesSettings } from "@/components/settings/manage-files"
 import { ResourcesSettings } from "@/components/settings/resources-settings"
@@ -8,7 +9,16 @@ import { ResourcesSettings } from "@/components/settings/resources-settings"
 type SettingsSection = 'account' | 'files' | 'resources' // Add more sections as needed
 
 export default function SettingsPage() {
+  const searchParams = useSearchParams()
   const [activeSection, setActiveSection] = useState<SettingsSection>('account')
+
+  // Handle section query parameter
+  useEffect(() => {
+    const section = searchParams.get('section') as SettingsSection
+    if (section && ['account', 'files', 'resources'].includes(section)) {
+      setActiveSection(section)
+    }
+  }, [searchParams])
 
   const renderSection = () => {
     switch (activeSection) {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -33,9 +33,11 @@ import { useAuth } from "@/providers/supabase-auth-provider"
 import { useTaxMethod } from "@/providers/tax-method-provider"
 import { useToast } from "@/lib/hooks/use-toast"
 import { exportAllUserDataSingle } from "@/lib/utils/user-data-export"
+import { useDisplayName } from "@/lib/hooks/use-display-name"
 
 // Form schema for account settings
 const accountSettingsSchema = z.object({
+  displayName: z.string().max(50, "Display name must be 50 characters or less").optional(),
   taxMethod: z.enum(["fifo", "lifo", "hifo"], {
     required_error: "Please select a cost basis method.",
   }),
@@ -46,39 +48,72 @@ type AccountSettingsFormValues = z.infer<typeof accountSettingsSchema>
 export function AccountSettings() {
   const { user } = useAuth()
   const { taxMethod, setTaxMethod } = useTaxMethod()
+  const { displayName, setDisplayName, isLoaded } = useDisplayName()
   const { toast } = useToast()
   const [isDeleting, setIsDeleting] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Initialize form with current values
   const form = useForm<AccountSettingsFormValues>({
     resolver: zodResolver(accountSettingsSchema),
     defaultValues: {
+      displayName: displayName || "",
       taxMethod: taxMethod as "fifo" | "lifo" | "hifo",
     },
   })
 
-  // Auto-save function
-  const handleFormChange = async (values: AccountSettingsFormValues) => {
+  // Update form when displayName loads from localStorage
+  useEffect(() => {
+    if (isLoaded) {
+      form.setValue('displayName', displayName || "")
+    }
+  }, [displayName, isLoaded, form])
+
+  // Form submit handler
+  const handleFormSubmit = async (values: AccountSettingsFormValues) => {
+    setIsSaving(true)
     try {
+      let hasChanges = false
+      const updates = []
+
+      // Update display name if it changed
+      if (values.displayName !== displayName) {
+        setDisplayName(values.displayName || "")
+        hasChanges = true
+        updates.push("display name")
+      }
+
       // Update tax method if it changed
       if (values.taxMethod !== taxMethod) {
         setTaxMethod(values.taxMethod)
+        hasChanges = true
+        updates.push("cost basis method")
+      }
+
+      if (hasChanges) {
         toast({
-          title: "Settings Updated",
-          description: "Your cost basis method has been updated.",
+          title: "Settings Saved",
+          description: `Successfully updated your ${updates.join(" and ")}.`,
+        })
+      } else {
+        toast({
+          title: "No Changes",
+          description: "No changes were made to your settings.",
         })
       }
 
       // Here you would typically save other settings to your backend
-      // For now, we'll just show a toast for other changes
-      console.log("Form values updated:", values)
-    } catch {
+      console.log("Form values saved:", values)
+    } catch (error) {
+      console.error("Save error:", error)
       toast({
         title: "Error",
-        description: "Failed to update settings. Please try again.",
+        description: "Failed to save settings. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsSaving(false)
     }
   }
   
@@ -129,151 +164,144 @@ export function AccountSettings() {
 
   return (
     <div className="grid gap-6">
-      {/* Email Section - Read Only */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Email Address</h3>
-            <Badge className="bg-green-600 text-white flex items-center gap-1 px-2">
-              <CheckCircle className="h-3.5 w-3.5" />
-              Verified
-            </Badge>
-          </div>
-          <p className="text-gray-400 text-sm mb-4">
-            Your email address is used for login and notifications.
-          </p>
-          <Input 
-            id="email" 
-            type="email" 
-            value={user?.email || ""} 
-            readOnly 
-            className="bg-gray-800/30 border-gray-600/50 text-white"
-          />
-        </div>
-      </div>
-
       {/* Subscription Section - Keep existing component */}
       <SubscriptionManagement />
 
-      {/* Account Settings Form */}
+      {/* Combined Account Settings Form */}
       <Form {...form}>
         <form 
-          onChange={() => {
-            // Debounced auto-save
-            const timeoutId = setTimeout(() => {
-              const values = form.getValues()
-              handleFormChange(values)
-            }, 1000)
-            return () => clearTimeout(timeoutId)
-          }}
+          onSubmit={form.handleSubmit(handleFormSubmit)}
           className="space-y-6"
         >
-          {/* Cost Basis Method Section */}
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
             <div className="relative z-10 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-white mb-2">Cost Basis Method</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">Account Settings</h3>
+                <p className="text-gray-400 text-sm">
+                  Manage your personal information and preferences.
+                </p>
+              </div>
+
+              {/* Display Name Section */}
+              <div className="space-y-3">
+                <h4 className="text-white font-medium">Display Name</h4>
+                <p className="text-gray-400 text-sm">
+                  This name will be shown in your account dropdown. It&apos;s stored locally on your device only.
+                </p>
+                <FormField
+                  control={form.control}
+                  name="displayName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter your display name"
+                          className="bg-gray-800/30 border-gray-600/50 text-white placeholder:text-gray-400"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Email Section - Read Only */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-white font-medium">Email Address</h4>
+                  <Badge className="bg-green-600 text-white flex items-center gap-1 px-2">
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Verified
+                  </Badge>
+                </div>
+                <p className="text-gray-400 text-sm">
+                  Your email address is used for login and notifications.
+                </p>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  value={user?.email || ""} 
+                  readOnly 
+                  className="bg-gray-800/30 border-gray-600/50 text-white opacity-75"
+                />
+              </div>
+
+              {/* Cost Basis Method Section */}
+              <div className="space-y-3">
+                <h4 className="text-white font-medium">Cost Basis Method</h4>
                 <p className="text-gray-400 text-sm">
                   Select your preferred method for showing your tax liability in the overview dashboard.
                 </p>
+                <FormField
+                  control={form.control}
+                  name="taxMethod"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          className="space-y-4"
+                        >
+                          <div className="flex items-start space-x-3">
+                            <RadioGroupItem value="fifo" id="fifo" className="mt-1" />
+                            <div className="grid gap-1.5 flex-1">
+                              <label htmlFor="fifo" className="font-medium text-white">
+                                First In, First Out (FIFO)
+                              </label>
+                              <p className="text-sm text-gray-400">
+                                Assumes the first Bitcoin you purchased is the first one you sell. This method typically results in lower
+                                capital gains for assets that appreciate over time.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-start space-x-3">
+                            <RadioGroupItem value="lifo" id="lifo" className="mt-1" />
+                            <div className="grid gap-1.5 flex-1">
+                              <label htmlFor="lifo" className="font-medium text-white">
+                                Last In, First Out (LIFO)
+                              </label>
+                              <p className="text-sm text-gray-400">
+                                Assumes the last Bitcoin you purchased is the first one you sell. This method typically results in higher
+                                capital gains for assets that appreciate over time.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-start space-x-3">
+                            <RadioGroupItem value="hifo" id="hifo" className="mt-1" />
+                            <div className="grid gap-1.5 flex-1">
+                              <label htmlFor="hifo" className="font-medium text-white">
+                                Highest In, First Out (HIFO)
+                              </label>
+                              <p className="text-sm text-gray-400">
+                                Assumes the Bitcoin with the highest cost basis is sold first. This method minimizes capital gains and is
+                                optimal for tax purposes.
+                              </p>
+                            </div>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-              
-              <FormField
-                control={form.control}
-                name="taxMethod"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        className="space-y-4"
-                      >
-                        <div className="flex items-start space-x-3">
-                          <RadioGroupItem value="fifo" id="fifo" className="mt-1" />
-                          <div className="grid gap-1.5 flex-1">
-                            <label htmlFor="fifo" className="font-medium text-white">
-                              First In, First Out (FIFO)
-                            </label>
-                            <p className="text-sm text-gray-400">
-                              Assumes the first Bitcoin you purchased is the first one you sell. This method typically results in lower
-                              capital gains for assets that appreciate over time.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-start space-x-3">
-                          <RadioGroupItem value="lifo" id="lifo" className="mt-1" />
-                          <div className="grid gap-1.5 flex-1">
-                            <label htmlFor="lifo" className="font-medium text-white">
-                              Last In, First Out (LIFO)
-                            </label>
-                            <p className="text-sm text-gray-400">
-                              Assumes the last Bitcoin you purchased is the first one you sell. This method typically results in higher
-                              capital gains for assets that appreciate over time.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-start space-x-3">
-                          <RadioGroupItem value="hifo" id="hifo" className="mt-1" />
-                          <div className="grid gap-1.5 flex-1">
-                            <label htmlFor="hifo" className="font-medium text-white">
-                              Highest In, First Out (HIFO)
-                            </label>
-                            <p className="text-sm text-gray-400">
-                              Assumes the Bitcoin with the highest cost basis is sold first. This method minimizes capital gains and is
-                              optimal for tax purposes.
-                            </p>
-                          </div>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
 
-          {/* Data Privacy Section */}
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
-            <div className="relative z-10 space-y-6">
-              <div className="flex items-center gap-2 mb-4">
-                <ShieldCheck className="h-5 w-5 text-green-400" />
-                <h3 className="text-lg font-semibold text-white">Data privacy</h3>
-              </div>
-              
-              <p className="text-gray-300 text-sm leading-relaxed">
-                BitBasis believes in transparent data practices. Learn how your information is protected when using BitBasis products, and visit our{' '}
-                <a 
-                  href="/privacy" 
-                  className="text-bitcoin-orange hover:text-[#D4A76A] transition-colors duration-200 inline-flex items-center gap-1"
+              {/* Save Button */}
+              <div className="flex items-center justify-end pt-4 border-t border-gray-600/30">
+                <Button 
+                  type="submit" 
+                  disabled={isSaving}
+                  className="bg-bitcoin-orange hover:bg-[#D4A76A] text-white px-6"
                 >
-                  Privacy Policy
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-                {' '}for more details.
-              </p>
-
-              <div className="pt-4">
-                <h4 className="text-white font-medium mb-4">Export data</h4>
-                <p className="text-gray-400 text-sm mb-4">
-                  Download a copy of all your data including transactions, CSV upload history, and account information.
-                </p>
-                <Button
-                  onClick={handleExportData}
-                  disabled={isExporting}
-                  className="bg-bitcoin-orange hover:bg-[#D4A76A] text-white"
-                >
-                  {isExporting ? (
+                  {isSaving ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Exporting data...
+                      Saving...
                     </>
                   ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Export data
-                    </>
+                    "Save Changes"
                   )}
                 </Button>
               </div>
@@ -281,6 +309,52 @@ export function AccountSettings() {
           </div>
         </form>
       </Form>
+
+      {/* Data Privacy Section */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
+        <div className="relative z-10 space-y-6">
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldCheck className="h-5 w-5 text-green-400" />
+            <h3 className="text-lg font-semibold text-white">Data privacy</h3>
+          </div>
+          
+          <p className="text-gray-300 text-sm leading-relaxed">
+            BitBasis believes in transparent data practices. Learn how your information is protected when using BitBasis products, and visit our{' '}
+            <a 
+              href="/privacy" 
+              className="text-bitcoin-orange hover:text-[#D4A76A] transition-colors duration-200 inline-flex items-center gap-1"
+            >
+              Privacy Policy
+              <ExternalLink className="h-3 w-3" />
+            </a>
+            {' '}for more details.
+          </p>
+
+          <div className="pt-4">
+            <h4 className="text-white font-medium mb-4">Export data</h4>
+            <p className="text-gray-400 text-sm mb-4">
+              Download a copy of all your data including transactions, CSV upload history, and account information.
+            </p>
+            <Button
+              onClick={handleExportData}
+              disabled={isExporting}
+              className="bg-bitcoin-orange hover:bg-[#D4A76A] text-white"
+            >
+              {isExporting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Exporting data...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export data
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {/* Danger Zone */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-red-900/20 via-red-800/30 to-red-900/20 p-6 shadow-md backdrop-blur-sm border border-red-800/50">

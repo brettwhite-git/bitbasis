@@ -11,11 +11,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, User, Settings } from "lucide-react"
+import { LogOut, User, FolderOpen } from "lucide-react"
 import { useAuth } from "@/providers/supabase-auth-provider"
+import { useDisplayName } from "@/lib/hooks/use-display-name"
 import Link from "next/link"
 
-function getInitials(email: string | undefined | null): string {
+function getInitials(name: string | undefined | null, email: string | undefined | null): string {
+  // If display name exists, use it for initials
+  if (name && name.trim()) {
+    const nameParts = name.trim().split(' ')
+    if (nameParts.length >= 2 && nameParts[0] && nameParts[1]) {
+      return (nameParts[0].charAt(0) + nameParts[1].charAt(0)).toUpperCase()
+    }
+    return name.charAt(0).toUpperCase()
+  }
+  
+  // Fallback to email-based initials
   if (!email) return ''
   
   const [localPart] = email.split('@')
@@ -31,11 +42,14 @@ function getInitials(email: string | undefined | null): string {
 
 export function UserNav() {
   const { user, signOut } = useAuth()
+  const { displayName } = useDisplayName()
   
   if (!user?.email) return null
 
-  const initials = getInitials(user.email)
+  const initials = getInitials(displayName, user.email)
   if (!initials) return null
+
+  const displayText = displayName && displayName.trim() ? displayName : user.email
 
   return (
     <DropdownMenu>
@@ -51,7 +65,7 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.email}</p>
+            <p className="text-sm font-medium leading-none">{displayText}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
@@ -65,10 +79,10 @@ export function UserNav() {
               <span>Profile</span>
             </DropdownMenuItem>
           </Link>
-          <Link href="/dashboard/settings">
+          <Link href="/dashboard/settings?section=files">
             <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
+              <FolderOpen className="mr-2 h-4 w-4" />
+              <span>Manage Files</span>
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
