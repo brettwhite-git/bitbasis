@@ -164,7 +164,7 @@ const FearGreedMultiGauge: React.FC<{ className?: string }> = ({ className }) =>
     <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm ${className || ''}`}>
       <div className="relative z-10">
         <div className="pb-4 flex flex-row items-center justify-between">
-          <h3 className="text-sm font-bold text-white">Fear & Greed Index</h3>
+          <h3 className="text-md font-bold text-white">Fear & Greed Index</h3>
         </div>
         <div className="flex justify-around items-center">
           {isLoading ? (

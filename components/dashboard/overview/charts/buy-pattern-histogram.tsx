@@ -134,7 +134,7 @@ const BuyPatternHistogram: React.FC<{ className?: string }> = ({ className }) =>
     <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm flex flex-col ${className || ''}`}>
       <div className="relative z-10 flex flex-col h-full">
         <div className="pb-4">
-          <h3 className="text-sm font-bold text-white">Weekly Buy Pattern</h3>
+          <h3 className="text-md font-bold text-white">Weekly Buy Pattern</h3>
         </div>
         <div className="flex flex-col justify-end flex-grow">
           {loading ? (

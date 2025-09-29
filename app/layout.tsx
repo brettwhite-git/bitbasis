@@ -8,11 +8,14 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import "./globals.css"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Noto_Sans } from "next/font/google"
 
-const inter = Inter({
+const notoSans = Noto_Sans({
   subsets: ["latin"],
-  weight: ["500"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
+  display: "swap",
+  variable: "--font-noto-sans",
 })
 
 export const metadata: Metadata = {
@@ -59,7 +62,7 @@ export default function RootLayout({
           media="(min-width: 1601px)"
         />
       </head>
-      <body className={inter.className}>
+      <body className={`${notoSans.variable} font-sans`}>
         <ThemeProvider>
           <SupabaseProvider>
             <SupabaseAuthProvider>
