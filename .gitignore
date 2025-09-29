@@ -49,6 +49,7 @@ cursor.log
 *.temp
 .cache/
 *.log
+scripts/
 
 # OS files
 Thumbs.db

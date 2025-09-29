@@ -1,12 +1,18 @@
+'use client'
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { useScrollAnimation } from "@/lib/utils/animations"
 
 export function FAQSection() {
+  const titleRef = useScrollAnimation<HTMLHeadingElement>(0.1)
+  const accordionRef = useScrollAnimation<HTMLDivElement>(0.1)
+
   return (
     <section id="faq" className="py-16 md:py-24 relative">
       <div className="absolute inset-0 bg-[#171923]/0 z-[-1]"></div>
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-16">Frequently Asked Questions</h2>
-        <div className="max-w-3xl mx-auto">
+        <h2 ref={titleRef} className="text-3xl md:text-4xl font-bold text-center text-white mb-16">Frequently Asked Questions</h2>
+        <div ref={accordionRef} className="max-w-3xl mx-auto">
           <Accordion type="single" collapsible className="w-full space-y-5">
             <AccordionItem value="item-1" className="bg-gray-800/20 rounded-lg px-6 transition-colors hover:bg-gray-800/30 shadow-sm">
               <AccordionTrigger className="text-left font-medium text-white hover:no-underline py-4">Is my data secure and private?</AccordionTrigger>

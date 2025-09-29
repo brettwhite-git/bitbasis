@@ -1,8 +1,14 @@
+'use client'
+
+import { useScrollAnimation } from "@/lib/utils/animations"
+
 export function DataSourcesSection() {
+  const contentRef = useScrollAnimation<HTMLDivElement>(0.1)
+
   return (
     <section className="py-16 md:py-24 relative">
       <div className="absolute inset-0 bg-[#171923]/0 z-[-1]"></div>
-      <div className="container mx-auto px-4 text-center">
+      <div ref={contentRef} className="container mx-auto px-4 text-center">
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6 sm:mb-8 px-4 sm:px-0">Works with Your Exchange Data</h2>
         <p className="text-base sm:text-lg text-gray-400 max-w-3xl mx-auto mb-8 sm:mb-12 px-4 sm:px-0 leading-relaxed">
           BitBasis processes standard CSV export files. Simply download your transaction history from your favorite exchange or wallet and upload it securely.
