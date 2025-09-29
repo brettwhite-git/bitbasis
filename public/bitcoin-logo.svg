@@ -1,0 +1,10 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bitcoin B symbol -->
+  <path d="M8 7v10h5.5c2.5 0 4.5-2 4.5-4.5 0-1.2-.5-2.3-1.3-3.1.8-.8 1.3-1.9 1.3-3.1C18 4.3 16.2 2.5 14 2.5H8V7z" fill="currentColor"/>
+  <path d="M10 9v2h3c.6 0 1-.4 1-1s-.4-1-1-1h-3zm0 4v2h3.5c.8 0 1.5-.7 1.5-1.5s-.7-1.5-1.5-1.5H10z" fill="white"/>
+  <!-- Vertical lines -->
+  <rect x="11" y="1" width="1.5" height="3" fill="currentColor"/>
+  <rect x="11" y="19" width="1.5" height="3" fill="currentColor"/>
+  <rect x="13" y="1" width="1.5" height="3" fill="currentColor"/>
+  <rect x="13" y="19" width="1.5" height="3" fill="currentColor"/>
+</svg>
