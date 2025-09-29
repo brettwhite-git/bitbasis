@@ -168,6 +168,16 @@ export function BitcoinHoldingsWaterfall() {
   const [error, setError] = useState<string | null>(null)
   const { supabase } = useSupabase()
 
+  // Create placeholder data for consistent chart structure
+  const getPlaceholderData = (): WaterfallDataPoint[] => {
+    const currentYear = new Date().getFullYear()
+    return [
+      { year: (currentYear - 2).toString(), start: 0, end: 0 },
+      { year: (currentYear - 1).toString(), start: 0, end: 0 },
+      { year: currentYear.toString(), start: 0, end: 0 }
+    ]
+  }
+
   useEffect(() => {
     async function fetchTransactions() {
       setIsLoading(true)
@@ -205,9 +215,8 @@ export function BitcoinHoldingsWaterfall() {
         setWaterfallData(waterfallPoints)
       } else {
         console.log("No transactions found.")
-        setError('No transaction data available.')
         setYearlyHoldings([])
-        setWaterfallData([])
+        setWaterfallData(getPlaceholderData())
       }
       
       setIsLoading(false)
@@ -216,14 +225,18 @@ export function BitcoinHoldingsWaterfall() {
     fetchTransactions()
   }, [supabase])
 
+  // Use either loaded data or placeholder for consistent display
+  const displayData = waterfallData.length > 0 ? waterfallData : getPlaceholderData()
+  const displayHoldings = yearlyHoldings.length > 0 ? yearlyHoldings : []
+
   const data = {
-    labels: waterfallData.map(d => d.year),
+    labels: displayData.map(d => d.year),
     datasets: [
       {
         label: 'Bitcoin Holdings',
         // For floating bars, data needs to be [start, end] pairs
-        data: waterfallData.map(d => [d.start, d.end]),
-        backgroundColor: generateColors(yearlyHoldings),
+        data: displayData.map(d => [d.start, d.end]),
+        backgroundColor: isLoading ? 'rgba(247, 147, 26, 0.3)' : generateColors(displayHoldings),
         borderColor: 'hsl(var(--border))',
         borderWidth: 1,
         barPercentage: 0.8,  // Makes bars slightly narrower
@@ -236,18 +249,23 @@ export function BitcoinHoldingsWaterfall() {
     <div className="h-full bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm rounded-xl">
       <div className="pb-2 mb-4">
         <h3 className="text-lg font-semibold text-white">Bitcoin Accumulation Flow</h3>
-        <p className="text-sm text-gray-400">Waterfall chart showing how your BTC stack has grown by year</p>
+        <p className="text-sm text-gray-400">
+          {isLoading ? "Loading waterfall chart showing how your BTC stack has grown..." : "Waterfall chart showing how your BTC stack has grown by year"}
+        </p>
       </div>
-      {isLoading ? (
-        <div className="h-[350px] flex items-center justify-center text-white">Loading waterfall chart...</div>
-      ) : error ? (
+      {error ? (
         <div className="h-[350px] flex items-center justify-center text-red-400">{error}</div>
       ) : (
-        <div className="h-[350px] w-full">
+        <div className="h-[350px] w-full relative">
           <Bar 
             options={options} 
             data={data} 
           />
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm rounded-xl">
+              <div className="text-white/80 text-sm">Loading data...</div>
+            </div>
+          )}
         </div>
       )}
     </div>

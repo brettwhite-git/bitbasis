@@ -273,8 +273,8 @@ export const createHodlAgeTooltipConfig = (): Partial<TooltipOptions<any>> => ({
 export const createBtcHeatmapTooltipConfig = () => ({
   theme: 'dark' as const,
   style: {
-    fontSize: '12px',
-    fontFamily: 'inherit',
+    fontSize: `${TOOLTIP_THEME.bodyFont.size}px`,
+    fontFamily: 'Inter, sans-serif',
   },
   custom: ({ seriesIndex, dataPointIndex, w }: any) => {
     const data = w.config.series[seriesIndex].data[dataPointIndex];
@@ -290,18 +290,36 @@ export const createBtcHeatmapTooltipConfig = () => ({
         border-radius: ${TOOLTIP_THEME.cornerRadius}px;
         padding: ${TOOLTIP_THEME.padding}px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        font-family: Inter, sans-serif;
       ">
         <div style="
           color: ${TOOLTIP_THEME.titleColor};
           font-weight: ${TOOLTIP_THEME.titleFont.weight};
           font-size: ${TOOLTIP_THEME.titleFont.size}px;
+          font-family: Inter, sans-serif;
           margin-bottom: 6px;
         ">${month} ${year}</div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          <div style="color: ${TOOLTIP_THEME.bodyColor};">Buys:</div>
-          <div style="color: #F7931A; font-weight: 500;">${buys}</div>
-          <div style="color: ${TOOLTIP_THEME.bodyColor};">Sells:</div>
-          <div style="color: #E53E3E; font-weight: 500;">${sells}</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: Inter, sans-serif;">
+          <div style="
+            color: ${TOOLTIP_THEME.bodyColor};
+            font-size: ${TOOLTIP_THEME.bodyFont.size}px;
+            font-weight: ${TOOLTIP_THEME.bodyFont.weight};
+          ">Buys:</div>
+          <div style="
+            color: #F7931A; 
+            font-weight: 500;
+            font-size: ${TOOLTIP_THEME.bodyFont.size}px;
+          ">${buys}</div>
+          <div style="
+            color: ${TOOLTIP_THEME.bodyColor};
+            font-size: ${TOOLTIP_THEME.bodyFont.size}px;
+            font-weight: ${TOOLTIP_THEME.bodyFont.weight};
+          ">Sells:</div>
+          <div style="
+            color: #E53E3E; 
+            font-weight: 500;
+            font-size: ${TOOLTIP_THEME.bodyFont.size}px;
+          ">${sells}</div>
         </div>
       </div>
     `;

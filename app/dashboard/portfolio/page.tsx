@@ -6,7 +6,7 @@ import { PerformanceReturnsWrapper } from '@/components/portfolio/performance-re
 export default function PortfolioPage() {
   return (
     <div className="w-full space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight text-white">Bitcoin Portfolio</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-white">Portfolio Metrics</h1>
       
       <PortfolioMetricsWrapper />
       

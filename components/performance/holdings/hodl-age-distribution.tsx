@@ -110,6 +110,15 @@ export function HodlAgeDistribution() {
   const [error, setError] = useState<string | null>(null)
   const { supabase } = useSupabase()
 
+  // Initialize with empty age ranges for consistent chart structure
+  const getEmptyAgeRanges = (): HodlAgeData[] => [
+    { ageRange: '< 1 Year', btcAmount: 0 },
+    { ageRange: '1-2 Years', btcAmount: 0 },
+    { ageRange: '2-3 Years', btcAmount: 0 },
+    { ageRange: '3-5 Years', btcAmount: 0 },
+    { ageRange: '5+ Years', btcAmount: 0 }
+  ]
+
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true)
@@ -124,7 +133,7 @@ export function HodlAgeDistribution() {
 
         if (error) throw error
 
-        if (transactions) {
+        if (transactions && transactions.length > 0) {
           // Filter and validate transaction types to match the Transaction interface
           const validTransactions = transactions.filter(
             (transaction): transaction is Transaction => 
@@ -135,6 +144,8 @@ export function HodlAgeDistribution() {
           
           const calculatedData = calculateHodlAgeDistribution(validTransactions)
           setHodlData(calculatedData)
+        } else {
+          setHodlData(getEmptyAgeRanges())
         }
       } catch (err: unknown) {
         console.error('Error fetching HODL age data:', err)
@@ -147,12 +158,15 @@ export function HodlAgeDistribution() {
     fetchData()
   }, [supabase])
 
+  // Use either loaded data or empty structure for consistent display
+  const displayData = hodlData.length > 0 ? hodlData : getEmptyAgeRanges()
+  
   const data = {
-    labels: hodlData.map(d => d.ageRange),
+    labels: displayData.map(d => d.ageRange),
     datasets: [
       {
-        data: hodlData.map(d => d.btcAmount),
-        backgroundColor: '#F7931A', // Bitcoin Orange as hex
+        data: displayData.map(d => d.btcAmount),
+        backgroundColor: isLoading ? 'rgba(247, 147, 26, 0.3)' : '#F7931A',
         borderColor: '#1F2937',
         borderWidth: 1,
       },
@@ -163,17 +177,20 @@ export function HodlAgeDistribution() {
     <div className="h-full bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm rounded-xl">
       <div className="pb-2 mb-4">
         <h3 className="text-lg font-semibold text-white">HODL Age Distribution</h3>
-        <p className="text-sm text-gray-400">Bitcoin holdings by time held</p>
+        <p className="text-sm text-gray-400">
+          {isLoading ? "Loading Bitcoin holdings by time held..." : "Bitcoin holdings by time held"}
+        </p>
       </div>
-      {isLoading ? (
-        <div className="h-[350px] flex items-center justify-center text-white">Loading Chart...</div>
-      ) : error ? (
+      {error ? (
         <div className="h-[350px] flex items-center justify-center text-red-400">{error}</div>
-      ) : hodlData.length === 0 ? (
-        <div className="h-[350px] flex items-center justify-center text-gray-400">No data available to display.</div>
       ) : (
-        <div className="h-[350px] w-full">
+        <div className="h-[350px] w-full relative">
           <Bar options={options} data={data} />
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm rounded-xl">
+              <div className="text-white/80 text-sm">Loading data...</div>
+            </div>
+          )}
         </div>
       )}
     </div>

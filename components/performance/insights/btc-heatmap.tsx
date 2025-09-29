@@ -91,35 +91,57 @@ function calculateMonthlyTransactions(transactions: Transaction[]): HeatmapData[
 
 export function BtcHeatmap() {
   const [heatmapData, setHeatmapData] = useState<HeatmapData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const { supabase } = useSupabase()
+
+  // Create placeholder data for consistent chart structure
+  const getPlaceholderData = (): HeatmapData[] => {
+    const currentYear = new Date().getFullYear()
+    const years = [currentYear - 2, currentYear - 1, currentYear]
+    
+    return years.map(year => ({
+      name: year.toString(),
+      data: MONTHS.map(month => ({ x: month, y: 0 }))
+    }))
+  }
 
   useEffect(() => {
     async function fetchTransactions() {
-      // Fetch from 'transactions' table and select necessary columns
-      const { data: transactions, error } = await supabase
-        .from('transactions')
-        .select('date, type, sent_amount, sent_currency, received_amount, received_currency')
-        .in('type', ['buy', 'sell']) // Only include buy and sell transactions for this chart
-        .order('date', { ascending: true })
+      setIsLoading(true)
+      
+      try {
+        // Fetch from 'transactions' table and select necessary columns
+        const { data: transactions, error } = await supabase
+          .from('transactions')
+          .select('date, type, sent_amount, sent_currency, received_amount, received_currency')
+          .in('type', ['buy', 'sell']) // Only include buy and sell transactions for this chart
+          .order('date', { ascending: true })
 
-      if (error) {
-        console.error('Error fetching transactions:', error)
-        return
-      }
+        if (error) {
+          console.error('Error fetching transactions:', error)
+          setHeatmapData(getPlaceholderData())
+          return
+        }
 
-      // Ensure transactions is not null before calculating
-      if (transactions && transactions.length > 0) {
-        // Filter and validate transaction types to match the 'buy' | 'sell' union type
-        const validTransactions = transactions.filter(
-          (transaction): transaction is Transaction => 
-            transaction.type === 'buy' || transaction.type === 'sell'
-        )
-        
-        const calculatedData = calculateMonthlyTransactions(validTransactions)
-        setHeatmapData(calculatedData)
-      } else {
-        console.log("No transactions found.")
-        setHeatmapData([]) // Set empty data if no transactions
+        // Ensure transactions is not null before calculating
+        if (transactions && transactions.length > 0) {
+          // Filter and validate transaction types to match the 'buy' | 'sell' union type
+          const validTransactions = transactions.filter(
+            (transaction): transaction is Transaction => 
+              transaction.type === 'buy' || transaction.type === 'sell'
+          )
+          
+          const calculatedData = calculateMonthlyTransactions(validTransactions)
+          setHeatmapData(calculatedData.length > 0 ? calculatedData : getPlaceholderData())
+        } else {
+          console.log("No transactions found.")
+          setHeatmapData(getPlaceholderData()) // Set placeholder data if no transactions
+        }
+      } catch (error) {
+        console.error('Error in fetchTransactions:', error)
+        setHeatmapData(getPlaceholderData())
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -187,7 +209,9 @@ export function BtcHeatmap() {
         colors: '#FFFFFF' // Foreground color as hex
       },
       markers: {
-        size: 8
+        size: 8,
+        shape: 'circle' as const,
+        strokeWidth: 0
       },
       formatter: function(seriesName) {
         return `<span style="padding-left: 5px;">${seriesName}</span>`
@@ -213,24 +237,47 @@ export function BtcHeatmap() {
     tooltip: createBtcHeatmapTooltipConfig()
   }
 
-  // Return loading state if no data yet
-  if (heatmapData.length === 0) {
-    return (
-      <div className="h-[375px] w-full flex items-center justify-center text-foreground">
-        <p>Loading transaction data...</p>
-      </div>
-    )
+  // Use either loaded data or placeholder for consistent display
+  const displayData = heatmapData.length > 0 ? heatmapData : getPlaceholderData()
+
+  // Update chart options to show loading state
+  const chartOptions: ApexOptions = {
+    ...options,
+    chart: {
+      ...options.chart,
+      animations: {
+        enabled: !isLoading,
+        speed: 800,
+      }
+    },
+    plotOptions: {
+      ...options.plotOptions,
+      heatmap: {
+        ...options.plotOptions?.heatmap,
+        colorScale: {
+          ...options.plotOptions?.heatmap?.colorScale,
+          ranges: isLoading ? [
+            { from: 0, to: 0, color: 'rgba(247, 147, 26, 0.1)' }
+          ] : options.plotOptions?.heatmap?.colorScale?.ranges
+        }
+      }
+    }
   }
 
   return (
-    <div className="h-[375px] w-full text-foreground">
+    <div className="h-[375px] w-full text-foreground relative">
       {typeof window !== 'undefined' && (
         <ReactApexChart
-          options={options}
-          series={heatmapData}
+          options={chartOptions}
+          series={displayData}
           type="heatmap"
           height={375}
         />
+      )}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm rounded-xl">
+          <div className="text-white/80 text-sm">Loading transaction data...</div>
+        </div>
       )}
     </div>
   )

@@ -1,7 +1,6 @@
 'use client';
 
 // Removed Card imports - using glass morphism styling
-import { Skeleton } from "@/components/ui/skeleton";
 import { BitcoinHoldingsWaterfall } from "./bitcoin-holdings-waterfall";
 import { HodlAgeDistribution } from "./hodl-age-distribution";
 import { BtcHeatmap } from "../insights/btc-heatmap";
@@ -10,11 +9,11 @@ interface HodlDistributionProps {
   isLoading: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function HodlDistribution({ isLoading }: HodlDistributionProps) {
-  if (isLoading) {
-    return <HodlDistributionSkeleton />;
-  }
-  
+  // Individual charts now handle their own loading states consistently
+  // We always show the charts with their scaffolding for better UX
+  // Note: isLoading parameter kept for API compatibility but not used internally
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
@@ -31,19 +30,6 @@ export function HodlDistribution({ isLoading }: HodlDistributionProps) {
           <BtcHeatmap />
         </div>
       </div>
-    </>
-  );
-}
-
-function HodlDistributionSkeleton() {
-  return (
-    <>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <Skeleton className="h-[400px] bg-gray-700" />
-        <Skeleton className="h-[400px] bg-gray-700" />
-      </div>
-      
-      <Skeleton className="w-full h-[500px] bg-gray-700" />
     </>
   );
 } 

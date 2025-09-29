@@ -21,7 +21,7 @@ export function PerformanceOverview({ user }: PerformanceOverviewProps) {
   return (
     <div className="w-full space-y-6">
       <div className="w-full">
-        <h1 className="text-3xl font-bold tracking-tight text-white">Performance Overview</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-white">Performance Trends</h1>
       </div>
       
       <Tabs 

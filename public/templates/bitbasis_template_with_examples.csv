@@ -1,11 +1,31 @@
 Date,Type,Sent Amount,Sent Currency,Received Amount,Received Currency,Fee Amount,Fee Currency,From,To,Price,Comment
-2024-01-15,buy,1000.00,USD,0.025,BTC,5.00,USD,River,Personal Wallet,40000.00,Monthly DCA purchase
-2024-02-01,sell,0.01,BTC,420.00,USD,2.10,USD,Personal Wallet,River,42000.00,Profit taking
-2024-01-20,deposit,,,0.05,BTC,0.0002,BTC,Friend,Personal Wallet,41000.00,Gift from friend
-2024-01-25,withdrawal,0.02,BTC,,,0.0003,BTC,Personal Wallet,Cold Storage,41500.00,Moving to cold storage
-2024-01-31,interest,,,0.001,BTC,,,BlockFi,Personal Wallet,43000.00,Monthly interest payment
-2024-02-15,buy,500.00,USD,0.012,BTC,2.50,USD,Coinbase,Personal Wallet,41666.67,Weekly DCA
-2024-03-01,deposit,,,0.1,BTC,,,Exchange,Personal Wallet,45000.00,Transfer from exchange
-2024-03-10,withdrawal,0.005,BTC,,,0.00015,BTC,Personal Wallet,Hardware Wallet,46000.00,Long-term storage
-2024-03-15,sell,0.002,BTC,92.00,USD,0.46,USD,Personal Wallet,Coinbase,46000.00,Small expense coverage
-2024-03-31,interest,,,0.0005,BTC,,,Celsius,Personal Wallet,47000.00,Quarterly interest
+2022-03-15,buy,6000.00,USD,0.15,BTC,30.00,USD,Coinbase Pro,Personal Wallet,40000.00,Started DCA strategy
+2022-06-20,buy,4000.00,USD,0.2,BTC,20.00,USD,River,Personal Wallet,20000.00,Bear market accumulation
+2022-09-10,deposit,,,0.05,BTC,0.0003,BTC,Friend,Personal Wallet,19500.00,Gift from family
+2022-10-05,buy,3900.00,USD,0.2,BTC,19.50,USD,River,Personal Wallet,19500.00,October bear market buy
+2022-11-25,buy,8350.00,USD,0.5,BTC,41.75,USD,Strike,Personal Wallet,16700.00,FTX crash opportunity
+2022-12-10,buy,1530.00,USD,0.09,BTC,7.65,USD,Coinbase,Personal Wallet,17000.00,December accumulation
+2022-12-15,withdrawal,0.1,BTC,,,0.0008,BTC,Personal Wallet,Cold Storage,17000.00,Moving to cold storage
+2023-01-20,buy,2300.00,USD,0.1,BTC,11.50,USD,Strike,Personal Wallet,23000.00,New year accumulation
+2023-02-28,buy,7000.00,USD,0.294,BTC,35.00,USD,Coinbase,Personal Wallet,23800.00,Regional bank crisis buy
+2023-04-10,buy,2600.00,USD,0.093,BTC,13.00,USD,River,Personal Wallet,28000.00,Spring DCA
+2023-05-15,interest,,,0.008,BTC,,,River,Personal Wallet,27000.00,Interest earned
+2023-06-25,buy,3100.00,USD,0.103,BTC,15.50,USD,Coinbase Pro,Personal Wallet,30000.00,Mid-year purchase
+2023-08-10,buy,5800.00,USD,0.2,BTC,29.00,USD,River,Personal Wallet,29000.00,Summer accumulation
+2023-09-20,buy,2700.00,USD,0.08,BTC,13.50,USD,Coinbase Pro,Personal Wallet,33750.00,September accumulation
+2023-10-20,sell,0.15,BTC,4650.00,USD,23.25,USD,Personal Wallet,Coinbase,31000.00,Partial profit taking
+2023-11-30,deposit,,,0.1,BTC,0.0005,BTC,Binance,Personal Wallet,37000.00,Exchange consolidation
+2024-01-15,buy,4300.00,USD,0.1,BTC,21.50,USD,Strike,Personal Wallet,43000.00,New year DCA
+2024-02-10,buy,2000.00,USD,0.04,BTC,10.00,USD,River,Personal Wallet,50000.00,February DCA
+2024-03-25,sell,0.06,BTC,4140.00,USD,20.70,USD,Personal Wallet,River,69000.00,ATH profit taking
+2024-05-20,buy,2800.00,USD,0.04,BTC,14.00,USD,Strike,Personal Wallet,70000.00,Spring accumulation
+2024-06-15,buy,3200.00,USD,0.05,BTC,16.00,USD,Coinbase Pro,Personal Wallet,64000.00,Mid-year accumulation
+2024-08-05,buy,2320.00,USD,0.04,BTC,11.60,USD,River,Personal Wallet,58000.00,August DCA
+2024-09-10,withdrawal,0.08,BTC,,,0.0005,BTC,Personal Wallet,Hardware Wallet,58000.00,Security upgrade
+2024-11-20,interest,,,0.003,BTC,,,River,Personal Wallet,88000.00,Yield farming rewards
+2024-12-10,buy,1800.00,USD,0.02,BTC,9.00,USD,Coinbase,Personal Wallet,90000.00,End of year purchase
+2025-01-05,buy,1820.00,USD,0.02,BTC,9.10,USD,Strike,Personal Wallet,91000.00,New year purchase
+2025-02-20,buy,1900.00,USD,0.02,BTC,9.50,USD,River,Personal Wallet,95000.00,February accumulation
+2025-04-15,buy,2000.00,USD,0.02,BTC,10.00,USD,Coinbase Pro,Personal Wallet,100000.00,Spring purchase
+2025-06-30,buy,2100.00,USD,0.02,BTC,10.50,USD,Strike,Personal Wallet,105000.00,Mid-year DCA
+2025-09-25,buy,2200.00,USD,0.02,BTC,11.00,USD,River,Personal Wallet,110000.00,Q3 accumulation
