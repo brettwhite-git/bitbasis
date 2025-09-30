@@ -52,7 +52,7 @@ export function PricingSection() {
       name: "Lifetime",
       description: "One-time payment for lifetime access.",
       price: "$210",
-      priceLabel: "one-time",
+      priceLabel: "/ one-time",
       badge: "Best Value",
       features: [
         "Everything in Pro plan",

@@ -26,7 +26,7 @@ export function HeroSection() {
           </div>
 
           <p className="mt-6 text-lg md:text-xl leading-relaxed text-gray-400 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Source of truth for your Bitcoin portfolio while gaining valuable insights without connecting to exchanges.
+            A source of truth for all your Bitcoin investments across multiple exchanges and wallets.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10 px-8 sm:px-0 max-w-md sm:max-w-none mx-auto animate-fade-in-up" style={{ animationDelay: '0.4s' }}>

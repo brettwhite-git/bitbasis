@@ -13,13 +13,13 @@ export function TestimonialsSection() {
       name: "Alex R.",
       avatar: "https://api.dicebear.com/9.x/adventurer/png?seed=Brian",
       ringColor: "ring-bitcoin-orange/50",
-      quote: "Finally, a simple way to track my Bitcoin cost basis without giving up my privacy. BitBasis is exactly what I needed. The interface is clean and calculating my potential tax obligations is much less stressful now."
+      quote: "Finally, a simple way to track my Bitcoin cost basis from across multiple exchanges and wallets. BitBasis is exactly what I needed. The interface is clean and calculating my potential tax obligations is much less stressful now."
     },
     {
       name: "Sarah K.",
       avatar: "https://api.dicebear.com/9.x/adventurer/png?seed=Vivian",
       ringColor: "ring-blue-500/50",
-      quote: "I was hesitant to use online portfolio trackers because of privacy concerns. BitBasis's focus on CSV imports and no exchange connections sold me. It's secure, easy to use, and respects user data."
+      quote: "BitBasis' user centric approach is refreshing and puts the user in control. I have a number of old exchange trades that I can now track and get accurate historical gains on my portfolio."
     },
     {
       name: "Michael T.",
