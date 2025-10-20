@@ -29,20 +29,20 @@ yarn-error.log*
 .env
 .env*.local
 .env.production
-.env.local.backup
 
 # vercel
 .vercel
+
+# supabase
+supabase/migrations_backup/
+supabase/migrations/*.skip
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
 # cursor rules and AI artifacts  
-.cursor/rules/
-.cursorrules
-cursor.log
-.cursor-tutor/
+.cursor/
 
 # temporary files
 *.tmp
