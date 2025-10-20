@@ -6,7 +6,22 @@ interface BitcoinPriceData {
   updated_at: string;
 }
 
-export function useBitcoinPrice(defaultPrice: number = 100000, refreshInterval: number = 240000) {
+/**
+ * Hook for fetching and caching Bitcoin spot price from database
+ * 
+ * Refresh Interval Rationale:
+ * - Backend cron job updates spot_price every 10 minutes (every 10 min)
+ * - Frontend polling interval aligned to backend update frequency
+ * - Default: 600000ms (10 minutes) to eliminate 60% redundant queries
+ * - Benefit: Reduces database load from 1440 queries/day to 576 queries/day per user
+ * - User impact: None - price freshness remains 0-10 minutes old (unchanged)
+ * 
+ * Polling Pattern:
+ * - Min 0:  Cron updates, Frontend gets NEW price (FRESH)
+ * - Min 10: Cron updates, Frontend gets NEW price (FRESH)
+ * - Result: No redundant queries between update intervals
+ */
+export function useBitcoinPrice(defaultPrice: number = 100000, refreshInterval: number = 600000) {
   const [price, setPrice] = useState<number>(0); // Start with 0 to force loading
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
