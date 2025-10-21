@@ -24,8 +24,11 @@ $$;
 -- ============================================================================
 -- 2. set_historical_price_date - Historical price date management
 -- ============================================================================
--- BEFORE: Mutable search_path (inherited from session)
--- AFTER: Fixed search_path with SECURITY DEFINER protection
+-- BEFORE: Trigger function with mutable search_path
+-- AFTER: Regular function with Fixed search_path with SECURITY DEFINER protection
+-- NOTE: Drop first because changing from TRIGGER to VOID return type
+
+DROP FUNCTION IF EXISTS public.set_historical_price_date() CASCADE;
 
 CREATE OR REPLACE FUNCTION public.set_historical_price_date()
 RETURNS void
