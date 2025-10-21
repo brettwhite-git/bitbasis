@@ -38,6 +38,7 @@ DROP POLICY IF EXISTS "Nobody can update terms_acceptances"
   ON public.terms_acceptance;
 
 -- Create RESTRICTIVE policies for explicit denial
+DROP POLICY IF EXISTS "Prevent terms_acceptance deletion" ON public.terms_acceptance;
 CREATE POLICY "Prevent terms_acceptance deletion"
   ON public.terms_acceptance
   AS RESTRICTIVE
@@ -45,6 +46,7 @@ CREATE POLICY "Prevent terms_acceptance deletion"
   TO authenticated
   USING (false);
 
+DROP POLICY IF EXISTS "Prevent terms_acceptance updates" ON public.terms_acceptance;
 CREATE POLICY "Prevent terms_acceptance updates"
   ON public.terms_acceptance
   AS RESTRICTIVE
