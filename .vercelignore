@@ -10,4 +10,27 @@ supabase/seed.sql
 
 # Local environment files
 .env.local
-.env*.local 
+.env*.local
+
+# Development and build artifacts
+scripts/
+.cache/
+*.log
+*.tmp
+*.temp
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation and development files
+README.md
+*.md
+!package.json
+!package-lock.json 
