@@ -6,11 +6,20 @@ import { UnifiedTransaction } from '@/types/transactions'
 
 interface BuySellAccordionProps {
   transaction: UnifiedTransaction
+  // PHASE 1 OPTIMIZATION: Accept price from parent instead of fetching in component
+  currentPrice?: number
+  priceLoading?: boolean
 }
 
-export function BuySellAccordion({ transaction }: BuySellAccordionProps) {
-  // Get current Bitcoin price
-  const { price: currentBitcoinPrice, loading: priceLoading } = useBitcoinPrice()
+export function BuySellAccordion({ 
+  transaction,
+  currentPrice: propPrice,
+  priceLoading: propLoading
+}: BuySellAccordionProps) {
+  // Fallback to hook if props not provided (backward compatibility)
+  const { price: hookPrice, loading: hookLoading } = useBitcoinPrice()
+  const currentBitcoinPrice = propPrice ?? hookPrice
+  const priceLoading = propLoading ?? hookLoading
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-[2fr_2fr_2fr_1fr] gap-8">

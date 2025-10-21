@@ -10,6 +10,9 @@ interface TransactionMobileViewProps {
   selectedTransactions: Set<string>
   toggleSelection: (id: string) => void
   onDelete: (id: string) => void
+  // PHASE 1 OPTIMIZATION: Accept price from parent table level
+  currentPrice: number
+  priceLoading: boolean
 }
 
 /**
@@ -19,7 +22,9 @@ export function TransactionMobileView({
   transactions,
   selectedTransactions,
   toggleSelection,
-  onDelete
+  onDelete,
+  currentPrice,
+  priceLoading
 }: TransactionMobileViewProps) {
   if (transactions.length === 0) {
     return (
@@ -40,6 +45,8 @@ export function TransactionMobileView({
           isSelected={selectedTransactions.has(String(transaction.id))}
           onSelect={() => toggleSelection(String(transaction.id))}
           onDelete={() => onDelete(String(transaction.id))}
+          currentPrice={currentPrice}
+          priceLoading={priceLoading}
         />
       ))}
     </div>

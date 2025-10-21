@@ -1,13 +1,16 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useMemo } from "react"
 import { Table, TableBody } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Loader2, Ghost, Upload } from "lucide-react"
 import { toast } from 'sonner'
 
 // Import hooks that we'll need
-import { useIsMobile } from "@/lib/hooks"
+import { useIsMobile, useBitcoinPrice } from "@/lib/hooks"
+
+// Import utilities for gains computation
+import { computeTransactionGains, type TransactionWithGains } from "@/lib/utils/transaction-calculations"
 
 // Import existing components we can reuse
 import { DataTableLoading } from "@/components/shared/data-table/data-table-loading"
@@ -66,6 +69,9 @@ export function TransactionTable() {
   const [transactions, setTransactions] = useState<UnifiedTransaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Bitcoin price state - now fetched at table level (CRITICAL OPTIMIZATION)
+  const { price: currentPrice, loading: priceLoading } = useBitcoinPrice()
   
   // Sort state
   const [sortConfig, setSortConfig] = useState<SortConfig>({ column: 'date', direction: 'desc' })
@@ -127,26 +133,34 @@ export function TransactionTable() {
     setImportWizardOpen(false)
   }
 
+  // Pre-compute gains for all transactions when price updates (PHASE 2 OPTIMIZATION)
+  const transactionsWithGains = useMemo<TransactionWithGains[]>(() => {
+    if (priceLoading || currentPrice <= 0) {
+      return transactions
+    }
+    return computeTransactionGains(transactions, currentPrice)
+  }, [transactions, currentPrice, priceLoading])
+
   // Apply filters using our extracted utility
-  const filteredTransactions = React.useMemo(() => {
+  const filteredTransactions = useMemo(() => {
     return filterUtils.applyFilters(
-      transactions,
+      transactionsWithGains,
       searchQuery,
       dateRange,
       selectedTypes,
       selectedTerms,
       selectedExchanges
     )
-  }, [transactions, searchQuery, dateRange, selectedTypes, selectedTerms, selectedExchanges, filterUtils])
+  }, [transactionsWithGains, searchQuery, dateRange, selectedTypes, selectedTerms, selectedExchanges, filterUtils])
 
   // Get unique exchanges and filter counts using our extracted utilities
-  const exchanges = React.useMemo(() => {
-    return filterUtils.getUniqueExchanges(transactions)
-  }, [transactions, filterUtils])
+  const exchanges = useMemo(() => {
+    return filterUtils.getUniqueExchanges(transactionsWithGains)
+  }, [transactionsWithGains, filterUtils])
 
-  const filterCounts: FilterCounts = React.useMemo(() => {
-    return filterUtils.calculateFilterCounts(transactions)
-  }, [transactions, filterUtils])
+  const filterCounts: FilterCounts = useMemo(() => {
+    return filterUtils.calculateFilterCounts(transactionsWithGains)
+  }, [transactionsWithGains, filterUtils])
 
   // Sorting logic
   const sortedTransactions = React.useMemo(() => {
@@ -543,6 +557,8 @@ export function TransactionTable() {
                   isSelected={selectionState.selectedTransactions.has(String(transaction.id))}
                   onSelect={() => selectionState.toggleTransaction(String(transaction.id))}
                   onDelete={() => handleSingleDelete(String(transaction.id))}
+                  currentPrice={currentPrice}
+                  priceLoading={priceLoading}
                 />
               ))}
             </TableBody>
@@ -557,6 +573,8 @@ export function TransactionTable() {
           selectedTransactions={selectionState.selectedTransactions}
           toggleSelection={selectionState.toggleTransaction}
           onDelete={handleSingleDelete}
+          currentPrice={currentPrice}
+          priceLoading={priceLoading}
         />
       )}
 

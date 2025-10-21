@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { formatBTC, formatCurrency, formatDate } from "@/lib/utils/format"
 import { TransactionAccordion } from "../display/accordion"
-import { useBitcoinPrice } from "@/lib/hooks"
 import { TransactionBadge } from "@/components/shared/badges/transaction-badge"
 import { TransactionType } from "@/types/transactions"
 import { useEditDrawer } from '@/components/transactions/edit'
@@ -32,28 +31,33 @@ interface TransactionRowProps {
   isSelected: boolean
   onSelect: () => void
   onDelete?: () => void
+  // PHASE 1 OPTIMIZATION: Accept price from parent instead of fetching per-row
+  currentPrice: number
+  priceLoading: boolean
 }
 
 /**
  * Enhanced transaction history row with condensed structure and accordion details
  * Structure: [✓] [Date] [Type] [Term] [From] [To] [Amount] [Gain/Income] [Gain] [⚙️] [▼]
+ * 
+ * OPTIMIZATION: Price is now fetched once at table level and passed as props,
+ * eliminating 99.8% of redundant database queries (500 rows → 1 query)
  */
 export const TransactionRow = memo(function TransactionRow({
   transaction,
   isSelected,
   onSelect,
-  onDelete
+  onDelete,
+  currentPrice,
+  priceLoading
 }: TransactionRowProps) {
   const [isExpanded, setIsExpanded] = useState(false)
-  const { price: currentBitcoinPrice, loading: priceLoading } = useBitcoinPrice()
   const { openDrawer } = useEditDrawer()
   
   // Helper functions
   const getTransactionBadge = (type: TransactionType) => {
     return <TransactionBadge type={type} />
   }
-
-  // Note: Term information available in accordion details and via Term filter
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded)
@@ -154,12 +158,12 @@ export const TransactionRow = memo(function TransactionRow({
           )}
         </TableCell>
         
-        {/* Gain/Income - Placeholder for now */}
+        {/* Gain/Income - Now using props instead of per-row hook */}
         <TableCell className="hidden md:table-cell w-[100px] text-center">
           <div className={(() => {
             // Calculate Gain/Income: current value - adjusted cost basis (sent_amount + fee_amount) (only for buy transactions)
-            if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-              const currentValue = transaction.received_amount * currentBitcoinPrice
+            if (transaction.type === 'buy' && transaction.received_amount && currentPrice && !priceLoading && transaction.sent_amount) {
+              const currentValue = transaction.received_amount * currentPrice
               const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
               const gainIncome = currentValue - adjustedCostBasis
               return gainIncome >= 0 ? "text-green-400 text-sm font-medium" : "text-red-400 text-sm font-medium"
@@ -167,8 +171,8 @@ export const TransactionRow = memo(function TransactionRow({
             return "text-sm text-gray-500"
           })()}>
             {(() => {
-              if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-                const currentValue = transaction.received_amount * currentBitcoinPrice
+              if (transaction.type === 'buy' && transaction.received_amount && currentPrice && !priceLoading && transaction.sent_amount) {
+                const currentValue = transaction.received_amount * currentPrice
                 const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
                 const gainIncome = currentValue - adjustedCostBasis
                 return `${gainIncome >= 0 ? '+' : ''}${formatCurrency(gainIncome)}`
@@ -178,12 +182,12 @@ export const TransactionRow = memo(function TransactionRow({
           </div>
         </TableCell>
         
-        {/* Gain % - Placeholder for now */}
+        {/* Gain % - Using props instead of per-row hook */}
         <TableCell className="hidden md:table-cell w-[100px] text-center">
           <div className={(() => {
             // Calculate Gain %: ((current value - adjusted cost basis) / adjusted cost basis) * 100 (only for buy transactions)
-            if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-              const currentValue = transaction.received_amount * currentBitcoinPrice
+            if (transaction.type === 'buy' && transaction.received_amount && currentPrice && !priceLoading && transaction.sent_amount) {
+              const currentValue = transaction.received_amount * currentPrice
               const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
               const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
               return gainPercent >= 0 ? "text-green-400 text-sm font-medium" : "text-red-400 text-sm font-medium"
@@ -191,8 +195,8 @@ export const TransactionRow = memo(function TransactionRow({
             return "text-sm text-gray-500"
           })()}>
             {(() => {
-              if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-                const currentValue = transaction.received_amount * currentBitcoinPrice
+              if (transaction.type === 'buy' && transaction.received_amount && currentPrice && !priceLoading && transaction.sent_amount) {
+                const currentValue = transaction.received_amount * currentPrice
                 const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
                 const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
                 return `${gainPercent >= 0 ? '+' : ''}${gainPercent.toFixed(1)}%`

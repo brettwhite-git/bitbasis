@@ -6,14 +6,27 @@ import { TransferAccordion } from './transfer-accordion'
 
 interface TransactionAccordionProps {
   transaction: UnifiedTransaction
+  // PHASE 1 OPTIMIZATION: Accept price from parent table level
+  currentPrice?: number
+  priceLoading?: boolean
 }
 
-export function TransactionAccordion({ transaction }: TransactionAccordionProps) {
+export function TransactionAccordion({ 
+  transaction,
+  currentPrice,
+  priceLoading
+}: TransactionAccordionProps) {
   const renderAccordionContent = () => {
     switch (transaction.type) {
       case 'buy':
       case 'sell':
-        return <BuySellAccordion transaction={transaction} />
+        return (
+          <BuySellAccordion 
+            transaction={transaction}
+            currentPrice={currentPrice}
+            priceLoading={priceLoading}
+          />
+        )
       case 'deposit':
       case 'withdrawal':
       case 'interest':

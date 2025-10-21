@@ -110,12 +110,15 @@ const RecentTransactionsHeaders = memo(function RecentTransactionsHeaders() {
  * Simplified row for recent transactions (no selection, no actions)
  */
 const RecentTransactionRow = memo(function RecentTransactionRow({
-  transaction
+  transaction,
+  currentPrice,
+  priceLoading
 }: {
   transaction: UnifiedTransaction
+  currentPrice: number
+  priceLoading: boolean
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
-  const { price: currentBitcoinPrice, loading: priceLoading } = useBitcoinPrice()
   
   const getTransactionBadge = (type: TransactionType) => {
     return <TransactionBadge type={type} />
@@ -201,8 +204,8 @@ const RecentTransactionRow = memo(function RecentTransactionRow({
         {/* Gain/Income */}
         <TableCell className="hidden md:table-cell w-[100px] text-center">
           <div className={(() => {
-            if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-              const currentValue = transaction.received_amount * currentBitcoinPrice
+            if (transaction.type === 'buy' && transaction.received_amount && currentPrice && !priceLoading && transaction.sent_amount) {
+              const currentValue = transaction.received_amount * currentPrice
               const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
               const gainIncome = currentValue - adjustedCostBasis
               return gainIncome >= 0 ? "text-green-400 text-sm font-medium" : "text-red-400 text-sm font-medium"
@@ -210,8 +213,8 @@ const RecentTransactionRow = memo(function RecentTransactionRow({
             return "text-sm text-gray-500"
           })()}>
             {(() => {
-              if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-                const currentValue = transaction.received_amount * currentBitcoinPrice
+              if (transaction.type === 'buy' && transaction.received_amount && currentPrice && !priceLoading && transaction.sent_amount) {
+                const currentValue = transaction.received_amount * currentPrice
                 const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
                 const gainIncome = currentValue - adjustedCostBasis
                 return `${gainIncome >= 0 ? '+' : ''}${formatCurrency(gainIncome)}`
@@ -224,8 +227,8 @@ const RecentTransactionRow = memo(function RecentTransactionRow({
         {/* Gain % */}
         <TableCell className="hidden md:table-cell w-[100px] text-center">
           <div className={(() => {
-            if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-              const currentValue = transaction.received_amount * currentBitcoinPrice
+            if (transaction.type === 'buy' && transaction.received_amount && currentPrice && !priceLoading && transaction.sent_amount) {
+              const currentValue = transaction.received_amount * currentPrice
               const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
               const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
               return gainPercent >= 0 ? "text-green-400 text-sm font-medium" : "text-red-400 text-sm font-medium"
@@ -233,8 +236,8 @@ const RecentTransactionRow = memo(function RecentTransactionRow({
             return "text-sm text-gray-500"
           })()}>
             {(() => {
-              if (transaction.type === 'buy' && transaction.received_amount && currentBitcoinPrice && !priceLoading && transaction.sent_amount) {
-                const currentValue = transaction.received_amount * currentBitcoinPrice
+              if (transaction.type === 'buy' && transaction.received_amount && currentPrice && !priceLoading && transaction.sent_amount) {
+                const currentValue = transaction.received_amount * currentPrice
                 const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
                 const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
                 return `${gainPercent >= 0 ? '+' : ''}${gainPercent.toFixed(1)}%`
@@ -281,6 +284,9 @@ export function RecentTransactions() {
   const [transactions, setTransactions] = useState<UnifiedTransaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Fetch Bitcoin price for recent transactions widget
+  const { price: currentPrice, loading: priceLoading } = useBitcoinPrice()
 
   useEffect(() => {
     const loadTransactions = async () => {
@@ -370,6 +376,8 @@ export function RecentTransactions() {
                 <RecentTransactionRow
                   key={transaction.id}
                   transaction={transaction}
+                  currentPrice={currentPrice}
+                  priceLoading={priceLoading}
                 />
               ))}
             </TableBody>
@@ -378,11 +386,13 @@ export function RecentTransactions() {
 
         {/* Mobile View - reuse existing component but with no selection/delete */}
         <div className="md:hidden">
-                      <TransactionMobileView
+          <TransactionMobileView
             transactions={transactions}
             selectedTransactions={new Set()}
             toggleSelection={() => {}} // No selection in preview
             onDelete={() => {}} // No delete in preview
+            currentPrice={currentPrice}
+            priceLoading={priceLoading}
           />
         </div>
       </div>

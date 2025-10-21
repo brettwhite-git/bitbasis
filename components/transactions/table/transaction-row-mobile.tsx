@@ -31,16 +31,23 @@ interface TransactionRowMobileProps {
   isSelected: boolean
   onSelect: () => void
   onDelete?: () => void
+  // PHASE 1 OPTIMIZATION: Accept price from parent instead of fetching per-row
+  currentPrice: number
+  priceLoading: boolean
 }
 
 /**
  * Mobile-optimized transaction row with expandable details
+ * 
+ * OPTIMIZATION: Price is now fetched once at table level and passed as props
  */
 export const TransactionRowMobile = memo(function TransactionRowMobile({
   transaction,
   isSelected,
   onSelect,
-  onDelete
+  onDelete,
+  currentPrice,
+  priceLoading
 }: TransactionRowMobileProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { openDrawer } = useEditDrawer()
@@ -189,10 +196,14 @@ export const TransactionRowMobile = memo(function TransactionRowMobile({
         </div>
       </div>
       
-      {/* Expanded details */}
+      {/* Expanded details - Pass currentPrice and priceLoading to accordion */}
       {isExpanded && (
         <div className="px-3 pb-3">
-          <TransactionAccordion transaction={transaction} />
+          <TransactionAccordion 
+            transaction={transaction}
+            currentPrice={currentPrice}
+            priceLoading={priceLoading}
+          />
         </div>
       )}
     </div>
