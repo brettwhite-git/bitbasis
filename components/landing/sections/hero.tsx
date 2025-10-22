@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, Lock } from "lucide-react"
-import { DashboardImage } from "../dashboard-image"
+import { DashboardMockup } from "../dashboard-mockup"
 
 export function HeroSection() {
   return (
@@ -47,7 +47,7 @@ export function HeroSection() {
         </div>
 
         {/* Dashboard Mockup */}
-        <div className="mt-12 md:mt-16 lg:mt-20 relative animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+        <div className="hidden lg:block mt-12 md:mt-16 lg:mt-20 relative animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
           <div className="relative mx-auto max-w-[95vw] sm:max-w-[90vw] lg:max-w-[1600px] xl:max-w-[2000px] px-4 sm:px-6 lg:px-8">
             {/* Gradient background glow */}
             <div className="absolute inset-0 bg-gradient-to-r from-bitcoin-orange/20 via-transparent to-bitcoin-orange/20 blur-3xl opacity-30 -z-10"></div>
@@ -67,9 +67,9 @@ export function HeroSection() {
                 {/* Top border accent */}
                 <div className="h-px bg-gradient-to-r from-transparent via-bitcoin-orange/60 to-transparent"></div>
 
-                {/* Optimized dashboard image with overlays */}
+                {/* Dashboard mockup with overlays */}
                 <div className="relative">
-                  <DashboardImage />
+                  <DashboardMockup />
 
                   {/* Bottom fade gradient overlay */}
                   <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent opacity-60"></div>
