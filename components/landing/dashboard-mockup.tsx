@@ -29,11 +29,7 @@ ChartJS.register(
   Filler
 )
 
-interface DashboardMockupProps {
-  className?: string
-}
-
-export function DashboardMockup({ className }: DashboardMockupProps) {
+export function DashboardMockup() {
   // Hardcoded chart data
   const chartData = {
     labels: ['Oct \'24', 'Nov \'24', 'Dec \'24', 'Jan \'25', 'Feb \'25', 'Mar \'25'],
@@ -287,8 +283,8 @@ export function DashboardMockup({ className }: DashboardMockupProps) {
                         </div>
                         
                         <div className="flex justify-between text-xs text-gray-400">
-                          <span className="truncate">Aug \'25</span>
-                          <span className="truncate">Mar \'27</span>
+                          <span className="truncate">Aug &apos;25</span>
+                          <span className="truncate">Mar &apos;27</span>
                         </div>
                       </div>
                     </div>
