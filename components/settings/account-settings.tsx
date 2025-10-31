@@ -27,13 +27,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { CheckCircle, ShieldCheck, InfoIcon, Trash2, Download, ExternalLink } from "lucide-react"
+import { CheckCircle, ShieldCheck, InfoIcon, Trash2, Download, ExternalLink, AlertTriangle } from "lucide-react"
 import { SubscriptionManagement } from "./subscription-management"
 import { useAuth } from "@/providers/supabase-auth-provider"
 import { useTaxMethod } from "@/providers/tax-method-provider"
 import { useToast } from "@/lib/hooks/use-toast"
 import { exportAllUserDataSingle } from "@/lib/utils/user-data-export"
 import { useDisplayName } from "@/lib/hooks/use-display-name"
+import { useRouter } from "next/navigation"
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 // Form schema for account settings
 const accountSettingsSchema = z.object({
@@ -45,14 +47,30 @@ const accountSettingsSchema = z.object({
 
 type AccountSettingsFormValues = z.infer<typeof accountSettingsSchema>
 
+interface AccountSummary {
+  transactionCount: number
+  csvUploadCount: number
+  subscription: {
+    hasActive: boolean
+    type?: 'monthly' | 'lifetime'
+    nextBillingDate?: string
+  }
+  email?: string
+}
+
 export function AccountSettings() {
   const { user } = useAuth()
   const { taxMethod, setTaxMethod } = useTaxMethod()
   const { displayName, setDisplayName, isLoaded } = useDisplayName()
   const { toast } = useToast()
+  const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [accountSummary, setAccountSummary] = useState<AccountSummary | null>(null)
+  const [loadingSummary, setLoadingSummary] = useState(false)
+  const [confirmationText, setConfirmationText] = useState("")
 
   // Initialize form with current values
   const form = useForm<AccountSettingsFormValues>({
@@ -138,26 +156,90 @@ export function AccountSettings() {
     }
   }
 
-  // Handle account deletion
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true)
+  // Fetch account summary when dialog opens
+  useEffect(() => {
+    if (deleteDialogOpen) {
+      // Always refetch when dialog opens to get latest subscription status
+      setAccountSummary(null)
+      fetchAccountSummary()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deleteDialogOpen])
+
+  const fetchAccountSummary = async () => {
+    setLoadingSummary(true)
     try {
-      // Add your account deletion logic here
-      await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate API call
-      
-      toast({
-        title: "Account Deleted",
-        description: "Your account has been permanently deleted.",
-      })
-      
-      // Redirect or sign out user
-    } catch {
+      const response = await fetch('/api/account/summary')
+      if (!response.ok) {
+        throw new Error('Failed to fetch account summary')
+      }
+      const data = await response.json()
+      setAccountSummary(data)
+    } catch (error) {
+      console.error('Error fetching account summary:', error)
       toast({
         title: "Error",
-        description: "Failed to delete account. Please try again.",
+        description: "Failed to load account information. Please try again.",
         variant: "destructive",
       })
     } finally {
+      setLoadingSummary(false)
+    }
+  }
+
+  // Handle account deletion
+  const handleDeleteAccount = async () => {
+    if (confirmationText !== "DELETE") {
+      toast({
+        title: "Confirmation Required",
+        description: "Please type DELETE to confirm account deletion.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          confirmationText: "DELETE",
+          cancelSubscriptionImmediately: true
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete account')
+      }
+
+      // Clear local storage before sign out
+      if (typeof window !== 'undefined') {
+        localStorage.clear()
+      }
+
+      // Redirect to success page FIRST (before sign out)
+      // This prevents the auth state change listener from redirecting to sign-in
+      router.push('/account-deleted')
+      
+      // Small delay to ensure redirect starts, then sign out
+      // The redirect will complete and user will be on account-deleted page
+      setTimeout(async () => {
+        const supabase = createClientComponentClient()
+        await supabase.auth.signOut()
+      }, 100)
+
+    } catch (error) {
+      console.error('Account deletion error:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete account. Please try again.",
+        variant: "destructive",
+      })
       setIsDeleting(false)
     }
   }
@@ -165,7 +247,9 @@ export function AccountSettings() {
   return (
     <div className="grid gap-6">
       {/* Subscription Section - Keep existing component */}
-      <SubscriptionManagement />
+      <div data-subscription-section>
+        <SubscriptionManagement />
+      </div>
 
       {/* Combined Account Settings Form */}
       <Form {...form}>
@@ -371,34 +455,142 @@ export function AccountSettings() {
             </AlertDescription>
           </Alert>
 
-          <AlertDialog>
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" className="bg-red-600 hover:bg-red-700">
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Account
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="bg-gray-900 border-gray-700">
+            <AlertDialogContent className="bg-gray-900 border-gray-700 max-w-2xl">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-white">Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription className="text-gray-300">
-                  This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
-                  <br /><br />
-                  <span className="font-bold text-red-400">
-                    All transactions, CSV uploads, and account settings will be lost forever.
-                  </span>
+                <AlertDialogTitle className="text-white text-xl">Delete Account - This Cannot Be Undone</AlertDialogTitle>
+                <AlertDialogDescription className="text-gray-300 space-y-4">
+                  <div className="bg-red-900/20 border border-red-800/50 rounded-lg p-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-semibold text-red-300 mb-2">Warning: Permanent Data Loss</p>
+                        <p className="text-sm text-gray-300">
+                          This action will permanently delete your account and all associated data. This cannot be undone.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {loadingSummary ? (
+                    <div className="flex items-center gap-2 text-gray-400">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Loading account information...
+                    </div>
+                  ) : accountSummary && (
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="font-semibold text-white mb-2">Data That Will Be Deleted:</h4>
+                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-300">
+                          <li>{accountSummary.transactionCount.toLocaleString()} transaction{accountSummary.transactionCount !== 1 ? 's' : ''}</li>
+                          <li>{accountSummary.csvUploadCount} CSV upload{accountSummary.csvUploadCount !== 1 ? 's' : ''}</li>
+                          <li>All account settings and preferences</li>
+                          <li>All uploaded files and data</li>
+                        </ul>
+                      </div>
+
+                      {accountSummary.subscription.hasActive && (
+                        <div className="bg-red-900/30 border-2 border-red-800/70 rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <AlertTriangle className="h-6 w-6 text-red-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="font-bold text-red-300 mb-2">Cancel Subscription Required</p>
+                              <p className="text-sm text-gray-300 mb-3">
+                                {accountSummary.subscription.type === 'lifetime' ? (
+                                  <>
+                                    You have an active <span className="font-semibold">lifetime subscription</span>. 
+                                    You must cancel your subscription before you can delete your account.
+                                  </>
+                                ) : (
+                                  <>
+                                    You have an active <span className="font-semibold">{accountSummary.subscription.type} subscription</span>. 
+                                    You must cancel your subscription before you can delete your account.
+                                    {accountSummary.subscription.nextBillingDate && (
+                                      <> Your next billing date is {new Date(accountSummary.subscription.nextBillingDate).toLocaleDateString()}.</>
+                                    )}
+                                  </>
+                                )}
+                              </p>
+                              <Button
+                                onClick={() => {
+                                  setDeleteDialogOpen(false)
+                                  // Scroll to subscription section or open subscription modal
+                                  setTimeout(() => {
+                                    const subscriptionSection = document.querySelector('[data-subscription-section]')
+                                    if (subscriptionSection) {
+                                      subscriptionSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                    }
+                                  }, 100)
+                                }}
+                                className="bg-red-600 hover:bg-red-700 text-white text-sm"
+                              >
+                                Go to Subscription Settings
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
+                        <p className="text-sm text-gray-300">
+                          <strong className="text-blue-300">Recommendation:</strong> Export your data before deleting your account. 
+                          You can use the &quot;Export data&quot; button above to download all your information.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-4 border-t border-gray-700">
+                    <label htmlFor="confirm-delete" className="block text-sm font-medium text-white mb-2">
+                      Type <span className="font-mono font-bold text-red-400">DELETE</span> to confirm:
+                    </label>
+                    <Input
+                      id="confirm-delete"
+                      type="text"
+                      value={confirmationText}
+                      onChange={(e) => setConfirmationText(e.target.value)}
+                      placeholder="DELETE"
+                      className="bg-gray-800/30 border-gray-600/50 text-white placeholder:text-gray-500 font-mono"
+                      disabled={isDeleting}
+                      autoFocus
+                    />
+                  </div>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
+                <AlertDialogCancel 
+                  className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                  disabled={isDeleting}
+                  onClick={() => {
+                    setConfirmationText("")
+                    setDeleteDialogOpen(false)
+                  }}
+                >
                   Cancel
                 </AlertDialogCancel>
                 <AlertDialogAction 
                   onClick={handleDeleteAccount}
-                  disabled={isDeleting}
-                  className="bg-red-600 text-white hover:bg-red-700"
+                  disabled={
+                    isDeleting || 
+                    confirmationText !== "DELETE" || 
+                    (accountSummary?.subscription.hasActive ?? false)
+                  }
+                  className="bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isDeleting ? 'Deleting...' : 'Yes, delete my account'}
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    'Yes, delete my account'
+                  )}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

@@ -1,8 +1,11 @@
 import { TransactionTable } from "@/components/transactions/table"
 import { EditDrawerProvider } from "@/components/transactions/edit"
 import { EditTransactionDrawer } from "@/components/transactions/edit"
+import { requireAuth } from "@/lib/auth/server-auth"
 
-export default function TransactionHistoryPage() {
+export default async function TransactionHistoryPage() {
+  // Protect route - redirects to sign-in if not authenticated
+  await requireAuth()
   return (
     <EditDrawerProvider>
       <div className="w-full space-y-6">

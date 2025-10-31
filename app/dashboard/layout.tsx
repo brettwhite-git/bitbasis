@@ -7,12 +7,16 @@ import { SidebarProvider } from "@/components/shared/sidebar-provider"
 import { SubscriptionTierBadge } from "@/components/subscription/subscription-tier-badge"
 import { PaymentRecoveryBanner } from "@/components/subscription/payment-recovery-banner"
 import { TaxMethodProvider } from "@/providers/tax-method-provider"
+import { requireAuth } from "@/lib/auth/server-auth"
 
-export default function DashboardLayout({
+// Protect all dashboard routes at layout level
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // This will redirect to /auth/sign-in if not authenticated
+  await requireAuth()
   return (
     <TaxMethodProvider>
       <SidebarProvider>

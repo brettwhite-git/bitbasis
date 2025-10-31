@@ -7,19 +7,11 @@ export default async function DashboardPage() {
   // Remove test logs
   // console.log("[DashboardPage] Starting server component render.")
 
-  // Use requireAuth 
-  let user, supabase
-  try {
-    // console.log("[DashboardPage] Calling requireAuth()...")
-    const authResult = await requireAuth()
-    user = authResult.user
-    supabase = authResult.supabase
-    // console.log(`[DashboardPage] requireAuth() successful. User ID: ${user.id}`)
-  } catch (error) {
-    console.error("[DashboardPage] Error during requireAuth():", error)
-    // Rely on requireAuth's redirect
-    return <div>Redirecting to login...</div>
-  }
+  // Use requireAuth - don't catch redirect() errors, let them propagate
+  // requireAuth() will redirect to sign-in if not authenticated
+  const authResult = await requireAuth()
+  const user = authResult.user
+  const supabase = authResult.supabase
   
   // Verify user exists before trying to fetch metrics
   if (!user || !user.id) {

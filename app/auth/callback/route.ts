@@ -18,12 +18,16 @@ export async function GET(request: Request) {
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     
     if (code) {
-      // Handle auth code (normal OAuth flow)
+      // Handle auth code (OAuth flow OR magic link - Supabase uses code for both)
       console.log('🔑 Exchanging auth code for session')
-      await supabase.auth.exchangeCodeForSession(code)
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+      if (exchangeError) {
+        console.error('❌ Auth code exchange failed:', exchangeError)
+        throw exchangeError
+      }
       console.log('✅ Auth code exchanged successfully')
     } else if (token) {
-      // Handle magic link token (OTP flow)
+      // Handle legacy token format (older Supabase versions or passwordless)
       console.log('🪄 Verifying magic link token')
       const { error: verifyError } = await supabase.auth.verifyOtp({
         token_hash: token,
@@ -36,7 +40,12 @@ export async function GET(request: Request) {
       console.log('✅ Magic link verified successfully')
     } else {
       console.log('⚠️ No code or token found in callback')
+      console.log('📋 Full URL:', requestUrl.toString())
+      return NextResponse.redirect(new URL('/auth/sign-in', requestUrl.origin))
     }
+    
+    // Wait a moment for session to be fully established
+    await new Promise(resolve => setTimeout(resolve, 100))
     
     // Get the authenticated user
     console.log('👤 Getting authenticated user...')
@@ -107,8 +116,43 @@ export async function GET(request: Request) {
     // Log for debugging
     console.log('🚀 Auth callback successful, redirecting to:', next)
 
+    // Verify we have a session before redirecting
+    // Get session multiple times to ensure it's persisted in cookies
+    let session = null
+    let sessionError = null
+    for (let i = 0; i < 3; i++) {
+      const { data: { session: currentSession }, error: currentError } = await supabase.auth.getSession()
+      if (currentSession) {
+        session = currentSession
+        sessionError = null
+        break
+      }
+      if (currentError) {
+        sessionError = currentError
+      }
+      // Small delay before retry
+      if (i < 2) {
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+    }
+    
+    if (sessionError || !session) {
+      console.error('❌ No session after auth callback, redirecting to sign-in')
+      console.error('Session error:', sessionError)
+      return NextResponse.redirect(new URL('/auth/sign-in', requestUrl.origin))
+    }
+
+    console.log('✅ Session verified before redirect:', { userId: session.user?.id, email: session.user?.email })
+
     // URL to redirect to after sign in process completes
-    return NextResponse.redirect(new URL(next, requestUrl.origin))
+    // Use replace to prevent back button from going to callback
+    const redirectUrl = new URL(next, requestUrl.origin)
+    console.log('📍 Redirecting to:', redirectUrl.toString())
+    const response = NextResponse.redirect(redirectUrl)
+    
+    // Ensure cookies are set in the response
+    // The session should already be in cookies from exchangeCodeForSession
+    return response
   } catch (error) {
     console.error('💥 Auth callback error:', error)
     return NextResponse.redirect(new URL('/auth/sign-in', request.url))

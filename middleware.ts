@@ -5,30 +5,40 @@ import type { Database } from '@/types/supabase'
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
-  // const path = req.nextUrl.pathname // Remove log
-  // console.log(`[Middleware] Running for path: ${path}`) // Remove log
+  const path = req.nextUrl.pathname
   
-  try {
-    // console.log(`[Middleware] Creating Supabase client for path: ${path}`) // Remove log
-    const supabase = createMiddlewareClient<Database>({ req, res })
-
-    // console.log(`[Middleware] Attempting to get/refresh session for path: ${path}`) // Remove log
-    // Refresh session if expired - will throw if refresh token is invalid
-    // Revert to original simpler call if detailed logging isn't needed
-    await supabase.auth.getSession()
-    /* // Remove detailed session logging
-    const { data: { session }, error } = await supabase.auth.getSession()
-
-    if (error) {
-      console.error(`[Middleware] Error getting session for path ${path}:`, error)
-    } else {
-      // console.log(`[Middleware] Session found/refreshed successfully for path: ${path}, User ID: ${session?.user?.id ?? 'None'}`) 
+  // Protect dashboard routes - redirect to sign-in if not authenticated
+  if (path.startsWith('/dashboard')) {
+    try {
+      const supabase = createMiddlewareClient<Database>({ req, res })
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      // If no session and trying to access dashboard, redirect to sign-in
+      if (!session || error) {
+        const signInUrl = new URL('/auth/sign-in', req.url)
+        // Preserve the intended destination for redirect after login
+        signInUrl.searchParams.set('redirectTo', path)
+        return NextResponse.redirect(signInUrl)
+      }
+      
+      // Session exists, refresh it and continue
+      return res
+    } catch (error) {
+      console.error(`[Middleware] Auth middleware error for ${path}:`, error)
+      // On error, redirect to sign-in
+      const signInUrl = new URL('/auth/sign-in', req.url)
+      signInUrl.searchParams.set('redirectTo', path)
+      return NextResponse.redirect(signInUrl)
     }
-    */
-
+  }
+  
+  // For non-dashboard routes, just refresh session if it exists
+  try {
+    const supabase = createMiddlewareClient<Database>({ req, res })
+    await supabase.auth.getSession()
     return res
   } catch (error) {
-    console.error(`[Middleware] Auth middleware error:`, error) // Keep generic error log
+    console.error(`[Middleware] Auth middleware error:`, error)
     return res
   }
 }
@@ -43,7 +53,8 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public (public files)
      * - auth (auth pages)
+     * - account-deleted (public success page)
      */
-    '/((?!_next/static|_next/image|favicon.ico|public|auth).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public|auth|account-deleted).*)',
   ],
 } 

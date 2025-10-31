@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useAuth } from '@/providers/supabase-auth-provider'
 import { AccountSettings } from "@/components/settings/account-settings"
 import { ManageFilesSettings } from "@/components/settings/manage-files"
 import { ResourcesSettings } from "@/components/settings/resources-settings"
@@ -9,8 +10,18 @@ import { ResourcesSettings } from "@/components/settings/resources-settings"
 type SettingsSection = 'account' | 'files' | 'resources' // Add more sections as needed
 
 export default function SettingsPage() {
+  const { user } = useAuth()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [activeSection, setActiveSection] = useState<SettingsSection>('account')
+
+  // Client-side protection (layout already protects server-side)
+  useEffect(() => {
+    // Layout-level requireAuth handles server-side protection
+    if (!user) {
+      router.push('/auth/sign-in')
+    }
+  }, [user, router])
 
   // Handle section query parameter
   useEffect(() => {
@@ -19,6 +30,11 @@ export default function SettingsPage() {
       setActiveSection(section)
     }
   }, [searchParams])
+
+  // Don't render until auth is confirmed
+  if (!user) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
+  }
 
   const renderSection = () => {
     switch (activeSection) {

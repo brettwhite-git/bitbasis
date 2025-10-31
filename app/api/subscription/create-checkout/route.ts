@@ -221,10 +221,32 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error creating checkout session:', error)
     
+    // Enhanced error logging for Stripe errors
+    if (error && typeof error === 'object' && 'type' in error) {
+      const stripeError = error as { type?: string; message?: string; code?: string; decline_code?: string }
+      console.error('Stripe error type:', stripeError.type)
+      console.error('Stripe error code:', stripeError.code)
+      console.error('Stripe error message:', stripeError.message)
+      console.error('Stripe decline code:', stripeError.decline_code)
+    }
+    
+    if (error instanceof Error) {
+      console.error('Error name:', error.name)
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
+    
     return NextResponse.json(
       { 
         error: 'Failed to create checkout session',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
+        // Include Stripe-specific error details if available
+        ...(error && typeof error === 'object' && 'type' in error ? {
+          stripeError: {
+            type: (error as { type?: string }).type,
+            code: (error as { code?: string }).code,
+          }
+        } : {})
       },
       { status: 500 }
     )

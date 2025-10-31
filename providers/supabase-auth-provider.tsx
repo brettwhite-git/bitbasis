@@ -60,21 +60,38 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
               setSession(currentSession)
               setUser(currentSession.user)
               
-              // Only refresh and redirect on new sign in
-              if (event === 'SIGNED_IN') {
+              // Handle both SIGNED_IN and INITIAL_SESSION events
+              // INITIAL_SESSION can fire when returning from auth callback
+              if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
                 // Terms acceptance is now handled server-side in the auth callback
                 // This ensures it happens reliably before the user reaches the dashboard
                 
-                await router.refresh()
-                router.push('/dashboard')
+                // Only redirect if we're not already on dashboard or in auth flow
+                // Don't redirect on INITIAL_SESSION - let the callback handle redirects
+                const currentPath = window.location.pathname
+                const isOnDashboard = currentPath.startsWith('/dashboard')
+                const isInAuthFlow = currentPath.startsWith('/auth') || currentPath.startsWith('/account-deleted')
+                const isOnLanding = currentPath === '/' || currentPath === ''
+                
+                // Only redirect on SIGNED_IN event, and only if we're on landing page
+                // INITIAL_SESSION fires when callback redirects - don't interfere
+                if (event === 'SIGNED_IN' && !isOnDashboard && !isInAuthFlow && isOnLanding) {
+                  console.log('🔄 Auth provider: Redirecting to dashboard after SIGNED_IN')
+                  await router.refresh()
+                  router.push('/dashboard')
+                }
               }
             } else {
               setSession(null)
               setUser(null)
               
               if (event === 'SIGNED_OUT') {
-                await router.refresh()
-                router.push('/auth/sign-in')
+                // Don't redirect if user is already on account-deleted page
+                const currentPath = window.location.pathname
+                if (currentPath !== '/account-deleted') {
+                  await router.refresh()
+                  router.push('/auth/sign-in')
+                }
               }
             }
           }

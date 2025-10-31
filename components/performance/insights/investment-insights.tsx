@@ -82,7 +82,7 @@ export function InvestmentInsights({ performance, transactions }: InvestmentInsi
       }
     } else if (priceDiffPercent < 0) {
       return {
-        message: "Spot price is below your 3-month averagey",
+        message: "Spot price is below your 3-month average",
         percent: priceDiffPercent
       }
     } else if (priceDiffPercent <= 10) {
