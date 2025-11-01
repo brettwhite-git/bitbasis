@@ -30,13 +30,13 @@ ChartJS.register(
 )
 
 export function DashboardMockup() {
-  // Hardcoded chart data
+  // Hardcoded chart data - aligned with KPI values
   const chartData = {
     labels: ['Oct \'24', 'Nov \'24', 'Dec \'24', 'Jan \'25', 'Feb \'25', 'Mar \'25'],
     datasets: [
       {
         label: 'Portfolio Value',
-        data: [90000, 110000, 135000, 165000, 210000, 248541],
+        data: [185000, 220000, 280000, 350000, 420000, 502848],
         borderColor: '#F7931A',
         backgroundColor: 'rgba(247, 147, 26, 0.2)',
         tension: 0.4,
@@ -49,7 +49,7 @@ export function DashboardMockup() {
       },
       {
         label: 'Cost Basis',
-        data: [50000, 70000, 90000, 105000, 125000, 141740],
+        data: [120000, 145000, 175000, 210000, 245000, 285341],
         borderColor: '#3b82f6',
         backgroundColor: 'rgba(59, 130, 246, 0.2)',
         tension: 0.4,
@@ -88,12 +88,14 @@ export function DashboardMockup() {
       y: {
         display: true,
         beginAtZero: true,
+        max: 600000, // Set max to accommodate Portfolio Value ($502,848) with some headroom
         ticks: { 
           color: '#6b7280', 
           font: { size: 9 },
           callback: function(value) {
             return '$' + (Number(value) / 1000).toFixed(0) + 'K'
-          }
+          },
+          stepSize: 100000 // Show ticks at $100K intervals
         },
         grid: { 
           color: 'rgba(255, 255, 255, 0.05)'
