@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,17 +8,43 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
+import { Turnstile } from "@marsidev/react-turnstile"
 
 export default function ContactPage() {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const turnstileRef = useRef(null)
+
+  const resetCaptcha = () => {
+    // @ts-expect-error - Turnstile ref type not properly typed
+    if (turnstileRef.current?.reset) {
+      // @ts-expect-error - Turnstile reset method not properly typed
+      turnstileRef.current.reset()
+    }
+    setCaptchaToken(null)
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    // SEC-006: Require CAPTCHA token before submission
+    if (!captchaToken) {
+      toast({
+        title: "CAPTCHA Required",
+        description: "Please complete the CAPTCHA verification",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
       const formData = new FormData(event.currentTarget)
+      // Add Turnstile token to form data
+      formData.append('cf-turnstile-response', captchaToken)
+
       const response = await fetch('/api/contact', {
         method: 'POST',
         body: formData,
@@ -36,8 +62,9 @@ export default function ContactPage() {
         variant: "default",
       })
 
-      // Reset form
+      // Reset form and CAPTCHA
       ;(event.target as HTMLFormElement).reset()
+      resetCaptcha()
 
     } catch (error) {
       toast({
@@ -45,6 +72,7 @@ export default function ContactPage() {
         description: error instanceof Error ? error.message : "Failed to send message",
         variant: "destructive",
       })
+      resetCaptcha()
     } finally {
       setIsSubmitting(false)
     }
@@ -138,10 +166,38 @@ export default function ContactPage() {
                   />
                 </div>
 
+                {/* SEC-006: Turnstile CAPTCHA */}
+                <div className="flex justify-center">
+                  <Turnstile
+                    ref={turnstileRef}
+                    siteKey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"}
+                    onSuccess={(token) => setCaptchaToken(token)}
+                    onError={() => {
+                      toast({
+                        title: "CAPTCHA Error",
+                        description: "CAPTCHA validation failed. Please try again.",
+                        variant: "destructive",
+                      })
+                      setCaptchaToken(null)
+                    }}
+                    onExpire={() => {
+                      setCaptchaToken(null)
+                      toast({
+                        title: "CAPTCHA Expired",
+                        description: "Please complete the CAPTCHA again",
+                        variant: "default",
+                      })
+                    }}
+                    options={{
+                      theme: "dark",
+                    }}
+                  />
+                </div>
+
                 <Button 
                   type="submit" 
                   className="w-full relative overflow-hidden bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white font-semibold shadow-lg hover:shadow-bitcoin-orange/30 transform hover:-translate-y-px transition-all duration-300 group"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !captchaToken}
                 >
                   <span className="relative z-10">{isSubmitting ? "Sending..." : "Send Message"}</span>
                   <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 group-active:opacity-20 transition-opacity duration-300"></span>

@@ -37,6 +37,13 @@ DROP POLICY IF EXISTS "Nobody can delete terms_acceptances"
 DROP POLICY IF EXISTS "Nobody can update terms_acceptances" 
   ON public.terms_acceptance;
 
+-- Drop existing policies if they exist (may have been created by later migrations)
+DROP POLICY IF EXISTS "Prevent terms_acceptance deletion" 
+  ON public.terms_acceptance;
+
+DROP POLICY IF EXISTS "Prevent terms_acceptance updates" 
+  ON public.terms_acceptance;
+
 -- Create RESTRICTIVE policies for explicit denial
 CREATE POLICY "Prevent terms_acceptance deletion"
   ON public.terms_acceptance

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { stripe } from '@/lib/stripe'
+import { sanitizeStripeError } from '@/lib/utils/error-sanitization'
 
 export async function POST(request: NextRequest) {
   try {
@@ -106,12 +107,11 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Error retrying payment:', error)
+    // SEC-010: Sanitize error message before returning to client
+    const sanitized = sanitizeStripeError(error, 'Failed to retry payment')
+    
     return NextResponse.json(
-      { 
-        error: 'Failed to retry payment',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      sanitized,
       { status: 500 }
     )
   }

@@ -61,6 +61,7 @@ DROP POLICY IF EXISTS "Allow authenticated users to insert/update fear_greed_ind
   ON public.fear_greed_index;
 
 -- Create separate INSERT policy
+DROP POLICY IF EXISTS "Allow authenticated users to insert fear_greed_index" ON public.fear_greed_index;
 CREATE POLICY "Allow authenticated users to insert fear_greed_index"
   ON public.fear_greed_index
   FOR INSERT
@@ -68,6 +69,7 @@ CREATE POLICY "Allow authenticated users to insert fear_greed_index"
   WITH CHECK ((SELECT auth.uid()) IS NOT NULL);
 
 -- Create separate UPDATE policy
+DROP POLICY IF EXISTS "Allow authenticated users to update fear_greed_index" ON public.fear_greed_index;
 CREATE POLICY "Allow authenticated users to update fear_greed_index"
   ON public.fear_greed_index
   FOR UPDATE

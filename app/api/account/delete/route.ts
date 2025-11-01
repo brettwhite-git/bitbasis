@@ -4,8 +4,10 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { stripe } from '@/lib/stripe'
 import type { Database } from '@/types/supabase'
+import { sanitizeError } from '@/lib/utils/error-sanitization'
 
-// Admin client for deletion operations (bypasses RLS)
+// Service role client ONLY for admin operations that require it
+// SEC-005: Minimize service role usage - only use for auth.admin operations
 const supabaseAdmin = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -20,22 +22,21 @@ interface UserDataSummary {
 
 /**
  * Fetch user's data summary for UI display and logging
+ * SEC-005: Use authenticated client with RLS instead of service role for queries
  */
-async function getUserDataSummary(userId: string): Promise<UserDataSummary> {
+async function getUserDataSummary(userId: string, supabase: ReturnType<typeof createRouteHandlerClient<Database>>): Promise<UserDataSummary> {
   try {
+    // Use authenticated client with RLS - user can only query their own data
     const [transactionsResult, csvUploadsResult, subscriptionsResult] = await Promise.all([
-      supabaseAdmin
+      supabase
         .from('transactions')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId),
-      supabaseAdmin
+        .select('id', { count: 'exact', head: true }),
+      supabase
         .from('csv_uploads')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId),
-      supabaseAdmin
+        .select('id', { count: 'exact', head: true }),
+      supabase
         .from('subscriptions')
         .select('status, metadata')
-        .eq('user_id', userId)
         .in('status', ['active', 'trialing'])
         .limit(1)
     ])
@@ -70,15 +71,21 @@ async function getUserDataSummary(userId: string): Promise<UserDataSummary> {
  * - User has subscriptions in database that need cancellation
  * - User has subscriptions in Stripe that need cancellation
  */
-async function deleteUserStripeData(userId: string): Promise<{ success: boolean; errors: string[] }> {
+/**
+ * Delete user's Stripe data (subscriptions and customer)
+ * SEC-005: Use authenticated client for queries, service role only for admin operations
+ */
+async function deleteUserStripeData(
+  userId: string,
+  supabase: ReturnType<typeof createRouteHandlerClient<Database>>
+): Promise<{ success: boolean; errors: string[] }> {
   const errors: string[] = []
 
   try {
-    // Get Stripe customer ID from database (if exists)
-    const { data: customer, error: customerError } = await supabaseAdmin
+    // SEC-005: Use authenticated client with RLS to query customer data
+    const { data: customer, error: customerError } = await supabase
       .from('customers')
       .select('stripe_customer_id')
-      .eq('id', userId)
       .maybeSingle() // Use maybeSingle to handle case where record doesn't exist
 
     // If no customer record exists, user likely never interacted with Stripe
@@ -172,16 +179,20 @@ async function deleteUserStripeData(userId: string): Promise<{ success: boolean;
 
 /**
  * Delete user's database records in correct order
+ * SEC-005: Use authenticated client - RLS policies allow users to delete their own data
  * Note: Some tables have ON DELETE CASCADE, but we delete explicitly for clarity and control
  */
-async function deleteUserDatabaseRecords(userId: string): Promise<{ success: boolean; error?: string }> {
+async function deleteUserDatabaseRecords(
+  userId: string,
+  supabase: ReturnType<typeof createRouteHandlerClient<Database>>
+): Promise<{ success: boolean; error?: string }> {
   try {
+    // SEC-005: Use authenticated client with RLS - users can only delete their own data
     // Delete in order (respecting FK constraints)
     // 1. Transactions (references csv_uploads, so delete first)
-    const { error: transactionsError } = await supabaseAdmin
+    const { error: transactionsError } = await supabase
       .from('transactions')
       .delete()
-      .eq('user_id', userId)
 
     if (transactionsError) {
       console.error('Error deleting transactions:', transactionsError)
@@ -189,10 +200,10 @@ async function deleteUserDatabaseRecords(userId: string): Promise<{ success: boo
     }
 
     // 2. Subscriptions (references user_id, no cascade)
-    const { error: subscriptionsError } = await supabaseAdmin
+    // RLS ensures user can only delete their own subscriptions
+    const { error: subscriptionsError } = await supabase
       .from('subscriptions')
       .delete()
-      .eq('user_id', userId)
 
     if (subscriptionsError) {
       console.error('Error deleting subscriptions:', subscriptionsError)
@@ -200,10 +211,10 @@ async function deleteUserDatabaseRecords(userId: string): Promise<{ success: boo
     }
 
     // 3. Customers (references user_id, no cascade)
-    const { error: customersError } = await supabaseAdmin
+    // RLS ensures user can only delete their own customer record
+    const { error: customersError } = await supabase
       .from('customers')
       .delete()
-      .eq('id', userId)
 
     if (customersError) {
       console.error('Error deleting customers:', customersError)
@@ -211,10 +222,10 @@ async function deleteUserDatabaseRecords(userId: string): Promise<{ success: boo
     }
 
     // 4. CSV uploads (has CASCADE to transactions, but we already deleted transactions)
-    const { error: csvUploadsError } = await supabaseAdmin
+    // RLS ensures user can only delete their own uploads
+    const { error: csvUploadsError } = await supabase
       .from('csv_uploads')
       .delete()
-      .eq('user_id', userId)
 
     if (csvUploadsError) {
       console.error('Error deleting csv_uploads:', csvUploadsError)
@@ -222,10 +233,10 @@ async function deleteUserDatabaseRecords(userId: string): Promise<{ success: boo
     }
 
     // 5. Terms acceptance (has CASCADE, but delete explicitly)
-    const { error: termsError } = await supabaseAdmin
+    // RLS ensures user can only delete their own terms acceptance
+    const { error: termsError } = await supabase
       .from('terms_acceptance')
       .delete()
-      .eq('user_id', userId)
 
     if (termsError) {
       console.error('Error deleting terms_acceptance:', termsError)
@@ -243,13 +254,18 @@ async function deleteUserDatabaseRecords(userId: string): Promise<{ success: boo
 
 /**
  * Delete user's storage files from csv_uploads bucket
+ * SEC-005: Use authenticated client - storage RLS policies allow users to delete their own files
  */
-async function deleteUserStorageFiles(userId: string): Promise<{ success: boolean; errors: string[] }> {
+async function deleteUserStorageFiles(
+  userId: string,
+  supabase: ReturnType<typeof createRouteHandlerClient<Database>>
+): Promise<{ success: boolean; errors: string[] }> {
   const errors: string[] = []
 
   try {
+    // SEC-005: Use authenticated client with storage RLS
     // List all files for this user (files are stored as userId/timestamp-filename)
-    const { data: files, error: listError } = await supabaseAdmin.storage
+    const { data: files, error: listError } = await supabase.storage
       .from('csv_uploads')
       .list(userId, {
         limit: 1000,
@@ -268,9 +284,9 @@ async function deleteUserStorageFiles(userId: string): Promise<{ success: boolea
       return { success: true, errors: [] }
     }
 
-    // Delete all files
+    // Delete all files - RLS ensures user can only delete their own files
     const filePaths = files.map(file => `${userId}/${file.name}`)
-    const { error: deleteError } = await supabaseAdmin.storage
+    const { error: deleteError } = await supabase.storage
       .from('csv_uploads')
       .remove(filePaths)
 
@@ -317,20 +333,20 @@ export async function POST(request: NextRequest) {
 
     const userId = user.id
 
-    // Get user data summary for logging
-    const dataSummary = await getUserDataSummary(userId)
+    // Get user data summary for logging (using authenticated client)
+    const dataSummary = await getUserDataSummary(userId, supabase)
     console.log(`Starting account deletion for user ${userId}:`, dataSummary)
 
     // 2. Stripe Cleanup
     console.log('Step 1: Cleaning up Stripe data...')
-    const stripeResult = await deleteUserStripeData(userId)
+    const stripeResult = await deleteUserStripeData(userId, supabase)
     if (stripeResult.errors.length > 0) {
       console.warn('Stripe cleanup had errors but continuing:', stripeResult.errors)
     }
 
-    // 3. Database Deletion
+    // 3. Database Deletion (using authenticated client with RLS)
     console.log('Step 2: Deleting database records...')
-    const dbResult = await deleteUserDatabaseRecords(userId)
+    const dbResult = await deleteUserDatabaseRecords(userId, supabase)
     if (!dbResult.success) {
       return NextResponse.json(
         { 
@@ -341,9 +357,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Storage Cleanup
+    // 4. Storage Cleanup (using authenticated client)
     console.log('Step 3: Cleaning up storage files...')
-    const storageResult = await deleteUserStorageFiles(userId)
+    const storageResult = await deleteUserStorageFiles(userId, supabase)
     if (storageResult.errors.length > 0) {
       console.warn('Storage cleanup had errors but continuing:', storageResult.errors)
     }
@@ -394,12 +410,11 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Account deletion error:', error)
+    // SEC-010: Sanitize error message before returning to client
+    const sanitized = sanitizeError(error, 'Failed to delete account', 'account deletion')
+    
     return NextResponse.json(
-      { 
-        error: 'Failed to delete account',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      sanitized,
       { status: 500 }
     )
   }

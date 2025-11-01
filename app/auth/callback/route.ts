@@ -144,9 +144,31 @@ export async function GET(request: Request) {
 
     console.log('✅ Session verified before redirect:', { userId: session.user?.id, email: session.user?.email })
 
-    // URL to redirect to after sign in process completes
-    // Use replace to prevent back button from going to callback
-    const redirectUrl = new URL(next, requestUrl.origin)
+    // SEC-008: Whitelist allowed redirect paths to prevent open redirect attacks
+    const ALLOWED_REDIRECTS = [
+      '/dashboard',
+      '/dashboard/settings',
+      '/dashboard/subscription',
+      '/dashboard/performance',
+      '/dashboard/portfolio',
+      '/dashboard/transaction-history',
+      '/dashboard/transactions',
+      '/dashboard/calculator'
+    ]
+    
+    // Validate redirect path - must be relative, start with /, and be in whitelist
+    const isValidRedirect = next.startsWith('/') && 
+                           !next.includes('//') && // No protocol-relative URLs
+                           !next.includes('..') && // No path traversal
+                           ALLOWED_REDIRECTS.includes(next)
+    
+    const safeRedirectPath = isValidRedirect ? next : '/dashboard'
+    const redirectUrl = new URL(safeRedirectPath, requestUrl.origin)
+    
+    if (!isValidRedirect) {
+      console.warn(`⚠️ Invalid redirect path blocked: ${next}, redirecting to /dashboard`)
+    }
+    
     console.log('📍 Redirecting to:', redirectUrl.toString())
     const response = NextResponse.redirect(redirectUrl)
     

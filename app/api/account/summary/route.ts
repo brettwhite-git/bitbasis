@@ -1,20 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import type { Database } from '@/types/supabase'
-
-// Admin client for data summary (bypasses RLS)
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { sanitizeError } from '@/lib/utils/error-sanitization'
 
 export async function GET() {
   try {
-    // Authenticate user
+    // Authenticate user and use authenticated client (RLS enforced)
     const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore })
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -24,22 +18,22 @@ export async function GET() {
       )
     }
 
-    const userId = user.id
-
-    // Fetch user's data counts
+    // SEC-005: Use authenticated client with RLS enforcement instead of service role
+    // RLS policies ensure users can only access their own data
+    // Note: Explicit user_id filters added for clarity and as defense-in-depth
     const [transactionsResult, csvUploadsResult, subscriptionsResult] = await Promise.all([
-      supabaseAdmin
+      supabase
         .from('transactions')
         .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId),
-      supabaseAdmin
+        .eq('user_id', user.id),
+      supabase
         .from('csv_uploads')
         .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId),
-      supabaseAdmin
+        .eq('user_id', user.id),
+      supabase
         .from('subscriptions')
         .select('id, status, metadata, current_period_end')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .in('status', ['active', 'trialing'])
         .order('created', { ascending: false })
         .limit(1)
@@ -78,12 +72,11 @@ export async function GET() {
     })
 
   } catch (error) {
-    console.error('Error fetching account summary:', error)
+    // SEC-010: Sanitize error message before returning to client
+    const sanitized = sanitizeError(error, 'Failed to fetch account summary', 'account summary')
+    
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch account summary',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      sanitized,
       { status: 500 }
     )
   }

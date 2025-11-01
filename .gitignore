@@ -25,6 +25,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Debug routes (local development only - SEC-003)
+app/api/debug-*/
+app/api/test-webhook/
+
 # local env files
 .env
 .env*.local

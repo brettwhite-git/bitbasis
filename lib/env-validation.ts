@@ -65,7 +65,7 @@ function validateUrl(url: string, name: string): void {
  * Validates Supabase configuration
  */
 function validateSupabaseConfig(config: Partial<EnvironmentConfig>): void {
-  const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY } = config;
+  const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } = config;
   
   if (!NEXT_PUBLIC_SUPABASE_URL) {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL is required');
@@ -77,9 +77,22 @@ function validateSupabaseConfig(config: Partial<EnvironmentConfig>): void {
     throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is required');
   }
   
-  // Validate anon key format (should start with 'eyJ')
-  if (!NEXT_PUBLIC_SUPABASE_ANON_KEY.startsWith('eyJ')) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY appears to be invalid (should start with "eyJ")');
+  // Validate anon key format (supports both legacy JWT format and new publishable format)
+  const isValidLegacyFormat = NEXT_PUBLIC_SUPABASE_ANON_KEY.startsWith('eyJ');
+  const isValidPublishableFormat = NEXT_PUBLIC_SUPABASE_ANON_KEY.startsWith('sb_publishable_');
+  
+  if (!isValidLegacyFormat && !isValidPublishableFormat) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY appears to be invalid (should start with "eyJ" for legacy format or "sb_publishable_" for new format)');
+  }
+  
+  // Validate service role key format if provided (server-side only)
+  if (SUPABASE_SERVICE_ROLE_KEY) {
+    const isValidLegacyServiceFormat = SUPABASE_SERVICE_ROLE_KEY.startsWith('eyJ');
+    const isValidSecretFormat = SUPABASE_SERVICE_ROLE_KEY.startsWith('sb_sec_');
+    
+    if (!isValidLegacyServiceFormat && !isValidSecretFormat) {
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY appears to be invalid (should start with "eyJ" for legacy format or "sb_sec_" for new format)');
+    }
   }
 }
 

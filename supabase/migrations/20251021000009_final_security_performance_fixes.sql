@@ -258,6 +258,7 @@ CREATE POLICY "Admins and server can insert terms acceptances"
 DROP POLICY IF EXISTS "Admins can read all terms acceptances" 
   ON public.terms_acceptance;
 
+DROP POLICY IF EXISTS "Service role can read all terms acceptances" ON public.terms_acceptance;
 CREATE POLICY "Service role can read all terms acceptances"
   ON public.terms_acceptance
   FOR SELECT

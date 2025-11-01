@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { transactionSchema } from '@/types/add-transaction';
 import { TransactionLimitService } from '@/lib/subscription/transaction-limits';
+import { checkRateLimit, getRateLimitHeaders, RateLimits } from '@/lib/rate-limiting';
+import { sanitizeError } from '@/lib/utils/error-sanitization';
 
 /**
  * POST /api/transaction-history/add-unified
@@ -32,6 +34,29 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Unauthorized. You must be logged in to add transactions.' },
         { status: 401 }
+      );
+    }
+
+    // SEC-004: Rate limiting - 15 requests per hour per user
+    const rateLimitResult = checkRateLimit(
+      user.id,
+      RateLimits.BULK_TRANSACTIONS.limit,
+      RateLimits.BULK_TRANSACTIONS.windowMs
+    );
+
+    if (!rateLimitResult.allowed) {
+      const minutesUntilReset = Math.ceil((rateLimitResult.resetAt - Date.now()) / (60 * 1000));
+      
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: `Too many transaction uploads. Please try again in ${minutesUntilReset} minute(s).`,
+          retryAfter: minutesUntilReset * 60, // seconds
+        },
+        {
+          status: 429,
+          headers: getRateLimitHeaders(rateLimitResult),
+        }
       );
     }
     
@@ -218,31 +243,29 @@ export async function POST(request: Request) {
       .select();
     
     if (insertError) {
-      console.error('Database insert error:', insertError);
+      // SEC-010: Sanitize error message before returning to client
+      const sanitized = sanitizeError(insertError, 'Failed to save transactions to database', 'transaction insert')
       return NextResponse.json(
-        { 
-          error: 'Failed to save transactions to database.',
-          details: insertError.message 
-        },
+        sanitized,
         { status: 500 }
       );
     }
 
-    // Return success response
+    // Return success response with rate limit headers
     return NextResponse.json({
       message: `Successfully added ${insertedTransactions.length} transaction(s).`,
       count: insertedTransactions.length,
       data: insertedTransactions
+    }, {
+      headers: getRateLimitHeaders(rateLimitResult),
     });
     
   } catch (error: unknown) {
-    console.error('API Error - /api/transaction-history/add-unified:', error);
+    // SEC-010: Sanitize error message before returning to client
+    const sanitized = sanitizeError(error, 'Failed to add transactions', 'bulk transaction add')
     
     return NextResponse.json(
-      { 
-        error: 'Failed to add transactions.',
-        message: error instanceof Error ? error.message : 'Unknown error' 
-      },
+      sanitized,
       { status: 500 }
     );
   }

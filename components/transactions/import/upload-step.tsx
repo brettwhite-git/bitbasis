@@ -28,9 +28,9 @@ export function UploadStep() {
 
   // File validation
   const validateFile = useCallback((file: File): string | null => {
-    // Check file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      return 'File size must be less than 10MB'
+    // Check file size (1MB limit)
+    if (file.size > 1 * 1024 * 1024) {
+      return 'File size must be less than 1MB'
     }
 
     // Check file type
@@ -289,7 +289,7 @@ export function UploadStep() {
         <ul className="text-sm text-blue-300 space-y-1">
           <li>• File must be in CSV format (.csv extension)</li>
           <li>• First row should contain column headers</li>
-          <li>• Maximum file size: 10MB</li>
+          <li>• Maximum file size: 1MB</li>
           <li>• Common fields: Date, Amount, Type, Fee, Exchange, etc.</li>
         </ul>
       </div>

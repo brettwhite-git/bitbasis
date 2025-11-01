@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { stripe } from '@/lib/stripe'
 import type { Database } from '@/types/supabase'
-
-// Use service role for subscription modifications (like webhooks do)
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,9 +15,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify user authentication using regular client
+    // Verify user authentication
     const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore })
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -34,12 +27,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify the subscription belongs to the user using admin client
-    const { data: subscription, error: subError } = await supabaseAdmin
+    // SEC-005: Use authenticated client with RLS enforcement
+    // RLS policies ensure users can only access their own subscriptions
+    const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('id', subscriptionId)
-      .eq('user_id', user.id)
       .single()
 
     if (subError || !subscription) {
@@ -64,7 +57,8 @@ export async function POST(request: NextRequest) {
     if (isLifetime) {
       console.log('Cancelling lifetime subscription - updating database only')
       // For lifetime subscriptions, we only update our database (no Stripe subscription to cancel)
-      const { error: updateError } = await supabaseAdmin
+      // RLS ensures user can only update their own subscriptions
+      const { error: updateError } = await supabase
         .from('subscriptions')
         .update({
           status: 'canceled',
@@ -131,7 +125,8 @@ export async function POST(request: NextRequest) {
       updateData.canceled_at = new Date().toISOString()
     }
 
-    const { error: updateError } = await supabaseAdmin
+    // RLS ensures user can only update their own subscriptions
+    const { error: updateError } = await supabase
       .from('subscriptions')
       .update(updateData)
       .eq('id', subscriptionId)

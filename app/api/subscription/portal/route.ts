@@ -3,6 +3,8 @@ import { stripe } from '@/lib/stripe'
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import type { Database } from '@/types/supabase'
+import { validateRedirectUrl } from '@/lib/utils/url-validation'
+import { sanitizeError } from '@/lib/utils/error-sanitization'
 
 // Helper function to create portal configuration if none exists
 async function ensurePortalConfiguration() {
@@ -191,11 +193,18 @@ export async function POST(request: NextRequest) {
       // Continue anyway - maybe the configuration exists but we can't list it
     }
 
+    // SEC-009: Validate return URL to prevent open redirect attacks
+    const safeReturnUrl = validateRedirectUrl(
+      returnUrl,
+      '/dashboard/settings',
+      request.nextUrl.origin
+    )
+
     // Create customer portal session
     console.log('Creating portal session for customer:', customerId)
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: returnUrl || `${request.nextUrl.origin}/dashboard/settings`,
+      return_url: safeReturnUrl,
     })
 
     console.log('✅ Portal session created:', portalSession.id)
@@ -206,20 +215,11 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ Error creating customer portal session:', error)
-    
-    // More detailed error logging
-    if (error instanceof Error) {
-      console.error('Error name:', error.name)
-      console.error('Error message:', error.message)
-      console.error('Error stack:', error.stack)
-    }
+    // SEC-010: Sanitize error message before returning to client
+    const sanitized = sanitizeError(error, 'Failed to create customer portal session', 'portal session creation')
     
     return NextResponse.json(
-      { 
-        error: 'Failed to create customer portal session',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      sanitized,
       { status: 500 }
     )
   }
