@@ -94,15 +94,19 @@ function getMappedMessage(error: unknown): string | null {
     }
     
     // Check error name
-    if (ERROR_MESSAGE_MAP[error.name]) {
-      return ERROR_MESSAGE_MAP[error.name]
+    const nameMessage = ERROR_MESSAGE_MAP[error.name]
+    if (nameMessage) {
+      return nameMessage
     }
   }
   
   // Check error code
   const code = extractErrorCode(error)
-  if (code && ERROR_MESSAGE_MAP[code]) {
-    return ERROR_MESSAGE_MAP[code]
+  if (code) {
+    const codeMessage = ERROR_MESSAGE_MAP[code]
+    if (codeMessage) {
+      return codeMessage
+    }
   }
   
   return null

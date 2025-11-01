@@ -24,7 +24,16 @@ export async function POST(request: NextRequest) {
   try {
     // SEC-006: Rate limiting - 5 requests per hour per IP
     const forwarded = request.headers.get('x-forwarded-for')
-    const ip = forwarded ? forwarded.split(',')[0].trim() : request.headers.get('x-real-ip') || 'unknown'
+    let ip = 'unknown'
+    if (forwarded) {
+      const ips = forwarded.split(',')
+      if (ips.length > 0 && ips[0]) {
+        ip = ips[0].trim()
+      }
+    }
+    if (ip === 'unknown') {
+      ip = request.headers.get('x-real-ip') || 'unknown'
+    }
     
     // Use IP for rate limiting (contact form is public, no user authentication)
     const rateLimitKey = `contact:${ip}`
