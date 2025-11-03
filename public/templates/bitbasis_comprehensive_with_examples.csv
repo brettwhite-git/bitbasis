@@ -21,7 +21,7 @@ Date,Type,Sent Amount,Sent Currency,Received Amount,Received Currency,Fee Amount
 2024-05-20,buy,2800.00,USD,0.04,BTC,14.00,USD,Strike,Personal Wallet,,,k1l2m3n4o5p67900,70000.00,Spring accumulation
 2024-06-15,buy,3200.00,USD,0.05,BTC,16.00,USD,Coinbase Pro,Personal Wallet,,,d1e2f3g4h5i67893,64000.00,Mid-year accumulation
 2024-08-05,buy,2320.00,USD,0.04,BTC,11.60,USD,River,Personal Wallet,,,r1s2t3u4v5w67907,58000.00,August DCA
-2024-09-10,withdrawal,0.08,BTC,,,0.0005,BTC,Personal Wallet,Hardware Wallet,bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4,bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh,e1f2g3h4i5j67894,58000.00,Security upgrade
+2024-09-10,withdrawal,0.08,BTC,,,0.0005,BTC,Personal Wallet,Hardware Wallet,bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4,bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh,461a4c50b586b06b6f8c79ca59886c0edf610ec14ee9a27adce681670839c99d,58000.00,Security upgrade
 2024-11-20,interest,,,0.003,BTC,,,River,Personal Wallet,,,f1g2h3i4j5k67895,88000.00,Yield farming rewards
 2024-12-10,buy,1800.00,USD,0.02,BTC,9.00,USD,Coinbase,Personal Wallet,,,l1m2n3o4p5q67901,90000.00,End of year purchase
 2025-01-05,buy,1820.00,USD,0.02,BTC,9.10,USD,Strike,Personal Wallet,,,g1h2i3j4k5l67896,91000.00,New year purchase

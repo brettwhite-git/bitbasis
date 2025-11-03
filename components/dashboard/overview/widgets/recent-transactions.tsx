@@ -353,7 +353,7 @@ export function RecentTransactions() {
             <p className="text-sm font-medium">No transactions yet</p>
             <p className="text-xs mt-1">Transactions will appear here once you add them</p>
             <Button variant="outline" size="sm" className="mt-4" asChild>
-              <Link href="/transaction-history">
+              <Link href="/dashboard/transaction-history">
                 Add Transactions
                 <ExternalLink className="ml-2 h-3 w-3" />
               </Link>
