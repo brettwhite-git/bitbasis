@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { transactionSchema } from '@/types/add-transaction';
 import { TransactionLimitService } from '@/lib/subscription/transaction-limits';
@@ -250,6 +251,10 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    // Invalidate dashboard cache to ensure fresh data on next page load
+    // This is critical for production where server components are aggressively cached
+    revalidatePath('/dashboard');
 
     // Return success response with rate limit headers
     return NextResponse.json({

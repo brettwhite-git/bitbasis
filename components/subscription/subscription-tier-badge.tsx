@@ -97,10 +97,11 @@ export function SubscriptionTierBadge() {
         {/* Upgrade Button (only show for free users) */}
         {showUpgradeButton && (
           <Badge 
-            className="text-xs px-2 py-1 cursor-pointer hover:opacity-90 transition-opacity bg-green-500 hover:bg-green-600 text-white border-green-500"
+            className="text-xs px-3 py-1 cursor-pointer hover:opacity-90 transition-opacity bg-green-500 hover:bg-green-600 text-white border-green-500 rounded-full"
             onClick={() => setModalOpen(true)}
           >
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
+              
               <MousePointerClick className="h-3 w-3" />
               <span>UPGRADE NOW</span>
             </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Table, TableBody } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Loader2, Ghost, Upload } from "lucide-react"
@@ -84,6 +85,7 @@ export function TransactionTable() {
   const [selectedExchanges, setSelectedExchanges] = useState<string[]>([])
 
   // Hooks for extracted functionality
+  const router = useRouter()
   const isMobile = useIsMobile()
   const filterUtils = useTransactionFilters()
   const selectionState = useTransactionSelection()
@@ -130,6 +132,9 @@ export function TransactionTable() {
       description: `Successfully imported ${count} transaction${count === 1 ? '' : 's'}`,
     })
     fetchTransactions()
+    // Refresh server components to ensure dashboard cache is cleared
+    // This works in dev and provides backup in production (primary fix is revalidatePath in API route)
+    router.refresh()
     setImportWizardOpen(false)
   }
 

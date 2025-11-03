@@ -3,7 +3,7 @@
 import React from 'react';
 // Card components not used in this component
 import { Button } from "@/components/ui/button";
-import { DownloadCloud, FileText } from 'lucide-react';
+import { DownloadCloud, FileText, HelpCircle } from 'lucide-react';
 
 export function ResourcesSettings() {
     const templates = {
@@ -69,6 +69,34 @@ export function ResourcesSettings() {
                         <p className="text-xs text-gray-500">
                             Includes all fields: Addresses, Transaction Hashes, and detailed metadata for advanced users
                         </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Help Section */}
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm">
+                <div className="relative z-10 space-y-4">
+                    <div>
+                        <h3 className="text-lg font-semibold text-white mb-2">Help</h3>
+                        <p className="text-gray-400 text-sm">
+                            Access documentation, guides, and resources to help you get the most out of BitBasis.
+                        </p>
+                    </div>
+                    <div className="space-y-3">
+                        <Button 
+                            asChild 
+                            variant="outline" 
+                            className="border-gray-600/50 text-gray-300 hover:bg-gray-800/50 hover:text-white"
+                        >
+                            <a 
+                                href="https://github.com/brettwhite-git/bitbasis-public" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                            >
+                                <HelpCircle className="mr-2 h-4 w-4" />
+                                View Help Documentation
+                            </a>
+                        </Button>
                     </div>
                 </div>
             </div>

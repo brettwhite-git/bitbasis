@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, User, FolderOpen } from "lucide-react"
+import { LogOut, User, FolderOpen, HelpCircle } from "lucide-react"
 import { useAuth } from "@/providers/supabase-auth-provider"
 import { useDisplayName } from "@/lib/hooks/use-display-name"
 import Link from "next/link"
@@ -85,6 +85,17 @@ export function UserNav() {
               <span>Manage Files</span>
             </DropdownMenuItem>
           </Link>
+          <DropdownMenuItem asChild>
+            <a
+              href="https://github.com/brettwhite-git/bitbasis-public"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center"
+            >
+              <HelpCircle className="mr-2 h-4 w-4" />
+              <span>Help</span>
+            </a>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut()}>
