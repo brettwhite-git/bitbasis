@@ -69,7 +69,7 @@ export function SubscriptionManagement() {
       } else {
         return {
           status: "Active",
-          description: "$4.99/month • Unlimited transactions",
+          description: "$9.99/month • Unlimited transactions",
           badge: { text: "PRO", variant: "default" as const, icon: Crown },
           isLifetime: false,
           isPro: true,

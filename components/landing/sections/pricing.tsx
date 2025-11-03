@@ -30,7 +30,7 @@ export function PricingSection() {
     {
       name: "Pro",
       description: "Unlock advanced features and unlimited tracking.",
-      price: "$4.99",
+      price: "$9.99",
       priceLabel: "/ month",
       badge: "Most Popular",
       features: [

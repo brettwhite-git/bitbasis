@@ -177,12 +177,12 @@ export class TransactionLimitService {
       }
 
       if (status.transaction_count >= limits.maxTransactions) {
-        return `You've reached your limit of ${limits.maxTransactions} transactions. Upgrade to Pro ($4.99/month) or get Lifetime access ($210) for unlimited transactions.`
+        return `You've reached your limit of ${limits.maxTransactions} transactions. Upgrade to Pro ($9.99/month) or get Lifetime access ($210) for unlimited transactions.`
       }
 
       const transactionsLeft = limits.maxTransactions - status.transaction_count
       if (transactionsLeft <= 5) {
-        return `Only ${transactionsLeft} transactions remaining. Upgrade to Pro ($4.99/month) or get Lifetime access ($210) to continue tracking your Bitcoin portfolio.`
+        return `Only ${transactionsLeft} transactions remaining. Upgrade to Pro ($9.99/month) or get Lifetime access ($210) to continue tracking your Bitcoin portfolio.`
       }
 
       return `You have ${transactionsLeft} transactions remaining in your free plan.`
