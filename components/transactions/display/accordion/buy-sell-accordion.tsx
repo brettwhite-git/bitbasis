@@ -167,27 +167,19 @@ export function BuySellAccordion({
               })()}
             </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Holding Period:</span>
-            <span className="text-white">
-              {(() => {
-                if (transaction.type === 'buy') {
+          {/* Holding Period - only show for buy transactions */}
+          {transaction.type === 'buy' && (
+            <div className="flex justify-between">
+              <span className="text-gray-400">Holding Period:</span>
+              <span className="text-white">
+                {(() => {
                   // Buy: holding period = date.now - transaction.date
                   const days = Math.floor((Date.now() - new Date(transaction.date).getTime()) / (1000 * 60 * 60 * 24))
                   return `${days} days`
-                } else if (transaction.type === 'sell') {
-                  // Sell: N/A (no way of linking lots currently)
-                  return "N/A (lot tracking needed)"
-                } else if (transaction.type === 'interest') {
-                  // Interest: immediate income
-                  return "N/A (immediate income)"
-                } else {
-                  // Deposit/Withdrawal: not taxable
-                  return "N/A (not taxable)"
-                }
-              })()}
-            </span>
-          </div>
+                })()}
+              </span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-gray-400">Tax Category:</span>
             <span className="text-white">

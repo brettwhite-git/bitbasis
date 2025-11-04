@@ -37,6 +37,14 @@ const BuyPatternHistogram: React.FC<{ className?: string }> = ({ className }) =>
   const options: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: {
+        left: 8,
+        right: 8,
+        top: 4,
+        bottom: 8,
+      }
+    },
     plugins: {
       legend: {
         display: false // Hide legend
@@ -51,7 +59,9 @@ const BuyPatternHistogram: React.FC<{ className?: string }> = ({ className }) =>
         },
         ticks: {
           color: "#9ca3af",
-        }
+          padding: 8,
+        },
+        offset: true, // Add space between bars and axis
       },
       y: {
         display: false, // Hide y-axis
@@ -124,8 +134,8 @@ const BuyPatternHistogram: React.FC<{ className?: string }> = ({ className }) =>
         backgroundColor: '#F7931A', // Bitcoin orange
         borderRadius: 4, // Rounded bars
         borderSkipped: false, // Ensure all corners are rounded
-        barPercentage: 0.6, // Bar width
-        categoryPercentage: 0.3, // Bar spacing
+        barPercentage: 0.7, // Bar width (increased from 0.6)
+        categoryPercentage: 0.8, // Bar spacing (increased from 0.3 for better spacing)
       },
     ],
   };
@@ -146,7 +156,7 @@ const BuyPatternHistogram: React.FC<{ className?: string }> = ({ className }) =>
               {error}
             </div>
           ) : (
-            <div className="h-32 w-full">
+            <div className="h-32 w-full min-h-[128px]">
               <Bar options={options} data={data} />
             </div>
           )}

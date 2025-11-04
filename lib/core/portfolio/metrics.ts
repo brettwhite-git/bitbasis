@@ -14,7 +14,7 @@ import {
  */
 export function calculateTotalBTC(transactions: UnifiedTransaction[]): number {
   return transactions.reduce((total, transaction) => {
-    if (transaction.type === 'buy' && transaction.received_amount) {
+    if ((transaction.type === 'buy' || transaction.type === 'interest') && transaction.received_amount) {
       return total + transaction.received_amount
     } else if (transaction.type === 'sell' && transaction.sent_amount) {
       return total - transaction.sent_amount
@@ -101,7 +101,7 @@ export function calculateShortTermHoldings(transactions: UnifiedTransaction[]): 
     const txDate = new Date(transaction.date)
     const isShortTerm = txDate > oneYearAgo
 
-    if (transaction.type === 'buy' && transaction.received_amount) {
+    if ((transaction.type === 'buy' || transaction.type === 'interest') && transaction.received_amount) {
       if (isShortTerm) {
         shortTermHoldings += transaction.received_amount
       }
@@ -131,7 +131,7 @@ export function calculateLongTermHoldings(transactions: UnifiedTransaction[]): n
     const txDate = new Date(transaction.date)
     const isLongTerm = txDate <= oneYearAgo
 
-    if (transaction.type === 'buy' && transaction.received_amount) {
+    if ((transaction.type === 'buy' || transaction.type === 'interest') && transaction.received_amount) {
       if (isLongTerm) {
         longTermHoldings += transaction.received_amount
       }
@@ -188,6 +188,11 @@ export function calculatePortfolioMetrics(
         totalCostBasis += transaction.fee_amount
         totalFees += transaction.fee_amount
       }
+    } else if (transaction.type === 'interest' && transaction.received_amount) {
+      // Add BTC from interest (income)
+      totalBtc += transaction.received_amount
+      // Interest has $0 cost basis - it's taxable income when received
+      // When sold, the full amount is a gain
     } else if (transaction.type === 'sell' && transaction.sent_amount) {
       // Subtract BTC from sell
       totalBtc -= transaction.sent_amount

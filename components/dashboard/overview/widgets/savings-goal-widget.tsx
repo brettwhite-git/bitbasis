@@ -86,8 +86,8 @@ export function SavingsGoalWidget({ className }: SavingsGoalWidgetProps) {
   // If no goal is saved, show placeholder
   if (!activeGoal) {
     return (
-      <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm ${className || ''}`}>
-        <div className="relative z-10">
+      <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-6 shadow-md backdrop-blur-sm flex flex-col ${className || ''}`}>
+        <div className="relative z-10 flex flex-col h-full justify-center min-h-[140px]">
           <h3 className="text-lg font-bold text-white mb-4">No Savings Goal Set</h3>
           <p className="text-sm text-gray-400 mb-4">
             Set a savings goal to track your progress

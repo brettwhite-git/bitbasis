@@ -223,11 +223,9 @@ export async function POST(request: Request) {
           dbTransaction.from_address_name = transaction.from_address_name || null;
           dbTransaction.to_address_name = transaction.to_address_name || null;
           
-          // Cost basis for interest (treated as income at current price)
-          const interestPrice = transaction.price || currentPrice;
-          if (interestPrice) {
-            dbTransaction.received_cost_basis = transaction.received_amount * interestPrice;
-          }
+          // Cost basis for interest is $0 (treated as taxable income when received)
+          // When interest BTC is sold, the full amount is a gain
+          dbTransaction.received_cost_basis = 0;
           break;
 
         default:

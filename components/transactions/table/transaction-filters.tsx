@@ -133,7 +133,7 @@ export function TransactionFilters({
       <DropdownMenuContent className="w-[200px] bg-gray-800 border-gray-600" align="start">
         <DropdownMenuLabel>Transaction Type</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {['buy', 'sell', 'deposit', 'withdrawal'].map((type) => (
+        {['buy', 'sell', 'deposit', 'withdrawal', 'interest'].map((type) => (
           <DropdownMenuItem
             key={type}
             className="flex items-center justify-between p-2 hover:bg-gray-700 focus:bg-gray-700"
@@ -235,7 +235,7 @@ export function TransactionFilters({
           }`}
         >
           <CirclePlus className="mr-2 h-4 w-4" />
-          Exchange
+          Platform
           {selectedExchanges.length > 0 && (
             <>
               <Separator orientation="vertical" className="mx-2 h-4" />
@@ -259,7 +259,7 @@ export function TransactionFilters({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-[250px] bg-gray-800 border-gray-600" align="start">
-        <DropdownMenuLabel>Exchange/Platform</DropdownMenuLabel>
+        <DropdownMenuLabel>Platform</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {exchanges.map((exchange) => (
           <DropdownMenuItem
@@ -421,7 +421,7 @@ export function useTransactionFilters() {
         return false
       }
 
-      // Term filter (only for buy/sell)
+      // Term filter (only applies to buy/sell transactions - other types are not filtered by term)
       if (selectedTerms.length > 0 && (transaction.type === 'buy' || transaction.type === 'sell')) {
         const transactionDate = new Date(transaction.date)
         const currentDate = new Date()

@@ -182,7 +182,7 @@ export function DashboardMockup() {
 
               {/* Metrics Grid - Responsive columns */}
               <div className="w-full grid gap-1 sm:gap-1.5 md:gap-2 lg:gap-3 grid-cols-6 mb-2 sm:mb-2 md:mb-3 lg:mb-4 flex-shrink-0">
-                <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm">
+                <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm h-[90px] sm:h-[95px] md:h-[105px] lg:h-[110px]">
                   <div className="relative z-10 flex flex-col h-full text-left">
                     <h3 className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Portfolio Value</h3>
                     <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-bitcoin-orange mb-0.5 truncate">$502,847.65</div>
@@ -191,7 +191,7 @@ export function DashboardMockup() {
                   </div>
                 </div>
                 
-                <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm">
+                <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm h-[90px] sm:h-[95px] md:h-[105px] lg:h-[110px]">
                   <div className="relative z-10 flex flex-col h-full text-left">
                     <h3 className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Total Cost Basis</h3>
                     <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-bitcoin-orange mb-0.5 truncate">$285,340.50</div>
@@ -200,7 +200,7 @@ export function DashboardMockup() {
                   </div>
                 </div>
                 
-                <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm">
+                <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm h-[90px] sm:h-[95px] md:h-[105px] lg:h-[110px]">
                   <div className="relative z-10 flex flex-col h-full text-left">
                     <h3 className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Unrealized Gains</h3>
                     <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-bitcoin-orange mb-0.5 truncate">+$217,507.15</div>
@@ -209,7 +209,7 @@ export function DashboardMockup() {
                   </div>
                 </div>
                 
-                <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm">
+                <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm h-[90px] sm:h-[95px] md:h-[105px] lg:h-[110px]">
                   <div className="relative z-10 flex flex-col h-full text-left">
                     <h3 className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Average Buy Price</h3>
                     <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-bitcoin-orange mb-0.5 truncate">$59,627.84</div>
@@ -218,7 +218,7 @@ export function DashboardMockup() {
                   </div>
                 </div>
                 
-                <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm">
+                <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm h-[90px] sm:h-[95px] md:h-[105px] lg:h-[110px]">
                   <div className="relative z-10 flex flex-col h-full text-left">
                     <h3 className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">HODL Time</h3>
                     <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-bitcoin-orange mb-0.5 truncate">2945 days</div>
@@ -227,7 +227,7 @@ export function DashboardMockup() {
                   </div>
                 </div>
                 
-                <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm">
+                <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm h-[90px] sm:h-[95px] md:h-[105px] lg:h-[110px]">
                   <div className="relative z-10 flex flex-col h-full text-left">
                     <h3 className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Tax Liability</h3>
                     <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-bitcoin-orange mb-0.5 truncate">$43,501.14</div>

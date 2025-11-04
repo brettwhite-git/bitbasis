@@ -30,7 +30,13 @@ export function TransactionAccordion({
       case 'deposit':
       case 'withdrawal':
       case 'interest':
-        return <TransferAccordion transaction={transaction} />
+        return (
+          <TransferAccordion 
+            transaction={transaction}
+            currentPrice={currentPrice}
+            priceLoading={priceLoading}
+          />
+        )
       default:
         return <div className="text-gray-400">No additional details available</div>
     }

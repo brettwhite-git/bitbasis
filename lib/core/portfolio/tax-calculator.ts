@@ -96,7 +96,7 @@ function calculateRemainingHoldings(
     sellTransactions: transactions.filter(tx => tx.type === 'sell').length
   })
 
-  // Create holdings from buy transactions
+  // Create holdings from buy transactions and interest (income)
   const holdings: Array<{
     amount: number
     date: string
@@ -121,6 +121,26 @@ function calculateRemainingHoldings(
       }
       holdings.push(holding)
       console.log('➕ calculateRemainingHoldings: Added holding:', holding)
+    }
+  })
+
+  // Add interest transactions to holdings with $0 cost basis
+  const interestTransactions = transactions.filter(tx => tx.type === 'interest' && tx.received_amount && tx.received_currency === 'BTC')
+  console.log('💰 calculateRemainingHoldings: Valid interest transactions:', interestTransactions.length)
+  
+  interestTransactions.forEach(tx => {
+    if (tx.received_amount) {
+      // Interest is taxable income with $0 cost basis
+      // When interest BTC is sold, the full amount is a gain
+      const interestPrice = tx.price || 0
+      const holding = {
+        amount: tx.received_amount,
+        date: tx.date,
+        costBasis: 0, // $0 cost basis for interest income
+        pricePerCoin: interestPrice
+      }
+      holdings.push(holding)
+      console.log('➕ calculateRemainingHoldings: Added interest holding:', holding)
     }
   })
 

@@ -210,6 +210,13 @@ const RecentTransactionRow = memo(function RecentTransactionRow({
               const gainIncome = currentValue - adjustedCostBasis
               return gainIncome >= 0 ? "text-green-400 text-sm font-medium" : "text-red-400 text-sm font-medium"
             }
+            // For interest: calculate gain from current value vs income at receipt
+            if (transaction.type === 'interest' && transaction.received_amount && transaction.price && currentPrice && !priceLoading) {
+              const currentValue = transaction.received_amount * currentPrice
+              const incomeAtReceipt = transaction.received_amount * transaction.price
+              const gainIncome = currentValue - incomeAtReceipt
+              return gainIncome >= 0 ? "text-green-400 text-sm font-medium" : "text-red-400 text-sm font-medium"
+            }
             return "text-sm text-gray-500"
           })()}>
             {(() => {
@@ -217,6 +224,13 @@ const RecentTransactionRow = memo(function RecentTransactionRow({
                 const currentValue = transaction.received_amount * currentPrice
                 const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
                 const gainIncome = currentValue - adjustedCostBasis
+                return `${gainIncome >= 0 ? '+' : ''}${formatCurrency(gainIncome)}`
+              }
+              // For interest: calculate gain from current value vs income at receipt
+              if (transaction.type === 'interest' && transaction.received_amount && transaction.price && currentPrice && !priceLoading) {
+                const currentValue = transaction.received_amount * currentPrice
+                const incomeAtReceipt = transaction.received_amount * transaction.price
+                const gainIncome = currentValue - incomeAtReceipt
                 return `${gainIncome >= 0 ? '+' : ''}${formatCurrency(gainIncome)}`
               }
               return priceLoading ? "..." : "-"
@@ -233,6 +247,13 @@ const RecentTransactionRow = memo(function RecentTransactionRow({
               const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
               return gainPercent >= 0 ? "text-green-400 text-sm font-medium" : "text-red-400 text-sm font-medium"
             }
+            // For interest: calculate gain % from current value vs income at receipt
+            if (transaction.type === 'interest' && transaction.received_amount && transaction.price && currentPrice && !priceLoading) {
+              const currentValue = transaction.received_amount * currentPrice
+              const incomeAtReceipt = transaction.received_amount * transaction.price
+              const gainPercent = incomeAtReceipt > 0 ? ((currentValue - incomeAtReceipt) / incomeAtReceipt) * 100 : 0
+              return gainPercent >= 0 ? "text-green-400 text-sm font-medium" : "text-red-400 text-sm font-medium"
+            }
             return "text-sm text-gray-500"
           })()}>
             {(() => {
@@ -241,6 +262,13 @@ const RecentTransactionRow = memo(function RecentTransactionRow({
                 const adjustedCostBasis = transaction.sent_amount + (transaction.fee_amount || 0)
                 const gainPercent = ((currentValue - adjustedCostBasis) / adjustedCostBasis) * 100
                 return `${gainPercent >= 0 ? '+' : ''}${gainPercent.toFixed(1)}%`
+              }
+              // For interest: calculate gain % from current value vs income at receipt
+              if (transaction.type === 'interest' && transaction.received_amount && transaction.price && currentPrice && !priceLoading) {
+                const currentValue = transaction.received_amount * currentPrice
+                const incomeAtReceipt = transaction.received_amount * transaction.price
+                const gainPercent = incomeAtReceipt > 0 ? ((currentValue - incomeAtReceipt) / incomeAtReceipt) * 100 : 0
+                return `${gainPercent >= 0 ? '+' : ''}${gainPercent.toFixed(2)}%`
               }
               return priceLoading ? "..." : "-"
             })()}

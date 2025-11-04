@@ -235,6 +235,10 @@ export class MonthlyPortfolioCalculator {
           cumulativeBTC += transaction.received_amount || 0
           const feeAmount = (transaction.fee_amount && transaction.fee_currency === 'USD') ? transaction.fee_amount : 0
           cumulativeCostBasis += (transaction.sent_amount || 0) + feeAmount
+        } else if (transaction.type === 'interest') {
+          // For interest: received_amount = BTC, cost basis = $0 (taxable income)
+          cumulativeBTC += transaction.received_amount || 0
+          // Interest has $0 cost basis - it's taxable income when received
         } else if (transaction.type === 'sell') {
           // For sell: sent_amount = BTC sold
           cumulativeBTC -= transaction.sent_amount || 0

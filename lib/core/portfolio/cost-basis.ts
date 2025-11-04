@@ -38,7 +38,7 @@ export async function calculateCostBasis(
     oneYearAgoForProportion.setFullYear(oneYearAgoForProportion.getFullYear() - 1)
 
     orders.forEach(order => {
-      if (order.type === 'buy' && order.received_amount && order.received_currency === 'BTC') {
+      if ((order.type === 'buy' || order.type === 'interest') && order.received_amount && order.received_currency === 'BTC') {
         runningBalance += order.received_amount
       } else if (order.type === 'sell' && order.sent_amount && order.sent_currency === 'BTC') {
         runningBalance -= order.sent_amount
@@ -51,7 +51,7 @@ export async function calculateCostBasis(
     const btcHoldings: BTCHolding[] = []
     let realizedGains = 0
 
-    // Populate holdings only from buy orders
+    // Populate holdings from buy orders and interest (income)
     orders.forEach(order => {
       if (order.type === 'buy' && order.received_amount && order.received_currency === 'BTC' && order.sent_amount && order.sent_currency === 'USD' && order.price != null) {
         // Calculate cost basis per buy, including fees
@@ -63,6 +63,16 @@ export async function calculateCostBasis(
           amount: order.received_amount,
           costBasis: costBasisPerBuy,
           pricePerCoin: order.price // Store price per coin at purchase
+        })
+      } else if (order.type === 'interest' && order.received_amount && order.received_currency === 'BTC') {
+        // Interest is taxable income with $0 cost basis
+        // When interest BTC is sold, the full amount is a gain
+        const interestPrice = order.price || 0
+        btcHoldings.push({
+          date: order.date,
+          amount: order.received_amount,
+          costBasis: 0, // $0 cost basis for interest income
+          pricePerCoin: interestPrice
         })
       }
     })
