@@ -13,7 +13,7 @@ import { Database } from '@/types/supabase'
 export interface MonthlyTransaction {
   id: number
   date: string
-  type: 'buy' | 'sell'
+  type: 'buy' | 'sell' | 'interest'
   sent_amount: number | null
   sent_currency: string | null
   received_amount: number | null
