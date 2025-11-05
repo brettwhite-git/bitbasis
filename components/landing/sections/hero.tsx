@@ -1,9 +1,15 @@
+"use client"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, Lock } from "lucide-react"
 import { DashboardMockup } from "../dashboard-mockup"
+import { VideoModal } from "../video-modal"
 
 export function HeroSection() {
+  const [videoModalOpen, setVideoModalOpen] = useState(false)
+
   return (
     <section className="relative overflow-hidden pt-24 md:pt-32 lg:pt-40 pb-8 md:pb-12 text-center">
       {/* Subtle background grid - position above animation but below content */}
@@ -37,12 +43,15 @@ export function HeroSection() {
                  <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 group-active:opacity-20 transition-opacity duration-300"></span>
               </Button>
             </Link>
-            <Link href="#features" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="group w-full text-gray-300 border-gray-700 hover:bg-gray-800/50 hover:text-white hover:border-gray-600 transform hover:-translate-y-1 transition-all duration-300 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg">
-                Learn how it works
-                <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              onClick={() => setVideoModalOpen(true)}
+              className="group w-full sm:w-auto text-gray-300 border-gray-700 hover:bg-gray-800/50 hover:text-white hover:border-gray-600 transform hover:-translate-y-1 transition-all duration-300 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
+            >
+              Learn how it works
+              <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
+            </Button>
           </div>
         </div>
 
@@ -87,6 +96,8 @@ export function HeroSection() {
           </div>
         </div>
       </div>
+
+      <VideoModal open={videoModalOpen} onOpenChange={setVideoModalOpen} />
     </section>
   )
 } 

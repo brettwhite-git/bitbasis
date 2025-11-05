@@ -19,7 +19,7 @@ export function TestimonialsSection() {
       name: "Sarah K.",
       avatar: "https://api.dicebear.com/9.x/adventurer/png?seed=Vivian",
       ringColor: "ring-blue-500/50",
-      quote: "BitBasis' user centric approach is refreshing and puts the user in control. I have a number of old exchange trades that I can now track and get accurate historical gains on my portfolio."
+      quote: "BitBasis' user centric approach is refreshing and puts the user in control. I have a number of old exchange trades that I can now track and get accurate historical gains on my portfolio. I highly recommend it."
     },
     {
       name: "Michael T.",

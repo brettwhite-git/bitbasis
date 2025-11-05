@@ -36,7 +36,7 @@ export function DashboardMockup() {
     datasets: [
       {
         label: 'Portfolio Value',
-        data: [185000, 220000, 280000, 350000, 420000, 502848],
+        data: [185000, 344560, 310000, 420000, 400000, 502847.65],
         borderColor: '#F7931A',
         backgroundColor: 'rgba(247, 147, 26, 0.2)',
         tension: 0.4,
@@ -49,7 +49,7 @@ export function DashboardMockup() {
       },
       {
         label: 'Cost Basis',
-        data: [120000, 145000, 175000, 210000, 245000, 285341],
+        data: [100000, 123000, 186000, 209000, 222000, 285340.50],
         borderColor: '#3b82f6',
         backgroundColor: 'rgba(59, 130, 246, 0.2)',
         tension: 0.4,
@@ -169,7 +169,7 @@ export function DashboardMockup() {
             <main className="flex-1 p-3 sm:p-3 md:p-4 lg:p-6 overflow-y-auto overflow-x-hidden flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between mb-4 sm:mb-5 lg:mb-6 flex-shrink-0">
-                <h1 className="text-2xl sm:text-2xl md:text-3xl lg:text-3xl font-bold tracking-tight text-white">Overview Dashboard</h1>
+                <h1 className="text-2xl sm:text-2xl md:text-3xl lg:text-2xl font-bold tracking-tight text-white">Overview Dashboard</h1>
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <Badge className="bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white border-none text-xs font-semibold px-2.5 py-0.5">
                     PRO
@@ -184,8 +184,8 @@ export function DashboardMockup() {
               <div className="w-full grid gap-1 sm:gap-1.5 md:gap-2 lg:gap-3 grid-cols-6 mb-2 sm:mb-2 md:mb-3 lg:mb-4 flex-shrink-0">
                 <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm h-[90px] sm:h-[95px] md:h-[105px] lg:h-[110px]">
                   <div className="relative z-10 flex flex-col h-full text-left">
-                    <h3 className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Portfolio Value</h3>
-                    <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-bitcoin-orange mb-0.5 truncate">$502,847.65</div>
+                    <h3 className="text-xs sm:text-xs md:text-xs font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Portfolio Value</h3>
+                    <div className="text-xs sm:text-sm md:text-base lg:text-base font-bold text-bitcoin-orange mb-0.5 truncate">$502,847.65</div>
                     <p className="text-[10px] sm:text-xs md:text-sm lg:text-[10px] text-gray-400 truncate mb-0.5">+12.47% from last month</p>
                     <div className="flex-grow"></div>
                   </div>
@@ -193,8 +193,8 @@ export function DashboardMockup() {
                 
                 <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm h-[90px] sm:h-[95px] md:h-[105px] lg:h-[110px]">
                   <div className="relative z-10 flex flex-col h-full text-left">
-                    <h3 className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Total Cost Basis</h3>
-                    <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-bitcoin-orange mb-0.5 truncate">$285,340.50</div>
+                    <h3 className="text-xs sm:text-xs md:text-xs font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Total Cost Basis</h3>
+                    <div className="text-xs sm:text-sm md:text-base lg:text-base font-bold text-bitcoin-orange mb-0.5 truncate">$285,340.50</div>
                     <p className="text-[10px] sm:text-xs md:text-sm lg:text-[10px] text-gray-400 truncate mb-0.5">4.7856 BTC acquired</p>
                     <div className="flex-grow"></div>
                   </div>
@@ -202,8 +202,8 @@ export function DashboardMockup() {
                 
                 <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm h-[90px] sm:h-[95px] md:h-[105px] lg:h-[110px]">
                   <div className="relative z-10 flex flex-col h-full text-left">
-                    <h3 className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Unrealized Gains</h3>
-                    <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-bitcoin-orange mb-0.5 truncate">+$217,507.15</div>
+                    <h3 className="text-xs sm:text-xs md:text-xs font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Unrealized Gains</h3>
+                    <div className="text-xs sm:text-sm md:text-base lg:text-base font-bold text-bitcoin-orange mb-0.5 truncate">+$217,507.15</div>
                     <p className="text-[10px] sm:text-xs md:text-sm lg:text-[10px] text-gray-400 truncate mb-0.5">+76.19% ROI</p>
                     <div className="flex-grow"></div>
                   </div>
@@ -211,8 +211,8 @@ export function DashboardMockup() {
                 
                 <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm h-[90px] sm:h-[95px] md:h-[105px] lg:h-[110px]">
                   <div className="relative z-10 flex flex-col h-full text-left">
-                    <h3 className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Average Buy Price</h3>
-                    <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-bitcoin-orange mb-0.5 truncate">$59,627.84</div>
+                    <h3 className="text-xs sm:text-xs md:text-xs font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Average Buy Price</h3>
+                    <div className="text-xs sm:text-sm md:text-base lg:text-base font-bold text-bitcoin-orange mb-0.5 truncate">$59,627.84</div>
                     <p className="text-[10px] sm:text-xs md:text-sm lg:text-[10px] text-gray-400 truncate mb-0.5">Per Bitcoin</p>
                     <div className="flex-grow"></div>
                   </div>
@@ -220,8 +220,8 @@ export function DashboardMockup() {
                 
                 <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm h-[90px] sm:h-[95px] md:h-[105px] lg:h-[110px]">
                   <div className="relative z-10 flex flex-col h-full text-left">
-                    <h3 className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">HODL Time</h3>
-                    <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-bitcoin-orange mb-0.5 truncate">2945 days</div>
+                    <h3 className="text-xs sm:text-xs md:text-xs font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">HODL Time</h3>
+                    <div className="text-xs sm:text-sm md:text-base lg:text-base font-bold text-bitcoin-orange mb-0.5 truncate">2945 days</div>
                     <p className="text-[10px] sm:text-xs md:text-sm lg:text-[10px] text-gray-400 truncate mb-0.5">Since Last Sell</p>
                     <div className="flex-grow"></div>
                   </div>
@@ -229,8 +229,8 @@ export function DashboardMockup() {
                 
                 <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-2 sm:p-3 md:p-4 lg:p-6 shadow-md backdrop-blur-sm h-[90px] sm:h-[95px] md:h-[105px] lg:h-[110px]">
                   <div className="relative z-10 flex flex-col h-full text-left">
-                    <h3 className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Tax Liability</h3>
-                    <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-bitcoin-orange mb-0.5 truncate">$43,501.14</div>
+                    <h3 className="text-xs sm:text-xs md:text-xs font-medium text-gray-400 mb-0.5 sm:mb-1 truncate">Tax Liability</h3>
+                    <div className="text-xs sm:text-sm md:text-base lg:text-base font-bold text-bitcoin-orange mb-0.5 truncate">$43,501.14</div>
                     <p className="text-[10px] sm:text-xs md:text-sm lg:text-[10px] text-gray-400 truncate mb-0.5">FIFO method</p>
                     <div className="flex-grow"></div>
                   </div>
@@ -244,8 +244,8 @@ export function DashboardMockup() {
                   <div className="flex flex-row items-start justify-between pb-1 flex-shrink-0">
                     <h3 className="text-xs sm:text-sm font-bold text-white">Portfolio Summary</h3>
                     <div className="flex items-center gap-1">
-                      <button className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded-md text-xs text-white font-medium transition-colors">6M</button>
-                      <button className="px-3 py-1 text-xs text-gray-400 transition-colors">1Y</button>
+                      <button className="px-2 py-1 bg-gray-600 hover:bg-gray-500 rounded-md text-xs text-white font-medium transition-colors">6M</button>
+                      <button className="px-2 py-1 text-xs text-gray-400 transition-colors">1Y</button>
                     </div>
                   </div>
                   
@@ -259,13 +259,13 @@ export function DashboardMockup() {
                   {/* Savings Goal Widget - Static */}
                   <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-1.5 sm:p-2 md:p-3 shadow-md backdrop-blur-sm flex-1 min-h-0">
                     <div className="relative z-10 h-full flex flex-col">
-                      <div className="flex flex-row items-center justify-between mb-1 flex-shrink-0">
-                        <h3 className="text-xs sm:text-sm font-bold text-white truncate">My Savings Goal</h3>
+                      <div className="flex flex-row items-center justify-between mb-2 flex-shrink-0">
+                        <h3 className="text-xs sm:text-xs font-bold text-white truncate">My Savings Goal</h3>
                       </div>
-                      <div className="space-y-1 flex-grow">
+                      <div className="space-y-2 flex-grow">
                         <div className="flex justify-between items-start gap-1">
                           <div className="flex-shrink">
-                            <div className="text-xs sm:text-sm md:text-base font-bold text-bitcoin-orange truncate">$6,757</div>
+                            <div className="text-xs sm:text-sm sm:text-base font-bold text-bitcoin-orange truncate">$6,757</div>
                             <p className="text-xs text-gray-400 truncate">0.15 BTC</p>
                             <p className="text-xs text-gray-400 truncate">$500/wk</p>
                           </div>
@@ -296,7 +296,7 @@ export function DashboardMockup() {
                   <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-1.5 sm:p-2 md:p-3 shadow-md backdrop-blur-sm flex-1 min-h-0">
                     <div className="relative z-10 h-full flex flex-col">
                       <div className="flex flex-row items-center justify-between mb-1 flex-shrink-0">
-                        <h3 className="text-xs sm:text-sm font-bold text-white truncate">Fear & Greed Index</h3>
+                        <h3 className="text-xs sm:text-xs font-bold text-white truncate">Fear & Greed Index</h3>
                       </div>
                       <div className="flex justify-around items-center gap-1 flex-grow">
                         {fearGreedData.map((item, index) => (
@@ -309,7 +309,7 @@ export function DashboardMockup() {
                                   cy="28"
                                   r="20"
                                   stroke="#374151"
-                                  strokeWidth="4"
+                                  strokeWidth="6"
                                   fill="none"
                                 />
                                 <circle
@@ -317,7 +317,7 @@ export function DashboardMockup() {
                                   cy="28"
                                   r="20"
                                   className={item.color.replace('text-', 'stroke-')}
-                                  strokeWidth="4"
+                                  strokeWidth="5"
                                   fill="none"
                                   strokeDasharray="126"
                                   strokeDashoffset={126 - (126 * item.value / 100)}
@@ -339,7 +339,7 @@ export function DashboardMockup() {
                   <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-800/20 via-gray-900/30 to-gray-800/20 p-1.5 sm:p-2 md:p-3 shadow-md backdrop-blur-sm flex flex-col flex-1 min-h-0">
                     <div className="relative z-10 flex flex-col h-full">
                       <div className="flex flex-row items-center justify-between mb-1 flex-shrink-0">
-                        <h3 className="text-xs sm:text-sm font-bold text-white truncate">Weekly Buy Pattern</h3>
+                        <h3 className="text-xs sm:text-xs font-bold text-white truncate">Weekly Buy Pattern</h3>
                       </div>
                       <div className="flex flex-col justify-end flex-grow min-h-0">
                         <div className="flex-grow w-full">
@@ -347,7 +347,7 @@ export function DashboardMockup() {
                             {weeklyData.map((item, index) => (
                               <div key={index} className="flex flex-col items-center flex-1 h-full justify-end">
                                 <div
-                                  className="bg-bitcoin-orange rounded-t w-1/4 mb-1"
+                                  className="bg-bitcoin-orange rounded-t w-1/2 mb-1"
                                   style={{ height: `${item.height}%` }}
                                 ></div>
                                 <span className="text-xs text-gray-400">{item.day}</span>
