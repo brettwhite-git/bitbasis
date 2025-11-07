@@ -29,13 +29,19 @@ export function FAQSection() {
             <AccordionItem value="item-3" className="bg-gray-800/20 rounded-lg px-6 transition-colors hover:bg-gray-800/30 shadow-sm">
               <AccordionTrigger className="text-left font-medium text-white hover:no-underline py-4">How is the cost basis calculated?</AccordionTrigger>
               <AccordionContent className="text-gray-400 pb-4 pt-2 text-sm leading-relaxed">
-                Currently, we show users the FIFO (First-In, First-Out) method, LIFO (Last-In, First-Out) and HIFO (Highest-In, First-Out) options in order to provide more flexibility for tax optimization strategies. BitBasis is not a tax calculator, but a tool to help you organize and calculate your transaction data for potential tax reporting purposes. We strongly recommend consulting with a qualified tax professional regarding your specific situation.
+                Cost basis is the original purchase price of your Bitcoin, including any fees paid. It&apos;s used to calculate your gains or losses when you sell. BitBasis offers three calculation methods: <strong>FIFO</strong> (First-In, First-Out) uses your oldest holdings first and is the most common method; <strong>LIFO</strong> (Last-In, First-Out) uses your newest holdings first; and <strong>HIFO</strong> (Highest-In, First-Out) uses your highest-cost holdings first. BitBasis is not a tax calculator, but a tool to help you organize and calculate your transaction data for potential tax reporting purposes. We strongly recommend consulting with a qualified tax professional regarding your specific situation.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-4" className="bg-gray-800/20 rounded-lg px-6 transition-colors hover:bg-gray-800/30 shadow-sm">
               <AccordionTrigger className="text-left font-medium text-white hover:no-underline py-4">Do you offer tax advice?</AccordionTrigger>
               <AccordionContent className="text-gray-400 pb-4 pt-2 text-sm leading-relaxed">
                 No. BitBasis is a tool to help you organize and calculate your transaction data for potential tax reporting purposes. It does not provide financial or tax advice. We strongly recommend consulting with a qualified tax professional regarding your specific situation.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-5" className="bg-gray-800/20 rounded-lg px-6 transition-colors hover:bg-gray-800/30 shadow-sm">
+              <AccordionTrigger className="text-left font-medium text-white hover:no-underline py-4">What currencies are supported?</AccordionTrigger>
+              <AccordionContent className="text-gray-400 pb-4 pt-2 text-sm leading-relaxed">
+                Currently, BitBasis supports only BTC (Bitcoin) and USD (US Dollar) currency pairs for trades to function properly. The app is specifically designed for Bitcoin portfolio tracking with USD as the fiat currency. All cost basis calculations, performance metrics, and portfolio analytics are optimized for BTC/USD transactions.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
