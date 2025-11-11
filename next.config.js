@@ -38,8 +38,8 @@ const nextConfig = {
     // Build CSP with environment-aware connect-src
     // In development, allow localhost connections for Supabase local instance
     const connectSrc = isProduction
-      ? "'self' https://*.supabase.co https://api.coinpaprika.com https://api.mailgun.net https://api.stripe.com"
-      : "'self' http://127.0.0.1:* http://localhost:* https://*.supabase.co https://api.coinpaprika.com https://api.mailgun.net https://api.stripe.com"
+      ? "'self' https://*.supabase.co https://api.coinpaprika.com https://api.resend.com https://api.stripe.com"
+      : "'self' http://127.0.0.1:* http://localhost:* https://*.supabase.co https://api.coinpaprika.com https://api.resend.com https://api.stripe.com"
     
     // Only enforce HTTPS upgrade in production (breaks local development)
     const upgradeInsecureRequests = isProduction ? "upgrade-insecure-requests" : ""

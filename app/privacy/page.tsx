@@ -377,7 +377,7 @@ export default function PrivacyPage() {
               <li><span className="font-medium text-white">Supabase:</span> Database, authentication, and storage services. Their Privacy Policy can be viewed at: https://supabase.com/privacy</li>
               <li><span className="font-medium text-white">Vercel:</span> Hosting, analytics, and performance monitoring services. Their Privacy Policy can be viewed at: https://vercel.com/legal/privacy-policy</li>
               <li><span className="font-medium text-white">Stripe:</span> Payment processing services. Their Privacy Policy can be viewed at: https://stripe.com/us/privacy</li>
-              <li><span className="font-medium text-white">Mailgun:</span> Email delivery services for contact form submissions. Their Privacy Policy can be viewed at: https://www.mailgun.com/legal/privacy-policy</li>
+              <li><span className="font-medium text-white">Resend:</span> Email delivery services for contact form submissions. Their Privacy Policy can be viewed at: https://resend.com/legal/privacy-policy</li>
               <li><span className="font-medium text-white">Cloudflare:</span> CAPTCHA services (Turnstile) for spam prevention during account creation. Their Privacy Policy can be viewed at: https://www.cloudflare.com/privacypolicy</li>
             </ul>
           </section>

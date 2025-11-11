@@ -1,23 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import FormData from 'form-data'
-import Mailgun from 'mailgun.js'
+import { Resend } from 'resend'
 import { verifyTurnstileToken } from '@/lib/turnstile-verification'
 import { sanitizeContactFormData } from '@/lib/email-sanitization'
 import { checkRateLimit, getRateLimitHeaders, RateLimits } from '@/lib/rate-limiting'
 
-// Lazy initialize Mailgun client
-function getMailgunClient() {
-  const apiKey = process.env.MAILGUN_API_KEY
+// Lazy initialize Resend client
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
-    throw new Error('MAILGUN_API_KEY environment variable is required')
+    throw new Error('RESEND_API_KEY environment variable is required')
   }
   
-  const mailgun = new Mailgun(FormData)
-  return mailgun.client({
-    username: 'api',
-    key: apiKey,
-    url: "https://api.mailgun.net",
-  })
+  return new Resend(apiKey)
 }
 
 export async function POST(request: NextRequest) {
@@ -112,9 +106,13 @@ export async function POST(request: NextRequest) {
     })
 
     // Prepare email data with sanitized content
+    const recipientEmail = 'hello@bitbasis.io'
+    const senderEmail = process.env.RESEND_FROM_EMAIL || 'BitBasis <hello@bitbasis.io>'
+    
     const emailData = {
-      from: `${sanitized.name} <${sanitized.email}>`,
-      to: process.env.CONTACT_EMAIL_TO,
+      from: senderEmail,
+      to: recipientEmail,
+      replyTo: sanitized.email, // Allow replying directly to the user
       subject: `BitBasis Contact Form: ${sanitized.subject}`,
       text: `
 Name: ${sanitized.name}
@@ -127,16 +125,16 @@ ${sanitized.message.replace(/<br>/g, '\n')}
       html: `
 <h3>New Contact Form Submission</h3>
 <p><strong>Name:</strong> ${sanitized.name}</p>
-<p><strong>Email:</strong> ${sanitized.email}</p>
+<p><strong>Email:</strong> <a href="mailto:${sanitized.email}">${sanitized.email}</a></p>
 <p><strong>Subject:</strong> ${sanitized.subject}</p>
 <p><strong>Message:</strong></p>
 <p>${sanitized.message}</p>
       `
     }
 
-    // Send email using Mailgun
-    const mg = getMailgunClient()
-    await mg.messages.create(process.env.MAILGUN_DOMAIN || '', emailData)
+    // Send email using Resend
+    const resend = getResendClient()
+    await resend.emails.send(emailData)
 
     // Return success with rate limit headers
     return NextResponse.json(

@@ -20,6 +20,10 @@ interface EnvironmentConfig {
   NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: string;
   CLOUDFLARE_TURNSTILE_SECRET_KEY?: string; // Server-side only
   
+  // Resend Email Configuration
+  RESEND_API_KEY?: string; // Server-side only
+  RESEND_FROM_EMAIL?: string; // Server-side only, optional
+  
   // Application Configuration
   NODE_ENV: string;
   NEXT_PUBLIC_APP_URL?: string;
@@ -40,7 +44,8 @@ const SERVER_REQUIRED_VARS = [
   'SUPABASE_SERVICE_ROLE_KEY',
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
-  'CLOUDFLARE_TURNSTILE_SECRET_KEY'
+  'CLOUDFLARE_TURNSTILE_SECRET_KEY',
+  'RESEND_API_KEY'
 ] as const;
 
 // Optional but recommended variables
@@ -194,6 +199,8 @@ export function validateServerEnvironment(): EnvironmentConfig {
     STRIPE_LIFETIME_PRICE_ID: process.env.STRIPE_LIFETIME_PRICE_ID,
     NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY,
     CLOUDFLARE_TURNSTILE_SECRET_KEY: process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL
   };
