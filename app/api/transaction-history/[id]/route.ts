@@ -30,9 +30,12 @@ const updateTransactionSchema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params (Next.js 15+ breaking change)
+    const { id } = await params
+
     // Get user session
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
@@ -47,7 +50,7 @@ export async function PATCH(
 
     // Parse request body
     const body = await request.json()
-    
+
     // Validate input
     const validatedData = updateTransactionSchema.parse(body)
 
@@ -55,7 +58,7 @@ export async function PATCH(
     const { data: existingTransaction, error: fetchError } = await supabase
       .from('transactions')
       .select('id, user_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .single()
 
@@ -73,7 +76,7 @@ export async function PATCH(
         ...validatedData,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .select()
       .single()
@@ -110,9 +113,12 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params (Next.js 15+ breaking change)
+    const { id } = await params
+
     // Get user session
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
@@ -129,7 +135,7 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from('transactions')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
 
     if (deleteError) {
