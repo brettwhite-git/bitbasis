@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'; // Correct Supabase client import
+import { createClient } from '@/lib/supabase/client';
 import { formatDate, findClosestDateEntry } from '@/lib/utils/utils'; // Updated import path
 
 // Define types for the fear & greed data
@@ -17,7 +17,7 @@ interface FearGreedData {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface FearGreedIndexEntry {
   id: number; // Assuming an id column exists
-  date: string;
+  date: string | null;
   value: number;
   classification: string;
   last_updated: string; // Or Date
@@ -82,7 +82,7 @@ const FearGreedMultiGauge: React.FC<{ className?: string }> = ({ className }) =>
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClientComponentClient(); // Use the correct function
+  const supabase = createClient();
 
   useEffect(() => {
     const fetchFearGreedData = async () => {

@@ -7,7 +7,7 @@ import { CheckCircle, Database, Upload, AlertCircle } from 'lucide-react'
 import { useImport } from './import-context'
 import type { UnifiedTransaction } from './import-context'
 import { format } from 'date-fns'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import type { Database as DatabaseType } from '@/types/supabase'
 
 export function ConfirmationStep() {
@@ -30,7 +30,7 @@ export function ConfirmationStep() {
   // Create CSV upload record for successful import
   const createCSVUploadRecord = async (file: File, rowCount: number): Promise<string | null> => {
     try {
-      const supabase = createClientComponentClient<DatabaseType>()
+      const supabase = createClient()
       
       // Get current user
       const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -176,7 +176,7 @@ export function ConfirmationStep() {
         
         // If transaction creation fails, we need to clean up the CSV upload record
         try {
-          const supabase = createClientComponentClient<DatabaseType>()
+          const supabase = createClient()
           await supabase
             .from('csv_uploads')
             .delete()

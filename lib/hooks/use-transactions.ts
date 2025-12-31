@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createClient } from "@/lib/supabase/client"
 import type { Database } from "@/types/supabase"
 import { UnifiedTransaction } from '@/types/transactions'
 
@@ -17,9 +17,9 @@ export function useTransactions() {
     const fetchTransactions = async () => {
       setIsLoading(true)
       setError(null)
-      
+
       try {
-        const supabase = createClientComponentClient<Database>()
+        const supabase = createClient()
         
         // Fetch from unified transactions table
         const { data: transactionsData, error: transactionsError } = await supabase
@@ -76,8 +76,8 @@ export function useTransactions() {
     try {
       setIsLoading(true)
       setError(null)
-      
-      const supabase = createClientComponentClient<Database>()
+
+      const supabase = createClient()
       
       // Fetch from unified transactions table
       const { data: transactionsData, error: transactionsError } = await supabase

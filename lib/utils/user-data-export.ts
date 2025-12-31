@@ -5,7 +5,7 @@
 import { UnifiedTransaction } from "@/types/transactions"
 import { formatCurrency, formatDate } from "@/lib/utils/format"
 import { exportToCSV } from "@/lib/utils/import-export"
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/supabase'
 
 /**
@@ -92,7 +92,7 @@ export function formatUserAccountForExport(user: UserAccountData) {
  * Fetch all user transactions
  */
 export async function fetchUserTransactions(): Promise<UnifiedTransaction[]> {
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClient()
   
   const { data: transactions, error } = await supabase
     .from('transactions')
@@ -111,7 +111,7 @@ export async function fetchUserTransactions(): Promise<UnifiedTransaction[]> {
  * Fetch all user CSV uploads
  */
 export async function fetchUserCSVUploads(): Promise<CSVUploadData[]> {
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClient()
   
   const { data: uploads, error } = await supabase
     .from('csv_uploads')
@@ -130,7 +130,7 @@ export async function fetchUserCSVUploads(): Promise<CSVUploadData[]> {
  * Fetch user account information
  */
 export async function fetchUserAccount(): Promise<UserAccountData> {
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClient()
   
   const { data: { user }, error } = await supabase.auth.getUser()
   

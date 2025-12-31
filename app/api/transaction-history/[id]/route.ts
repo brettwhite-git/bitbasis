@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
 // Validation schema for transaction updates
@@ -36,9 +35,19 @@ export async function PATCH(
     // Await params (Next.js 15+ breaking change)
     const { id } = await params
 
+    // Convert string ID to number (database expects number type)
+    const transactionId = parseInt(id, 10)
+
+    // Validate ID
+    if (isNaN(transactionId)) {
+      return NextResponse.json(
+        { error: 'Invalid transaction ID' },
+        { status: 400 }
+      )
+    }
+
     // Get user session
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -58,7 +67,7 @@ export async function PATCH(
     const { data: existingTransaction, error: fetchError } = await supabase
       .from('transactions')
       .select('id, user_id')
-      .eq('id', id)
+      .eq('id', transactionId)
       .eq('user_id', user.id)
       .single()
 
@@ -76,7 +85,7 @@ export async function PATCH(
         ...validatedData,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id)
+      .eq('id', transactionId)
       .eq('user_id', user.id)
       .select()
       .single()
@@ -119,9 +128,19 @@ export async function DELETE(
     // Await params (Next.js 15+ breaking change)
     const { id } = await params
 
+    // Convert string ID to number (database expects number type)
+    const transactionId = parseInt(id, 10)
+
+    // Validate ID
+    if (isNaN(transactionId)) {
+      return NextResponse.json(
+        { error: 'Invalid transaction ID' },
+        { status: 400 }
+      )
+    }
+
     // Get user session
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -135,7 +154,7 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from('transactions')
       .delete()
-      .eq('id', id)
+      .eq('id', transactionId)
       .eq('user_id', user.id)
 
     if (deleteError) {

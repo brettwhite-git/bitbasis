@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/types/supabase';
 import { getPerformanceMetrics } from '@/lib/core/portfolio/performance';
 import { getPortfolioMetrics } from '@/lib/core/portfolio/metrics';
@@ -24,7 +24,7 @@ export function usePerformanceData(userId: string): PerformanceData {
   const [performance, setPerformance] = useState<PerformanceData['performance'] | null>(null);
   const [transactions, setTransactions] = useState<UnifiedTransaction[] | null>(null);
   const { toast } = useToast();
-  const supabase = createClientComponentClient<Database>();
+  const supabase = createClient();
 
   useEffect(() => {
     const fetchData = async () => {

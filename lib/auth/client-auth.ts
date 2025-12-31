@@ -1,11 +1,11 @@
 "use client"
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { redirect } from 'next/navigation'
 import type { Database } from '@/types/supabase'
 
 export async function clientRequireAuth() {
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClient()
   
   // Fetch session and user
   const { data: { session }, error: sessionError } = await supabase.auth.getSession()

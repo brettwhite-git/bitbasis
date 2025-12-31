@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/supabase'
 import { UnifiedTransaction } from '@/types/transactions'
 import { calculateCostBasis } from '@/lib/core/portfolio/cost-basis'
@@ -40,8 +40,8 @@ export function useCostBasisCalculation(
   const [userId, setUserId] = useState<string | null>(null)
   const [transactions, setTransactions] = useState<UnifiedTransaction[]>([])
   const [currentPrice, setCurrentPrice] = useState<number>(0)
-  
-  const supabase = createClientComponentClient<Database>()
+
+  const supabase = createClient()
 
   // Get the user session
   useEffect(() => {

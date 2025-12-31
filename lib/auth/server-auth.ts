@@ -1,11 +1,9 @@
-import { cookies } from 'next/headers'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { redirect } from 'next/navigation'
 import type { Database } from '@/types/supabase'
+import { createClient } from '@/lib/supabase/server'
 
 export async function getServerClient() {
-  const cookieStore = cookies()
-  return createServerComponentClient<Database>({ cookies: () => cookieStore })
+  return createClient()
 }
 
 export async function getServerSession() {
@@ -50,9 +48,15 @@ export async function requireUser() {
 export async function requireAuth() {
   // Revert back to original secure implementation
   const supabase = await getServerClient()
+
+  // Debug: Check what cookies we have
+  const { cookies: cookiesFn } = await import('next/headers')
+  const allCookies = (await cookiesFn()).getAll()
+  console.log(`[requireAuth] Found ${allCookies.length} cookies:`, allCookies.map(c => c.name).join(', '))
+
   // Fetch session and user securely
   const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-  
+
   if (sessionError) {
     // Keep generic error log
     console.error('[requireAuth] Error fetching session:', sessionError)
@@ -60,6 +64,7 @@ export async function requireAuth() {
   }
 
   if (!session) {
+    console.log('[requireAuth] No session found, redirecting to sign-in')
     redirect('/auth/sign-in')
   }
 

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { stripe } from '@/lib/stripe'
 import type { Database } from '@/types/supabase'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { sanitizeError } from '@/lib/utils/error-sanitization'
+import { createClient } from '@/lib/supabase/server'
 
 // Service role client ONLY for admin operations that require it
 // SEC-005: Minimize service role usage - only use for auth.admin operations
-const supabaseAdmin = createClient<Database>(
+const supabaseAdmin = createSupabaseClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
@@ -24,7 +24,7 @@ interface UserDataSummary {
  * Fetch user's data summary for UI display and logging
  * SEC-005: Use authenticated client with RLS instead of service role for queries
  */
-async function getUserDataSummary(userId: string, supabase: ReturnType<typeof createRouteHandlerClient<Database>>): Promise<UserDataSummary> {
+async function getUserDataSummary(userId: string, supabase: SupabaseClient<Database>): Promise<UserDataSummary> {
   try {
     // Use authenticated client with RLS - user can only query their own data
     const [transactionsResult, csvUploadsResult, subscriptionsResult] = await Promise.all([
@@ -77,7 +77,7 @@ async function getUserDataSummary(userId: string, supabase: ReturnType<typeof cr
  */
 async function deleteUserStripeData(
   userId: string,
-  supabase: ReturnType<typeof createRouteHandlerClient<Database>>
+  supabase: SupabaseClient<Database>
 ): Promise<{ success: boolean; errors: string[] }> {
   const errors: string[] = []
 
@@ -184,7 +184,7 @@ async function deleteUserStripeData(
  */
 async function deleteUserDatabaseRecords(
   userId: string,
-  supabase: ReturnType<typeof createRouteHandlerClient<Database>>
+  supabase: SupabaseClient<Database>
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // SEC-005: Use authenticated client with RLS - users can only delete their own data
@@ -258,7 +258,7 @@ async function deleteUserDatabaseRecords(
  */
 async function deleteUserStorageFiles(
   userId: string,
-  supabase: ReturnType<typeof createRouteHandlerClient<Database>>
+  supabase: SupabaseClient<Database>
 ): Promise<{ success: boolean; errors: string[] }> {
   const errors: string[] = []
 
@@ -309,8 +309,7 @@ async function deleteUserStorageFiles(
 export async function POST(request: NextRequest) {
   try {
     // 1. Authentication & Validation
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {

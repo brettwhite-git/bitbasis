@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import type { Database } from '@/types/supabase'
 import { validateRedirectUrl } from '@/lib/utils/url-validation'
 import { sanitizeStripeError } from '@/lib/utils/error-sanitization'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,11 +23,8 @@ export async function POST(request: NextRequest) {
 
     // Get authenticated user
     console.log('📝 Getting authenticated user...')
-    const cookieStore = cookies()
-    const supabase = createServerComponentClient<Database>({
-      cookies: () => cookieStore,
-    })
-    
+    const supabase = await createClient()
+
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {

@@ -154,7 +154,7 @@ const formatDate = (date: Date | null | undefined): string => {
 // Define the expected structure for the fear_greed_index table row (used by findClosestDateEntry)
 interface FearGreedIndexEntry {
   id?: number; // Optional, based on component usage
-  date: string;
+  date: string | null;
   value: number;
   classification?: string; // Optional
   last_updated?: string; // Optional

@@ -1,7 +1,7 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/types/supabase'
-import type { PostgrestError } from '@supabase/supabase-js'
+import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -22,7 +22,7 @@ if (!supabaseAnonKey || supabaseAnonKey.length < 20) {
 // const supabase = createSupabaseClient<Database>(supabaseUrl, supabaseAnonKey) // Not used
 
 // Create a Supabase client for client-side operations with auth
-let browserClient: ReturnType<typeof createClientComponentClient<Database>> | null = null
+let browserClient: SupabaseClient<Database> | null = null
 
 export const createBrowserClient = () => {
   try {
@@ -31,16 +31,10 @@ export const createBrowserClient = () => {
       console.log('Reusing existing browser client')
       return browserClient
     }
-    
+
     console.log('Creating new browser client')
-    browserClient = createClientComponentClient<Database>({
-      options: {
-        db: {
-          schema: 'public'
-        }
-      }
-    })
-    
+    browserClient = createClient()
+
     return browserClient
   } catch (err) {
     console.error('Error creating browser client:', {
@@ -95,14 +89,14 @@ export interface Transaction {
 }
 
 // Use client-side client for authenticated operations
-export async function insertTransactions({ 
+export async function insertTransactions({
   transactions,
   csvUploadId
-}: { 
+}: {
   transactions: Database['public']['Tables']['transactions']['Insert'][],
   csvUploadId?: string
 }) {
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClient()
 
   try {
     // First check if we're authenticated
@@ -179,7 +173,7 @@ export async function insertTransactions({
 }
 
 export async function getTransactions() {
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
 
   if (authError || !authData.user) {
@@ -214,7 +208,7 @@ export async function getTransactions() {
 }
 
 export async function uploadCSVFile(file: File) {
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
 
   if (authError || !authData.user) {
@@ -298,7 +292,7 @@ export async function updateCSVUploadStatus(
     errorMessage?: string;
   }
 ) {
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
 
   if (authError || !authData.user) {
@@ -341,7 +335,7 @@ export async function updateCSVUploadStatus(
 }
 
 export async function getCSVUploads() {
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
 
   if (authError || !authData.user) {
@@ -366,7 +360,7 @@ export async function getCSVUploads() {
 }
 
 export async function deleteCSVUpload(csvUploadId: string) {
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
 
   if (authError || !authData.user) {

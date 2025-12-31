@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 
 export async function GET() {
   try {
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     // Get the current user
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
@@ -45,8 +43,7 @@ export async function GET() {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     // Get the current user
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
@@ -66,14 +63,22 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Validate that all IDs are strings/numbers (basic type check)
-    const validIds = transactionIds.filter(id => 
-      typeof id === 'string' || typeof id === 'number'
-    )
+    // Validate that all IDs are strings/numbers and convert to numbers
+    const validIds: number[] = []
+    for (const id of transactionIds) {
+      if (typeof id === 'number') {
+        validIds.push(id)
+      } else if (typeof id === 'string') {
+        const numId = parseInt(id, 10)
+        if (!isNaN(numId)) {
+          validIds.push(numId)
+        }
+      }
+    }
 
     if (validIds.length !== transactionIds.length) {
       return NextResponse.json(
-        { error: 'All transaction IDs must be valid' },
+        { error: 'All transaction IDs must be valid numbers' },
         { status: 400 }
       )
     }

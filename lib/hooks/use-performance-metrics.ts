@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { getPerformanceMetrics } from '@/lib/core/portfolio/performance'
 import { Database } from '@/types/supabase'
 
@@ -57,7 +57,7 @@ export function usePerformanceMetrics(): UsePerformanceMetricsReturn {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClient()
 
   // Get the user session directly from Supabase
   useEffect(() => {

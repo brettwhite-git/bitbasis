@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 
 export interface UserSubscriptionInfo {
   subscription_status: string
@@ -19,7 +19,7 @@ export interface SubscriptionLimits {
 }
 
 export class SubscriptionService {
-  private static supabase = createClientComponentClient()
+  private static supabase = createClient()
 
   /**
    * Get user's subscription status and transaction limits

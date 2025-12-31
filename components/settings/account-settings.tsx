@@ -35,7 +35,7 @@ import { useToast } from "@/lib/hooks/use-toast"
 import { exportAllUserDataSingle } from "@/lib/utils/user-data-export"
 import { useDisplayName } from "@/lib/hooks/use-display-name"
 import { useRouter } from "next/navigation"
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 
 // Form schema for account settings
 const accountSettingsSchema = z.object({
@@ -229,7 +229,7 @@ export function AccountSettings() {
       // Small delay to ensure redirect starts, then sign out
       // The redirect will complete and user will be on account-deleted page
       setTimeout(async () => {
-        const supabase = createClientComponentClient()
+        const supabase = createClient()
         await supabase.auth.signOut()
       }, 100)
 

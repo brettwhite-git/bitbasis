@@ -1,23 +1,22 @@
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { transactionSchema } from '@/types/add-transaction';
 import { TransactionLimitService } from '@/lib/subscription/transaction-limits';
 import { checkRateLimit, getRateLimitHeaders, RateLimits } from '@/lib/rate-limiting';
 import { sanitizeError } from '@/lib/utils/error-sanitization';
+import { createClient } from '@/lib/supabase/server';
 
 /**
  * POST /api/transaction-history/add-unified
- * 
+ *
  * Adds new transactions to the unified transactions table
- * 
+ *
  * Request body:
  * {
  *   transactions: Array of transaction objects matching the unified schema
  * }
- * 
+ *
  * Response:
  * {
  *   message: Success message,
@@ -28,7 +27,7 @@ import { sanitizeError } from '@/lib/utils/error-sanitization';
 export async function POST(request: Request) {
   try {
     // Get authenticated user
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -114,12 +113,12 @@ export async function POST(request: Request) {
         // First try to get from our database
         const { data: priceData } = await supabase
           .from('spot_price')
-          .select('price')
+          .select('price_usd')
           .order('date', { ascending: false })
           .limit(1)
           .single();
-        
-        return priceData?.price || null;
+
+        return priceData?.price_usd || null;
       } catch (error) {
         console.warn('Could not fetch BTC price from database:', error);
         return null;
@@ -236,9 +235,10 @@ export async function POST(request: Request) {
     });
 
     // Insert transactions into unified table
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: insertedTransactions, error: insertError } = await supabase
       .from('transactions')
-      .insert(dbTransactions)
+      .insert(dbTransactions as any)
       .select();
     
     if (insertError) {

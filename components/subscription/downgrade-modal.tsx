@@ -9,7 +9,19 @@ import { Badge } from "@/components/ui/badge"
 import { AlertTriangle } from "lucide-react"
 import { useSubscription } from "@/lib/hooks"
 import { useAuth } from "@/providers/supabase-auth-provider"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createClient } from "@/lib/supabase/client"
+import type { Json } from "@/types/supabase"
+
+// Type guard for metadata
+function hasLifetimeType(metadata: Json | null): boolean {
+  return (
+    typeof metadata === 'object' &&
+    metadata !== null &&
+    !Array.isArray(metadata) &&
+    'type' in metadata &&
+    (metadata as Record<string, unknown>).type === 'lifetime'
+  )
+}
 
 interface DowngradeModalProps {
   open: boolean
@@ -35,7 +47,7 @@ export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModal
     if (open && user) {
       const fetchSubscriptionId = async () => {
         try {
-          const supabase = createClientComponentClient()
+          const supabase = createClient()
           const { data, error } = await supabase
             .from('subscriptions')
             .select('id, metadata')
@@ -45,8 +57,8 @@ export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModal
           
           if (data && data.length > 0 && !error) {
             // Prioritize lifetime subscriptions, otherwise take the most recent
-            const lifetimeSubscription = data.find(sub => 
-              sub.metadata?.type === 'lifetime' || sub.id.startsWith('lifetime_')
+            const lifetimeSubscription = data.find(sub =>
+              hasLifetimeType(sub.metadata) || sub.id.startsWith('lifetime_')
             )
             const subscriptionToUse = lifetimeSubscription || data[0]
             
@@ -74,7 +86,7 @@ export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModal
     if (!subscriptionId) {
       console.error('Missing subscription ID - subscription may not be loaded yet')
       // Try to fetch it again
-      const supabase = createClientComponentClient()
+      const supabase = createClient()
       const { data, error } = await supabase
         .from('subscriptions')
         .select('id, metadata')
@@ -88,8 +100,8 @@ export function DowngradeModal({ open, onOpenChange, onSuccess }: DowngradeModal
       }
       
       // Prioritize lifetime subscriptions, otherwise take the most recent
-      const lifetimeSubscription = data.find(sub => 
-        sub.metadata?.type === 'lifetime' || sub.id.startsWith('lifetime_')
+      const lifetimeSubscription = data.find(sub =>
+        hasLifetimeType(sub.metadata) || sub.id.startsWith('lifetime_')
       )
       const subscriptionToUse = lifetimeSubscription || data[0]
       

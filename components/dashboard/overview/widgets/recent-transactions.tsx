@@ -360,7 +360,11 @@ export function RecentTransactions() {
   if (isLoading) {
     return (
       <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50">
-        <DataTableLoading colSpan={10} />
+        <Table>
+          <TableBody>
+            <DataTableLoading colSpan={10} />
+          </TableBody>
+        </Table>
       </div>
     )
   }
@@ -368,7 +372,11 @@ export function RecentTransactions() {
   if (error) {
     return (
       <div className="bg-gradient-to-br from-gray-800/10 via-gray-900/20 to-gray-800/10 backdrop-blur-sm rounded-xl border border-gray-700/50">
-        <DataTableError message={error} colSpan={10} />
+        <Table>
+          <TableBody>
+            <DataTableError message={error} colSpan={10} />
+          </TableBody>
+        </Table>
       </div>
     )
   }

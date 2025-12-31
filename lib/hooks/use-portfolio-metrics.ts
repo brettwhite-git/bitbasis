@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { getPortfolioMetrics } from '@/lib/core/portfolio/metrics'
 import { ExtendedPortfolioMetrics } from '@/lib/core/portfolio/types' // PortfolioMetrics not used
 import { Database } from '@/types/supabase'
@@ -18,7 +18,7 @@ export function usePortfolioMetrics(): UsePortfolioMetricsResult {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClient()
 
   // Get the user session directly from Supabase
   useEffect(() => {

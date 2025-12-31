@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import type { Database } from '@/types/supabase'
 import { validateRedirectUrl } from '@/lib/utils/url-validation'
 import { sanitizeError } from '@/lib/utils/error-sanitization'
+import { createClient } from '@/lib/supabase/server'
 
 // Helper function to create portal configuration if none exists
 async function ensurePortalConfiguration() {
   try {
     // Check if a configuration already exists
     const configurations = await stripe.billingPortal.configurations.list({ limit: 1 })
-    
+
     if (configurations.data.length > 0) {
       const existingConfig = configurations.data[0]
       if (existingConfig) {
@@ -61,11 +60,8 @@ export async function POST(request: NextRequest) {
 
     // Get authenticated user
     console.log('Getting authenticated user...')
-    const cookieStore = cookies()
-    const supabase = createServerComponentClient<Database>({
-      cookies: () => cookieStore,
-    })
-    
+    const supabase = await createClient()
+
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {

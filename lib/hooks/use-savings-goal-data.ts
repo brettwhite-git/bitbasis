@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/providers/supabase-auth-provider'; // Use custom auth provider
 import type { Database } from '@/types/supabase'; // Use the correct generated types
 
@@ -19,7 +19,7 @@ export interface SavingsGoalData {
 
 // Renamed hook: useSavingsGoalData
 export function useSavingsGoalData(goal: SavingsGoalInput | null): SavingsGoalData {
-  const supabase = createClientComponentClient<Database>();
+  const supabase = createClient();
   const { user } = useAuth(); // Get user from custom auth provider
 
   const [progressData, setProgressData] = useState<SavingsGoalData>({

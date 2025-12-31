@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useTaxMethod } from '@/providers/tax-method-provider'
 import { calculateTaxLiability } from '@/lib/core/portfolio/tax-calculator'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/supabase'
 import { UnifiedTransaction } from '@/types/transactions'
 
@@ -26,8 +26,8 @@ export function useDashboardTaxLiability(currentPrice: number): TaxLiabilityResu
   const [userId, setUserId] = useState<string | null>(null)
   const [transactions, setTransactions] = useState<UnifiedTransaction[]>([])
   const [currentBtcPrice, setCurrentBtcPrice] = useState<number>(0)
-  
-  const supabase = createClientComponentClient<Database>()
+
+  const supabase = createClient()
 
   // Get the user session (same pattern as useCostBasisCalculation)
   useEffect(() => {

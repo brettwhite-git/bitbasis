@@ -1,21 +1,42 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import type { Database } from '@/types/supabase'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     console.log('🔄 Auth callback started')
     const requestUrl = new URL(request.url)
     const code = requestUrl.searchParams.get('code')
     const token = requestUrl.searchParams.get('token')
-    const next = requestUrl.searchParams.get('next') ?? '/dashboard'
-    
+    // Support both 'next' and 'redirectTo' for compatibility
+    const next = requestUrl.searchParams.get('next') ?? requestUrl.searchParams.get('redirectTo') ?? '/dashboard'
+
     console.log('📋 Callback params:', { code: !!code, token: !!token, next })
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    // Create a response object to capture cookies
+    const response = NextResponse.next()
+
+    // Create Supabase client with response-based cookie handling
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            console.log(`🍪 Setting ${cookiesToSet.length} cookies`)
+            cookiesToSet.forEach(({ name, value, options }) => {
+              console.log(`  - Cookie: ${name} (${value.substring(0, 20)}...)`)
+              response.cookies.set(name, value, options)
+            })
+          },
+        },
+      }
+    )
     
     if (code) {
       // Handle auth code (OAuth flow OR magic link - Supabase uses code for both)
@@ -170,11 +191,18 @@ export async function GET(request: Request) {
     }
     
     console.log('📍 Redirecting to:', redirectUrl.toString())
-    const response = NextResponse.redirect(redirectUrl)
-    
-    // Ensure cookies are set in the response
-    // The session should already be in cookies from exchangeCodeForSession
-    return response
+
+    // Create redirect response and copy cookies from our response object
+    const redirectResponse = NextResponse.redirect(redirectUrl)
+
+    // Copy all cookies from the response (which has auth cookies) to the redirect response
+    response.cookies.getAll().forEach(cookie => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
+    })
+
+    console.log(`📦 Redirect response has ${redirectResponse.cookies.getAll().length} cookies`)
+
+    return redirectResponse
   } catch (error) {
     console.error('💥 Auth callback error:', error)
     return NextResponse.redirect(new URL('/auth/sign-in', request.url))
