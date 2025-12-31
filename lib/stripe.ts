@@ -5,7 +5,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-04-30.basil', // Keep the version that matches your Stripe types
+  apiVersion: '2025-08-27.basil', // Updated to match Stripe 18.5.0
   appInfo: {
     name: 'BitBasis',
     version: '1.0.0',
