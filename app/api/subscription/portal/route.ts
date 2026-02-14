@@ -3,6 +3,7 @@ import { stripe } from '@/lib/stripe'
 import { validateRedirectUrl } from '@/lib/utils/url-validation'
 import { sanitizeError } from '@/lib/utils/error-sanitization'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, createRateLimitResponse, RateLimits } from '@/lib/rate-limiting'
 
 // Helper function to create portal configuration if none exists
 async function ensurePortalConfiguration() {
@@ -64,13 +65,21 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
-      console.log('Authentication failed:', authError?.message || 'No user')
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       )
     }
-    console.log('✅ User authenticated:', user.id, user.email)
+
+    // SEC-006: Rate limiting per user
+    const rateLimitResult = checkRateLimit(
+      `portal:${user.id}`,
+      RateLimits.SUBSCRIPTION_OPERATIONS.limit,
+      RateLimits.SUBSCRIPTION_OPERATIONS.windowMs
+    )
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult)
+    }
 
     // Get or create user's Stripe customer ID
     let customerId: string | undefined

@@ -1,3 +1,5 @@
+import { NextResponse } from 'next/server'
+
 /**
  * Simple in-memory rate limiting for API routes
  * 
@@ -141,5 +143,34 @@ export const RateLimits = {
     limit: 100,
     windowMs: 60 * 1000, // 1 minute
   },
+
+  // Stripe subscription operations: 10 requests per hour
+  SUBSCRIPTION_OPERATIONS: {
+    limit: 10,
+    windowMs: 60 * 60 * 1000, // 1 hour
+  },
+
+  // Account deletion: 1 request per hour
+  ACCOUNT_DELETE: {
+    limit: 1,
+    windowMs: 60 * 60 * 1000, // 1 hour
+  },
 } as const;
+
+/**
+ * Create a standard 429 rate limit response
+ */
+export function createRateLimitResponse(result: RateLimitResult): NextResponse {
+  const minutesUntilReset = Math.ceil((result.resetAt - Date.now()) / (60 * 1000))
+  return NextResponse.json(
+    {
+      error: 'Rate limit exceeded',
+      message: `Too many requests. Please try again in ${minutesUntilReset} minute(s).`,
+    },
+    {
+      status: 429,
+      headers: getRateLimitHeaders(result),
+    }
+  )
+}
 

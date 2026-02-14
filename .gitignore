@@ -45,8 +45,10 @@ supabase/migrations/*.skip
 *.tsbuildinfo
 next-env.d.ts
 
-# cursor rules and AI artifacts  
+# cursor rules and AI artifacts
 .cursor/
+CLAUDE.md
+CHANGELOG.md
 
 # temporary files
 *.tmp

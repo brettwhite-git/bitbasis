@@ -3,7 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'localhost:3001']
+      allowedOrigins: process.env.NODE_ENV === 'production'
+        ? [process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') || 'bitbasis.io']
+        : ['localhost:3000', 'localhost:3001']
     }
   },
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
@@ -52,7 +54,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://challenges.cloudflare.com",
+              "script-src 'self' 'unsafe-inline' https://js.stripe.com https://challenges.cloudflare.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: https:",
               "font-src 'self' https://fonts.gstatic.com",

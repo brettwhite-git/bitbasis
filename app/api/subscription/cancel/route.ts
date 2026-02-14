@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import type { Database } from '@/types/supabase'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, createRateLimitResponse, RateLimits } from '@/lib/rate-limiting'
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +24,16 @@ export async function POST(request: NextRequest) {
         { error: 'Authentication required' },
         { status: 401 }
       )
+    }
+
+    // SEC-006: Rate limiting per user
+    const rateLimitResult = checkRateLimit(
+      `cancel:${user.id}`,
+      RateLimits.SUBSCRIPTION_OPERATIONS.limit,
+      RateLimits.SUBSCRIPTION_OPERATIONS.windowMs
+    )
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult)
     }
 
     // SEC-005: Use authenticated client with RLS enforcement

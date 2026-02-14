@@ -3,74 +3,83 @@ import { stripe } from '@/lib/stripe'
 import { validateRedirectUrl } from '@/lib/utils/url-validation'
 import { sanitizeStripeError } from '@/lib/utils/error-sanitization'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, createRateLimitResponse, RateLimits } from '@/lib/rate-limiting'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== CREATE CHECKOUT SESSION START ===')
     const { priceId, successUrl, cancelUrl } = await request.json()
-    console.log('Request body:', { priceId, successUrl, cancelUrl })
 
     // Validate required fields
     if (!priceId) {
-      console.log('ERROR: Missing price ID')
       return NextResponse.json(
         { error: 'Price ID is required' },
         { status: 400 }
       )
     }
-    console.log('✅ Price ID validation passed')
+
+    // SEC-011: Validate price ID against known whitelist
+    const validPriceIds = [
+      process.env.STRIPE_PRO_MONTHLY_PRICE_ID,
+      process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID,
+      process.env.STRIPE_LIFETIME_PRICE_ID,
+      process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID,
+    ].filter(Boolean)
+
+    if (!validPriceIds.includes(priceId)) {
+      return NextResponse.json(
+        { error: 'Invalid price ID' },
+        { status: 400 }
+      )
+    }
 
     // Get authenticated user
-    console.log('📝 Getting authenticated user...')
     const supabase = await createClient()
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+
     if (authError || !user) {
-      console.log('❌ Authentication failed:', authError?.message || 'No user')
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       )
     }
-    console.log('✅ User authenticated:', user.id)
 
-    // Get or create Stripe customer with better race condition handling
-    console.log('💳 Getting/creating Stripe customer...')
+    // SEC-006: Rate limiting per user
+    const rateLimitResult = checkRateLimit(
+      `checkout:${user.id}`,
+      RateLimits.SUBSCRIPTION_OPERATIONS.limit,
+      RateLimits.SUBSCRIPTION_OPERATIONS.windowMs
+    )
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult)
+    }
+
+    // Get or create Stripe customer with race condition handling
     let customerId: string | undefined
 
-    // First, check if user already has a Stripe customer ID
-    console.log('🔍 Checking for existing customer in database...')
     const { data: existingCustomer, error: customerLookupError } = await supabase
       .from('customers')
       .select('stripe_customer_id')
       .eq('id', user.id)
       .single()
 
-    if (customerLookupError) {
-      console.log('⚠️ Customer lookup error (might be expected for new users):', customerLookupError.message)
+    if (customerLookupError && customerLookupError.code !== 'PGRST116') {
+      // Unexpected error (not "no rows found")
     }
 
     if (existingCustomer?.stripe_customer_id) {
       customerId = existingCustomer.stripe_customer_id
-      console.log('✅ Found existing customer:', customerId)
-      
+
       // Verify the customer still exists in Stripe
       try {
         await stripe.customers.retrieve(customerId)
-        console.log('✅ Customer verified in Stripe')
       } catch {
-        console.log('⚠️ Customer not found in Stripe, will create new one')
         customerId = undefined
       }
     }
 
     if (!customerId) {
-      console.log('🆕 Creating new Stripe customer...')
-      
-      // Before creating, do one more check for existing customers by email
-      // This helps prevent duplicates from race conditions
-      console.log('🔍 Checking Stripe for existing customer by email...')
+      // Check for existing customers by email to prevent duplicates
       const existingStripeCustomers = await stripe.customers.list({
         email: user.email,
         limit: 1,
@@ -79,23 +88,17 @@ export async function POST(request: NextRequest) {
       if (existingStripeCustomers.data.length > 0) {
         const existingStripeCustomer = existingStripeCustomers.data[0]
         if (existingStripeCustomer) {
-          console.log('✅ Found existing Stripe customer by email:', existingStripeCustomer.id)
           customerId = existingStripeCustomer.id
 
-          // Update our database with this customer ID
-          console.log('💾 Updating database with existing Stripe customer...')
           const { error: upsertError } = await supabase
             .from('customers')
             .upsert({
               id: user.id,
               stripe_customer_id: customerId,
             })
-          
+
           if (upsertError) {
-            console.log('⚠️ Failed to update customer in database:', upsertError.message)
             // Continue anyway - the customer exists in Stripe
-          } else {
-            console.log('✅ Database updated with existing customer')
           }
         }
       } else {
@@ -108,44 +111,27 @@ export async function POST(request: NextRequest) {
       })
 
       customerId = customer.id
-      console.log('✅ Created new Stripe customer:', customerId)
 
-      // Save customer ID to database
-      console.log('💾 Saving customer to database...')
       const { error: upsertError } = await supabase
         .from('customers')
         .upsert({
           id: user.id,
           stripe_customer_id: customerId,
         })
-      
+
       if (upsertError) {
-        console.log('❌ Failed to save customer to database:', upsertError.message)
         throw new Error(`Database error: ${upsertError.message}`)
       }
-      console.log('✅ Customer saved to database')
       }
     }
 
-    // Debug environment variables
-    console.log('Server-side environment check:')
-    console.log('NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID:', process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID)
-    console.log('STRIPE_LIFETIME_PRICE_ID:', process.env.STRIPE_LIFETIME_PRICE_ID)
-    console.log('Received priceId:', priceId)
-    
     // Determine mode based on price ID (one-time vs subscription)
-    // Try both environment variable patterns
     const lifetimePriceId = process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID || process.env.STRIPE_LIFETIME_PRICE_ID
     const isLifetime = priceId === lifetimePriceId
     const mode = isLifetime ? 'payment' : 'subscription'
-    
-    console.log('Lifetime price ID from env:', lifetimePriceId)
-    console.log('Is lifetime purchase:', isLifetime)
-    console.log('Checkout mode:', mode)
 
     // Check if user already has a lifetime subscription
     if (isLifetime) {
-      console.log('🔍 Checking for existing lifetime subscription...')
       const { data: existingLifetime, error: lifetimeCheckError } = await supabase
         .from('subscriptions')
         .select('id, metadata')
@@ -155,20 +141,18 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (lifetimeCheckError && lifetimeCheckError.code !== 'PGRST116') {
-        console.log('⚠️ Error checking for lifetime subscription:', lifetimeCheckError.message)
+        // Unexpected error checking lifetime subscription
       }
 
-      if (existingLifetime?.metadata && 
-          typeof existingLifetime.metadata === 'object' && 
-          'type' in existingLifetime.metadata && 
+      if (existingLifetime?.metadata &&
+          typeof existingLifetime.metadata === 'object' &&
+          'type' in existingLifetime.metadata &&
           existingLifetime.metadata.type === 'lifetime') {
-        console.log('❌ User already has lifetime subscription:', existingLifetime.id)
         return NextResponse.json(
           { error: 'You already have a lifetime subscription' },
           { status: 400 }
         )
       }
-      console.log('✅ No existing lifetime subscription found')
     }
 
     // SEC-009: Validate redirect URLs to prevent open redirect attacks
@@ -197,19 +181,11 @@ export async function POST(request: NextRequest) {
       success_url: safeSuccessUrl,
       cancel_url: safeCancelUrl,
       allow_promotion_codes: true,
-      // Let Stripe collect customer info during checkout
       billing_address_collection: 'required',
-      // Disable automatic tax - let Stripe handle tax collection during checkout
-      // ...(process.env.NODE_ENV === 'production' && {
-      //   automatic_tax: {
-      //     enabled: true,
-      //   },
-      // }),
       metadata: {
         user_id: user.id,
         price_id: priceId,
       },
-      // For subscription mode, add additional configuration
       ...(mode === 'subscription' && {
         subscription_data: {
           metadata: {
@@ -219,9 +195,6 @@ export async function POST(request: NextRequest) {
       }),
     })
 
-    console.log('✅ Checkout session created:', session.id)
-    console.log('🔗 Checkout URL:', session.url)
-
     return NextResponse.json({
       sessionId: session.id,
       url: session.url,
@@ -230,10 +203,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // SEC-010: Sanitize error message before returning to client
     const sanitized = sanitizeStripeError(error, 'Failed to create checkout session')
-    
+
     return NextResponse.json(
       sanitized,
       { status: 500 }
     )
   }
-} 
+}

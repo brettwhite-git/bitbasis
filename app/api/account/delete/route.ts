@@ -5,6 +5,7 @@ import type { Database } from '@/types/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { sanitizeError } from '@/lib/utils/error-sanitization'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, createRateLimitResponse, RateLimits } from '@/lib/rate-limiting'
 
 // Service role client ONLY for admin operations that require it
 // SEC-005: Minimize service role usage - only use for auth.admin operations
@@ -317,6 +318,16 @@ export async function POST(request: NextRequest) {
         { error: 'Authentication required' },
         { status: 401 }
       )
+    }
+
+    // SEC-006: Strict rate limiting for account deletion (1 per hour)
+    const rateLimitResult = checkRateLimit(
+      `account-delete:${user.id}`,
+      RateLimits.ACCOUNT_DELETE.limit,
+      RateLimits.ACCOUNT_DELETE.windowMs
+    )
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult)
     }
 
     const body = await request.json()
