@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getPerformanceMetrics } from '@/lib/core/portfolio/performance'
-import { Database } from '@/types/supabase'
 
 export interface PerformanceData {
   cumulative: {

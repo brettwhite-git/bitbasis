@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -190,7 +190,7 @@ export function TransactionDetailsStep() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setValue,
     formState: { errors: formErrors }
   } = useForm<NewTransaction>({
@@ -199,7 +199,7 @@ export function TransactionDetailsStep() {
     defaultValues: transactionData as NewTransaction
   })
 
-  const watchedValues = watch()
+  const watchedValues = useWatch({ control })
 
   // Remove the automatic sync that causes infinite loops
   // Instead, we'll update context data only when form is submitted or specific actions occur

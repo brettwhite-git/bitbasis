@@ -6,6 +6,7 @@ import { TransactionLimitService } from '@/lib/subscription/transaction-limits';
 import { checkRateLimit, getRateLimitHeaders, RateLimits } from '@/lib/rate-limiting';
 import { sanitizeError } from '@/lib/utils/error-sanitization';
 import { createClient } from '@/lib/supabase/server';
+import type { Database } from '@/types/supabase';
 
 /**
  * POST /api/transaction-history/add-unified
@@ -235,10 +236,9 @@ export async function POST(request: Request) {
     });
 
     // Insert transactions into unified table
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: insertedTransactions, error: insertError } = await supabase
       .from('transactions')
-      .insert(dbTransactions as any)
+      .insert(dbTransactions as unknown as Database['public']['Tables']['transactions']['Insert'][])
       .select();
     
     if (insertError) {

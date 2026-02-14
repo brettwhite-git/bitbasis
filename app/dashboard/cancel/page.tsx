@@ -1,30 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { XCircle, AlertTriangle, RefreshCw, ArrowLeft } from 'lucide-react'
 
 export default function CheckoutCancelPage() {
-  const [reason, setReason] = useState<string>('cancelled')
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  useEffect(() => {
-    // Determine cancellation reason from URL params
+  const reason = useMemo(() => {
     const sessionId = searchParams.get('session_id')
     const error = searchParams.get('error')
     const errorType = searchParams.get('error_type')
 
     if (error === 'payment_failed') {
-      setReason('payment_failed')
+      return 'payment_failed'
     } else if (errorType === 'card_declined') {
-      setReason('card_declined')
+      return 'card_declined'
     } else if (sessionId) {
-      setReason('session_expired')
+      return 'session_expired'
     } else {
-      setReason('cancelled')
+      return 'cancelled'
     }
   }, [searchParams])
 

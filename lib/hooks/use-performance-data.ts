@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Database } from '@/types/supabase';
 import { getPerformanceMetrics } from '@/lib/core/portfolio/performance';
 import { getPortfolioMetrics } from '@/lib/core/portfolio/metrics';
 import { PerformanceMetrics } from '@/lib/core/portfolio/types';

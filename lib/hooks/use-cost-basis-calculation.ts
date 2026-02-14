@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Database } from '@/types/supabase'
 import { UnifiedTransaction } from '@/types/transactions'
 import { calculateCostBasis } from '@/lib/core/portfolio/cost-basis'
 

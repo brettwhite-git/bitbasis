@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import type { Database } from '@/types/supabase'
 import { sanitizeError } from '@/lib/utils/error-sanitization'
 import { createClient } from '@/lib/supabase/server'
 

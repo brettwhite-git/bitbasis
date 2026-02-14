@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { redirect } from 'next/navigation'
-import type { Database } from '@/types/supabase'
 
 export async function clientRequireAuth() {
   const supabase = createClient()

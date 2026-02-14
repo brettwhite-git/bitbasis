@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getPortfolioMetrics } from '@/lib/core/portfolio/metrics'
 import { ExtendedPortfolioMetrics } from '@/lib/core/portfolio/types' // PortfolioMetrics not used
-import { Database } from '@/types/supabase'
 
 export interface UsePortfolioMetricsResult {
   data: ExtendedPortfolioMetrics | null

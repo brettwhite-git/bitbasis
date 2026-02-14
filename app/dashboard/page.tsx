@@ -20,19 +20,18 @@ export default async function DashboardPage() {
   }
   
   // Fetch portfolio and performance metrics
+  let metrics
+  let performance
   try {
-    // console.log("[DashboardPage] Calling Promise.all for metrics...")
-    const [metrics, performance] = await Promise.all([
+    [metrics, performance] = await Promise.all([
       getPortfolioMetrics(user.id, supabase),
       getPerformanceMetrics(user.id, supabase)
     ])
-    // console.log("[DashboardPage] Promise.all for metrics successful.")
-    
-    // console.log("[DashboardPage] Rendering DashboardContent.")
-    return <OverviewLayout metrics={metrics} performance={performance} />
   } catch (error) {
     console.error("[DashboardPage] Error fetching metrics:", error)
     return <div>Error loading dashboard data. Please try again later.</div>
   }
+
+  return <OverviewLayout metrics={metrics} performance={performance} />
 }
 

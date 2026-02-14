@@ -8,7 +8,6 @@ import { useImport } from './import-context'
 import type { UnifiedTransaction } from './import-context'
 import { format } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
-import type { Database as DatabaseType } from '@/types/supabase'
 
 export function ConfirmationStep() {
   const {

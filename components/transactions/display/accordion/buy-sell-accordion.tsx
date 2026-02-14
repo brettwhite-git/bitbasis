@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { formatCurrency } from "@/lib/utils/format"
 import { useBitcoinPrice } from "@/lib/hooks"
 import { UnifiedTransaction } from '@/types/transactions'
@@ -20,6 +21,10 @@ export function BuySellAccordion({
   const { price: hookPrice, loading: hookLoading } = useBitcoinPrice()
   const currentBitcoinPrice = propPrice ?? hookPrice
   const priceLoading = propLoading ?? hookLoading
+
+  // Capture current time once on mount to avoid impure Date.now() during render
+  const [now] = useState(() => Date.now())
+  const holdingDays = Math.floor((now - new Date(transaction.date).getTime()) / (1000 * 60 * 60 * 24))
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-[2fr_2fr_2fr_1fr] gap-8">
@@ -172,21 +177,14 @@ export function BuySellAccordion({
             <div className="flex justify-between">
               <span className="text-gray-400">Holding Period:</span>
               <span className="text-white">
-                {(() => {
-                  // Buy: holding period = date.now - transaction.date
-                  const days = Math.floor((Date.now() - new Date(transaction.date).getTime()) / (1000 * 60 * 60 * 24))
-                  return `${days} days`
-                })()}
+                {`${holdingDays} days`}
               </span>
             </div>
           )}
           <div className="flex justify-between">
             <span className="text-gray-400">Tax Category:</span>
             <span className="text-white">
-              {(() => {
-                const days = Math.floor((Date.now() - new Date(transaction.date).getTime()) / (1000 * 60 * 60 * 24))
-                return days >= 365 ? "Long-term" : "Short-term"
-              })()}
+              {holdingDays >= 365 ? "Long-term" : "Short-term"}
             </span>
           </div>
         </div>

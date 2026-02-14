@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 
 import { Button } from "@/components/ui/button";
 import { useSavingsGoalData } from '@/lib/hooks';
@@ -32,8 +32,20 @@ interface SavingsGoalWidgetProps {
 }
 
 export function SavingsGoalWidget({ className }: SavingsGoalWidgetProps) {
-  const [activeGoal, setActiveGoal] = useState<SavedGoalData | null>(null);
-  
+  const [activeGoal] = useState<SavedGoalData | null>(() => {
+    // Load goal from localStorage on mount
+    if (typeof window === 'undefined') return null;
+    const savedGoalString = localStorage.getItem('savingsGoal');
+    if (savedGoalString) {
+      try {
+        return JSON.parse(savedGoalString) as SavedGoalData;
+      } catch (error) {
+        console.error("Failed to parse saved savings goal:", error);
+      }
+    }
+    return null;
+  });
+
   // Memoize the goal object to prevent infinite re-renders
   const memoizedGoal = useMemo(() => {
     return activeGoal
@@ -46,19 +58,6 @@ export function SavingsGoalWidget({ className }: SavingsGoalWidgetProps) {
 
   // Get progress data using the hook
   const goalProgress = useSavingsGoalData(memoizedGoal);
-  
-  // Load goal from localStorage on mount
-  useEffect(() => {
-    const savedGoalString = localStorage.getItem('savingsGoal');
-    if (savedGoalString) {
-      try {
-        const loadedGoal = JSON.parse(savedGoalString) as SavedGoalData;
-        setActiveGoal(loadedGoal);
-      } catch (error) {
-        console.error("Failed to parse saved savings goal:", error);
-      }
-    }
-  }, []);
 
   // Format currency for display
   const formatCurrency = (value: number) => {

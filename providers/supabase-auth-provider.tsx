@@ -3,8 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { User, Session, AuthChangeEvent } from "@supabase/supabase-js"
-import { Database } from "@/types/supabase"
+import { User, Session, AuthChangeEvent, AuthError } from "@supabase/supabase-js"
 
 type SupabaseAuthProviderProps = {
   children: React.ReactNode
@@ -12,8 +11,8 @@ type SupabaseAuthProviderProps = {
 
 type AuthContextType = {
   user: User | null
-  signUp: (email: string, captchaToken?: string) => Promise<{ error: any }>
-  signInWithMagicLink: (email: string, captchaToken?: string) => Promise<{ error: any }>
+  signUp: (email: string, captchaToken?: string) => Promise<{ error: AuthError | Error | null }>
+  signInWithMagicLink: (email: string, captchaToken?: string) => Promise<{ error: AuthError | Error | null }>
   signOut: () => Promise<void>
 }
 
@@ -29,7 +28,7 @@ export const useAuth = () => {
 }
 
 export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
-  const [session, setSession] = useState<Session | null>(null)
+  const [, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -118,21 +117,22 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
       
       console.log('Signup redirect URL:', redirectUrl);
       
-      const options: any = {
+      const options: { emailRedirectTo: string; captchaToken?: string } = {
         emailRedirectTo: redirectUrl,
       }
-      
+
       // Add captcha token if provided
       if (captchaToken) {
         options.captchaToken = captchaToken
       }
-      
+
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options,
       })
       return { error }
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err))
       console.error('Sign up error:', error)
       return { error }
     }
@@ -140,24 +140,20 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
 
   const signInWithMagicLink = async (email: string, captchaToken?: string) => {
     try {
-      // Determine if we're in local development or production
-      const isLocalhost = window.location.hostname === 'localhost' || 
-                         window.location.hostname === '127.0.0.1';
-      
       // Redirect to auth callback first, then to dashboard
       const redirectUrl = `${window.location.origin}/auth/callback?next=/dashboard`;
       
       console.log('Magic link redirect URL:', redirectUrl);
       
-      const options: any = {
+      const options: { emailRedirectTo: string; captchaToken?: string } = {
         emailRedirectTo: redirectUrl,
       }
-      
+
       // Add captcha token if provided
       if (captchaToken) {
         options.captchaToken = captchaToken
       }
-      
+
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options,
@@ -169,7 +165,8 @@ export function SupabaseAuthProvider({ children }: SupabaseAuthProviderProps) {
       }
 
       return { error: null }
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err))
       console.error('Magic link sign in error:', error)
       return { error }
     }

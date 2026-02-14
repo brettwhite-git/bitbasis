@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Database } from '@/types/supabase'
 import { MonthlyPortfolioCalculator } from '@/lib/core/portfolio/monthly-calculator'
 
 export interface PortfolioHistoryPoint {

@@ -18,9 +18,70 @@ interface ImportWizardProps {
   onImportSuccess?: (count: number) => void
 }
 
+// Loading indicator component for various states
+const loadingMessages: Record<string, string> = {
+  idle: 'Processing...',
+  uploading: 'Uploading file...',
+  parsing: 'Parsing CSV data...',
+  mapping: 'Auto-detecting columns...',
+  validating: 'Validating transactions...',
+  importing: 'Importing transactions...'
+}
+
+function LoadingIndicator({ isLoading, loadingState }: { isLoading: boolean; loadingState: string }) {
+  return isLoading ? (
+    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-gray-800/20 via-gray-900/40 to-gray-800/20 backdrop-blur-sm rounded-xl border border-gray-700/30 shadow-2xl">
+        <Loader2 className="h-8 w-8 animate-spin text-bitcoin-orange" />
+        <p className="text-sm font-medium text-white">{loadingMessages[loadingState] || 'Processing...'}</p>
+      </div>
+    </div>
+  ) : null
+}
+
+// Step indicator/progress bar
+const wizardSteps = [
+  { id: 'upload', label: 'Upload' },
+  { id: 'mapping', label: 'Map Fields' },
+  { id: 'preview', label: 'Preview' },
+  { id: 'confirmation', label: 'Confirm' }
+]
+
+function StepIndicator({ step }: { step: string }) {
+  const currentIndex = wizardSteps.findIndex(s => s.id === step)
+
+  return (
+    <div className="flex items-center justify-center w-full mb-6">
+      {wizardSteps.map((s, idx) => (
+        <React.Fragment key={s.id}>
+          <div className="flex flex-col items-center">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${
+                idx <= currentIndex
+                  ? 'bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white'
+                  : 'bg-gray-800/40 text-gray-400 border border-gray-700/50'
+              }`}
+            >
+              {idx + 1}
+            </div>
+            <span className={`text-xs mt-1 ${idx <= currentIndex ? 'text-white' : 'text-gray-400'}`}>{s.label}</span>
+          </div>
+          {idx < wizardSteps.length - 1 && (
+            <div
+              className={`h-1 flex-1 mx-2 rounded-full ${
+                idx < currentIndex ? 'bg-gradient-to-r from-bitcoin-orange to-[#D4A76A]' : 'bg-gray-700/50'
+              }`}
+            />
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  )
+}
+
 function ImportWizardContent() {
   const { step, setStep, isLoading, loadingState, error, resetImportState } = useImport()
-  
+
   // Handle back button navigation
   const handleBack = () => {
     switch (step) {
@@ -34,27 +95,6 @@ function ImportWizardContent() {
         setStep('preview')
         break
     }
-  }
-
-  // Loading indicator component for various states
-  const LoadingIndicator = () => {
-    const loadingMessages = {
-      idle: 'Processing...',
-      uploading: 'Uploading file...',
-      parsing: 'Parsing CSV data...',
-      mapping: 'Auto-detecting columns...',
-      validating: 'Validating transactions...',
-      importing: 'Importing transactions...'
-    }
-    
-    return isLoading ? (
-      <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-gray-800/20 via-gray-900/40 to-gray-800/20 backdrop-blur-sm rounded-xl border border-gray-700/30 shadow-2xl">
-          <Loader2 className="h-8 w-8 animate-spin text-bitcoin-orange" />
-          <p className="text-sm font-medium text-white">{loadingMessages[loadingState] || 'Processing...'}</p>
-        </div>
-      </div>
-    ) : null
   }
 
   // Handle modal step content
@@ -73,46 +113,6 @@ function ImportWizardContent() {
     }
   }
 
-  // Step indicator/progress bar
-  const StepIndicator = () => {
-    const steps = [
-      { id: 'upload', label: 'Upload' },
-      { id: 'mapping', label: 'Map Fields' },
-      { id: 'preview', label: 'Preview' },
-      { id: 'confirmation', label: 'Confirm' }
-    ]
-    
-    const currentIndex = steps.findIndex(s => s.id === step)
-    
-    return (
-      <div className="flex items-center justify-center w-full mb-6">
-        {steps.map((s, idx) => (
-          <React.Fragment key={s.id}>
-            <div className="flex flex-col items-center">
-              <div 
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${
-                  idx <= currentIndex 
-                    ? 'bg-gradient-to-r from-bitcoin-orange to-[#D4A76A] text-white' 
-                    : 'bg-gray-800/40 text-gray-400 border border-gray-700/50'
-                }`}
-              >
-                {idx + 1}
-              </div>
-              <span className={`text-xs mt-1 ${idx <= currentIndex ? 'text-white' : 'text-gray-400'}`}>{s.label}</span>
-            </div>
-            {idx < steps.length - 1 && (
-              <div 
-                className={`h-1 flex-1 mx-2 rounded-full ${
-                  idx < currentIndex ? 'bg-gradient-to-r from-bitcoin-orange to-[#D4A76A]' : 'bg-gray-700/50'
-                }`}
-              />
-            )}
-          </React.Fragment>
-        ))}
-      </div>
-    )
-  }
-  
   return (
     <>
       <DialogHeader>
@@ -122,19 +122,19 @@ function ImportWizardContent() {
         </DialogDescription>
       </DialogHeader>
       
-      <StepIndicator />
-      
+      <StepIndicator step={step} />
+
       {/* Error message if any */}
       {error && (
         <div className="bg-red-500/5 text-red-400 text-sm p-3 rounded-xl border border-red-500/10 mb-4 backdrop-blur-sm">
           {error}
         </div>
       )}
-      
+
       {/* Step content */}
       <div className="relative">
         {renderStepContent()}
-        <LoadingIndicator />
+        <LoadingIndicator isLoading={isLoading} loadingState={loadingState} />
       </div>
       
       {/* Navigation buttons */}

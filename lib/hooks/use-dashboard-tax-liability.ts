@@ -4,7 +4,6 @@ import { useMemo, useState, useEffect } from 'react'
 import { useTaxMethod } from '@/providers/tax-method-provider'
 import { calculateTaxLiability } from '@/lib/core/portfolio/tax-calculator'
 import { createClient } from '@/lib/supabase/client'
-import { Database } from '@/types/supabase'
 import { UnifiedTransaction } from '@/types/transactions'
 
 // Using canonical UnifiedTransaction from types/transactions.ts

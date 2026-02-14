@@ -41,12 +41,12 @@ export function isValidTransactionType(type: string): type is TransactionType {
 }
 
 // Type guard for database query results
-export function isUnifiedTransaction(obj: any): obj is UnifiedTransaction {
-  return obj && 
-    typeof obj.id === 'number' &&
-    typeof obj.date === 'string' &&
-    typeof obj.type === 'string' &&
-    typeof obj.user_id === 'string';
+export function isUnifiedTransaction(obj: unknown): obj is UnifiedTransaction {
+  return typeof obj === 'object' && obj !== null &&
+    'id' in obj && typeof (obj as Record<string, unknown>).id === 'number' &&
+    'date' in obj && typeof (obj as Record<string, unknown>).date === 'string' &&
+    'type' in obj && typeof (obj as Record<string, unknown>).type === 'string' &&
+    'user_id' in obj && typeof (obj as Record<string, unknown>).user_id === 'string';
 }
 
 /**

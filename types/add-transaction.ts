@@ -264,8 +264,8 @@ export type TransactionWizardData = {
   to_address_name?: string | null
   transaction_hash?: string | null
   
-  // Allow any other string keys for flexibility during development
-  [key: string]: any
+  // Allow other string keys for flexibility during development
+  [key: string]: string | number | boolean | null | undefined
 }
 
 // Updated wizard context type

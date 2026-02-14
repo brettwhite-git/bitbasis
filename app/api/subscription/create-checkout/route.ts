@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import type { Database } from '@/types/supabase'
 import { validateRedirectUrl } from '@/lib/utils/url-validation'
 import { sanitizeStripeError } from '@/lib/utils/error-sanitization'
 import { createClient } from '@/lib/supabase/server'

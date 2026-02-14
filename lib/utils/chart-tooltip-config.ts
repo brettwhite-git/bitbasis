@@ -4,8 +4,6 @@
  * Provides consistent tooltip styling across all charts in the application
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { TooltipOptions, TooltipItem } from 'chart.js'
 import { formatCurrency, formatBTC } from '@/lib/utils/utils' // formatPercent not used
 

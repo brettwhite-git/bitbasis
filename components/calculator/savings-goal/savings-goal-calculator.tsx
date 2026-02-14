@@ -44,16 +44,22 @@ export function SavingsGoalCalculator() {
     return spotBtcPrice;
   }, [customBtcPrice, spotBtcPrice]);
 
-  // State for Calculated Outputs
-  const [projectedValueUSD, setProjectedValueUSD] = useState(0);
-  const [projectedValueAdjustedUSD, setProjectedValueAdjustedUSD] = useState(0);
-  const [roiPercent, setRoiPercent] = useState(0);
-  const [totalPrincipal, setTotalPrincipal] = useState(0);
-  const [projectionData, setProjectionData] = useState<ProjectionPoint[]>([]);
-  const [targetUsdValue, setTargetUsdValue] = useState<number | null>(null);
-  const [estimatedBtcTargetDate, setEstimatedBtcTargetDate] = useState<Date | null>(null);
+  // Calculated Outputs (derived via useMemo below)
 
-  const [activeGoal, setActiveGoal] = useState<SavedGoalData | null>(null);
+  const [activeGoal, setActiveGoal] = useState<SavedGoalData | null>(() => {
+    // Load Goal from localStorage on mount
+    if (typeof window === 'undefined') return null;
+    const savedGoalString = localStorage.getItem('savingsGoal');
+    if (savedGoalString) {
+      try {
+        return JSON.parse(savedGoalString) as SavedGoalData;
+      } catch (error) {
+        console.error("Failed to parse saved savings goal:", error);
+        localStorage.removeItem('savingsGoal'); // Clear corrupted data
+      }
+    }
+    return null;
+  });
 
   // --- Log activeGoal right after setting/loading ---
   useEffect(() => {
@@ -75,36 +81,27 @@ export function SavingsGoalCalculator() {
 
   // Note: Removed old calculation logic - now using calculateProjection function below
 
-  // --- Load Goal from localStorage on Mount ---
-  useEffect(() => {
-    const savedGoalString = localStorage.getItem('savingsGoal');
-    if (savedGoalString) {
-      try {
-        const loadedGoal = JSON.parse(savedGoalString) as SavedGoalData;
-        setActiveGoal(loadedGoal);
-        // Note: We don't populate input fields from saved goal
-        // The inputs remain independent for creating new projections
-        // Only the activeGoal state is used for displaying the saved goal tracker
-      } catch (error) {
-        console.error("Failed to parse saved savings goal:", error);
-        localStorage.removeItem('savingsGoal'); // Clear corrupted data
-      }
-    }
-  }, []); // Empty dependency array ensures this runs only once on mount
-
-  // --- Run Calculation for Interactive Display --- 
-  useEffect(() => {
+  // --- Run Calculation for Interactive Display (derived via useMemo) ---
+  const {
+    projectedValueUSD,
+    projectedValueAdjustedUSD,
+    totalPrincipal,
+    roiPercent,
+    projectionData,
+    estimatedBtcTargetDate,
+    targetUsdValue,
+  } = useMemo(() => {
     // Only run calculation if we have valid data and price is not loading
     if (priceLoading || currentBtcPriceUSD <= 0 || contributionAmountUSD <= 0 || projectionPeriodMonths <= 0) {
-      // Reset to default values when data is invalid or still loading
-      setProjectedValueUSD(0);
-      setProjectedValueAdjustedUSD(0);
-      setTotalPrincipal(0);
-      setRoiPercent(0);
-      setProjectionData([]);
-      setEstimatedBtcTargetDate(null);
-      setTargetUsdValue(null);
-      return;
+      return {
+        projectedValueUSD: 0,
+        projectedValueAdjustedUSD: 0,
+        totalPrincipal: 0,
+        roiPercent: 0,
+        projectionData: [] as ProjectionPoint[],
+        estimatedBtcTargetDate: null as Date | null,
+        targetUsdValue: null as number | null,
+      };
     }
 
     const results = calculateProjection({
@@ -115,25 +112,23 @@ export function SavingsGoalCalculator() {
         inflationRatePercent,
         targetBtcAmount,
         currentBtcPriceUSD,
-        startDate: startDate, // Pass the state here
+        startDate: startDate,
     });
 
-    // Update state for interactive display
-    setProjectedValueUSD(results.nominalValueAtPeriodEnd);
-    setProjectedValueAdjustedUSD(results.adjustedValueAtPeriodEnd);
-    setTotalPrincipal(results.principalAtPeriodEnd);
     const interest = Math.max(0, results.nominalValueAtPeriodEnd - results.principalAtPeriodEnd);
     const roi = results.principalAtPeriodEnd > 0 ? (interest / results.principalAtPeriodEnd) * 100 : 0;
-    setRoiPercent(roi);
-    setProjectionData(results.dataPoints);
-    setEstimatedBtcTargetDate(results.estimatedTargetDate);
-
-    // Update target USD value display
     const currentTargetUsd = targetBtcAmount > 0 && currentBtcPriceUSD > 0 ? targetBtcAmount * currentBtcPriceUSD : null;
-    setTargetUsdValue(currentTargetUsd);
 
+    return {
+      projectedValueUSD: results.nominalValueAtPeriodEnd,
+      projectedValueAdjustedUSD: results.adjustedValueAtPeriodEnd,
+      totalPrincipal: results.principalAtPeriodEnd,
+      roiPercent: roi,
+      projectionData: results.dataPoints,
+      estimatedBtcTargetDate: results.estimatedTargetDate,
+      targetUsdValue: currentTargetUsd,
+    };
   }, [
-    // initialInvestmentUSD, // Removed dependency
     contributionAmountUSD,
     contributionFrequency,
     expectedGrowthPercent,

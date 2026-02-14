@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/providers/supabase-auth-provider'; // Use custom auth provider
-import type { Database } from '@/types/supabase'; // Use the correct generated types
 
 // Define the structure for the input goal data (subset of SavedGoalData)
 interface SavingsGoalInput {

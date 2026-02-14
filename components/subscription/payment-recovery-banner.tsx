@@ -8,7 +8,16 @@ import { useSubscription } from "@/lib/hooks"
 
 export function PaymentRecoveryBanner() {
   const [dismissed, setDismissed] = useState(false)
+  const [now] = useState(() => Date.now())
   const { subscriptionInfo } = useSubscription()
+
+  // Compute daysLeft before early returns to respect Rules of Hooks
+  const subData = subscriptionInfo?.subscription_data as Record<string, unknown> | undefined
+  const periodEndDateStr = subData?.period_end_date as string | undefined
+  const periodEndDate = periodEndDateStr ? new Date(periodEndDateStr) : null
+  const daysLeft = periodEndDate
+    ? Math.ceil((periodEndDate.getTime() - now) / (1000 * 60 * 60 * 24))
+    : 0
 
   if (!subscriptionInfo || dismissed) return null
 
@@ -22,14 +31,6 @@ export function PaymentRecoveryBanner() {
     period_end_date?: string;
     id?: string;
   }
-  
-  const periodEndDate = subscriptionDataWithDates.period_end_date 
-    ? new Date(subscriptionDataWithDates.period_end_date)
-    : null
-
-  const daysLeft = periodEndDate 
-    ? Math.ceil((periodEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : 0
 
   const handleUpdatePayment = async () => {
     try {

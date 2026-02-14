@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMemo } from "react"
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -45,21 +45,18 @@ export function BasePortfolioChart({
   className = "",
   timeRange = "2Y",
 }: BasePortfolioChartProps) {
-  const [chartConfig, setChartConfig] = useState<{
+  // Generate chart configuration from data
+  const chartConfig = useMemo<{
     data: ChartData<'line'>
     options: ChartOptions<'line'>
-  } | null>(null)
-
-  // Generate chart configuration from data
-  useEffect(() => {
+  } | null>(() => {
     if (!data || data.length === 0) {
-      setChartConfig(null)
-      return
+      return null
     }
 
     const rotation = getAxisRotation(timeRange)
-    
-    const config = {
+
+    return {
       data: {
         labels: data.map(d => formatChartDate(new Date(d.date))),
         datasets: [
@@ -121,9 +118,9 @@ export function BasePortfolioChart({
               title: function(context: Array<{ label?: string }>) {
                 return context[0]?.label || ''
               },
-              label: function(context: { dataset: { label?: string }, parsed: { y: number } }) {
+              label: function(context: { dataset: { label?: string }, parsed: { y: number | null } }) {
                 const label = context.dataset.label || ''
-                const value = context.parsed.y
+                const value = context.parsed.y ?? 0
                 return `${label}: $${value.toLocaleString()}`
               }
             }
@@ -165,8 +162,6 @@ export function BasePortfolioChart({
         },
       }
     }
-
-    setChartConfig(config)
   }, [data, timeRange])
 
   if (!data || data.length === 0) {

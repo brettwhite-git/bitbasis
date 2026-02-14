@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from "@/lib/supabase/client"
-import type { Database } from "@/types/supabase"
 import { UnifiedTransaction } from '@/types/transactions'
 
 /**

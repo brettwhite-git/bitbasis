@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/providers/supabase-auth-provider'
 import { AccountSettings } from "@/components/settings/account-settings"
@@ -13,7 +13,26 @@ export default function SettingsPage() {
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [activeSection, setActiveSection] = useState<SettingsSection>('account')
+  // Compute section from searchParams
+  const sectionFromParams = useMemo(() => {
+    const section = searchParams.get('section') as SettingsSection
+    if (section && ['account', 'files', 'resources'].includes(section)) {
+      return section
+    }
+    return null
+  }, [searchParams])
+
+  const [userSelectedSection, setUserSelectedSection] = useState<SettingsSection | null>(null)
+  const prevSectionFromParams = useRef(sectionFromParams)
+
+  // Reset user selection when URL params change
+  if (prevSectionFromParams.current !== sectionFromParams) {
+    prevSectionFromParams.current = sectionFromParams
+    setUserSelectedSection(null)
+  }
+
+  const activeSection = userSelectedSection ?? sectionFromParams ?? 'account'
+  const setActiveSection = setUserSelectedSection
 
   // Client-side protection (layout already protects server-side)
   useEffect(() => {
@@ -22,14 +41,6 @@ export default function SettingsPage() {
       router.push('/auth/sign-in')
     }
   }, [user, router])
-
-  // Handle section query parameter
-  useEffect(() => {
-    const section = searchParams.get('section') as SettingsSection
-    if (section && ['account', 'files', 'resources'].includes(section)) {
-      setActiveSection(section)
-    }
-  }, [searchParams])
 
   // Don't render until auth is confirmed
   if (!user) {
