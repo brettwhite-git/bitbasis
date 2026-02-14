@@ -1,5 +1,9 @@
 # BitBasis - Bitcoin Portfolio Tracker
 
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Bitcoin Only](https://img.shields.io/badge/Bitcoin-Only-F7931A?logo=bitcoin&logoColor=white)](https://bitbasis.io)
+
 **A privacy-first Bitcoin portfolio tracking and cost basis analysis platform.**
 
 BitBasis helps you track your Bitcoin holdings, calculate accurate cost basis, and manage your transaction history—all while keeping your data private and secure. No exchange API keys required.
