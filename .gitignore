@@ -49,6 +49,7 @@ next-env.d.ts
 .cursor/
 CLAUDE.md
 CHANGELOG.md
+SECURITY-TODO.md
 
 # temporary files
 *.tmp
