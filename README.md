@@ -4,20 +4,20 @@
 
 BitBasis helps you track your Bitcoin holdings, calculate accurate cost basis, and manage your transaction history—all while keeping your data private and secure. No exchange API keys required.
 
-## 🌟 What is BitBasis?
+## What is BitBasis?
 
 BitBasis is a comprehensive Bitcoin portfolio management tool designed for individuals who value privacy and want precise control over their transaction data. Unlike other portfolio trackers that require API access to exchanges, BitBasis uses a simple CSV import system, giving you complete control over your data.
 
 ### Key Principles
 
-- **Privacy-First**: Your data is never shared with third parties. No exchange API integrations mean no external access to your accounts.
-- **User-Controlled**: You upload your transaction data directly via CSV files.
+- **Privacy-Focused**: Your data is never shared with third parties. No exchange API integrations mean no external access to your accounts.
+- **User-Controlled**: You upload your transaction data directly via CSV files or manual entry
 - **Secure**: Built on Supabase with Row Level Security (RLS) ensuring your data is isolated and protected.
-- **Tax-Ready**: Multiple cost basis calculation methods (FIFO, LIFO, HIFO) help you prepare for tax reporting.
+- **Tax-Insights**: Multiple cost basis calculation methods (FIFO, LIFO, HIFO) help you prepare for potential tax obligations
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Create Your Account
 
@@ -28,22 +28,22 @@ Visit [bitbasis.io](https://bitbasis.io) and sign up with your email address. Yo
 The easiest way to get started is by importing your transaction history via CSV:
 
 1. **Export from Your Exchange**: Most exchanges (Coinbase, Kraken, River, Binance, etc.) allow you to export transaction history as CSV.
-2. **Navigate to Transactions**: In your BitBasis dashboard, go to "Transaction History" → "Import CSV"
+2. **Navigate to Transactions**: In your BitBasis dashboard, go to "Transaction History" -> "Import CSV"
 3. **Upload Your File**: Drag and drop or select your CSV file (up to 10MB)
 4. **Map Your Columns**: BitBasis will automatically detect common column formats, but you can manually adjust if needed
 5. **Review & Confirm**: Preview your transactions before final import
 
 ### Supported Transaction Types
 
-- **Buy Orders**: Fiat currency → Bitcoin purchases
-- **Sell Orders**: Bitcoin → Fiat currency sales
+- **Buy Orders**: Fiat currency -> Bitcoin purchases
+- **Sell Orders**: Bitcoin -> Fiat currency sales
 - **Deposits**: Bitcoin received from external wallets
 - **Withdrawals**: Bitcoin sent to external wallets
-- **Interest/Earnings**: Bitcoin earned from lending, staking, or rewards
+- **Interest/Earnings**: Bitcoin earned from cash holdings
 
 ---
 
-## 📊 Understanding Cost Basis Methods
+## Understanding Cost Basis Methods
 
 BitBasis supports three industry-standard cost basis calculation methods. Understanding these will help you choose the best method for your tax situation.
 
@@ -68,13 +68,15 @@ BitBasis supports three industry-standard cost basis calculation methods. Unders
 - Advanced strategy for tax optimization
 - Best for: Sophisticated investors optimizing tax liability
 
-**Important**: BitBasis is not a tax calculator. Always consult with a qualified tax professional regarding your specific situation and which method is best for you.
+**DISCLAIMER**: BitBasis is not tax preparation or reporting software. Always consult with a qualified tax professional regarding your specific situation and which method is best for you.
 
 ---
 
-## 📈 Dashboard Overview
+## Dashboard Overview
 
 Your BitBasis dashboard provides a comprehensive view of your Bitcoin portfolio:
+
+![Dashboard Overview](./public/assets/overview.gif)
 
 ### Portfolio Metrics
 
@@ -91,6 +93,8 @@ Your BitBasis dashboard provides a comprehensive view of your Bitcoin portfolio:
 - **Holdings Breakdown**: See distribution of your holdings by purchase date
 - **Transaction History**: Complete record of all your transactions
 
+![Performance](./public/assets/performance.gif)
+
 ### Transaction Management
 
 - **View All Transactions**: Filter, sort, and search through your transaction history
@@ -98,9 +102,29 @@ Your BitBasis dashboard provides a comprehensive view of your Bitcoin portfolio:
 - **Add Transactions Manually**: Enter transactions directly if you don't have CSV exports
 - **Export Data**: Download your transaction history for tax preparation or record-keeping
 
+![Transactions](./public/assets/transactions.gif)
+
+### Savings Goal Calculator
+
+- **Multiple Goal Tracking**: Create and manage multiple savings goals with custom names, each with its own contribution schedule and target
+- **Target Date Estimates**: View projected dates for reaching your Bitcoin savings goal based on contribution amount and frequency
+- **ROI & Performance Metrics**: See projected return on investment, principal vs. gains breakdown, and total value at period end
+- **Flexible Planning Tools**: Adjust contribution amounts, frequencies, projection periods, and Bitcoin price assumptions to model different scenarios
+
+![Savings](./public/assets/savings.gif)
+
+### Investment Calculator
+
+- **Fixed Goal Projections**: Calculate required weekly/monthly contributions to reach a specific Bitcoin target amount (displayed in BTC or sats)
+- **Recurring Buy Projections**: Project future value of regular Bitcoin purchases (DCA) based on your contribution schedule and expected growth
+- **Custom Growth Scenarios**: Set expected annual Bitcoin growth (CAGR) and view inflation-adjusted values
+- **Interactive Visualizations**: Charts showing accumulated Bitcoin and USD value over time with contribution frequency options (weekly/monthly)
+
+![Investment](./public/assets/calculator.gif)
+
 ---
 
-## 📝 CSV Import Guide
+## CSV Import Guide
 
 ### Preparing Your CSV File
 
@@ -114,26 +138,29 @@ Your CSV should include these essential fields:
 #### Transaction-Specific Requirements
 
 **Buy Transactions:**
-- Received Amount (BTC)
-- Received Currency (BTC)
-- Sent Amount (USD or fiat)
-- Sent Currency (USD, EUR, etc.)
+- Received Amount (USD, BTC)
+- Received Currency (USD, BTC)
+- Sent Amount (USD, BTC)
+- Sent Currency (USD, BTC)
 
 **Sell Transactions:**
-- Sent Amount (BTC)
-- Sent Currency (BTC)
-- Received Amount (USD or fiat)
-- Received Currency (USD, EUR, etc.)
+- Sent Amount (USD, BTC)
+- Sent Currency (USD, BTC)
+- Received Amount (USD, BTC)
+- Received Currency (USD, BTC)
 
 **Deposit/Withdrawal:**
 - Amount and currency (BTC for deposits/withdrawals)
 
 #### Optional Fields
 - Fee Amount and Fee Currency
-- From/To addresses or exchange names
+- From/To wallet addresses or exchange names
+- Transaction Hash
 - Comments or notes
 
 ### CSV Templates
+
+![Import](./public/assets/csvimport.gif)
 
 BitBasis provides CSV templates to help you format your data correctly. You can download these templates from the import interface or use your exchange's export format—BitBasis will attempt to automatically map common formats.
 
@@ -147,7 +174,7 @@ BitBasis provides CSV templates to help you format your data correctly. You can 
 
 ---
 
-## 🔒 Privacy & Security
+## Privacy & Security
 
 ### How Your Data is Protected
 
@@ -171,7 +198,7 @@ BitBasis provides CSV templates to help you format your data correctly. You can 
 
 ---
 
-## 💰 Subscription Plans
+## Subscription Plans
 
 BitBasis offers flexible subscription options:
 
@@ -183,7 +210,7 @@ Visit the [pricing page](https://bitbasis.io) for current pricing and feature co
 
 ---
 
-## ❓ Frequently Asked Questions
+## Frequently Asked Questions
 
 ### Which exchanges are supported?
 
@@ -219,7 +246,7 @@ Yes! You can export your complete transaction history as CSV at any time from th
 
 ---
 
-## 🆘 Getting Help
+## Getting Help
 
 ### Support Resources
 
@@ -237,13 +264,13 @@ If you encounter any problems:
 
 ---
 
-## 🔄 Updates & Improvements
+## Updates & Improvements
 
 BitBasis is continuously being improved. New features and enhancements are added regularly based on user feedback. Check back periodically for updates to features and functionality.
 
 ---
 
-## 📄 Legal & Disclaimers
+## Legal & Disclaimers
 
 - **Not Financial Advice**: BitBasis is a portfolio tracking tool, not financial or tax advice
 - **Tax Consultation Required**: Always consult with a qualified tax professional for tax matters
@@ -253,7 +280,7 @@ BitBasis is continuously being improved. New features and enhancements are added
 
 ---
 
-## 🎯 Getting the Most from BitBasis
+## Getting the Most from BitBasis
 
 ### Tips for Best Results
 
@@ -268,6 +295,12 @@ BitBasis is continuously being improved. New features and enhancements are added
 - **Performance Analysis**: Dive deep into your portfolio performance with detailed analytics
 - **Holdings Tracking**: See which Bitcoin purchases are short-term vs. long-term holdings
 - **Tax Lot Identification**: Track individual purchase lots for tax optimization strategies
+
+---
+
+## License
+
+BitBasis is open source software licensed under the [GNU Affero General Public License v3.0](./LICENSE).
 
 ---
 
